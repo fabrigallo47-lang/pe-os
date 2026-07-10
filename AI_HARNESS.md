@@ -42,6 +42,11 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-10 — Roles-as-desks layer added
+- Fabrizio's idea: an agent per real-life role, activating to do the work and feed the brain. Refined to avoid cloning the org chart (which would re-import the silo problem the system exists to destroy): **roles are orchestration desks** — event triggers + invocable functional agents + authority profile + a named human counterpart. Functional agents remain the auditable unit; roles never own data.
+- Added `vault/ontology/role.md` + three v1 desks in `vault/roles/` (analyst, diligence coordinator, IC secretary). Portfolio desk and librarian deferred until those stages activate.
+- Demo framing this unlocks: "every person on the deal team gets a counterpart desk that never sleeps."
+
 ### 2026-07-10 — Scaffold created
 - Studied a prior internal project as the pattern source: AI_HARNESS operating manual, AgentSpec registry (typed tools + permission modes + append-only audit log + mandatory reasoning field), `.planning` discipline, Makefile entry points.
 - Ported the patterns: policy table = AgentSpec permission modes as data; skills = agents with typed I/O and declared authority; git = audit log; `written-by` = the reasoning/provenance field.

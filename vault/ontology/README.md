@@ -13,6 +13,7 @@ This directory **is the product**. Every entity in the system is a markdown file
 | `deal` | [deal.md](deal.md) | deal | `vault/deals/<deal>/deal.md` |
 | `question-type` | [question-type.md](question-type.md) | reusable question class | `vault/library/question-types/` |
 | `company`, `person` | [entity.md](entity.md) | real-world entity | `vault/entities/` |
+| `role` | [role.md](role.md) | desk (agent orchestration persona) | `vault/roles/` |
 
 ## Rules (invariants — don't break these)
 

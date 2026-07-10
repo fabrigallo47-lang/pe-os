@@ -26,6 +26,8 @@ vault/          canonical state — typed markdown, Obsidian-compatible, git = p
   deals/<slug>/ deal.md + questions/ + claims/ + decisions/
   entities/     companies, people (observed, not maintained)
   policy/       policy-table.md — check before ANY agent action
+  roles/        desks — event-activated orchestration personas over functional agents,
+                each serving a named human; never own data, only lens + triggers
   inbox/        artifact drop-zone → run /ingest
 .claude/skills/ the agents: open-deal · ingest · contradictions · ic-record
 tools/          indexer.py (vault → .index/vault.db, rebuilt on demand)

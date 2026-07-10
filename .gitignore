@@ -1,0 +1,10 @@
+# derived index — never authoritative, rebuilt via `make index`
+.index/
+
+.venv/
+__pycache__/
+.DS_Store
+
+# Obsidian workspace state (keep vault content, not app state)
+vault/.obsidian/workspace*.json
+vault/.obsidian/cache/

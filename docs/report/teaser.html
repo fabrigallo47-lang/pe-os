@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>Private Briefing — The Operating Layer for Private Markets</title>
+<style>
+  :root {
+    --bg: #16101c;
+    --surface: #201827;
+    --surface-2: #271e30;
+    --line: #3a2f47;
+    --text: #efe9f4;
+    --muted: #b3a6c2;
+    --accent: #ff7a3d;
+    --accent-soft: #c99ef0;
+    --serif: "Iowan Old Style", "Palatino Linotype", Palatino, Georgia, "Times New Roman", serif;
+    --sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  }
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: var(--sans);
+    font-size: 17px;
+    line-height: 1.65;
+    -webkit-font-smoothing: antialiased;
+  }
+  .page { max-width: 760px; margin: 0 auto; padding: 0 28px; }
+
+  /* ---------- header ---------- */
+  .topbar {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 22px 0; border-bottom: 1px solid var(--line);
+    font-size: 12px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--muted);
+  }
+  .topbar .mark { color: var(--accent); font-weight: 600; }
+
+  /* ---------- hero ---------- */
+  .hero { padding: 96px 0 72px; }
+  .kicker {
+    font-size: 12px; letter-spacing: 0.22em; text-transform: uppercase;
+    color: var(--accent); font-weight: 600; margin-bottom: 28px;
+  }
+  h1 {
+    font-family: var(--serif); font-weight: 500;
+    font-size: clamp(2.4rem, 6vw, 3.9rem); line-height: 1.08;
+    letter-spacing: -0.015em; margin-bottom: 28px;
+  }
+  h1 em { font-style: italic; color: var(--accent-soft); }
+  .lede { font-size: 1.18rem; color: var(--muted); max-width: 58ch; }
+  .lede strong { color: var(--text); font-weight: 600; }
+
+  /* ---------- sections ---------- */
+  section { padding: 64px 0; border-top: 1px solid var(--line); }
+  .sec-label {
+    display: flex; align-items: baseline; gap: 14px; margin-bottom: 22px;
+    font-size: 12px; letter-spacing: 0.2em; text-transform: uppercase; color: var(--muted);
+  }
+  .sec-label .num { color: var(--accent); font-weight: 700; }
+  h2 {
+    font-family: var(--serif); font-weight: 500;
+    font-size: clamp(1.6rem, 3.6vw, 2.2rem); line-height: 1.2; margin-bottom: 18px;
+  }
+  p + p { margin-top: 14px; }
+  section p { color: var(--muted); max-width: 62ch; }
+  section p strong { color: var(--text); }
+
+  /* ---------- layers diagram ---------- */
+  .layers { margin-top: 36px; display: grid; gap: 0; }
+  .layer {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 26px 28px; position: relative;
+  }
+  .layer + .flow { display: flex; justify-content: center; padding: 8px 0; }
+  .layer h3 {
+    font-family: var(--serif); font-size: 1.25rem; font-weight: 600;
+    margin-bottom: 6px; letter-spacing: 0.01em;
+  }
+  .layer .tag {
+    position: absolute; top: 26px; right: 28px;
+    font-size: 10.5px; letter-spacing: 0.14em; text-transform: uppercase;
+    color: var(--accent); border: 1px solid rgba(255,122,61,0.4);
+    padding: 3px 9px; border-radius: 99px; white-space: nowrap;
+  }
+  .layer p { font-size: 0.98rem; max-width: 56ch; }
+  .layer.brain { background: linear-gradient(160deg, var(--surface-2), var(--surface)); border-color: #4a3a5e; }
+  .flow svg { display: block; }
+
+  /* ---------- moments ---------- */
+  .moments { display: grid; gap: 18px; margin-top: 36px; }
+  .moment {
+    background: var(--surface); border: 1px solid var(--line);
+    border-radius: 14px; padding: 28px;
+    transition: border-color 200ms ease, transform 200ms ease;
+  }
+  .moment:hover { border-color: var(--accent); transform: translateY(-2px); }
+  .moment h3 {
+    font-family: var(--serif); font-style: italic; font-weight: 500;
+    font-size: 1.35rem; margin-bottom: 10px; color: var(--accent-soft);
+  }
+  .moment p { font-size: 1rem; }
+
+  /* ---------- withheld ---------- */
+  .withheld {
+    margin-top: 8px; border: 1px dashed #56456b; border-radius: 14px;
+    padding: 30px; background: rgba(201,158,240,0.04);
+  }
+  .withheld p { font-family: var(--serif); font-size: 1.15rem; font-style: italic; color: var(--accent-soft); max-width: 100%; }
+
+  /* ---------- footer ---------- */
+  footer {
+    border-top: 1px solid var(--line); padding: 36px 0 64px;
+    font-size: 12.5px; color: var(--muted); letter-spacing: 0.04em;
+    display: flex; justify-content: space-between; gap: 16px; flex-wrap: wrap;
+  }
+
+  /* ---------- motion ---------- */
+  @media (prefers-reduced-motion: no-preference) {
+    .reveal { opacity: 0; transform: translateY(14px); animation: rise 700ms ease-out forwards; }
+    .reveal.d1 { animation-delay: 120ms; }
+    .reveal.d2 { animation-delay: 240ms; }
+    @keyframes rise { to { opacity: 1; transform: none; } }
+    .pulse { animation: pulse 3.2s ease-in-out infinite; transform-origin: center; }
+    @keyframes pulse { 0%,100% { opacity: 0.55; } 50% { opacity: 1; } }
+  }
+
+  @media (max-width: 640px) {
+    .layer .tag { position: static; display: inline-block; margin-bottom: 10px; }
+    .hero { padding: 64px 0 48px; }
+  }
+  @media print {
+    body { background: #fff; color: #1a1023; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+
+  <div class="topbar">
+    <span class="mark">Private Briefing</span>
+    <span>Private &amp; Confidential</span>
+  </div>
+
+  <header class="hero">
+    <p class="kicker reveal">Private briefing · July 2026</p>
+    <h1 class="reveal d1">Every AI tool makes the analysis faster.<br>None of them makes the <em>firm</em> smarter.</h1>
+    <p class="lede reveal d2">The market is crowded with copilots that read documents and draft memos — work that is becoming free for everyone at the same time. We are building something else: <strong>the operating layer where the firm's deals live, reason, and remember.</strong></p>
+  </header>
+
+  <section>
+    <div class="sec-label"><span class="num">01</span><span>The architecture</span></div>
+    <h2>One brain. Living deals. A loop that closes.</h2>
+    <p>A deal today is scattered across six workstreams, four tools, and nine inboxes — integrated only briefly, imperfectly, in the deal lead's head. And when the deal ends, what the firm learned evaporates. The structure below is designed so that neither ever happens again.</p>
+
+    <div class="layers">
+      <div class="layer brain reveal">
+        <span class="tag">Compounds forever</span>
+        <h3>The Firm Brain</h3>
+        <p>The permanent memory: companies, people, the observed relationship graph, and every lesson the firm has ever paid for — held so that any future deal that raises the same doubt finds it instantly. It never leaves the firm. It is the asset.</p>
+      </div>
+      <div class="flow" aria-hidden="true">
+        <svg width="120" height="44" viewBox="0 0 120 44" fill="none">
+          <path d="M40 4 v28 m0 0 l-6-8 m6 8 l6-8" stroke="#ff7a3d" stroke-width="2" stroke-linecap="round" class="pulse"/>
+          <path d="M80 40 v-28 m0 0 l-6 8 m6-8 l6 8" stroke="#c99ef0" stroke-width="2" stroke-linecap="round" class="pulse"/>
+        </svg>
+      </div>
+      <div class="layer reveal d1">
+        <span class="tag">One per deal</span>
+        <h3>Living Deal Intelligence</h3>
+        <p>Each deal runs as a living body — its open questions, its evidence, its state of play — always integrated, always current, visible to everyone at once. Understanding no longer decays between meetings; it deepens.</p>
+      </div>
+      <div class="flow" aria-hidden="true">
+        <svg width="120" height="44" viewBox="0 0 120 44" fill="none">
+          <path d="M40 4 v28 m0 0 l-6-8 m6 8 l6-8" stroke="#ff7a3d" stroke-width="2" stroke-linecap="round" class="pulse"/>
+          <path d="M80 40 v-28 m0 0 l-6 8 m6-8 l6 8" stroke="#c99ef0" stroke-width="2" stroke-linecap="round" class="pulse"/>
+        </svg>
+      </div>
+      <div class="layer reveal d2">
+        <span class="tag">Always watching</span>
+        <h3>Perception &amp; Decision</h3>
+        <p>Documents, models, meetings, and the outside world flow in continuously — no one types anything into a system, ever. Human decisions and their eventual outcomes flow back up into the brain. <strong style="color:var(--text)">For the first time, the firm learns as a function.</strong></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label"><span class="num">02</span><span>What it feels like</span></div>
+    <h2>Three moments no product on the market can produce.</h2>
+
+    <div class="moments">
+      <div class="moment">
+        <h3>The answer arrives before the question.</h3>
+        <p>The system doesn't wait to be asked. When something arrives that changes a deal — a filing, a number, a silence — the right person knows, with the reason it matters, at the moment it matters. Pull becomes push.</p>
+      </div>
+      <div class="moment">
+        <h3>Three numbers that never met.</h3>
+        <p>The deck says one thing. The model says another. The management call said a third. Nobody ever put them side by side, because nobody holds all three at once. It does — and it tells you which one shows its working.</p>
+      </div>
+      <div class="moment">
+        <h3>A ledger of what you chose not to know.</h3>
+        <p>Every deal closes with risks knowingly accepted — and then forgotten. Here they are held. When one resurfaces months later, in a negotiation or in the portfolio, you are told: <em>this is the same risk, and here is what was said about it at the time.</em></p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label"><span class="num">03</span><span>Under the hood</span></div>
+    <h2>Engineered as a system, not a chatbot.</h2>
+    <p>Four principles carry the architecture. The rest is implementation.</p>
+
+    <div class="moments">
+      <div class="moment">
+        <h3>A knowledge graph, not a document pile.</h3>
+        <p>Every fact in the system is a typed node with provenance — who said it, where, when, and what it bears on. Retrieval follows the structure of the reasoning, not keyword similarity. This is what makes multi-step answers reliable where standard retrieval fails.</p>
+      </div>
+      <div class="moment">
+        <h3>Event-driven agents, not a prompt box.</h3>
+        <p>Agents subscribe to what changes — an arriving document, a moved assumption, an external signal — and act when conditions match. Ambient by design: the system operates on standing context, not on questions someone remembered to ask.</p>
+      </div>
+      <div class="moment">
+        <h3>Bounded authority, auditable by construction.</h3>
+        <p>What an agent may do alone and what requires a human is written down before anything runs, and every action carries its provenance. Perception is autonomous; speaking for the firm never is. This is what makes agents deployable where an LP is watching.</p>
+      </div>
+      <div class="moment">
+        <h3>The firm owns the brain.</h3>
+        <p>The memory layer is the firm's asset — it lives under the firm's control and compounds privately. Models are interchangeable tenants; the structure they flow through is not.</p>
+      </div>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-label"><span class="num">04</span><span>The mechanism</span></div>
+    <div class="withheld">
+      <p>How evidence, judgment, and outcomes are structured so that the loop compounds — the part that makes this defensible — is the product itself, and it is deliberately not in this document. It is shown, working, on a real deal.</p>
+    </div>
+  </section>
+
+  <footer>
+    <span>Fabrizio Gallo · July 2026</span>
+    <span>Confidential — not for distribution</span>
+  </footer>
+
+</div>
+</body>
+</html>

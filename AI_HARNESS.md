@@ -1,0 +1,50 @@
+# PE OS — AI Harness & Operating Manual
+
+> **This is the operating system for any AI agent working in this repo.** Read at session start, follow during work, update at task end (§4). Codebase facts live in the code and `CLAUDE.md`; this file holds the playbooks and the running findings. A finding not written down is a finding lost.
+
+**Last updated:** 2026-07-10 · **Stack:** typed-markdown vault (Obsidian) · Python 3 + PyYAML + SQLite · Claude Code skills as agent runtime · git as provenance
+
+---
+
+## 0. Operating protocol
+
+1. Session start: read this file and `CLAUDE.md`.
+2. Before writing any vault entity: read its schema in `vault/ontology/`.
+3. Before any agent action: check `vault/policy/policy-table.md`. Unlisted operation ⇒ `approval`.
+4. Verify by execution: `make index && make report` after vault changes; run the skill end-to-end, don't inspect.
+5. Task end: append to §4 session log; update `CLAUDE.md` build-order status if it moved.
+
+### Definition of done
+- [ ] Vault files conform to ontology schemas (indexer parses them: no `!` warnings)
+- [ ] `make report` reflects the change (question states, bindings, contradictions)
+- [ ] Policy table respected — human-only transitions untouched by agents
+- [ ] Findings recorded in §4; committed to git
+
+---
+
+## 1. Task playbooks
+
+**Add or change an ontology schema** — this is a product decision, not an edit. Update the schema file, then check every existing vault file still conforms (`make index` surfaces parse failures), then note the change in §4 with rationale. Schemas are versioned by git; breaking changes need a migration note.
+
+**Add a question-type** — `vault/library/question-types/qt-<slug>.md`. Include "What resolves it" in epistemic-type terms. Link from related types' `decomposes-into`.
+
+**Extend the indexer** — new frontmatter link field ⇒ add to `LINK_FIELDS` in `tools/indexer.py`. Keep it rebuild-from-scratch; no incremental state.
+
+**Run the pilot deal** — `/open-deal` → drop artifacts in `vault/inbox/` → `/ingest` each → `/contradictions` → `/ic-record` → later, outcome file. The pilot's purpose is to falsify the ontology cheaply; schema friction discovered here is the deliverable, not a bug.
+
+## 2. Key invariants
+See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds none.
+
+## 3. Known tensions (open engineering questions)
+- **Binding accuracy (Q1, docs/00 §7):** binder currently trusts the model; measure precision on the pilot deal before trusting unbound/bound status in reports.
+- **Confidentiality boundary (policy row 3):** pilot-scoped. Re-authorize before any real firm data.
+- **Subject normalization:** contradiction detection groups on the `subject` string; extractor must check existing subjects before minting new ones, or contradictions become invisible. Candidate for an indexer-assisted dedupe pass.
+
+## 4. Session log & findings (append every task — newest first)
+
+### 2026-07-10 — Scaffold created
+- Studied a prior internal project as the pattern source: AI_HARNESS operating manual, AgentSpec registry (typed tools + permission modes + append-only audit log + mandatory reasoning field), `.planning` discipline, Makefile entry points.
+- Ported the patterns: policy table = AgentSpec permission modes as data; skills = agents with typed I/O and declared authority; git = audit log; `written-by` = the reasoning/provenance field.
+- Built: ontology (7 schemas), policy table v1, 4 skills (open-deal, ingest, contradictions, ic-record), indexer (vault→SQLite, rebuild-from-scratch), 3 seed question-types.
+- Decision: claims are one-file-each for addressability; subjects are normalized strings (see §3 tension).
+- Decision: ontology schemas are excluded from the index (`vault/ontology/` skipped) — they describe the graph, they are not in it.

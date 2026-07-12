@@ -29,6 +29,17 @@ make contracts  # show what the machine contracts load
 
 Open `vault/` in Obsidian anytime — same truth, different projection.
 
+## Input surfaces (how knowledge enters)
+
+| Input | How | Handled by |
+|---|---|---|
+| Documents (decks, models, packs) | drop into `vault/inbox/` | sentinel announces → `/ingest` extracts typed claims |
+| Voice: meetings, expert calls, memos | drop audio (m4a/mp3/wav/mp4…) into `vault/inbox/` | transcriber (local whisper.cpp — audio never leaves the machine) → transcript → sentinel → `/ingest` as `observed` claims |
+| Typed human context | app forms (claim / question / event) | server validates against the ontology, stamps `written-by: human` |
+| Questions to the brain | "Ask the brain" box in the app | read-only LLM over the whole vault, citations included |
+| The two ritual inputs | `/open-deal` (20 min, once) · `/ic-record` (decision moment) | Claude Code skills |
+| External APIs (data providers, news) | not yet connected | policy row 9 — requires approval to enable |
+
 ## Map of the repo
 
 | Path | What it is |

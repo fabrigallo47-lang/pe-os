@@ -89,7 +89,8 @@ class Sentinel(Agent):
     watches = "vault/inbox"
 
     def snapshot(self):
-        return {str(f): f.stat().st_mtime for f in (VAULT / "inbox").glob("*") if f.is_file()}
+        return {str(f): f.stat().st_mtime for f in (VAULT / "inbox").glob("*")
+                if f.is_file() and ".16k." not in f.name and f.suffix != ".txt"}
 
     def act(self, changed):
         ds = deals()
@@ -147,6 +148,53 @@ class Contradiction(Agent):
                 st = _state(); st.setdefault("flagged", {}).setdefault(deal, []).extend(new); _save(st)
 
 
+class Transcriber(Agent):
+    """Voice input: audio landing in the inbox (meeting recordings, expert calls,
+    voice memos) becomes a timestamped transcript — locally, via whisper.cpp;
+    nothing leaves the machine. The transcript is a new artifact: sentinel
+    announces it and /ingest extracts `observed` claims from it. This is how
+    Category-4 interaction data (the room nobody else was in) enters the graph."""
+    id = "transcriber"
+    activity_id = "HVA_COMMERCIAL_01"  # machine_assisted_extraction
+    watches = "vault/inbox (audio)"
+    AUDIO = {".m4a", ".mp3", ".wav", ".aiff", ".mp4", ".ogg", ".flac", ".webm"}
+    MODEL = ROOT / ".models" / "ggml-base.bin"
+
+    def snapshot(self):
+        return {str(f): f.stat().st_mtime for f in (VAULT / "inbox").glob("*")
+                if f.is_file() and f.suffix.lower() in self.AUDIO}
+
+    def act(self, changed):
+        import shutil
+        if not (shutil.which("whisper-cli") and self.MODEL.exists()):
+            audit(self.id, self.activity_id, "skipped",
+                  "whisper-cli or model missing (brew install whisper-cpp; model in .models/)", [])
+            return
+        for path in changed:
+            src = Path(path)
+            out = src.with_suffix("")  # whisper adds .txt
+            wav = src.with_suffix(".16k.wav")
+            try:
+                subprocess.run(["ffmpeg", "-y", "-loglevel", "error", "-i", str(src),
+                                "-ar", "16000", "-ac", "1", str(wav)], check=True, timeout=600)
+                subprocess.run(["whisper-cli", "-m", str(self.MODEL), "-f", str(wav),
+                                "-otxt", "-of", str(out), "--no-prints"],
+                               check=True, timeout=1800, capture_output=True)
+                text = out.with_suffix(".txt").read_text(encoding="utf-8").strip()
+                md = src.with_suffix(".transcript.md")
+                md.write_text(
+                    f"---\nsource-audio: {src.name}\ntranscribed: {datetime.now().isoformat(timespec='seconds')}\n"
+                    f"transcriber: whisper.cpp ggml-base (local)\nepistemic-default: observed\n---\n\n"
+                    f"# Transcript — {src.stem}\n\n{text}\n", encoding="utf-8")
+                out.with_suffix(".txt").unlink(missing_ok=True)
+                wav.unlink(missing_ok=True)
+                audit(self.id, self.activity_id, "transcribed",
+                      f"{src.name} → {md.name} ({len(text)} chars, local whisper)", [md.name])
+            except Exception as exc:
+                wav.unlink(missing_ok=True)
+                audit(self.id, self.activity_id, "error", f"{src.name}: {exc}", [])
+
+
 class Librarian(Agent):
     """The brain's custodian. Cross-deal, deterministic: whenever claims or
     questions change, it rebuilds each question-type's Evidence archive so that
@@ -201,7 +249,7 @@ def _save(st: dict):
 
 
 def main():
-    agents = [Sentinel(), StateResolver(), Contradiction(), Librarian()]
+    agents = [Sentinel(), StateResolver(), Contradiction(), Librarian(), Transcriber()]
     print("PE OS agent runtime — deployed agents:")
     for a in agents:
         print(f"  · {a.id:<15} watches {a.watches:<24} contract {a.activity_id} "

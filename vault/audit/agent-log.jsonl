@@ -5,3 +5,9 @@
 {"ts": "2026-07-12T20:12:53", "agent": "state-resolver", "contract_activity": "HVA_COMMERCIAL_02", "action": "state-derived", "detail": "aurora: S6_UNDERWRITING_VALUATION", "wrote": ["aurora/deal.md"]}
 {"ts": "2026-07-12T23:57:29", "agent": "runtime", "contract_activity": "-", "action": "deployed", "detail": "4 agents online", "wrote": []}
 {"ts": "2026-07-13T00:00:14", "agent": "librarian", "contract_activity": "HVA_COMMERCIAL_02", "action": "brain-archives-updated", "detail": "3 question-type archive(s): qt-retention-holds, qt-pipeline-quality, qt-revenue-plan-real", "wrote": ["qt-retention-holds", "qt-pipeline-quality", "qt-revenue-plan-real"]}
+{"ts": "2026-07-13T00:07:13", "agent": "runtime", "contract_activity": "-", "action": "deployed", "detail": "5 agents online", "wrote": []}
+{"ts": "2026-07-13T00:07:43", "agent": "sentinel", "contract_activity": "HVA_COMMERCIAL_01", "action": "artifact-announced", "detail": "expert-call-aurora.aiff", "wrote": ["ev-aurora-013"]}
+{"ts": "2026-07-13T00:07:43", "agent": "state-resolver", "contract_activity": "HVA_COMMERCIAL_02", "action": "state-derived", "detail": "aurora: S6_UNDERWRITING_VALUATION", "wrote": ["aurora/deal.md"]}
+{"ts": "2026-07-13T00:08:03", "agent": "transcriber", "contract_activity": "HVA_COMMERCIAL_01", "action": "transcribed", "detail": "expert-call-aurora.aiff \u2192 expert-call-aurora.transcript.md (300 chars, local whisper)", "wrote": ["expert-call-aurora.transcript.md"]}
+{"ts": "2026-07-13T00:08:06", "agent": "sentinel", "contract_activity": "HVA_COMMERCIAL_01", "action": "artifact-announced", "detail": "expert-call-aurora.transcript.md", "wrote": ["ev-aurora-014"]}
+{"ts": "2026-07-13T00:08:06", "agent": "state-resolver", "contract_activity": "HVA_COMMERCIAL_02", "action": "state-derived", "detail": "aurora: S6_UNDERWRITING_VALUATION", "wrote": ["aurora/deal.md"]}

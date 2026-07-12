@@ -42,6 +42,13 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-13 — Brain agents + voice input; 5 agents deployed
+- **Librarian** (deterministic, HVA_COMMERCIAL_02): maintains question-type Evidence archives cross-deal from the index — the upward flow deal→brain. Verified: 3 archives populated.
+- **Ask-the-brain** (`POST /api/agents/ask` + UI box): read-only headless Claude over the vault (tools Read/Grep/Glob only). Verified live: cited claims by id, weighed epistemic types, connected retention→growth dependency.
+- **Transcriber** (machine_assisted_extraction): audio in inbox → ffmpeg → whisper.cpp (local, `.models/ggml-base.bin`, 141MB, gitignored) → `*.transcript.md` with `epistemic-default: observed` → sentinel announces. Verified end-to-end with `say`-generated call audio. Upgrade path: ggml-small for accuracy. Sentinel now ignores `.16k.`/`.txt` temp files.
+- User directive: proceed without asking permission through project completion.
+- Deployed set now: sentinel · state-resolver · contradiction · librarian · transcriber.
+
 ### 2026-07-12 — Final contracts ingested; agent runtime deployed; repo tidied
 - `sources/domain-contracts-final/` (13 files, 19:49 package): 77 entities/964 fields, 46-transition state machine with predicate DSL, 877 permission policies/21 roles/24 authority actions, epistemic schemas (37 reasoning operators, 181 sufficiency rules, **114-row human-vs-automatable register**), 30 product requirements, enforce-vs-configure register. Per PR_030 these are machine contracts — loaded as data via `tools/contracts.py`, not hand-coded.
 - Engine now replays against final transitions + v1 aliases (70 rows merged). Repair precedence available from contracts.

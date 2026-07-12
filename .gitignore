@@ -8,3 +8,4 @@ __pycache__/
 # Obsidian workspace state (keep vault content, not app state)
 vault/.obsidian/workspace*.json
 vault/.obsidian/cache/
+.models/

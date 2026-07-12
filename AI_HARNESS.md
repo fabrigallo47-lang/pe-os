@@ -42,6 +42,11 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-12 — Workflow backbone V1 ingested
+- New source package in `sources/workflow-backbone-v1/`: 15-state deal lifecycle with deterministic state-resolution rules, 24 guarded transitions, typed 19-node/49-edge workstream dependency graph, 21 provisional object types, first-class unhappy paths (13 reason codes, skip/backtrack/revival).
+- Reconciliation with our ontology written in `docs/02-workflow-backbone-map.md`. Headline: the spec is the missing *process layer*; our vault stays the *reasoning layer* and the ontology-integration target (the spec says so itself). Keep epistemic typing + question-attachment; adopt state machine, ExceptionRecord, WorkflowEvent, risk-acceptance expiry/review triggers, LOAD_BEARING vs HABITUAL ordering flags.
+- Watch item: WorkstreamTask/Output risks reintroducing human-maintained fields — only adopt if derivable from events.
+
 ### 2026-07-10 — Roles-as-desks layer added
 - Fabrizio's idea: an agent per real-life role, activating to do the work and feed the brain. Refined to avoid cloning the org chart (which would re-import the silo problem the system exists to destroy): **roles are orchestration desks** — event triggers + invocable functional agents + authority profile + a named human counterpart. Functional agents remain the auditable unit; roles never own data.
 - Added `vault/ontology/role.md` + three v1 desks in `vault/roles/` (analyst, diligence coordinator, IC secretary). Portfolio desk and librarian deferred until those stages activate.

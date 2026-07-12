@@ -1,0 +1,1069 @@
+{
+  "version": {
+    "name": "PE Buyout Workflow Engineering Spec",
+    "version": "v1",
+    "scope": "State machine and typed workstream dependency graph for a private-equity buyout process.",
+    "status": "Implementation-ready workflow backbone; object types remain provisional until ontology integration."
+  },
+  "object_types_provisional": [
+    {
+      "type": "DealRecord",
+      "definition": "Canonical record for an investment opportunity or live position, including identity, ownership, process type, status, responsible owner, and linked workflow objects."
+    },
+    {
+      "type": "AccessGrant",
+      "definition": "Authorization record defining whether and how confidential materials may be received, stored, reviewed, shared, and used."
+    },
+    {
+      "type": "SourceMaterialSet",
+      "definition": "Versioned set of source materials and source claims received from a sponsor, seller, company, adviser, or public source."
+    },
+    {
+      "type": "ScreeningAssessment",
+      "definition": "Preliminary assessment that converts the source case into a resource-allocation decision, initial thesis, and initial risk set."
+    },
+    {
+      "type": "QuestionRegister",
+      "definition": "Living register of decision-relevant questions, owners, statuses, required evidence, answers, blockers, and escalation needs."
+    },
+    {
+      "type": "WorkstreamTask",
+      "definition": "Assigned unit of work linked to a question or required output, with owner, status, dependencies, due date, materiality, and completion criteria."
+    },
+    {
+      "type": "WorkstreamOutput",
+      "definition": "Typed deliverable from a diligence, control, execution, or monitoring workstream, including findings, evidence basis, materiality, and downstream consumers."
+    },
+    {
+      "type": "Assumption",
+      "definition": "Proposition about the company, market, economics, structure, or outcome that must be supported, tested, sensitivity-analyzed, risk-accepted, or revised."
+    },
+    {
+      "type": "EvidenceItem",
+      "definition": "Document, datapoint, analysis, response, call note, diligence finding, or external proof used to support, challenge, or supersede a claim or assumption."
+    },
+    {
+      "type": "RiskRecord",
+      "definition": "Structured risk with category, materiality, evidence basis, owner, mitigation, status, and decision or valuation impact."
+    },
+    {
+      "type": "RiskAcceptanceRecord",
+      "definition": "Explicit authority decision to proceed despite unresolved risk or uncertainty, including scope, rationale, conditions, owner, and expiry or review trigger."
+    },
+    {
+      "type": "ModelCase",
+      "definition": "Structured financial scenario such as base, downside, upside, sponsor, management, or re-underwritten case."
+    },
+    {
+      "type": "ValuationCase",
+      "definition": "Valuation and return construct linking the financial basis, operating assumptions, capital structure, security terms, exit assumptions, and return outputs."
+    },
+    {
+      "type": "DecisionRecord",
+      "definition": "Explicit authority decision with date, decision body, recommendation, outcome, conditions, allocation, and linked risk acceptances."
+    },
+    {
+      "type": "ExecutionDocumentSet",
+      "definition": "Version-controlled set of legal, tax, structuring, transaction, subscription, amendment, financing, or funding documents implementing an approved action."
+    },
+    {
+      "type": "PositionRecord",
+      "definition": "Post-close record of live or residual exposure, cost basis, ownership or security, cash flows, proceeds, obligations, and monitoring baseline."
+    },
+    {
+      "type": "MonitoringSignal",
+      "definition": "Detected or reported variance, event, KPI change, valuation movement, covenant issue, liquidity need, sale process, sponsor event, or review trigger that may require action."
+    },
+    {
+      "type": "ReunderwritingRecord",
+      "definition": "Current assessment comparing updated conditions with the prior underwriting baseline and recommending hold, sell, follow-on, rescue, restructure, impair, write off, or no action."
+    },
+    {
+      "type": "OutcomeRecord",
+      "definition": "Record of a realized, partially realized, impaired, restructured, written-off, or closed-position outcome, including economics and residual exposure."
+    },
+    {
+      "type": "ExceptionRecord",
+      "definition": "Structured record of a skipped state, backtrack, decline, stall, unresolved gate, late artifact, abandoned action, or other workflow deviation."
+    },
+    {
+      "type": "WorkflowEvent",
+      "definition": "Immutable event recording a state-relevant occurrence, actor, timestamp, related objects, and payload, and capable of triggering a workflow transition."
+    }
+  ],
+  "state_resolution": {
+    "principle": "A deal may have many active workstreams, but only one primary workflow state. Resolve the state from authoritative events, exposure status, and unresolved blockers rather than folder names or document labels.",
+    "priority_order": [
+      "If PositionRecord.status == 'closed', final capital effects are reconciled, and residual obligations are captured -> S13_CLOSED_ARCHIVE.",
+      "If an exit, realization, or write-off decision or process is active and the OutcomeRecord is not yet complete or routed to administration -> S12_EXIT_REALIZATION.",
+      "If a ReunderwritingRecord is active or a material MonitoringSignal remains unresolved -> S11_REUNDERWRITING.",
+      "If a signed, funded, proceeds, or write-off event exists and position or capital records remain unreconciled -> S9_CLOSING_ADMINISTRATION.",
+      "If a live or residual PositionRecord exists and no higher-priority workflow is unresolved -> S10_MONITORING.",
+      "If a terminal ExceptionRecord is active and no live or residual PositionRecord exists -> SX_TERMINATED_STALLED_DECLINED.",
+      "If an approved action is in legal, structuring, documentation, or signing -> S8_EXECUTION_DOCUMENTATION.",
+      "If a decision package is submitted or an authority decision is pending -> S7_INVESTMENT_DECISION.",
+      "If the final model or valuation is being prepared for decision -> S6_UNDERWRITING_VALUATION.",
+      "If diligence workstreams are active -> S5_DILIGENCE_ACTIVE.",
+      "If the QuestionRegister or workstream plan is active or reopened -> S4_QUESTION_PLANNING.",
+      "If a ScreeningAssessment is pending -> S3_SCREENING_ASSESSMENT.",
+      "If source materials are being indexed and claims extracted -> S2_CASE_INGESTION.",
+      "If confidential access is required and unresolved -> S1_ACCESS_CLEARANCE.",
+      "Otherwise, a new or unresolved opportunity -> S0_INTAKE."
+    ],
+    "state_conflict_rule": "When multiple states appear active, select the first state in the priority order whose unresolved condition is true. Do not use the most recently uploaded document as the state determinant.",
+    "document_label_rule": "Document labels are evidence, but never sufficient to set state. A state requires an authoritative event, decision, exposure status, or typed-artifact condition."
+  },
+  "states": [
+    {
+      "id": "S0_INTAKE",
+      "name": "Opportunity intake and identity resolution",
+      "purpose": "Create a canonical deal record and map the opportunity to the right company, sponsor/counterparty, vehicle, owner, and process context.",
+      "state_entry_condition": "DealRecord.status == 'new' OR DealRecord.canonical_identity_status != 'resolved'.",
+      "state_exit_condition": "DealRecord.canonical_identity_status == 'resolved' AND DealRecord.owner_id is not null AND DealRecord.process_type is assigned.",
+      "required_inputs": [
+        "opportunity_source",
+        "raw_company_or_project_name",
+        "counterparty_or_source",
+        "potential_vehicle_or_strategy"
+      ],
+      "required_outputs": [
+        "DealRecord",
+        "canonical_company_or_project_id",
+        "counterparty_id",
+        "owner_id",
+        "process_type"
+      ],
+      "allowed_parallel_workstreams": [],
+      "blocking_conditions": [
+        "duplicate_or_alias_conflict_unresolved",
+        "no_owner_assigned",
+        "vehicle_eligibility_unknown"
+      ],
+      "recognized_entry_events": [
+        "DEAL_REGISTERED",
+        "REVIVAL_REGISTERED"
+      ],
+      "recognized_exit_events": [
+        "IDENTITY_RESOLVED",
+        "OWNER_ASSIGNED",
+        "OUT_OF_SCOPE_ARCHIVED"
+      ],
+      "implementation_notes": "The engine should not permit more than one active canonical DealRecord for the same opportunity context unless an explicit related-process relationship is recorded.",
+      "terminal": false
+    },
+    {
+      "id": "S1_ACCESS_CLEARANCE",
+      "name": "Access and confidentiality clearance",
+      "purpose": "Determine whether the team may receive, store, review, and use non-public materials.",
+      "state_entry_condition": "DealRecord.requires_confidential_materials == true AND no AccessGrant.status in ['granted','waived_public_only'] exists.",
+      "state_exit_condition": "AccessGrant.status in ['granted','waived_public_only'] OR (AccessGrant.status == 'denied' AND ExceptionRecord exists).",
+      "required_inputs": [
+        "counterparty_id",
+        "material_confidentiality_level",
+        "NDA_or_access_terms_request"
+      ],
+      "required_outputs": [
+        "AccessGrant",
+        "confidentiality_class",
+        "permitted_use_scope",
+        "restricted_party_list_if_any"
+      ],
+      "allowed_parallel_workstreams": [
+        "public_screening",
+        "relationship_mapping"
+      ],
+      "blocking_conditions": [
+        "confidential_material_received_without_access_grant",
+        "restricted_party_conflict",
+        "NDA_not_executed_when_required"
+      ],
+      "recognized_entry_events": [
+        "CONFIDENTIAL_MATERIAL_REQUESTED",
+        "NDA_REQUESTED",
+        "DATA_ROOM_ACCESS_REQUESTED"
+      ],
+      "recognized_exit_events": [
+        "NDA_EXECUTED",
+        "DATA_ROOM_ACCESS_GRANTED",
+        "PUBLIC_ONLY_EXCEPTION_APPROVED",
+        "ACCESS_DENIED"
+      ],
+      "implementation_notes": "This state blocks ingestion of confidential source materials but does not block public or teaser-level screening.",
+      "terminal": false
+    },
+    {
+      "id": "S2_CASE_INGESTION",
+      "name": "Source case ingestion",
+      "purpose": "Ingest the sponsor/seller/company case and convert incoming materials into a structured set of claims to test.",
+      "state_entry_condition": "At least one SourceMaterialSet exists AND every included material has an access basis of 'granted' or 'waived_public_only'.",
+      "state_exit_condition": "SourceMaterialSet.index_status == 'indexed' AND initial_claims_extracted == true.",
+      "required_inputs": [
+        "AccessGrant_or_public_waiver",
+        "teaser_or_IM_or_management_presentation_or_process_materials"
+      ],
+      "required_outputs": [
+        "SourceMaterialSet",
+        "initial_claims",
+        "initial_fact_table",
+        "preliminary_process_timeline"
+      ],
+      "allowed_parallel_workstreams": [
+        "access_remediation",
+        "public_market_research"
+      ],
+      "blocking_conditions": [
+        "no_investable_case_material",
+        "material_set_not_indexed",
+        "key_source_provenance_unknown"
+      ],
+      "recognized_entry_events": [
+        "SOURCE_MATERIAL_RECEIVED",
+        "DATA_ROOM_MATERIAL_AVAILABLE"
+      ],
+      "recognized_exit_events": [
+        "CASE_MATERIAL_INDEXED",
+        "INITIAL_CLAIMS_EXTRACTED",
+        "INSUFFICIENT_INFORMATION_ARCHIVED"
+      ],
+      "implementation_notes": "Source claims must remain distinct from internal conclusions. The engine must not promote a source claim to validated evidence without an explicit validation link.",
+      "terminal": false
+    },
+    {
+      "id": "S3_SCREENING_ASSESSMENT",
+      "name": "Initial assessment and resource-allocation screen",
+      "purpose": "Decide whether the opportunity deserves diligence resources and define the initial investment question.",
+      "state_entry_condition": "SourceMaterialSet.index_status == 'indexed' AND ScreeningAssessment.status is null or 'draft'.",
+      "state_exit_condition": "ScreeningAssessment.decision in ['proceed_to_diligence','decline','defer','proceed_by_exception'].",
+      "required_inputs": [
+        "SourceMaterialSet",
+        "initial_claims",
+        "fund_fit",
+        "preliminary_economics",
+        "known_constraints"
+      ],
+      "required_outputs": [
+        "ScreeningAssessment",
+        "screening_decision",
+        "initial_thesis",
+        "initial_risks",
+        "initial_required_workstreams"
+      ],
+      "allowed_parallel_workstreams": [
+        "public_market_research",
+        "relationship_reference_checks",
+        "early_model_stub"
+      ],
+      "blocking_conditions": [
+        "no_screening_rationale_before_heavy_diligence",
+        "fund_fit_unresolved",
+        "material_conflict_not_cleared"
+      ],
+      "recognized_entry_events": [
+        "SCREENING_STARTED",
+        "INITIAL_ASSESSMENT_DRAFTED"
+      ],
+      "recognized_exit_events": [
+        "SCREENING_APPROVED",
+        "SCREENING_DECLINED",
+        "SCREENING_DEFERRED",
+        "SCREENING_EXCEPTION_APPROVED"
+      ],
+      "implementation_notes": "A lightweight screen is sufficient; the engine should not require a particular template but should require an explicit rationale or exception before costly diligence.",
+      "terminal": false
+    },
+    {
+      "id": "S4_QUESTION_PLANNING",
+      "name": "Question engine and diligence planning",
+      "purpose": "Convert uncertainty into owned questions, required evidence, and workstream tasks.",
+      "state_entry_condition": "ScreeningAssessment.decision in ['proceed_to_diligence','proceed_by_exception'] AND QuestionRegister.status in [null,'draft','reopened'].",
+      "state_exit_condition": "QuestionRegister.status == 'baselined' AND every critical question has an owner, status, evidence_needed, and target_workstream; any unresolved critical question is marked as blocking or as requiring a RiskAcceptanceRecord.",
+      "required_inputs": [
+        "ScreeningAssessment",
+        "initial_thesis",
+        "initial_risks",
+        "SourceMaterialSet"
+      ],
+      "required_outputs": [
+        "QuestionRegister",
+        "workstream_plan",
+        "critical_question_flags",
+        "risk_acceptance_requirements"
+      ],
+      "allowed_parallel_workstreams": [
+        "financial_qoe",
+        "commercial_market",
+        "management_sponsor",
+        "legal_tax_scoping",
+        "model_stub"
+      ],
+      "blocking_conditions": [
+        "critical_question_without_owner",
+        "critical_question_without_evidence_need",
+        "critical_question_without_target_workstream",
+        "question_register_not_updated_after_material_finding"
+      ],
+      "recognized_entry_events": [
+        "QUESTIONS_CREATED",
+        "DILIGENCE_PLAN_STARTED",
+        "MATERIAL_FINDING_REOPENED_QUESTION"
+      ],
+      "recognized_exit_events": [
+        "QUESTION_REGISTER_BASELINED",
+        "WORKSTREAMS_ASSIGNED",
+        "CRITICAL_QUESTION_RISK_ACCEPTANCE_REQUIRED"
+      ],
+      "implementation_notes": "This is an iterative state, not a one-time document. Material workstream findings and model gaps must be able to reopen it.",
+      "terminal": false
+    },
+    {
+      "id": "S5_DILIGENCE_ACTIVE",
+      "name": "Parallel diligence workstreams active",
+      "purpose": "Run financial, commercial, operational, management, legal, tax, financing, and structuring workstreams to test questions and assumptions.",
+      "state_entry_condition": "QuestionRegister.status in ['baselined','reopened'] AND at least one WorkstreamTask.status == 'active'.",
+      "state_exit_condition": "All critical WorkstreamTask.status values are in ['complete','waived','risk_accepted'] AND every material WorkstreamOutput is linked to a QuestionRegister item, Assumption, RiskRecord, or ValuationCase.",
+      "required_inputs": [
+        "QuestionRegister",
+        "workstream_plan",
+        "SourceMaterialSet",
+        "diligence_access"
+      ],
+      "required_outputs": [
+        "WorkstreamOutput",
+        "EvidenceItem",
+        "Assumption updates",
+        "RiskRecord updates",
+        "new_or_resolved_questions"
+      ],
+      "allowed_parallel_workstreams": [
+        "financial_qoe",
+        "commercial_market",
+        "operational",
+        "management_sponsor",
+        "legal",
+        "tax",
+        "financing",
+        "structuring",
+        "valuation_stub"
+      ],
+      "blocking_conditions": [
+        "critical_workstream_incomplete",
+        "material_finding_unassigned",
+        "evidence_gap_on_model_critical_assumption",
+        "legal_red_flag_unresolved_when_signing_relevant"
+      ],
+      "recognized_entry_events": [
+        "WORKSTREAM_STARTED",
+        "DILIGENCE_MATERIAL_RECEIVED"
+      ],
+      "recognized_exit_events": [
+        "WORKSTREAM_COMPLETE",
+        "WORKSTREAM_WAIVED",
+        "MATERIAL_FINDING_REOPENS_QUESTION",
+        "DILIGENCE_RED_FLAG_UNACCEPTED"
+      ],
+      "implementation_notes": "The engine should represent diligence as a set of parallel tasks with typed outputs, not as a single stage checklist.",
+      "terminal": false
+    },
+    {
+      "id": "S6_UNDERWRITING_VALUATION",
+      "name": "Model, valuation and return underwriting",
+      "purpose": "Convert tested assumptions into economics, downside/upside cases, capital structure, security terms, and return analysis.",
+      "state_entry_condition": "At least one ModelCase.status is in ['draft','active'].",
+      "state_exit_condition": "ValuationCase.status == 'IC_ready' AND every model-critical assumption is supported, sensitivity-tested, or linked to a RiskAcceptanceRecord.",
+      "required_inputs": [
+        "normalized_financial_basis",
+        "commercial_assumptions",
+        "operating_assumptions",
+        "capital_structure",
+        "security_terms",
+        "tax_structure",
+        "exit_assumptions"
+      ],
+      "required_outputs": [
+        "ModelCase",
+        "ValuationCase",
+        "return_sensitivities",
+        "value_creation_bridge",
+        "downside_case",
+        "IC_economics_summary"
+      ],
+      "allowed_parallel_workstreams": [
+        "legal_terms_review",
+        "IC_package_drafting",
+        "remaining_question_resolution"
+      ],
+      "blocking_conditions": [
+        "final_valuation_without_verified_financial_basis",
+        "unsupported_growth_or_margin_assumption",
+        "security_terms_missing",
+        "downside_case_absent_for_material_risk"
+      ],
+      "recognized_entry_events": [
+        "MODEL_STARTED",
+        "VALUATION_WORK_STARTED",
+        "DILIGENCE_OUTPUT_LINKED_TO_MODEL"
+      ],
+      "recognized_exit_events": [
+        "FINAL_MODEL_APPROVED_FOR_IC",
+        "MODEL_CRITICAL_GAP_FOUND",
+        "VALUATION_FAILS_RETURN_THRESHOLD"
+      ],
+      "implementation_notes": "Early models may run in parallel with diligence; only final IC-ready valuation is blocked by missing model-critical workstream outputs.",
+      "terminal": false
+    },
+    {
+      "id": "S7_INVESTMENT_DECISION",
+      "name": "Investment decision / approval gate",
+      "purpose": "Approve, decline, defer, or condition the investment decision based on evidence, economics, risks, and unresolved questions.",
+      "state_entry_condition": "ValuationCase.status == 'IC_ready' AND IC_package_or_equivalent exists.",
+      "state_exit_condition": "DecisionRecord.decision in ['approved','declined','deferred','approved_with_conditions'].",
+      "required_inputs": [
+        "IC_package_or_equivalent",
+        "ValuationCase",
+        "QuestionRegister",
+        "risk_register",
+        "workstream_outputs",
+        "requested_allocation"
+      ],
+      "required_outputs": [
+        "DecisionRecord",
+        "approval_conditions",
+        "RiskAcceptanceRecord",
+        "allocation_or_decline_reason"
+      ],
+      "allowed_parallel_workstreams": [
+        "legal_document_preparation_under_condition",
+        "confirmatory_diligence"
+      ],
+      "blocking_conditions": [
+        "critical_question_unanswered_without_risk_acceptance",
+        "final_model_absent",
+        "decision_authority_missing",
+        "approval_conditions_untracked"
+      ],
+      "recognized_entry_events": [
+        "IC_PACKAGE_SUBMITTED",
+        "DECISION_MEETING_SCHEDULED"
+      ],
+      "recognized_exit_events": [
+        "IC_APPROVED",
+        "IC_DECLINED",
+        "IC_DEFERRED",
+        "IC_APPROVED_WITH_CONDITIONS"
+      ],
+      "implementation_notes": "This state is not merely document generation; it is an authority event. The engine must record who decided, under what conditions, and with which unresolved risks accepted.",
+      "terminal": false
+    },
+    {
+      "id": "S8_EXECUTION_DOCUMENTATION",
+      "name": "Structuring, legal documentation and signing",
+      "purpose": "Translate approved economics and rights into executable documents and conditions.",
+      "state_entry_condition": "DecisionRecord.decision in ['approved','approved_with_conditions'] AND ExecutionDocumentSet.status in [null,'draft','negotiation'].",
+      "state_exit_condition": "ExecutionDocumentSet.status == 'signed' OR (ExecutionDocumentSet.status == 'execution_abandoned' AND ExceptionRecord exists); every material deviation from DecisionRecord is absent, waived, or re-approved.",
+      "required_inputs": [
+        "DecisionRecord",
+        "approved_terms",
+        "legal_findings",
+        "tax_structure_if_material",
+        "security_terms",
+        "conditions_precedent"
+      ],
+      "required_outputs": [
+        "ExecutionDocumentSet",
+        "signed_or_execution_status",
+        "conditions_tracker",
+        "deviation_record"
+      ],
+      "allowed_parallel_workstreams": [
+        "closing_admin_preparation",
+        "remaining_CP_collection"
+      ],
+      "blocking_conditions": [
+        "legal_authority_missing",
+        "terms_deviate_from_approval_without_reapproval",
+        "material_tax_issue_unresolved",
+        "document_version_not_final"
+      ],
+      "recognized_entry_events": [
+        "DOCUMENTATION_STARTED",
+        "TERM_SHEET_OR_SUBSCRIPTION_PREPARED",
+        "LEGAL_DRAFT_RECEIVED"
+      ],
+      "recognized_exit_events": [
+        "DOCUMENTS_SIGNED",
+        "MATERIAL_TERMS_CHANGED",
+        "SIGNING_FAILED",
+        "EXECUTION_ABANDONED"
+      ],
+      "implementation_notes": "Legal is a hard blocker for signing. Tax is a hard blocker only when material to economics, liability, filing status, or vehicle choice.",
+      "terminal": false
+    },
+    {
+      "id": "S9_CLOSING_ADMINISTRATION",
+      "name": "Closing and capital administration",
+      "purpose": "Record the binding investment, funding, cost basis, ownership/security, proceeds, and capital account effects.",
+      "state_entry_condition": "(ExecutionDocumentSet.status == 'signed' AND a closing workflow is active) OR a funding, proceeds, partial-realization, or write-off event exists.",
+      "state_exit_condition": "PositionRecord.status is in ['live','closed','residual'] AND cash, capital-account, ownership-or-security, and proceeds effects are reconciled.",
+      "required_inputs": [
+        "signed_documents_or_realization_event",
+        "funding_instruction",
+        "capital_call_or_distribution_notice",
+        "ownership/security terms"
+      ],
+      "required_outputs": [
+        "PositionRecord",
+        "cost_basis",
+        "ownership_or_security_record",
+        "cash_flow_record",
+        "monitoring_baseline"
+      ],
+      "allowed_parallel_workstreams": [
+        "post_close_reporting_setup",
+        "monitoring_template_setup"
+      ],
+      "blocking_conditions": [
+        "funding_without_executed_authority",
+        "cost_basis_missing_after_close",
+        "ownership_or_security_record_missing",
+        "proceeds_unreconciled_after_exit"
+      ],
+      "recognized_entry_events": [
+        "CLOSING_NOTICE_RECEIVED",
+        "FUNDING_COMPLETED",
+        "CAPITAL_ACCOUNT_UPDATED",
+        "REALIZATION_PROCEEDS_RECEIVED"
+      ],
+      "recognized_exit_events": [
+        "POSITION_OPENED",
+        "POSITION_UPDATED",
+        "POSITION_CLOSED",
+        "RESIDUAL_EXPOSURE_RECORDED"
+      ],
+      "implementation_notes": "This state applies both after initial investment and after follow-on, rescue, restructuring, partial exit, or full realization.",
+      "terminal": false
+    },
+    {
+      "id": "S10_MONITORING",
+      "name": "Monitoring and portfolio reporting",
+      "purpose": "Track live exposure against underwriting baseline, valuation, performance, covenants, liquidity, and exit conditions.",
+      "state_entry_condition": "PositionRecord.status in ['live','residual'] AND no higher-priority re-underwriting, exit-realization, or administration workflow is unresolved.",
+      "state_exit_condition": "A material MonitoringSignal or new decision need opens re-underwriting; a sale or realization event opens exit realization; PositionRecord.status == 'closed' opens archive routing.",
+      "required_inputs": [
+        "PositionRecord",
+        "underwriting_baseline",
+        "periodic_reporting",
+        "valuation_mark",
+        "cash_flow_activity"
+      ],
+      "required_outputs": [
+        "MonitoringSignal",
+        "updated_KPI_view",
+        "valuation_mark",
+        "variance_to_underwriting",
+        "trigger_assessment"
+      ],
+      "allowed_parallel_workstreams": [
+        "valuation_marking",
+        "board_reporting",
+        "exit_market_observation"
+      ],
+      "blocking_conditions": [
+        "live_position_without_monitoring_baseline",
+        "material_variance_not_triaged",
+        "new_money_request_without_reunderwriting"
+      ],
+      "recognized_entry_events": [
+        "POSITION_OPENED",
+        "PERIODIC_REPORT_RECEIVED",
+        "BOARD_PACK_RECEIVED",
+        "VALUATION_MARK_UPDATED"
+      ],
+      "recognized_exit_events": [
+        "MATERIAL_VARIANCE_TRIGGERED",
+        "FOLLOW_ON_REQUEST_RECEIVED",
+        "EXIT_PROCESS_TRIGGERED",
+        "POSITION_CLOSED"
+      ],
+      "implementation_notes": "Monitoring is a live loop. It should not be modeled as a passive file repository.",
+      "terminal": false
+    },
+    {
+      "id": "S11_REUNDERWRITING",
+      "name": "Re-underwriting and outcome calibration",
+      "purpose": "Compare current evidence to prior underwriting and decide hold, sell, follow-on, rescue, restructure, impair, or no action.",
+      "state_entry_condition": "MonitoringSignal.materiality in ['material','trigger'] OR a follow-on request, liquidity or covenant issue, exit opportunity, impairment indicator, or time-based review requires a new decision.",
+      "state_exit_condition": "ReunderwritingRecord.recommendation is resolved AND any required DecisionRecord is resolved for a material action.",
+      "required_inputs": [
+        "MonitoringSignal",
+        "original_underwriting_baseline",
+        "current_financials_or_KPIs",
+        "current_valuation",
+        "capital_need_or_exit_context_if_any"
+      ],
+      "required_outputs": [
+        "ReunderwritingRecord",
+        "updated_assumptions",
+        "old_money_vs_new_money_analysis_if_applicable",
+        "outcome_recommendation",
+        "approval_requirement"
+      ],
+      "allowed_parallel_workstreams": [
+        "valuation_refresh",
+        "legal_restructure_scoping",
+        "exit_preparation",
+        "capital_admin_scenarioing"
+      ],
+      "blocking_conditions": [
+        "update_report_treated_as_exit_without_explicit_exit_decision",
+        "new_money_without_old_vs_new_money_analysis",
+        "material_action_without_approval_route",
+        "monitoring_trigger_unresolved"
+      ],
+      "recognized_entry_events": [
+        "MATERIAL_VARIANCE_TRIGGERED",
+        "FOLLOW_ON_REQUEST_RECEIVED",
+        "COVENANT_OR_LIQUIDITY_ISSUE_TRIGGERED",
+        "EXIT_OPPORTUNITY_TRIGGERED",
+        "TIME_BASED_REVIEW_TRIGGERED"
+      ],
+      "recognized_exit_events": [
+        "HOLD_DECISION_RESETS_MONITORING",
+        "FOLLOW_ON_APPROVED",
+        "RESCUE_APPROVED",
+        "SELL_APPROVED",
+        "SUPPORT_DECLINED",
+        "IMPAIRMENT_RECORDED",
+        "RESTRUCTURE_APPROVED"
+      ],
+      "implementation_notes": "An update or re-underwriting record remains a re-underwriting object unless it contains an explicit sell, realization, or write-off decision.",
+      "terminal": false
+    },
+    {
+      "id": "S12_EXIT_REALIZATION",
+      "name": "Exit, realization and outcome decision",
+      "purpose": "Execute or evaluate a sale, partial sale, realization, write-off, or terminal outcome based on current outcome-calibration analysis.",
+      "state_entry_condition": "ReunderwritingRecord.recommendation in ['sell','exit','write_off'] with required authority approval, OR an external sale-process or realization event exists.",
+      "state_exit_condition": "OutcomeRecord.status in ['realized','partially_realized','deferred_hold','written_off'] AND capital_admin_update_required is routed.",
+      "required_inputs": [
+        "sell_or_hold_rationale",
+        "current_valuation_or_bid",
+        "return_bridge",
+        "liquidity_path",
+        "residual_exposure_assessment"
+      ],
+      "required_outputs": [
+        "OutcomeRecord",
+        "sell_hold_decision",
+        "proceeds_or_writeoff_status",
+        "residual_exposure_flag",
+        "lessons_learned_if_available"
+      ],
+      "allowed_parallel_workstreams": [
+        "capital_admin",
+        "tax_legal_exit_review",
+        "monitoring_residual_exposure"
+      ],
+      "blocking_conditions": [
+        "exit_classified_from_label_only",
+        "sell_decision_without_current_return_bridge",
+        "realization_without_capital_admin_update",
+        "residual_exposure_not_recorded"
+      ],
+      "recognized_entry_events": [
+        "SELL_APPROVED",
+        "EXIT_APPROVED",
+        "WRITE_OFF_APPROVED",
+        "SALE_PROCESS_STARTED",
+        "REALIZATION_EVENT_OCCURRED"
+      ],
+      "recognized_exit_events": [
+        "FULL_REALIZATION_RECORDED",
+        "PARTIAL_REALIZATION_RECORDED",
+        "EXIT_DEFERRED_TO_MONITORING",
+        "WRITE_OFF_RECORDED"
+      ],
+      "implementation_notes": "The workflow must distinguish current outcome-calibration analysis from generic update reports. Exit is a recommendation/event, not a filename pattern.",
+      "terminal": false
+    },
+    {
+      "id": "S13_CLOSED_ARCHIVE",
+      "name": "Closed-position archive and realized outcome record",
+      "purpose": "Close the workflow when exposure is zero or explicitly archived with residual obligations captured.",
+      "state_entry_condition": "(PositionRecord.status == 'closed' OR OutcomeRecord.status in ['fully_realized','written_off']) AND residual_obligations_status in ['none','captured'] AND final capital effects are reconciled.",
+      "state_exit_condition": "Terminal state; can only reopen through REVIVAL_OR_CORRECTION_EVENT.",
+      "required_inputs": [
+        "OutcomeRecord",
+        "final_capital_account_or_proceeds_record",
+        "residual_obligations_assessment"
+      ],
+      "required_outputs": [
+        "closed_position_record",
+        "realized_return_record",
+        "archive_index",
+        "lessons_learned_link_if_available"
+      ],
+      "allowed_parallel_workstreams": [],
+      "blocking_conditions": [
+        "residual_obligation_unknown",
+        "final_proceeds_unreconciled",
+        "realized_return_record_missing"
+      ],
+      "recognized_entry_events": [
+        "POSITION_CLOSED",
+        "FINAL_PROCEEDS_RECONCILED",
+        "WRITE_OFF_FINALIZED"
+      ],
+      "recognized_exit_events": [
+        "REOPENED_FOR_CORRECTION",
+        "REOPENED_FOR_RESIDUAL_OBLIGATION"
+      ],
+      "implementation_notes": "Closed does not mean forgotten; it means no live investment workflow remains except correction or residual obligations.",
+      "terminal": true
+    },
+    {
+      "id": "SX_TERMINATED_STALLED_DECLINED",
+      "name": "Terminated, stalled, declined or abandoned path",
+      "purpose": "Record a negative or inactive process outcome with reason code and revival conditions.",
+      "state_entry_condition": "(DecisionRecord.decision == 'declined' OR ExceptionRecord.reason in ['access_denied','diligence_red_flag','terms_changed','timing_missed','process_lost','stalled','out_of_scope','support_declined']) AND no live or residual PositionRecord exists.",
+      "state_exit_condition": "Terminal unless RevivalEvent.exists == true with new material evidence, terms, process access, or authority approval.",
+      "required_inputs": [
+        "reason_code",
+        "exception_scope",
+        "last_active_state",
+        "owner_or_authority",
+        "evidence_or_rationale",
+        "revival_condition_if_any"
+      ],
+      "required_outputs": [
+        "ExceptionRecord",
+        "archive_status",
+        "revival_rule",
+        "lessons_or_no_action_reason"
+      ],
+      "allowed_parallel_workstreams": [],
+      "blocking_conditions": [
+        "no_reason_code",
+        "declined_or_stalled_without_last_active_stage",
+        "revived_without_new_trigger"
+      ],
+      "recognized_entry_events": [
+        "PASS_DECISION",
+        "PROCESS_STALLED",
+        "ACCESS_DENIED",
+        "TERMS_CHANGED_NEGATIVELY",
+        "DILIGENCE_RED_FLAG_UNACCEPTED",
+        "FOLLOW_ON_SUPPORT_DECLINED"
+      ],
+      "recognized_exit_events": [
+        "REVIVED_BY_NEW_EVIDENCE",
+        "ARCHIVED_FINAL"
+      ],
+      "implementation_notes": "A declined or abandoned action on a live position does not terminate the deal. Record the branch exception and return the position to monitoring or re-underwriting.",
+      "terminal": true
+    }
+  ],
+  "transitions": [
+    {
+      "id": "T00",
+      "from": "START",
+      "to": "S0_INTAKE",
+      "trigger_event": "DEAL_REGISTERED",
+      "guard_condition": "No active canonical DealRecord exists for the same opportunity, or an explicit related-process record is required.",
+      "transition_action": "Create DealRecord; resolve or queue identity matching; assign preliminary owner and process type.",
+      "edge_type": "BLOCKS_NEXT_STATE",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If duplicate identity unresolved, remain in S0 with duplicate_conflict flag."
+    },
+    {
+      "id": "T01",
+      "from": "S0_INTAKE",
+      "to": "S1_ACCESS_CLEARANCE",
+      "trigger_event": "CONFIDENTIAL_MATERIAL_REQUIRED",
+      "guard_condition": "DealRecord.identity_resolved == true AND confidential material is needed before further case review.",
+      "transition_action": "Open access/NDA task; block confidential ingestion until resolved.",
+      "edge_type": "BLOCKS_CONFIDENTIAL_INGESTION",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If only public/teaser review is needed, bypass to S2 with public_only waiver."
+    },
+    {
+      "id": "T02",
+      "from": "S0_INTAKE",
+      "to": "S2_CASE_INGESTION",
+      "trigger_event": "PUBLIC_OR_TEASER_MATERIAL_AVAILABLE",
+      "guard_condition": "DealRecord.identity_resolved == true AND AccessGrant.status == 'waived_public_only'.",
+      "transition_action": "Ingest public/teaser materials and mark confidentiality basis.",
+      "edge_type": "ALLOWED_SKIP_WITH_WAIVER",
+      "load_bearing_or_habitual": "CONDITIONAL_LOAD_BEARING",
+      "exception_route": "If confidential materials arrive, route back to S1."
+    },
+    {
+      "id": "T03",
+      "from": "S1_ACCESS_CLEARANCE",
+      "to": "S2_CASE_INGESTION",
+      "trigger_event": "ACCESS_GRANTED or NDA_EXECUTED or PUBLIC_ONLY_EXCEPTION_APPROVED",
+      "guard_condition": "AccessGrant.status in ['granted','waived_public_only'].",
+      "transition_action": "Permit source material ingestion under confidentiality rules.",
+      "edge_type": "BLOCKS_NEXT_STATE",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "ACCESS_DENIED routes to SX with reason_code='access_denied'."
+    },
+    {
+      "id": "T04",
+      "from": "S2_CASE_INGESTION",
+      "to": "S3_SCREENING_ASSESSMENT",
+      "trigger_event": "CASE_MATERIAL_INDEXED",
+      "guard_condition": "SourceMaterialSet.index_status == 'indexed' AND initial_claims_extracted == true.",
+      "transition_action": "Generate or request ScreeningAssessment.",
+      "edge_type": "BLOCKS_SCREENING",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If source materials insufficient, route to SX or remain S2 with information_request_pending."
+    },
+    {
+      "id": "T05",
+      "from": "S3_SCREENING_ASSESSMENT",
+      "to": "S4_QUESTION_PLANNING",
+      "trigger_event": "SCREENING_APPROVED or SCREENING_EXCEPTION_APPROVED",
+      "guard_condition": "ScreeningAssessment.decision in ['proceed_to_diligence','proceed_by_exception'].",
+      "transition_action": "Initialize QuestionRegister and workstream plan.",
+      "edge_type": "BLOCKS_HEAVY_DILIGENCE",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "Screening declined routes to SX. Deferred remains S3 with deferred_reason."
+    },
+    {
+      "id": "T06",
+      "from": "S4_QUESTION_PLANNING",
+      "to": "S5_DILIGENCE_ACTIVE",
+      "trigger_event": "WORKSTREAMS_ASSIGNED",
+      "guard_condition": "QuestionRegister.status == 'baselined' AND every critical question has an owner, evidence requirement, and target workstream.",
+      "transition_action": "Start active workstream tasks; create dependency graph instance for deal.",
+      "edge_type": "BLOCKS_UNCONTROLLED_DILIGENCE",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "In an accelerated process, allow S5 with an ExceptionRecord, but block S7 until unresolved critical questions are answered or covered by a RiskAcceptanceRecord."
+    },
+    {
+      "id": "T07",
+      "from": "S5_DILIGENCE_ACTIVE",
+      "to": "S4_QUESTION_PLANNING",
+      "trigger_event": "MATERIAL_FINDING_REOPENS_QUESTION",
+      "guard_condition": "WorkstreamOutput.materiality == 'material' AND finding affects thesis/risk/valuation/terms.",
+      "transition_action": "Reopen QuestionRegister; assign new question and owner; mark downstream blockers.",
+      "edge_type": "ITERATIVE_RETURN",
+      "load_bearing_or_habitual": "CONDITIONAL_LOAD_BEARING",
+      "exception_route": "If finding immaterial, log as note and continue S5."
+    },
+    {
+      "id": "T08",
+      "from": "S5_DILIGENCE_ACTIVE",
+      "to": "S6_UNDERWRITING_VALUATION",
+      "trigger_event": "CRITICAL_WORKSTREAMS_COMPLETE_OR_ACCEPTED",
+      "guard_condition": "All critical WorkstreamTask.status values are in ['complete','waived','risk_accepted']; every material finding is linked to a question, assumption, risk, or valuation input.",
+      "transition_action": "Promote model/valuation to IC-ready preparation.",
+      "edge_type": "BLOCKS_FINAL_VALUATION",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If valuation starts earlier, S5 and S6 may run in parallel with ValuationCase.status == 'draft'; S7 remains blocked until the final guard is satisfied."
+    },
+    {
+      "id": "T09",
+      "from": "S6_UNDERWRITING_VALUATION",
+      "to": "S4_QUESTION_PLANNING",
+      "trigger_event": "MODEL_CRITICAL_GAP_FOUND",
+      "guard_condition": "ValuationCase.sensitivity or ModelCase assumption lacks evidence and affects returns/downside/decision.",
+      "transition_action": "Create model-driven question; route to appropriate workstream.",
+      "edge_type": "ITERATIVE_RETURN",
+      "load_bearing_or_habitual": "CONDITIONAL_LOAD_BEARING",
+      "exception_route": "If the gap is explicitly accepted by the required authority, create a RiskAcceptanceRecord and continue."
+    },
+    {
+      "id": "T10",
+      "from": "S6_UNDERWRITING_VALUATION",
+      "to": "S7_INVESTMENT_DECISION",
+      "trigger_event": "FINAL_MODEL_APPROVED_FOR_IC",
+      "guard_condition": "ValuationCase.status == 'IC_ready' AND every critical question is answered or linked to a RiskAcceptanceRecord.",
+      "transition_action": "Submit decision package; lock current evidence/model snapshot.",
+      "edge_type": "BLOCKS_DECISION",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If a package is submitted with unresolved critical questions, create a decision blocker unless the required authority records a RiskAcceptanceRecord."
+    },
+    {
+      "id": "T11",
+      "from": "S7_INVESTMENT_DECISION",
+      "to": "S8_EXECUTION_DOCUMENTATION",
+      "trigger_event": "IC_APPROVED or APPROVED_WITH_CONDITIONS",
+      "guard_condition": "DecisionRecord.decision in ['approved','approved_with_conditions'] AND conditions are tracked.",
+      "transition_action": "Start legal/structuring execution; copy approved economic terms into documentation checklist.",
+      "edge_type": "BLOCKS_SIGNING",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If declined route to SX; if deferred route to S4/S5/S6 based on condition type."
+    },
+    {
+      "id": "T12",
+      "from": "S8_EXECUTION_DOCUMENTATION",
+      "to": "S7_INVESTMENT_DECISION",
+      "trigger_event": "MATERIAL_TERMS_CHANGED",
+      "guard_condition": "Execution terms deviate from approved economics, rights, security, tax, or risk protections.",
+      "transition_action": "Route deviation for re-approval; block signing/funding until resolved.",
+      "edge_type": "BACKTRACK_REQUIRED",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If deviation immaterial, record counsel/owner waiver and continue S8."
+    },
+    {
+      "id": "T13",
+      "from": "S8_EXECUTION_DOCUMENTATION",
+      "to": "S9_CLOSING_ADMINISTRATION",
+      "trigger_event": "DOCUMENTS_SIGNED or CLOSING_NOTICE_RECEIVED or FUNDING_COMPLETED",
+      "guard_condition": "ExecutionDocumentSet.status == 'signed' AND required conditions are satisfied or explicitly waived.",
+      "transition_action": "Record funding, cost basis, ownership or security, and open or update PositionRecord.",
+      "edge_type": "BLOCKS_POSITION_CREATION",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If signing fails or conditions not satisfied, remain S8 or route SX with execution_failed."
+    },
+    {
+      "id": "T14",
+      "from": "S9_CLOSING_ADMINISTRATION",
+      "to": "S10_MONITORING",
+      "trigger_event": "POSITION_OPENED or POSITION_UPDATED",
+      "guard_condition": "PositionRecord.status in ['live','residual'] AND monitoring baseline exists.",
+      "transition_action": "Start monitoring cadence; create KPI/valuation/cash-flow tasks.",
+      "edge_type": "BLOCKS_MONITORING_BASELINE",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If cost basis or baseline missing, keep S9 blocker until completed."
+    },
+    {
+      "id": "T15",
+      "from": "S10_MONITORING",
+      "to": "S11_REUNDERWRITING",
+      "trigger_event": "MATERIAL_VARIANCE_TRIGGERED or FOLLOW_ON_REQUEST_RECEIVED or COVENANT_OR_LIQUIDITY_ISSUE_TRIGGERED or EXIT_OPPORTUNITY_TRIGGERED or TIME_BASED_REVIEW_TRIGGERED",
+      "guard_condition": "MonitoringSignal.materiality in ['material','trigger'] OR new decision need exists.",
+      "transition_action": "Open ReunderwritingRecord; compare current facts to prior underwriting.",
+      "edge_type": "TRIGGERED_LOOP",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If signal immaterial, log in monitoring and continue S10."
+    },
+    {
+      "id": "T16",
+      "from": "S11_REUNDERWRITING",
+      "to": "S10_MONITORING",
+      "trigger_event": "HOLD_DECISION or NO_ACTION_DECISION or SUPPORT_DECLINED_BUT_POSITION_LIVE",
+      "guard_condition": "ReunderwritingRecord.recommendation in ['hold','defer','decline_support'] AND PositionRecord.status in ['live','residual'].",
+      "transition_action": "Update monitoring baseline, risk flags, and unresolved questions.",
+      "edge_type": "LOOP_RETURN",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If decline support creates terminal/no exposure outcome, route SX or S13 based on exposure."
+    },
+    {
+      "id": "T17",
+      "from": "S11_REUNDERWRITING",
+      "to": "S8_EXECUTION_DOCUMENTATION",
+      "trigger_event": "FOLLOW_ON_APPROVED or RESCUE_APPROVED or RESTRUCTURE_APPROVED",
+      "guard_condition": "Material action approved AND updated terms/security/rights require documentation.",
+      "transition_action": "Open follow-on/rescue/restructure execution branch; require old-money vs new-money analysis link.",
+      "edge_type": "EXECUTION_BRANCH",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If action is rejected, route to S10 or SX with reason."
+    },
+    {
+      "id": "T18",
+      "from": "S11_REUNDERWRITING",
+      "to": "S12_EXIT_REALIZATION",
+      "trigger_event": "SELL_APPROVED or EXIT_APPROVED or WRITE_OFF_APPROVED",
+      "guard_condition": "The required authority has approved the action and current outcome analysis supports the sell, exit, or write-off decision.",
+      "transition_action": "Open exit/realization workflow; require return bridge and residual exposure assessment.",
+      "edge_type": "OUTCOME_BRANCH",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If sale deferred, return to S10 with exit_watch flag."
+    },
+    {
+      "id": "T19",
+      "from": "S12_EXIT_REALIZATION",
+      "to": "S9_CLOSING_ADMINISTRATION",
+      "trigger_event": "REALIZATION_EVENT_OCCURRED or PROCEEDS_RECEIVED or WRITE_OFF_RECORDED",
+      "guard_condition": "OutcomeRecord.status in ['realized','partially_realized','written_off'] AND admin update required.",
+      "transition_action": "Record proceeds/write-off/cost basis effects; determine residual exposure.",
+      "edge_type": "CAPITAL_ADMIN_BRANCH",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If proceeds or exposure unclear, keep S12/S9 blocker until reconciled."
+    },
+    {
+      "id": "T20",
+      "from": "S12_EXIT_REALIZATION",
+      "to": "S10_MONITORING",
+      "trigger_event": "PARTIAL_REALIZATION_RECORDED or EXIT_DEFERRED_TO_HOLD",
+      "guard_condition": "OutcomeRecord.status in ['partially_realized','deferred_hold'] OR residual exposure remains.",
+      "transition_action": "Return residual exposure to monitoring with revised baseline.",
+      "edge_type": "RESIDUAL_LOOP",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If exposure zero, route to S13 after admin reconciliation."
+    },
+    {
+      "id": "T21",
+      "from": "S9_CLOSING_ADMINISTRATION",
+      "to": "S13_CLOSED_ARCHIVE",
+      "trigger_event": "POSITION_CLOSED or FINAL_PROCEEDS_RECONCILED or WRITE_OFF_FINALIZED",
+      "guard_condition": "PositionRecord.status == 'closed' AND residual_obligations_status in ['none','captured'] AND final capital or proceeds effects are reconciled.",
+      "transition_action": "Archive closed position; record realized outcome.",
+      "edge_type": "TERMINAL_CLOSE",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If residual obligations remain, keep residual monitoring state."
+    },
+    {
+      "id": "T22",
+      "from": "ANY",
+      "to": "SX_TERMINATED_STALLED_DECLINED",
+      "trigger_event": "PASS_DECISION or PROCESS_STALLED or ACCESS_DENIED or TERMS_CHANGED_NEGATIVELY or DILIGENCE_RED_FLAG_UNACCEPTED or PROCESS_LOST",
+      "guard_condition": "Owner or decision authority records reason_code and last_active_state AND no live or residual PositionRecord remains for the opportunity.",
+      "transition_action": "Archive with reason and revival condition; preserve evidence trail.",
+      "edge_type": "UNHAPPY_PATH",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If a live or residual position remains, record a branch-level ExceptionRecord and return to S10 or S11 rather than terminating the deal."
+    },
+    {
+      "id": "T23",
+      "from": "SX_TERMINATED_STALLED_DECLINED",
+      "to": "S0_INTAKE",
+      "trigger_event": "REVIVED_BY_NEW_EVIDENCE or REVIVED_BY_NEW_PROCESS",
+      "guard_condition": "A WorkflowEvent records new material evidence, renewed access, revised terms, or authority approval sufficient to reopen the opportunity.",
+      "transition_action": "Register the revival, link it to the prior process, and re-enter intake for state resolution.",
+      "edge_type": "REVIVAL_PATH",
+      "load_bearing_or_habitual": "LOAD_BEARING",
+      "exception_route": "If revival lacks new trigger, block and remain SX."
+    }
+  ],
+  "unhappy_path_policy": {
+    "reason_codes": [
+      "access_denied",
+      "out_of_scope",
+      "screening_declined",
+      "diligence_red_flag",
+      "unresolved_critical_question",
+      "valuation_fail",
+      "approval_declined",
+      "terms_changed",
+      "process_lost",
+      "execution_failed",
+      "stalled",
+      "support_declined",
+      "data_insufficient"
+    ],
+    "required_fields": [
+      "reason_code",
+      "scope",
+      "last_active_state",
+      "owner_or_authority",
+      "evidence_or_rationale",
+      "revival_condition",
+      "timestamp"
+    ],
+    "rule": "A dead or stalled opportunity is a terminal or paused workflow outcome with reason-coded evidence, not missing data.",
+    "live_position_rule": "A declined, abandoned, or unsupported action on a live position creates a branch-level exception; the primary deal state returns to monitoring or re-underwriting."
+  },
+  "skip_backtrack_policy": {
+    "skip_rule": "A state may be skipped only if an ExceptionRecord identifies the skipped state, reason, approving authority, materiality, and downstream risk acceptance.",
+    "backtrack_rule": "A later finding that invalidates a critical assumption must reopen the earliest affected state: QuestionPlanning, DiligenceActive, UnderwritingValuation, InvestmentDecision, or ExecutionDocumentation.",
+    "audit_requirement": "Every skip, backtrack, and revival creates an immutable WorkflowEvent in the deal audit log."
+  },
+  "transition_logic_enum": {
+    "LOAD_BEARING": "The ordering or transition is substantively required and should be enforced unless an explicit exception is authorized.",
+    "CONDITIONAL_LOAD_BEARING": "The ordering is substantively required only when the stated materiality or applicability condition is true.",
+    "HABITUAL": "The ordering reflects convention rather than substantive necessity and may be streamlined or reconfigured."
+  }
+}

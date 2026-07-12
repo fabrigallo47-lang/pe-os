@@ -104,6 +104,16 @@ def deal_view(deal: str):
     }
 
 
+@app.get("/api/brain")
+def brain():
+    """The firm brain: question-type archives (librarian-maintained) + entities."""
+    qts = [{"kind": "question-type", "name": f.stem, "content": f.read_text(encoding="utf-8")}
+           for f in sorted((VAULT / "library" / "question-types").glob("*.md"))]
+    ents = [{"kind": "entity", "name": f.stem, "content": f.read_text(encoding="utf-8")}
+            for d in ("companies", "people") for f in sorted((VAULT / "entities" / d).glob("*.md"))]
+    return qts + ents
+
+
 @app.get("/api/ontology")
 def ontology():
     files = sorted((VAULT / "ontology").glob("*.md")) + [VAULT / "policy" / "policy-table.md"]

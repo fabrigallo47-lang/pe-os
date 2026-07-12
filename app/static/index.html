@@ -112,6 +112,7 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
     <span class="wordmark"><b>◆</b> PE OS</span>
     <nav class="topnav" role="tablist">
       <button class="tab" role="tab" aria-selected="true" data-tab="deal">Deal</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="brain">Brain</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="ontology">Ontology &amp; Policy</button>
     </nav>
     <select id="dealsel" aria-label="Select deal" style="width:auto;min-width:160px"></select>
@@ -158,9 +159,28 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
           </div>
           <div class="console" id="console" aria-live="polite">agent console — ready</div>
         </div>
+        <div class="panel">
+          <h3>Deployed agents — live feed</h3>
+          <p class="hint">The append-only audit log (vault/audit/agent-log.jsonl), refreshed every 5s. Every autonomous action, attributed and contract-bound.</p>
+          <div class="console" id="feed" aria-live="polite" style="max-height:220px">loading…</div>
+        </div>
         <h2 class="sec">Event record <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('edlg')">+ Record event</button></h2>
         <ul class="tline" id="tline"></ul>
       </div>
+    </div>
+  </main>
+
+  <main id="tab-brain" hidden>
+    <header class="deal" style="padding-bottom:0">
+      <div>
+        <p class="crumb">Firm brain — compounds across deals</p>
+        <h1 style="font-size:1.7rem">Memory organized by what it bears on</h1>
+        <p class="thesis">Question-type archives are maintained by the librarian agent: every claim filed under any deal flows up here, so the next deal that raises the same question finds everything the firm already paid to learn.</p>
+      </div>
+    </header>
+    <div class="ontogrid">
+      <ul class="ontolist" id="brainlist"></ul>
+      <div class="ontoview" id="brainview">Select an item.</div>
     </div>
   </main>
 
@@ -302,10 +322,27 @@ async function refresh(){
 // tabs
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{
   document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x===b));
-  $("tab-deal").hidden = b.dataset.tab!=="deal";
-  $("tab-ontology").hidden = b.dataset.tab!=="ontology";
+  ["deal","brain","ontology"].forEach(t=>{ $("tab-"+t).hidden = b.dataset.tab!==t; });
   if (b.dataset.tab==="ontology" && !$("ontolist").children.length) loadOntology();
+  if (b.dataset.tab==="brain") loadBrain();
 }));
+
+async function loadBrain(){
+  const items = await api("/api/brain");
+  $("brainlist").innerHTML = items.map((it,i)=>`<li><button data-i="${i}" aria-selected="false">${esc(it.name)} <span style="color:var(--muted);font-size:11px">· ${esc(it.kind)}</span></button></li>`).join("");
+  $("brainlist").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    $("brainlist").querySelectorAll("button").forEach(x=>x.setAttribute("aria-selected", x===b));
+    $("brainview").textContent = items[+b.dataset.i].content;
+  }));
+  $("brainlist").querySelector("button")?.click();
+}
+
+async function loadFeed(){
+  try { const rows = await api("/api/audit?n=15");
+    $("feed").innerHTML = rows.map(r=>`<span class="${r.action==="error"?"err":"ok"}">${esc(r.ts.replace("T"," "))}</span>  ${esc(r.agent)} · ${esc(r.action)} — ${esc(r.detail)}`).join("\n");
+  } catch(e){ $("feed").textContent = "feed unavailable: "+e.message; }
+}
+loadFeed(); setInterval(loadFeed, 5000);
 
 async function loadOntology(){
   const items = await api("/api/ontology");

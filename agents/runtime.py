@@ -147,6 +147,50 @@ class Contradiction(Agent):
                 st = _state(); st.setdefault("flagged", {}).setdefault(deal, []).extend(new); _save(st)
 
 
+class Librarian(Agent):
+    """The brain's custodian. Cross-deal, deterministic: whenever claims or
+    questions change, it rebuilds each question-type's Evidence archive so that
+    evidence filed under any deal becomes findable from the firm brain — by what
+    it bears on, not by keyword. This is the upward flow (deal → brain)."""
+    id = "librarian"
+    activity_id = "HVA_COMMERCIAL_02"
+    watches = "deals/*/{claims,questions}"
+
+    MARK = "## Evidence archive"
+
+    def snapshot(self):
+        return {str(f): f.stat().st_mtime
+                for pat in ("*/claims/*.md", "*/questions/*.md")
+                for f in (VAULT / "deals").glob(pat)}
+
+    def act(self, changed):
+        indexer.build().close()
+        con = sqlite3.connect(ROOT / ".index" / "vault.db")
+        rows = con.execute(
+            "SELECT qt.dst, c.deal, c.id, c.epistemic, c.subject, c.value "
+            "FROM edges b JOIN edges qt ON b.dst = qt.src AND qt.rel='question-type' "
+            "JOIN nodes c ON c.id = b.src AND c.type='claim' WHERE b.rel='bears-on' "
+            "ORDER BY qt.dst, c.deal, c.id").fetchall()
+        by_qt: dict[str, list] = {}
+        for qt, deal, cid, ep, subj, val in rows:
+            by_qt.setdefault(qt, []).append(f"- [[{cid}]] ({deal}, {ep}) — {subj}: {val}")
+        wrote = []
+        for f in (VAULT / "library" / "question-types").glob("qt-*.md"):
+            entries = by_qt.get(f.stem, [])
+            text = f.read_text(encoding="utf-8")
+            if self.MARK not in text:
+                continue
+            head = text.split(self.MARK)[0]
+            new = head + self.MARK + "\n(maintained by librarian — cross-deal evidence, by what it bears on)\n" \
+                + ("\n".join(entries) + "\n" if entries else "(empty)\n")
+            if new != text:
+                f.write_text(new, encoding="utf-8")
+                wrote.append(f.stem)
+        if wrote:
+            audit(self.id, self.activity_id, "brain-archives-updated",
+                  f"{len(wrote)} question-type archive(s): {', '.join(wrote)}", wrote)
+
+
 def _state() -> dict:
     return json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
 
@@ -157,7 +201,7 @@ def _save(st: dict):
 
 
 def main():
-    agents = [Sentinel(), StateResolver(), Contradiction()]
+    agents = [Sentinel(), StateResolver(), Contradiction(), Librarian()]
     print("PE OS agent runtime — deployed agents:")
     for a in agents:
         print(f"  · {a.id:<15} watches {a.watches:<24} contract {a.activity_id} "

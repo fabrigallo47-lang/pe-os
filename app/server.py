@@ -285,6 +285,44 @@ def agent_ingest(deal: str, body: IngestIn):
     return {"output": r.stdout[-8000:], "ok": r.returncode == 0}
 
 
+class AskIn(BaseModel):
+    question: str
+
+
+@app.post("/api/agents/ask")
+def agent_ask(body: AskIn):
+    """Chat with the brain: read-only LLM agent over the whole vault (policy row 1+3).
+    Tools restricted to Read/Grep/Glob — it can look, it cannot touch."""
+    prompt = (
+        "You are the PE OS brain interface. Answer the user's question strictly from the "
+        "contents of vault/ (questions, claims with epistemic types, events, decisions, "
+        "question-type archives, entities). Cite file ids like [c-aurora-002]. Distinguish "
+        "epistemic types when weighing evidence. If the vault does not contain the answer, "
+        f"say so plainly.\n\nQuestion: {body.question}"
+    )
+    try:
+        r = subprocess.run(
+            ["claude", "-p", prompt, "--allowedTools", "Read,Grep,Glob"],
+            capture_output=True, text=True, cwd=ROOT, timeout=300,
+        )
+    except FileNotFoundError:
+        raise HTTPException(501, "claude CLI not found")
+    except subprocess.TimeoutExpired:
+        raise HTTPException(504, "brain query timed out (5 min)")
+    if r.returncode != 0:
+        raise HTTPException(500, (r.stderr or r.stdout)[-500:])
+    return {"answer": r.stdout.strip()}
+
+
+@app.get("/api/audit")
+def audit_log(n: int = 20):
+    f = VAULT / "audit" / "agent-log.jsonl"
+    if not f.exists():
+        return []
+    lines = f.read_text(encoding="utf-8").strip().splitlines()[-n:]
+    return [json.loads(x) for x in reversed(lines)]
+
+
 @app.get("/api/inbox")
 def inbox():
     return [f.name for f in sorted((VAULT / "inbox").glob("*")) if f.is_file() and f.name != ".gitkeep"]

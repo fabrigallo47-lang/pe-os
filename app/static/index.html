@@ -151,6 +151,11 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
             <select id="inboxsel" aria-label="Inbox artifact"></select>
             <button class="btn ghost" id="btn-ingest" style="flex:0 0 auto">Ingest</button>
           </div>
+          <label for="askbox">Ask the brain (read-only LLM over the whole vault)</label>
+          <div style="display:flex;gap:8px">
+            <input id="askbox" placeholder="e.g. what contradicts the growth plan?">
+            <button class="btn ghost" id="btn-ask" style="flex:0 0 auto">Ask</button>
+          </div>
           <div class="console" id="console" aria-live="polite">agent console — ready</div>
         </div>
         <h2 class="sec">Event record <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('edlg')">+ Record event</button></h2>
@@ -338,6 +343,16 @@ $("btn-ingest").addEventListener("click", async ()=>{
   catch(e){ log("ingest: "+e.message, "err"); }
   $("btn-ingest").disabled = false;
 });
+
+$("btn-ask").addEventListener("click", async ()=>{
+  const q = $("askbox").value.trim(); if(!q) return;
+  $("btn-ask").disabled = true; log(`→ brain: "${q}" (LLM, may take a minute)…`);
+  try { const r = await api("/api/agents/ask", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({question:q})});
+    log(r.answer, "ok"); }
+  catch(e){ log("brain: "+e.message, "err"); }
+  $("btn-ask").disabled = false;
+});
+$("askbox").addEventListener("keydown", e=>{ if(e.key==="Enter") $("btn-ask").click(); });
 
 // forms
 $("episel").addEventListener("change", e=>{ $("derivrow").hidden = e.target.value!=="derived"; });

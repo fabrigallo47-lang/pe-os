@@ -42,6 +42,12 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-12 — Live app (UI ⇄ agents ⇄ vault)
+- `app/server.py` (FastAPI, localhost:8787, `make app`): the API is the policy boundary. Reads: deals, deal view (replay+guards+contradictions), ontology/policy, inbox. Writes (human, `written-by: human`): claims / questions / events via ontology-shaped templates — **server enforces rule 3** (derived ⇒ derivation required; verified by test). Agents: state engine (row 4), contradiction (row 5, emits CONTRADICTION_FLAGGED event), ingest via headless `claude -p` with the /ingest skill (row 3; untested end-to-end — uses user quota).
+- `app/static/index.html`: live dashboard + add-claim form with epistemic selector (derivation field appears only for `derived`), add-question, record-event dialogs, agent console, ontology & policy browser tab. Same navy/gold system.
+- Validated loop: UI POST → vault file → reindex → engine → UI refresh. Growth contradiction now 3-way (34/28/31) after test claim c-aurora-006.
+- Static export (`tools/ui.py`) kept for shareable snapshots.
+
 ### 2026-07-12 — Deal dashboard UI
 - `tools/ui.py` (`make ui DEAL=<id>`): generates `docs/ui/<deal>.html` from the live index — read-only projection, self-contained, zero external refs. Sections: lifecycle rail (S0–S13, current highlighted), KPI row, IC-gate-held banner (guard replay), nested question tree with state/critical/workstream badges, contradiction cards with epistemic types side by side ("shows its working" marker on derived), event timeline with the blocked transition marked.
 - Palette from PE-brand research: deep navy dominant (trust/"old money"), gold as restrained accent only, green=resolved/growth, muted red=contradiction/critical. Serif display (Iowan/Palatino), mono for event kinds, tabular numerals. Layout quality patterns from the prior internal project; none of its naming.

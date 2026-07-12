@@ -17,5 +17,8 @@ check: index ## Alias: schema conformance check = the indexer parses everything 
 state: index ## Derive deal state by replaying events (usage: make state DEAL=aurora)
 	$(PY) tools/engine.py $(DEAL) --write
 
-ui: index ## Generate the deal dashboard (usage: make ui DEAL=aurora)
+ui: index ## Generate the static deal dashboard export (usage: make ui DEAL=aurora)
 	$(PY) tools/ui.py $(DEAL)
+
+app: index ## Run the live app (http://127.0.0.1:8787)
+	.venv/bin/uvicorn app.server:app --host 127.0.0.1 --port 8787

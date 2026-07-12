@@ -1,0 +1,360 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PE OS — Deal Intelligence</title>
+<style>
+:root{
+  --bg:#0b1622; --surface:#111f2e; --surface2:#17293c; --line:#22384e;
+  --ink:#e9eff5; --muted:#9db0c2; --gold:#c9a24b; --green:#4fae7f; --red:#d4685f; --blue:#7fa8cf;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:"SF Mono",Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:15.5px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1220px;margin:0 auto;padding:0 24px 80px}
+button{font:inherit;cursor:pointer}
+.topbar{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:16px 0;border-bottom:1px solid var(--line)}
+.wordmark{font-family:var(--serif);font-size:17px}.wordmark b{color:var(--gold);font-weight:600}
+.topnav{display:flex;gap:6px}
+.tab{background:none;border:1px solid transparent;color:var(--muted);padding:8px 16px;border-radius:99px;font-size:13px;letter-spacing:.06em}
+.tab[aria-selected="true"]{color:var(--gold);border-color:var(--gold)}
+.tab:focus-visible{outline:2px solid var(--gold);outline-offset:2px}
+select,input,textarea{background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:9px 12px;font:inherit;width:100%}
+select:focus,input:focus,textarea:focus{outline:2px solid var(--gold);outline-offset:1px}
+label{display:block;font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin:10px 0 4px}
+.btn{background:var(--gold);color:#0b1622;border:none;border-radius:8px;padding:10px 18px;font-weight:600;font-size:13.5px;min-height:44px}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+.btn:disabled{opacity:.45;cursor:default}
+header.deal{padding:32px 0 6px;display:flex;justify-content:space-between;gap:20px;flex-wrap:wrap;align-items:flex-start}
+.crumb{font-size:11.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:10px;font-weight:600}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(1.7rem,3.6vw,2.4rem);line-height:1.12;margin-bottom:8px}
+.thesis{color:var(--muted);max-width:64ch}
+.statechip{display:inline-flex;align-items:center;gap:8px;margin-top:12px;border:1px solid var(--gold);color:var(--gold);border-radius:99px;padding:7px 16px;font-size:12px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.pulse{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+@media (prefers-reduced-motion: no-preference){.pulse{animation:pu 2.6s ease-in-out infinite}@keyframes pu{0%,100%{opacity:.45}50%{opacity:1}}}
+.rail{list-style:none;display:flex;overflow-x:auto;padding:26px 0 12px;border-bottom:1px solid var(--line)}
+.rail li{position:relative;flex:1 0 82px;text-align:center;padding-top:18px}
+.rail li::before{content:"";position:absolute;top:5px;left:-50%;width:100%;height:2px;background:var(--line)}
+.rail li:first-child::before{display:none}
+.rail .dot{position:absolute;top:0;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:var(--line)}
+.rail li.done .dot{background:var(--green)} .rail li.done::before{background:var(--green)}
+.rail li.current .dot{background:var(--gold);box-shadow:0 0 0 5px rgba(201,162,75,.18)}
+.rail li.current::before{background:var(--green)}
+.snum{display:block;font-family:var(--mono);font-size:10px;color:var(--muted)}
+.sname{display:block;font-size:10px;color:var(--muted);line-height:1.25;padding:0 3px}
+.rail li.current .sname,.rail li.current .snum{color:var(--gold);font-weight:600}
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:12px;padding:22px 0}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px}
+.kpi .n{font-family:var(--serif);font-size:1.55rem;font-variant-numeric:tabular-nums}
+.kpi .l{font-size:10.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted)}
+.guard{border:1px solid var(--red);background:rgba(212,104,95,.07);border-radius:14px;padding:18px 22px;margin:4px 0 22px}
+.guard h2{font-family:var(--serif);font-size:1.15rem;color:var(--red);margin-bottom:4px}
+.guard p{color:var(--muted);max-width:85ch}.guard strong{color:var(--ink)}
+.cols{display:grid;grid-template-columns:1.55fr 1fr;gap:26px;align-items:start}
+h2.sec{font-family:var(--serif);font-size:1.25rem;font-weight:500;margin:22px 0 12px;display:flex;justify-content:space-between;align-items:baseline;gap:10px}
+h2.sec .mini{font-family:var(--sans);font-size:12px;color:var(--gold);background:none;border:none;letter-spacing:.05em}
+.badge{display:inline-block;font-size:10px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;border-radius:99px;padding:3px 9px;border:1px solid}
+.b-open{color:#e0a49e;border-color:#8a5049}.b-reducing{color:var(--blue);border-color:#3d5a77}
+.b-resolved{color:var(--green);border-color:#2e6b4f}.b-accepted-unresolved{color:var(--gold);border-color:#8a7134}
+.b-crit{color:var(--red);border-color:var(--red)}
+.b-asserted{color:#e0a49e;border-color:#8a5049}.b-derived{color:var(--blue);border-color:#3d5a77}
+.b-observed{color:var(--green);border-color:#2e6b4f}.b-attested{color:var(--gold);border-color:#8a7134}
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:14px 16px;margin-bottom:10px}
+.qcard.child{margin-left:24px;background:var(--surface2)}
+.qrow{display:flex;justify-content:space-between;gap:12px;align-items:baseline;flex-wrap:wrap}
+.qcard h3{font-family:var(--serif);font-weight:500;font-size:1.02rem}
+.qmeta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ws{font-family:var(--mono);font-size:10px;color:var(--muted)}
+.contra{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--red);border-radius:12px;padding:16px 18px;margin-bottom:14px}
+.chead{display:flex;align-items:baseline;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.cmark{color:var(--red);font-weight:700}
+.chead h3{font-family:var(--serif);font-weight:500;font-size:1.05rem}
+.cnote{font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
+.egrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(170px,1fr));gap:10px}
+.ecard{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:11px 13px}
+.eval{font-family:var(--serif);font-size:1.15rem;margin:7px 0 3px;font-variant-numeric:tabular-nums}
+.esrc{font-size:11px;color:var(--muted)}
+.works{font-size:10px;color:var(--green);letter-spacing:.06em;text-transform:uppercase;font-weight:600;margin-left:6px}
+.tline{list-style:none;border-left:2px solid var(--line);margin-left:6px}
+.tline li{position:relative;padding:0 0 16px 20px}
+.tdot{position:absolute;left:-7px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--green);border:2px solid var(--bg)}
+li.blocked .tdot{background:var(--red)}
+.tkind{font-family:var(--mono);font-size:12px}
+.twhen{font-size:11px;color:var(--muted)}
+.tmove{font-size:11px;color:var(--green)}.thold{color:var(--red);font-weight:600}.tnull{color:var(--muted)}
+.panel{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:18px;margin-bottom:16px}
+.panel h3{font-family:var(--serif);font-weight:500;font-size:1.08rem;margin-bottom:6px}
+.panel .hint{font-size:12px;color:var(--muted);margin-bottom:8px}
+.agentbtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+.console{background:#081019;border:1px solid var(--line);border-radius:10px;font-family:var(--mono);font-size:11.5px;color:var(--muted);padding:12px;white-space:pre-wrap;max-height:300px;overflow:auto;margin-top:10px}
+.console .ok{color:var(--green)}.console .err{color:var(--red)}
+dialog{background:var(--surface);color:var(--ink);border:1px solid var(--line);border-radius:14px;padding:26px;max-width:560px;width:92vw}
+dialog::backdrop{background:rgba(4,9,14,.62)}
+dialog h3{font-family:var(--serif);font-weight:500;font-size:1.2rem;margin-bottom:4px}
+dialog .hint{font-size:12.5px;color:var(--muted)}
+.formrow{display:grid;grid-template-columns:1fr 1fr;gap:0 14px}
+.dlgbtns{display:flex;justify-content:flex-end;gap:10px;margin-top:18px}
+.ferr{color:var(--red);font-size:12.5px;margin-top:8px;min-height:1em}
+.ontogrid{display:grid;grid-template-columns:220px 1fr;gap:20px;align-items:start;padding-top:24px}
+.ontolist{list-style:none}
+.ontolist button{display:block;width:100%;text-align:left;background:none;border:1px solid transparent;color:var(--muted);padding:9px 14px;border-radius:8px;font-size:13.5px}
+.ontolist button[aria-selected="true"]{color:var(--gold);border-color:var(--line);background:var(--surface)}
+.ontoview{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:22px;font-family:var(--mono);font-size:12.5px;white-space:pre-wrap;color:var(--ink);line-height:1.6;overflow-x:auto}
+footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:11.5px;color:var(--muted)}
+@media (max-width:900px){.cols,.ontogrid{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="topbar">
+    <span class="wordmark"><b>◆</b> PE OS</span>
+    <nav class="topnav" role="tablist">
+      <button class="tab" role="tab" aria-selected="true" data-tab="deal">Deal</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="ontology">Ontology &amp; Policy</button>
+    </nav>
+    <select id="dealsel" aria-label="Select deal" style="width:auto;min-width:160px"></select>
+  </div>
+
+  <main id="tab-deal">
+    <header class="deal">
+      <div>
+        <p class="crumb" id="crumb"></p>
+        <h1 id="dtitle"></h1>
+        <p class="thesis" id="dthesis"></p>
+        <span class="statechip"><span class="pulse"></span><span id="dstate"></span></span>
+      </div>
+    </header>
+    <ul class="rail" id="rail" aria-label="Deal lifecycle"></ul>
+    <div class="kpis" id="kpis"></div>
+    <div id="guard"></div>
+    <div class="cols">
+      <div>
+        <h2 class="sec">Question structure <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('qdlg')">+ Add question</button></h2>
+        <div id="qtree"></div>
+        <h2 class="sec">Contradictions <span style="font-size:12px;color:var(--muted)">unresolved</span></h2>
+        <div id="contras"></div>
+        <h2 class="sec">Evidence <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('cdlg')">+ Add claim</button></h2>
+        <div id="claims"></div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3>Agents</h3>
+          <p class="hint">Each action maps to a policy-table row and is recorded as an event.</p>
+          <div class="agentbtns">
+            <button class="btn" id="btn-state">Run state engine</button>
+            <button class="btn ghost" id="btn-contra">Contradiction agent</button>
+          </div>
+          <label for="inboxsel">Ingest from inbox (LLM, policy row 3)</label>
+          <div style="display:flex;gap:8px">
+            <select id="inboxsel" aria-label="Inbox artifact"></select>
+            <button class="btn ghost" id="btn-ingest" style="flex:0 0 auto">Ingest</button>
+          </div>
+          <div class="console" id="console" aria-live="polite">agent console — ready</div>
+        </div>
+        <h2 class="sec">Event record <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('edlg')">+ Record event</button></h2>
+        <ul class="tline" id="tline"></ul>
+      </div>
+    </div>
+  </main>
+
+  <main id="tab-ontology" hidden>
+    <div class="ontogrid">
+      <ul class="ontolist" id="ontolist"></ul>
+      <div class="ontoview" id="ontoview">Select a schema.</div>
+    </div>
+  </main>
+
+  <footer>
+    <span>Local app · vault is canonical · state derived by event replay — never set by hand</span>
+    <span>Confidential — not for distribution</span>
+  </footer>
+</div>
+
+<dialog id="cdlg">
+  <h3>Add claim (human evidence)</h3>
+  <p class="hint">Every claim carries an epistemic type — the trust hierarchy the system reasons with.</p>
+  <form id="cform">
+    <div class="formrow">
+      <div><label>Subject (normalized — reuse existing)</label><input name="subject" required list="subjects"></div>
+      <div><label>Value</label><input name="value" required></div>
+    </div>
+    <datalist id="subjects"></datalist>
+    <label>Epistemic type</label>
+    <select name="epistemic" id="episel">
+      <option value="asserted">asserted — someone said it</option>
+      <option value="derived">derived — follows from something, derivation inspectable</option>
+      <option value="observed">observed — it happened and was recorded</option>
+      <option value="attested">attested — a third party stands behind it</option>
+    </select>
+    <div id="derivrow" hidden><label>Derivation (required for derived)</label><input name="derivation"></div>
+    <label>Bears on (question)</label><select name="bears_on" id="bearsel"></select>
+    <div class="formrow">
+      <div><label>Direction</label><select name="direction"><option>supports</option><option>contradicts</option><option>context</option></select></div>
+      <div><label>Source locator (slide, cell, timestamp)</label><input name="locator"></div>
+    </div>
+    <div class="formrow">
+      <div><label>Source author</label><input name="author"></div>
+      <div><label>Source date</label><input name="source_date" type="date"></div>
+    </div>
+    <label>Statement (one sentence)</label><textarea name="statement" rows="2"></textarea>
+    <p class="ferr" id="cerr"></p>
+    <div class="dlgbtns"><button type="button" class="btn ghost" onclick="cdlg.close()">Cancel</button><button class="btn">Add claim</button></div>
+  </form>
+</dialog>
+
+<dialog id="qdlg">
+  <h3>Add question</h3>
+  <p class="hint">Phrase it as a question, never an activity. It opens in state <em>open</em>.</p>
+  <form id="qform">
+    <label>The question</label><input name="title" required placeholder="Is the …?">
+    <label>Bearing (why it matters to the thesis)</label><textarea name="bearing" rows="2"></textarea>
+    <div class="formrow">
+      <div><label>Target workstream</label><select name="target_workstream">
+        <option value="">—</option><option>financial_qoe</option><option>commercial_market</option><option>operational</option>
+        <option>management_sponsor</option><option>legal</option><option>tax</option><option>financing</option><option>structuring</option>
+      </select></div>
+      <div><label>Parent question</label><select name="parent" id="parentsel"><option value="">— (thesis-level)</option></select></div>
+    </div>
+    <label style="display:flex;align-items:center;gap:8px;text-transform:none;font-size:13.5px;color:var(--ink)">
+      <input type="checkbox" name="critical" style="width:auto"> Critical — blocks IC unless resolved or risk-accepted
+    </label>
+    <p class="ferr" id="qerr"></p>
+    <div class="dlgbtns"><button type="button" class="btn ghost" onclick="qdlg.close()">Cancel</button><button class="btn">Add question</button></div>
+  </form>
+</dialog>
+
+<dialog id="edlg">
+  <h3>Record event</h3>
+  <p class="hint">Events are immutable and drive the state machine. Authority events belong to humans.</p>
+  <form id="eform">
+    <label>Kind</label>
+    <select name="kind" id="kindsel"></select>
+    <label>Note</label><textarea name="note" rows="2"></textarea>
+    <p class="ferr" id="eerr"></p>
+    <div class="dlgbtns"><button type="button" class="btn ghost" onclick="edlg.close()">Cancel</button><button class="btn">Record</button></div>
+  </form>
+</dialog>
+
+<script>
+const $ = id => document.getElementById(id);
+let DEAL = null, VIEW = null;
+const STATES = ["S0_INTAKE","S1_ACCESS_CLEARANCE","S2_CASE_INGESTION","S3_SCREENING_ASSESSMENT","S4_QUESTION_PLANNING","S5_DILIGENCE_ACTIVE","S6_UNDERWRITING_VALUATION","S7_INVESTMENT_DECISION","S8_EXECUTION_DOCUMENTATION","S9_CLOSING_ADMINISTRATION","S10_MONITORING","S11_REUNDERWRITING","S12_EXIT_REALIZATION","S13_CLOSED_ARCHIVE"];
+const KINDS = ["ARTIFACT_ARRIVED","DEAL_REGISTERED","CONFIDENTIAL_MATERIAL_REQUIRED","ACCESS_GRANTED","CASE_MATERIAL_INDEXED","SCREENING_APPROVED","SCREENING_DECLINED","WORKSTREAMS_ASSIGNED","MATERIAL_FINDING_REOPENS_QUESTION","CRITICAL_WORKSTREAMS_COMPLETE_OR_ACCEPTED","MODEL_CRITICAL_GAP_FOUND","FINAL_MODEL_APPROVED_FOR_IC","IC_APPROVED","IC_DECLINED","MATERIAL_TERMS_CHANGED","DOCUMENTS_SIGNED","POSITION_OPENED","QUESTION_STATE_CHANGED","CONTRADICTION_FLAGGED","SIGNAL_DETECTED"];
+const lbl = s => s.includes("_") ? s.split("_").slice(1).join(" ").toLowerCase().replace(/\b\w/g,c=>c.toUpperCase()) : s;
+const esc = s => String(s??"").replace(/[&<>"]/g, c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+const api = async (path, opts) => {
+  const r = await fetch(path, opts);
+  const j = await r.json().catch(()=>({detail:"bad response"}));
+  if (!r.ok) throw new Error(j.detail || r.status);
+  return j;
+};
+const log = (msg, cls="") => { const c=$("console"); c.innerHTML += `\n<span class="${cls}">${esc(msg)}</span>`; c.scrollTop = c.scrollHeight; };
+const dlg = id => { window[id].showModal(); };
+
+async function loadDeals(){
+  const ds = await api("/api/deals");
+  $("dealsel").innerHTML = ds.map(d=>`<option value="${esc(d.id)}">${esc(d.id)}${d.demo?" (demo)":""}</option>`).join("");
+  DEAL = ds[0]?.id;
+  if (DEAL) refresh();
+}
+
+async function refresh(){
+  VIEW = await api(`/api/deal/${DEAL}`);
+  const d = VIEW.deal;
+  $("crumb").textContent = `Live deal · ${(d.company||"").replace(/[\[\]]/g,"")}`;
+  $("dtitle").textContent = d.title;
+  $("dthesis").textContent = d.thesis || "";
+  $("dstate").textContent = `${VIEW.state_label} (${VIEW.state.split("_")[0]})`;
+  const cur = STATES.indexOf(VIEW.state);
+  $("rail").innerHTML = STATES.map((s,i)=>`<li class="${i<cur?"done":i===cur?"current":""}"><span class="dot"></span><span class="snum">${s.split("_")[0]}</span><span class="sname">${esc(lbl(s))}</span></li>`).join("");
+  const qs = VIEW.questions, open = qs.filter(q=>["open","reducing"].includes(q.state));
+  const crit = open.filter(q=>q.critical);
+  $("kpis").innerHTML = [[`${open.length} / ${qs.length}`,"questions open"],[crit.length,"critical blockers"],[VIEW.contradictions.length,"contradictions"],[VIEW.claims.length,"claims held"],[VIEW.events.length,"events recorded"]]
+    .map(([n,l])=>`<div class="kpi"><div class="n">${esc(n)}</div><div class="l">${esc(l)}</div></div>`).join("");
+  $("guard").innerHTML = VIEW.held.length ? `<section class="guard" role="alert"><h2>Investment-committee gate held</h2><p>Transition <strong>${esc(VIEW.held[0].tid)} → ${esc(lbl(VIEW.held[0].to))}</strong> was requested and refused: <strong>${VIEW.held[0].critical_open} critical question(s)</strong> remain open without risk acceptance.</p></section>` : "";
+  // question tree
+  const kids = {}; qs.forEach(q=>{ const p=(q.parent||"").replace(/[\[\]]/g,""); if(p) (kids[p]=kids[p]||[]).push(q); });
+  const qcard = (q, child) => `<div class="qcard ${child?"child":""}"><div class="qrow"><h3>${esc(q.title)}</h3><div class="qmeta"><span class="badge b-${esc(q.state)}">${esc(q.state.replace("-"," "))}</span>${q.critical?'<span class="badge b-crit">critical</span>':""}${q["target-workstream"]?`<span class="ws">${esc(q["target-workstream"])}</span>`:""}</div></div>${(kids[q.id]||[]).map(c=>qcard(c,true)).join("")}</div>`;
+  $("qtree").innerHTML = qs.filter(q=>!q.parent).map(q=>qcard(q,false)).join("") || '<p class="thesis">No questions yet — add the thesis decomposition.</p>';
+  // contradictions
+  const ecard = c => `<div class="ecard"><span class="badge b-${esc(c.epistemic)}">${esc(c.epistemic)}</span>${c.derivation?'<span class="works">shows its working</span>':""}<div class="eval">${esc(c.value)}</div><div class="esrc">${esc(c.source?.locator||"")} · ${esc(c.source?.author||"")} · ${esc(c.source?.date||"")}</div></div>`;
+  $("contras").innerHTML = VIEW.contradictions.map(x=>`<div class="contra"><div class="chead"><span class="cmark">≠</span><h3>${esc(x.subject)}</h3><span class="cnote">these do not reconcile</span></div><div class="egrid">${x.claims.map(ecard).join("")}</div></div>`).join("") || '<p class="thesis">None detected.</p>';
+  // claims list
+  $("claims").innerHTML = `<div class="egrid">${VIEW.claims.map(ecard).join("")}</div>`;
+  // timeline
+  $("tline").innerHTML = VIEW.trail.map(t=>`<li class="${t.blocked?"blocked":""}"><span class="tdot"></span><div><div class="tkind">${esc(t.event.kind)}</div><div class="twhen">${esc(String(t.event.at||"").replace("T"," · "))} · ${esc(t.event.actor||"")}</div><span class="tmove ${t.blocked?"thold":t.to?"":"tnull"}">${t.blocked?`held at guard ${esc(t.tid)}`:t.to?`${esc(lbl(t.from))} → ${esc(lbl(t.to))}`:"recorded"}</span></div></li>`).join("");
+  // form data
+  $("bearsel").innerHTML = qs.map(q=>`<option value="${esc(q.id)}">${esc(q.title)}</option>`).join("");
+  $("parentsel").innerHTML = '<option value="">— (thesis-level)</option>' + qs.map(q=>`<option value="${esc(q.id)}">${esc(q.title)}</option>`).join("");
+  $("subjects").innerHTML = [...new Set(VIEW.claims.map(c=>c.subject))].map(s=>`<option value="${esc(s)}">`).join("");
+  $("kindsel").innerHTML = KINDS.map(k=>`<option>${k}</option>`).join("");
+  const inbox = await api("/api/inbox");
+  $("inboxsel").innerHTML = inbox.length ? inbox.map(f=>`<option>${esc(f)}</option>`).join("") : "<option value=''>inbox empty</option>";
+}
+
+// tabs
+document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{
+  document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x===b));
+  $("tab-deal").hidden = b.dataset.tab!=="deal";
+  $("tab-ontology").hidden = b.dataset.tab!=="ontology";
+  if (b.dataset.tab==="ontology" && !$("ontolist").children.length) loadOntology();
+}));
+
+async function loadOntology(){
+  const items = await api("/api/ontology");
+  $("ontolist").innerHTML = items.map((it,i)=>`<li><button data-i="${i}" aria-selected="false">${esc(it.name)}</button></li>`).join("");
+  $("ontolist").querySelectorAll("button").forEach(b=>b.addEventListener("click",()=>{
+    $("ontolist").querySelectorAll("button").forEach(x=>x.setAttribute("aria-selected", x===b));
+    $("ontoview").textContent = items[+b.dataset.i].content;
+  }));
+  $("ontolist").querySelector("button")?.click();
+}
+
+// deal switch
+$("dealsel").addEventListener("change", e=>{ DEAL = e.target.value; refresh(); });
+
+// agents
+$("btn-state").addEventListener("click", async ()=>{
+  $("btn-state").disabled = true; log("→ state engine (policy row 4)…");
+  try { const r = await api(`/api/agents/state/${DEAL}`, {method:"POST"}); log(r.output.trim(), "ok"); await refresh(); }
+  catch(e){ log("state engine: "+e.message, "err"); }
+  $("btn-state").disabled = false;
+});
+$("btn-contra").addEventListener("click", async ()=>{
+  $("btn-contra").disabled = true; log("→ contradiction agent (policy row 5)…");
+  try { const r = await api(`/api/agents/contradictions/${DEAL}`, {method:"POST"});
+    log(r.contradictions.length ? r.contradictions.map(c=>`≠ ${c.subject}: `+c.claims.map(x=>`[${x.epistemic}] ${x.value}`).join("  vs  ")).join("\n") : "no contradictions", r.contradictions.length?"err":"ok");
+    await refresh(); }
+  catch(e){ log("contradiction: "+e.message, "err"); }
+  $("btn-contra").disabled = false;
+});
+$("btn-ingest").addEventListener("click", async ()=>{
+  const f = $("inboxsel").value; if(!f) return log("inbox is empty — drop a file into vault/inbox/", "err");
+  $("btn-ingest").disabled = true; log(`→ ingest agent on ${f} (headless Claude, may take minutes)…`);
+  try { const r = await api(`/api/agents/ingest/${DEAL}`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({filename:f})});
+    log(r.output.trim(), r.ok?"ok":"err"); await refresh(); }
+  catch(e){ log("ingest: "+e.message, "err"); }
+  $("btn-ingest").disabled = false;
+});
+
+// forms
+$("episel").addEventListener("change", e=>{ $("derivrow").hidden = e.target.value!=="derived"; });
+const wire = (formId, errId, dlgEl, build, post) => {
+  $(formId).addEventListener("submit", async ev=>{
+    ev.preventDefault(); $(errId).textContent = "";
+    const fd = new FormData(ev.target);
+    try { const r = await api(post(fd), {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify(build(fd))});
+      window[dlgEl].close(); ev.target.reset(); log(`written ${r.id}`, "ok"); await refresh(); }
+    catch(e){ $(errId).textContent = e.message; }
+  });
+};
+wire("cform","cerr","cdlg", fd=>({subject:fd.get("subject"),value:fd.get("value"),epistemic:fd.get("epistemic"),bears_on:fd.get("bears_on")?[fd.get("bears_on")]:[],direction:fd.get("direction"),locator:fd.get("locator"),author:fd.get("author"),source_date:fd.get("source_date"),statement:fd.get("statement"),derivation:fd.get("derivation")||null}), ()=>`/api/deal/${DEAL}/claims`);
+wire("qform","qerr","qdlg", fd=>({title:fd.get("title"),bearing:fd.get("bearing"),critical:!!fd.get("critical"),target_workstream:fd.get("target_workstream"),parent:fd.get("parent")||null}), ()=>`/api/deal/${DEAL}/questions`);
+wire("eform","eerr","edlg", fd=>({kind:fd.get("kind"),actor:"human",note:fd.get("note")}), ()=>`/api/deal/${DEAL}/events`);
+
+loadDeals();
+</script>
+</body>
+</html>

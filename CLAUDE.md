@@ -16,6 +16,8 @@ We own the container: the ontology through which intelligence flows and leaves b
 6. **Artifacts are never copied into the vault** — claims point into them (`source.artifact` + `source.locator`).
 7. **Nothing leaves this machine** except operations listed in `vault/policy/policy-table.md` (model API calls are row 3 — scoped, deliberate).
 8. **Agents do not adjudicate.** Contradiction reports say what doesn't reconcile and who shows their working — never who is right.
+9. **Coordination through state, never relay.** No agent starts another agent or hands work to one. Agents finish → emit an immutable event → guards + the dependency graph decide what activates next (see `docs/03-architecture.md`).
+10. **Deal state is derived, never set.** `deal.state` comes from the backbone resolution rule over events, exposure, and blockers — never from file recency, labels, or a human update.
 
 ## Architecture (v1)
 

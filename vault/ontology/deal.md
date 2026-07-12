@@ -9,7 +9,10 @@ Not a folder of documents — a view over a question structure plus lifecycle st
 type: deal
 id: <deal-slug>
 company: "[[<company>]]"
-stage: screening   # screening | diligence | ic | closing | ownership | exited | dead
+state: S0_INTAKE   # backbone state machine: S0_INTAKE … S13_CLOSED_ARCHIVE | SX_TERMINATED_STALLED_DECLINED
+                   # DERIVED, never hand-set: resolved from events, exposure, and unresolved
+                   # blockers per the priority rules in sources/workflow-backbone-v1 (spec §4).
+                   # Agents update this field only as the output of running the resolution rule.
 lead: "[[<person>]]"
 thesis: "One-sentence investment thesis"
 opened: 2026-07-10

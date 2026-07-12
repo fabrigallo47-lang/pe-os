@@ -14,6 +14,8 @@ This directory **is the product**. Every entity in the system is a markdown file
 | `question-type` | [question-type.md](question-type.md) | reusable question class | `vault/library/question-types/` |
 | `company`, `person` | [entity.md](entity.md) | real-world entity | `vault/entities/` |
 | `role` | [role.md](role.md) | desk (agent orchestration persona) | `vault/roles/` |
+| `event` | [event.md](event.md) | immutable workflow event | `vault/deals/<deal>/events/` |
+| `exception` | [exception.md](exception.md) | skip / backtrack / decline / stall / revival | `vault/deals/<deal>/exceptions/` |
 
 ## Rules (invariants — don't break these)
 

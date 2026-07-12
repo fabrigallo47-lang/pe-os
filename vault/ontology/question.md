@@ -13,8 +13,15 @@ parent: "[[q-<deal>-<slug>]]"  # null for thesis-level questions
 question-type: "[[qt-<slug>]]" # link into library/ — the reuse mechanism
 state: open                    # open | reducing | resolved | accepted-unresolved
 resolution: null               # null | supported | refuted | mixed  (set when resolved)
+critical: false                # backbone: critical questions block IC unless resolved or risk-accepted
+target-workstream: financial_qoe   # backbone dependency-graph node this question routes to
 depends-on: []                 # question links: resolving those changes this one's meaning or weight
 owner: "[[<person>]]"          # accountable human, not the agent
+acceptance:                    # filled ONLY on transition to accepted-unresolved (human-only)
+  scope: null                  # what exactly is being accepted
+  conditions: null             # protective terms / mitigations attached
+  expiry: null                 # date or event after which the acceptance lapses
+  review-trigger: null         # signal that reopens this question automatically
 opened: 2026-07-10
 state-changed: 2026-07-10
 written-by: human | <agent>

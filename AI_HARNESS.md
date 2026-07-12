@@ -42,6 +42,11 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-12 — Target architecture fixed; backbone schemas integrated
+- Fabrizio's target confirmed against the documents: one central graph + small hardened agents + gated ingestion edge. Three doc-driven refinements adopted (see `docs/03-architecture.md`, now canonical): (1) center holds reasoning+state, never files; (2) **no agent-to-agent handoff** — coordination is state-mediated via immutable events + guards + dependency graph (blackboard); (3) perception is gated (AccessGrant, provenance per claim, two sanctioned human inputs).
+- Schema integration: new `event.md` + `exception.md`; `deal.stage` → derived `deal.state` (S0–S13/SX); question schema gains `critical`, `target-workstream`, and acceptance scope/conditions/expiry/review-trigger. CLAUDE.md invariants 9–10 added.
+- v1 engine note: no daemon — skills emit event files and evaluate guards when run; semantics identical, scheduling manual.
+
 ### 2026-07-12 — Workflow backbone V1 ingested
 - New source package in `sources/workflow-backbone-v1/`: 15-state deal lifecycle with deterministic state-resolution rules, 24 guarded transitions, typed 19-node/49-edge workstream dependency graph, 21 provisional object types, first-class unhappy paths (13 reason codes, skip/backtrack/revival).
 - Reconciliation with our ontology written in `docs/02-workflow-backbone-map.md`. Headline: the spec is the missing *process layer*; our vault stays the *reasoning layer* and the ontology-integration target (the spec says so itself). Keep epistemic typing + question-attachment; adopt state machine, ExceptionRecord, WorkflowEvent, risk-acceptance expiry/review triggers, LOAD_BEARING vs HABITUAL ordering flags.

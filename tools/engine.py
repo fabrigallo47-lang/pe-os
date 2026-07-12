@@ -17,7 +17,6 @@ Usage:
 """
 from __future__ import annotations
 
-import csv
 import json
 import re
 import sqlite3
@@ -30,11 +29,9 @@ BACKBONE = ROOT / "sources" / "workflow-backbone-v1"
 
 
 def load_transitions() -> list[dict]:
-    with open(BACKBONE / "state_transitions_v1.csv", encoding="utf-8") as f:
-        rows = list(csv.DictReader(f))
-    for r in rows:
-        r["triggers"] = [t.strip() for t in r["trigger_event"].split(" or ")]
-    return rows
+    """Unified table from the machine contracts (final package + v1 aliases)."""
+    import contracts
+    return contracts.transitions()
 
 
 def deal_objects(con: sqlite3.Connection, deal: str, obj_type: str) -> list[dict]:

@@ -1,0 +1,156 @@
+[
+  {
+    "control_id": "EC_001",
+    "component": "Stable identity and lineage",
+    "classification": "ENFORCE",
+    "rule": "Stable entity identities, version lineage, supersession, and immutable decision references are mandatory.",
+    "rationale": "Without stable identity and lineage, historical decisions cannot be audited or safely reopened."
+  },
+  {
+    "control_id": "EC_002",
+    "component": "Explicit workflow events",
+    "classification": "ENFORCE",
+    "rule": "Every state or transition change requires an explicit triggering event and append-only workflow record.",
+    "rationale": "Time, silence, document circulation, or user interpretation cannot determine state."
+  },
+  {
+    "control_id": "EC_003",
+    "component": "State predicates",
+    "classification": "ENFORCE",
+    "rule": "Entry, active, completion, and exit predicates must resolve deterministically from canonical objects and statuses.",
+    "rationale": "Deterministic resolution is required for code, audit, and recovery."
+  },
+  {
+    "control_id": "EC_004",
+    "component": "Transition controls",
+    "classification": "ENFORCE",
+    "rule": "Triggers, guards, gates, permission checks, authority actions, materiality behavior, exceptions, and idempotency are mandatory.",
+    "rationale": "A transition is a controlled business action, not a sequence hint."
+  },
+  {
+    "control_id": "EC_005",
+    "component": "Unhappy paths",
+    "classification": "ENFORCE",
+    "rule": "Decline, defer, abandonment, failure, backtrack, skip, revival, partial outcome, and residual exposure are first-class paths.",
+    "rationale": "Exceptional outcomes affect capital, accountability, and analytical freshness."
+  },
+  {
+    "control_id": "EC_006",
+    "component": "Permission versus authority",
+    "classification": "ENFORCE",
+    "rule": "Permission to access or edit never creates authority to approve, waive, accept risk, commit capital, or release funds.",
+    "rationale": "Access administration and investment authority are distinct control planes."
+  },
+  {
+    "control_id": "EC_007",
+    "component": "Approval records",
+    "classification": "ENFORCE",
+    "rule": "Every approval, waiver, override, risk acceptance, commitment, funding release, or exit authorization creates an immutable record.",
+    "rationale": "Authority cannot be inferred or overwritten."
+  },
+  {
+    "control_id": "EC_008",
+    "component": "Evidence sufficiency",
+    "classification": "ENFORCE",
+    "rule": "Evidence availability, relevance, reliability, completeness, recency, corroboration, sufficiency, and conclusion support remain distinct.",
+    "rationale": "A document’s existence does not make a conclusion decision-ready."
+  },
+  {
+    "control_id": "EC_009",
+    "component": "Question linkage",
+    "classification": "ENFORCE",
+    "rule": "Material uncertainty becomes an owned question linked to assumptions, evidence needs, status, resolution, decision effect, and reopening conditions.",
+    "rationale": "Unstructured discomfort cannot be governed or tested."
+  },
+  {
+    "control_id": "EC_010",
+    "component": "Model versus valuation",
+    "classification": "ENFORCE",
+    "rule": "Financial modeling and valuation/returns are separate workstreams connected by typed model-case dependencies.",
+    "rationale": "Computation of operating and financing outcomes is epistemically distinct from applying valuation methods and security waterfalls."
+  },
+  {
+    "control_id": "EC_011",
+    "component": "Staleness propagation",
+    "classification": "ENFORCE",
+    "rule": "Material upstream changes stale downstream assumptions, models, valuations, decision packages, execution documents, or monitoring conclusions.",
+    "rationale": "Downstream outputs cannot remain current after their basis changes."
+  },
+  {
+    "control_id": "EC_012",
+    "component": "Monitoring baseline",
+    "classification": "ENFORCE",
+    "rule": "Monitoring tests actual evidence against an immutable approved baseline and may create a re-underwriting trigger.",
+    "rationale": "Storage of periodic reporting alone does not control investment performance."
+  },
+  {
+    "control_id": "EC_013",
+    "component": "Re-underwriting",
+    "classification": "ENFORCE",
+    "rule": "Re-underwriting compares current evidence with the approved basis and supports hold, sell, follow-on, restructure, impair, or other successor decisions.",
+    "rationale": "Portfolio decisions require explicit outcome calibration."
+  },
+  {
+    "control_id": "EC_014",
+    "component": "Conflict and segregation",
+    "classification": "ENFORCE",
+    "rule": "Recusal, quorum recalculation, self-approval prohibitions, preparer/approver separation, and commitment/funding separation apply where configured by authority class.",
+    "rationale": "Control quality depends on independent authority and attributable action."
+  },
+  {
+    "control_id": "EC_015",
+    "component": "Materiality thresholds",
+    "classification": "CONFIGURE",
+    "rule": "Numerical and qualitative materiality thresholds are governed by versioned firm policy.",
+    "rationale": "Materiality depends on mandate, exposure, stage, object type, and risk appetite."
+  },
+  {
+    "control_id": "EC_016",
+    "component": "Role labels and quorum",
+    "classification": "CONFIGURE",
+    "rule": "Role names, committee composition, quorum, authority limits, and delegation eligibility are configurable.",
+    "rationale": "Governance structures differ while the underlying authority mechanics remain constant."
+  },
+  {
+    "control_id": "EC_017",
+    "component": "Document templates",
+    "classification": "CONFIGURE",
+    "rule": "Templates, section ordering, labels, and presentation conventions are configurable views over canonical objects.",
+    "rationale": "Presentation convention should not define domain identity."
+  },
+  {
+    "control_id": "EC_018",
+    "component": "Evidence phase thresholds",
+    "classification": "CONFIGURE",
+    "rule": "Minimum evidence categories, recency, corroboration, proxy acceptance, and waiver authority vary by phase and policy.",
+    "rationale": "Screening and capital commitment require different proof levels."
+  },
+  {
+    "control_id": "EC_019",
+    "component": "Valuation methods",
+    "classification": "CONFIGURE",
+    "rule": "Permitted valuation methods, peer criteria, sensitivity ranges, and scenario weighting are configurable by asset and mandate.",
+    "rationale": "No single method applies to every asset or security."
+  },
+  {
+    "control_id": "EC_020",
+    "component": "Archetype extensions",
+    "classification": "CONFIGURE",
+    "rule": "Carve-out, founder, public-market, auction, buy-and-build, rescue, and sponsor-context extensions activate under explicit conditions.",
+    "rationale": "The universal core should not force irrelevant objects onto every transaction."
+  },
+  {
+    "control_id": "EC_021",
+    "component": "Workstream review cadence",
+    "classification": "CONFIGURE",
+    "rule": "Review frequency, monitoring schedules, escalation windows, and service levels are configurable.",
+    "rationale": "Timing depends on exposure, volatility, covenants, and policy."
+  },
+  {
+    "control_id": "EC_022",
+    "component": "Automation level",
+    "classification": "CONFIGURE_WITH_GUARDRAILS",
+    "rule": "Extraction, reconciliation, calculation, alerts, and structured views may be automated; causal judgment, materiality, recommendation, risk acceptance, and authority remain explicitly assigned.",
+    "rationale": "Automation should reduce movement and consistency work without obscuring judgment or authority."
+  }
+]

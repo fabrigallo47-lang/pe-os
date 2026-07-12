@@ -22,3 +22,9 @@ ui: index ## Generate the static deal dashboard export (usage: make ui DEAL=auro
 
 app: index ## Run the live app (http://127.0.0.1:8787)
 	.venv/bin/uvicorn app.server:app --host 127.0.0.1 --port 8787
+
+agents: index ## Deploy the agent runtime (watches vault, acts under contracts)
+	$(PY) agents/runtime.py
+
+contracts: ## Show what the machine contracts load
+	$(PY) tools/contracts.py

@@ -42,6 +42,12 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-12 — Final contracts ingested; agent runtime deployed; repo tidied
+- `sources/domain-contracts-final/` (13 files, 19:49 package): 77 entities/964 fields, 46-transition state machine with predicate DSL, 877 permission policies/21 roles/24 authority actions, epistemic schemas (37 reasoning operators, 181 sufficiency rules, **114-row human-vs-automatable register**), 30 product requirements, enforce-vs-configure register. Per PR_030 these are machine contracts — loaded as data via `tools/contracts.py`, not hand-coded.
+- Engine now replays against final transitions + v1 aliases (70 rows merged). Repair precedence available from contracts.
+- **Agent runtime deployed** (`agents/runtime.py`, `make agents`): polling watcher, 3 agents (sentinel/inbox, state-resolver/events, contradiction/claims), each **bound to its register row and refusing forbidden automation classes**; append-only audit at `vault/audit/agent-log.jsonl`. Live-verified end to end: inbox drop → ARTIFACT_ARRIVED event → state re-derived; API claim → CONTRADICTION_FLAGGED event → state re-derived. No agent-to-agent calls anywhere — all via events (invariant 9).
+- README rewritten as the single map (was the "mess" complaint). Next integration candidates from the package: predicate-DSL guard evaluation, permission grid enforcement in the server per role, epistemic sufficiency rules on question resolution, gates as ENT_GATE objects.
+
 ### 2026-07-12 — Live app (UI ⇄ agents ⇄ vault)
 - `app/server.py` (FastAPI, localhost:8787, `make app`): the API is the policy boundary. Reads: deals, deal view (replay+guards+contradictions), ontology/policy, inbox. Writes (human, `written-by: human`): claims / questions / events via ontology-shaped templates — **server enforces rule 3** (derived ⇒ derivation required; verified by test). Agents: state engine (row 4), contradiction (row 5, emits CONTRADICTION_FLAGGED event), ingest via headless `claude -p` with the /ingest skill (row 3; untested end-to-end — uses user quota).
 - `app/static/index.html`: live dashboard + add-claim form with epistemic selector (derivation field appears only for `derived`), add-question, record-event dialogs, agent console, ontology & policy browser tab. Same navy/gold system.

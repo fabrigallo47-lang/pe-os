@@ -44,6 +44,7 @@ LINK_FIELDS = {
     "bears-on": "bears-on",
     "rests-on": "rests-on",
     "supersedes": "supersedes",
+    "relates-to": "relates-to",
     "decision": "decision",
     "company": "company",
     "owner": "owner",
@@ -105,6 +106,8 @@ def build() -> sqlite3.Connection:
         node_id = str(fm.get("id") or path.stem)
         title_m = re.search(r"^# (.+)$", body, re.MULTILINE)
         deal = links_of(fm.get("deal"))
+        if not deal and path.is_relative_to(VAULT / "deals"):
+            deal = [path.relative_to(VAULT / "deals").parts[0]]
         source = fm.get("source") or {}
         con.execute(
             "INSERT OR REPLACE INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?)",

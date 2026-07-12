@@ -1,4 +1,4 @@
-.PHONY: setup index report check
+.PHONY: setup index report check state
 
 PY := .venv/bin/python3
 
@@ -13,3 +13,6 @@ report: ## Rebuild index + print open questions, contradiction candidates, unbou
 	$(PY) tools/indexer.py --report
 
 check: index ## Alias: schema conformance check = the indexer parses everything cleanly
+
+state: index ## Derive deal state by replaying events (usage: make state DEAL=aurora)
+	$(PY) tools/engine.py $(DEAL) --write

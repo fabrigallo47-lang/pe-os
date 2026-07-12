@@ -42,6 +42,11 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-12 — Deal dashboard UI
+- `tools/ui.py` (`make ui DEAL=<id>`): generates `docs/ui/<deal>.html` from the live index — read-only projection, self-contained, zero external refs. Sections: lifecycle rail (S0–S13, current highlighted), KPI row, IC-gate-held banner (guard replay), nested question tree with state/critical/workstream badges, contradiction cards with epistemic types side by side ("shows its working" marker on derived), event timeline with the blocked transition marked.
+- Palette from PE-brand research: deep navy dominant (trust/"old money"), gold as restrained accent only, green=resolved/growth, muted red=contradiction/critical. Serif display (Iowan/Palatino), mono for event kinds, tabular numerals. Layout quality patterns from the prior internal project; none of its naming.
+- ui-ux rules applied: 4.5:1 contrast pairs, color never sole indicator (badges carry text), reduced-motion respected, no emoji icons, single-accent discipline.
+
 ### 2026-07-12 — Engine built; full stack validated on demo deal
 - `tools/engine.py`: derives deal state by replaying immutable events through the backbone transition register (CSV loaded from sources); implements guard T10 (no S7 entry while critical questions are open and unaccepted); `--write` updates `deal.state` per invariant 10. `make state DEAL=<id>`.
 - Demo deal `aurora` (marked `demo: true`): 4 questions (2 critical), 5 claims with two planted contradictions, 8 events including a premature IC push. Result: state derived S0→S6, **T10 held the IC gate** (2 critical questions open), both contradictions surfaced with epistemic types side by side. The wow demo is now reproducible in one command.

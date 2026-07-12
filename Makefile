@@ -16,3 +16,6 @@ check: index ## Alias: schema conformance check = the indexer parses everything 
 
 state: index ## Derive deal state by replaying events (usage: make state DEAL=aurora)
 	$(PY) tools/engine.py $(DEAL) --write
+
+ui: index ## Generate the deal dashboard (usage: make ui DEAL=aurora)
+	$(PY) tools/ui.py $(DEAL)

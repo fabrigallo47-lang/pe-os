@@ -42,6 +42,12 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-12 — Engine built; full stack validated on demo deal
+- `tools/engine.py`: derives deal state by replaying immutable events through the backbone transition register (CSV loaded from sources); implements guard T10 (no S7 entry while critical questions are open and unaccepted); `--write` updates `deal.state` per invariant 10. `make state DEAL=<id>`.
+- Demo deal `aurora` (marked `demo: true`): 4 questions (2 critical), 5 claims with two planted contradictions, 8 events including a premature IC push. Result: state derived S0→S6, **T10 held the IC gate** (2 critical questions open), both contradictions surfaced with epistemic types side by side. The wow demo is now reproducible in one command.
+- Indexer fix: deal inferred from `vault/deals/<slug>/` path when frontmatter lacks it (claims don't carry `deal`).
+- Note: shell cwd persisted into a subdir mid-session and broke relative-path commands; use absolute paths in Bash.
+
 ### 2026-07-12 — Target architecture fixed; backbone schemas integrated
 - Fabrizio's target confirmed against the documents: one central graph + small hardened agents + gated ingestion edge. Three doc-driven refinements adopted (see `docs/03-architecture.md`, now canonical): (1) center holds reasoning+state, never files; (2) **no agent-to-agent handoff** — coordination is state-mediated via immutable events + guards + dependency graph (blackboard); (3) perception is gated (AccessGrant, provenance per claim, two sanctioned human inputs).
 - Schema integration: new `event.md` + `exception.md`; `deal.stage` → derived `deal.state` (S0–S13/SX); question schema gains `critical`, `target-workstream`, and acceptance scope/conditions/expiry/review-trigger. CLAUDE.md invariants 9–10 added.

@@ -1,9 +1,9 @@
 ---
 type: company
-id: test2
-aliases: ["test2"]
+id: test1-co
+aliases: ["test1"]
 role: target
 written-by: human
 ---
 
-# test2
+# test1

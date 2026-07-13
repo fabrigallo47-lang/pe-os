@@ -1,7 +1,7 @@
 ---
 type: deal
 id: test1
-company: "[[test1]]"
+company: "[[test1-co]]"
 state: S0_INTAKE
 lead: "[[fabrizio]]"
 thesis: "test1"

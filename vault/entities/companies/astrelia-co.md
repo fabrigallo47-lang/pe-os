@@ -1,9 +1,9 @@
 ---
 type: company
-id: test1
-aliases: ["test1"]
+id: astrelia-co
+aliases: ["Astrelia"]
 role: target
 written-by: human
 ---
 
-# test1
+# Astrelia

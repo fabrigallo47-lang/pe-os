@@ -1,7 +1,7 @@
 ---
 type: deal
 id: astrelia
-company: "[[astrelia]]"
+company: "[[astrelia-co]]"
 state: S0_INTAKE
 lead: "[[fabrizio]]"
 thesis: "Profitable European space tech — €62.1m FY25A revenue (+62% YoY, 25% EBITDA margin), ESA-qualified with zero critical-anomaly deliveries across 14 programs, and the €1.3bn METEOR programme (22 satellites) anchoring the growth case."

@@ -152,6 +152,8 @@ def create_deal(d: DealIn):
     for sub in ("questions", "claims", "events", "decisions", "assumptions", "outputs", "exceptions"):
         (root / sub).mkdir(parents=True)
     cslug = re.sub(r"[^a-z0-9]+", "-", d.company.lower()).strip("-")[:30]
+    if cslug == slug:
+        cslug += "-co"  # ids are global across the graph; a deal and its company must not collide
     ent = VAULT / "entities" / "companies" / f"{cslug}.md"
     if not ent.exists():
         ent.write_text(f"---\ntype: company\nid: {cslug}\naliases: [\"{d.company}\"]\nrole: target\n"

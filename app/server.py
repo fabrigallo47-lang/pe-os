@@ -25,15 +25,32 @@ import os
 
 ROOT = Path(__file__).resolve().parent.parent
 IS_CLOUD = os.environ.get("VERCEL") == "1"
-if IS_CLOUD and not os.environ.get("PEOS_DB"):
-    os.environ["PEOS_DB"] = "/tmp/vault.db"
+HAS_STORE = bool(os.environ.get("BLOB_READ_WRITE_TOKEN"))
+if IS_CLOUD:
+    os.environ.setdefault("PEOS_DB", "/tmp/vault.db")
+    os.environ.setdefault("PEOS_VAULT", "/tmp/vault")
 sys.path.insert(0, str(ROOT / "tools"))
 from engine import load_transitions  # noqa: E402
 from ui import replay, state_label  # noqa: E402
 import indexer  # noqa: E402
+import vaultsync  # noqa: E402
 
 DB = indexer.DB
-VAULT = ROOT / "vault"
+VAULT = indexer.VAULT
+WRITABLE = (not IS_CLOUD) or HAS_STORE
+
+
+def sync():
+    """Cloud: pull the vault mirror current from Blob before reading."""
+    if IS_CLOUD and HAS_STORE:
+        VAULT.mkdir(parents=True, exist_ok=True)
+        vaultsync.sync_down(VAULT)
+
+
+def push():
+    """Cloud: push mirror changes to Blob after writing."""
+    if IS_CLOUD and HAS_STORE:
+        vaultsync.push_dirty(VAULT)
 
 app = FastAPI(title="PE OS", docs_url=None, redoc_url=None)
 
@@ -64,27 +81,32 @@ def next_id(deal: str, prefix: str, folder: str) -> str:
 
 @app.get("/")
 def home():
-    if IS_CLOUD and not DB.exists():
-        reindex()  # cold start: build the derived index into /tmp
+    if IS_CLOUD:
+        sync()
+        reindex()  # cold start: mirror + index into /tmp
     return FileResponse(ROOT / "app" / "static" / "index.html")
 
 
 @app.get("/api/mode")
 def mode():
-    return {"cloud": IS_CLOUD, "writable": not IS_CLOUD,
-            "note": ("Cloud mirror: live computed views over the bundled vault. Writes and "
-                     "autonomous agents run on the local node until the cloud datastore (stage 2) is connected."
-                     if IS_CLOUD else "local node — full capability")}
+    if IS_CLOUD and HAS_STORE:
+        note = "cloud live mode — vault in Blob storage; run the agents tick to make them work through the backlog"
+    elif IS_CLOUD:
+        note = "cloud read-only — no Blob store connected"
+    else:
+        note = "local node — full capability"
+    return {"cloud": IS_CLOUD, "writable": WRITABLE, "note": note}
 
 
 def require_writable():
-    if IS_CLOUD:
-        raise HTTPException(501, "read-only cloud mirror — this action runs on the local node (stage 2: Neon datastore)")
+    if not WRITABLE:
+        raise HTTPException(501, "read-only: no datastore connected in this environment")
 
 
 @app.get("/api/deals")
 def deals():
     """Read from the filesystem directly — the vault is canonical, never the index."""
+    sync()
     out = []
     for f in sorted((VAULT / "deals").glob("*/deal.md")):
         text = f.read_text(encoding="utf-8")
@@ -97,6 +119,7 @@ def deals():
 
 @app.get("/api/deal/{deal}")
 def deal_view(deal: str):
+    sync()
     reindex()  # cheap at this scale; guarantees the view is never stale
     c = con()
     d = rows(c, "SELECT frontmatter, title FROM nodes WHERE type='deal' AND deal=?", deal)
@@ -118,7 +141,7 @@ def deal_view(deal: str):
 
     assumptions = rows(c, "SELECT frontmatter, title FROM nodes WHERE type='assumption' AND deal=? ORDER BY id", deal)
     outputs = [{**json.loads(fm), "title": t,
-                "body": (ROOT / p).read_text(encoding="utf-8").split("---", 2)[-1].strip()}
+                "body": (VAULT / p).read_text(encoding="utf-8").split("---", 2)[-1].strip()}
                for fm, t, p in c.execute(
                    "SELECT frontmatter, title, path FROM nodes WHERE type='workstream-output' AND deal=? ORDER BY id",
                    (deal,)).fetchall()]
@@ -140,6 +163,7 @@ def deal_view(deal: str):
 
 @app.get("/api/brain")
 def brain():
+    sync()
     """The firm brain: question-type archives (librarian-maintained) + entities."""
     qts = [{"kind": "question-type", "name": f.stem, "content": f.read_text(encoding="utf-8")}
            for f in sorted((VAULT / "library" / "question-types").glob("*.md"))]
@@ -150,6 +174,7 @@ def brain():
 
 @app.get("/api/ontology")
 def ontology():
+    sync()
     files = sorted((VAULT / "ontology").glob("*.md")) + [VAULT / "policy" / "policy-table.md"]
     return [{"name": f.stem, "content": f.read_text(encoding="utf-8")} for f in files]
 
@@ -214,6 +239,7 @@ supersedes: null
 
 Deal registered via app.
 """, encoding="utf-8")
+    push()
     reindex()
     return {"id": slug}
 
@@ -264,6 +290,7 @@ extracted: {datetime.now().date()}
 {c_in.statement or c_in.subject + ': ' + c_in.value}
 """
     (VAULT / "deals" / deal / "claims" / f"{cid}.md").write_text(body, encoding="utf-8")
+    push()
     reindex()
     return {"id": cid}
 
@@ -310,6 +337,7 @@ written-by: human
 (open)
 """
     (VAULT / "deals" / deal / "questions" / f"{qid}.md").write_text(body, encoding="utf-8")
+    push()
     reindex()
     return {"id": qid}
 
@@ -338,6 +366,7 @@ supersedes: null
 {e.note or e.kind}
 """
     (VAULT / "deals" / deal / "events" / f"{eid}.md").write_text(body, encoding="utf-8")
+    push()
     reindex()
     return {"id": eid}
 
@@ -352,6 +381,7 @@ def agent_state(deal: str):
                        capture_output=True, text=True, cwd=ROOT, timeout=60)
     if r.returncode != 0:
         raise HTTPException(500, r.stderr or r.stdout)
+    push()
     reindex()
     return {"output": r.stdout}
 
@@ -419,6 +449,7 @@ def patch_assumption(deal: str, aid: str, body: AssumptionPatch):
     if "## Revision history" in text:
         text += f"- v{version} ({datetime.now().date()}): {body.value} — {body.rationale or 'revised by human'}\n"
     f.write_text(text, encoding="utf-8")
+    push()
     reindex()
     return {"id": aid, "version": version,
             "note": "staleness agent will flag dependents within seconds — watch the feed"}
@@ -451,10 +482,110 @@ Finish by printing the file id and one line per finding."""
                            capture_output=True, text=True, cwd=ROOT, timeout=480)
     except subprocess.TimeoutExpired:
         raise HTTPException(504, "workstream run timed out")
+    push()
     reindex()
     if not (odir / f"{oid}.md").exists():
         raise HTTPException(500, f"no output produced: {(r.stderr or r.stdout)[-300:]}")
     return {"id": oid, "output": r.stdout[-2000:]}
+
+
+def _gateway_json(system: str, user: str, max_tokens: int = 4000):
+    """One gateway call expected to return a JSON body (list or object)."""
+    import urllib.request
+    token = os.environ.get("VERCEL_OIDC_TOKEN") or os.environ.get("AI_GATEWAY_API_KEY")
+    if not token:
+        raise HTTPException(501, "no model access (no OIDC token / gateway key)")
+    payload = {"model": os.environ.get("PEOS_MODEL", "anthropic/claude-sonnet-4.6"),
+               "max_tokens": max_tokens,
+               "messages": [{"role": "system", "content": system},
+                            {"role": "user", "content": user}]}
+    req = urllib.request.Request("https://ai-gateway.vercel.sh/v1/chat/completions",
+                                 data=json.dumps(payload).encode(), method="POST",
+                                 headers={"Content-Type": "application/json",
+                                          "Authorization": f"Bearer {token}"})
+    with urllib.request.urlopen(req, timeout=280) as resp:
+        text = json.loads(resp.read())["choices"][0]["message"]["content"]
+    m = re.search(r"\[.*\]|\{.*\}", text, re.DOTALL)
+    if not m:
+        raise ValueError(f"model returned no JSON: {text[:200]}")
+    return json.loads(m.group(0))
+
+
+def cloud_extract(deal: str, artifact: Path) -> list[str]:
+    """Gateway extraction: artifact text → typed claim files. The model proposes
+    JSON; the SERVER writes files through the same validated template as humans."""
+    questions = "\n".join(f"- {f.stem}: {f.read_text(encoding='utf-8').split('# ',1)[1].splitlines()[0]}"
+                          for f in (VAULT / "deals" / deal / "questions").glob("*.md"))
+    existing_subjects = sorted({json.loads(fm).get("subject") for fm, in
+                                con().execute("SELECT frontmatter FROM nodes WHERE type='claim' AND deal=?", (deal,))
+                                if json.loads(fm).get("subject")})
+    data = _gateway_json(
+        "You are the PE OS extractor agent. Extract discrete factual claims from the artifact. "
+        "Return ONLY a JSON array; each item: {subject (reuse an existing subject string when the same "
+        "quantity is meant), value, epistemic (asserted|derived|observed|attested — type DOWN when unsure; "
+        "recorded-interaction statements are observed), bears_on (list of question ids, by meaning), "
+        "direction (supports|contradicts|context), locator (line/section), author, statement (one sentence), "
+        "derivation (string or null — required if derived)}.",
+        f"DEAL QUESTIONS:\n{questions}\n\nEXISTING SUBJECTS: {existing_subjects}\n\n"
+        f"ARTIFACT ({artifact.name}):\n{artifact.read_text(encoding='utf-8')[:100_000]}")
+    written = []
+    for item in data:
+        if item.get("epistemic") not in EPISTEMIC:
+            item["epistemic"] = "asserted"
+        if item["epistemic"] == "derived" and not item.get("derivation"):
+            item["epistemic"] = "asserted"
+        c = ClaimIn(subject=str(item.get("subject", "?")), value=str(item.get("value", "?")),
+                    epistemic=item["epistemic"], bears_on=[b for b in item.get("bears_on", []) if b],
+                    direction=item.get("direction", "context"), locator=str(item.get("locator", "")),
+                    author=str(item.get("author", "")), artifact=f"vault/inbox/{artifact.name}",
+                    statement=str(item.get("statement", "")), derivation=item.get("derivation"))
+        written.append(add_claim(deal, c)["id"])
+    return written
+
+
+@app.post("/api/agents/tick")
+def agents_tick():
+    """One full cycle of the agent fleet — the cloud equivalent of the local
+    runtime's loop. Sync down, work, push up. Every action lands in the audit log."""
+    require_writable()
+    sync()
+    sys.path.insert(0, str(ROOT / "agents"))
+    import runtime as rt
+    reindex()
+    report = []
+    # sentinel: announce unannounced inbox artifacts
+    sent = rt.Sentinel()
+    sent.act(list(sent.snapshot().keys()))
+    # extractor: one unextracted text artifact per tick (bounded runtime)
+    st = rt._state()
+    done = set(st.get("extracted", []))
+    for f in sorted((VAULT / "inbox").glob("*")):
+        if f.suffix.lower() in (".md", ".txt") and f.name not in done and f.stat().st_size < 150_000:
+            deal = rt.deal_for(f.name)
+            if not deal:
+                continue
+            try:
+                ids = cloud_extract(deal, f)
+                rt.audit("extractor", "HVA_COMMERCIAL_01", "claims-extracted",
+                         f"{f.name} → {len(ids)} claim(s) via gateway", ids)
+                report.append(f"extracted {f.name}: {len(ids)} claims")
+            except Exception as exc:
+                rt.audit("extractor", "HVA_COMMERCIAL_01", "error", f"{f.name}: {exc}", [])
+                report.append(f"extract error {f.name}: {exc}")
+            st = rt._state(); st.setdefault("extracted", []).append(f.name); rt._save(st)
+            break
+    # deterministic fleet
+    for cls in (rt.StateResolver, rt.Contradiction, rt.Librarian, rt.Coordinator, rt.Staleness):
+        a = cls()
+        try:
+            a.act(list(a.snapshot().keys()))
+            report.append(f"{a.id}: ran")
+        except Exception as exc:
+            rt.audit(a.id, a.activity_id, "error", str(exc), [])
+            report.append(f"{a.id}: error {exc}")
+    push()
+    reindex()
+    return {"report": report}
 
 
 class AskIn(BaseModel):
@@ -478,7 +609,7 @@ def _ask_via_gateway(question: str) -> str:
     if not token:
         raise HTTPException(501, "no model access in this environment (no OIDC token / gateway key)")
     payload = {
-        "model": os.environ.get("PEOS_MODEL", "anthropic/claude-sonnet-4.5"),
+        "model": os.environ.get("PEOS_MODEL", "anthropic/claude-sonnet-4.6"),
         "max_tokens": 1200,
         "messages": [
             {"role": "system", "content":
@@ -529,6 +660,7 @@ def agent_ask(body: AskIn):
 
 @app.get("/api/audit")
 def audit_log(n: int = 20):
+    sync()
     f = VAULT / "audit" / "agent-log.jsonl"
     if not f.exists():
         return []
@@ -548,6 +680,7 @@ async def upload(file: UploadFile):
     if len(data) > 200_000_000:
         raise HTTPException(413, "file too large")
     dest.write_bytes(data)
+    push()
     suffix = dest.suffix.lower()
     if suffix in (".m4a", ".mp3", ".wav", ".aiff", ".mp4", ".ogg", ".flac", ".webm"):
         note = "audio → transcriber will produce a transcript, then extraction runs on it"
@@ -562,6 +695,7 @@ async def upload(file: UploadFile):
 
 @app.get("/api/inbox")
 def inbox():
+    sync()
     return [f.name for f in sorted((VAULT / "inbox").glob("*")) if f.is_file() and f.name != ".gitkeep"]
 
 

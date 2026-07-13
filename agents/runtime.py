@@ -28,9 +28,9 @@ sys.path.insert(0, str(ROOT / "tools"))
 import contracts  # noqa: E402
 import indexer  # noqa: E402
 
-VAULT = ROOT / "vault"
+VAULT = indexer.VAULT
 AUDIT = VAULT / "audit" / "agent-log.jsonl"
-STATE_FILE = ROOT / ".index" / "runtime-state.json"
+STATE_FILE = VAULT / "audit" / "runtime-state.json"  # inside the vault so cloud sync persists it
 POLL_SECONDS = 3
 
 FORBIDDEN = {"human_judgment_required", "authority_only_human_action"}
@@ -103,12 +103,17 @@ class Sentinel(Agent):
                 if f.is_file() and ".16k." not in f.name and f.suffix != ".txt"}
 
     def act(self, changed):
+        st = _state()
+        announced = set(st.get("announced", []))
         for path in changed:
             name = Path(path).name
+            if name in announced:
+                continue
             deal = deal_for(name)
             if deal:
                 eid = emit_event(deal, "ARTIFACT_ARRIVED", self.id, f"Artifact landed in inbox: {name}")
                 audit(self.id, self.activity_id, "artifact-announced", f"{name} → {deal}", [eid])
+                st = _state(); st.setdefault("announced", []).append(name); _save(st)
             else:
                 audit(self.id, self.activity_id, "artifact-pending",
                       f"{name}: no deal prefix and multiple deals — rename to <deal>-… to route", [])
@@ -339,7 +344,7 @@ class Staleness(Agent):
                 "WHERE e.dst=? AND e.rel IN ('tests','tied-to')", (aid,)).fetchall()
             flagged = []
             for dep_id, dep_path in deps:
-                p = ROOT / dep_path
+                p = VAULT / dep_path
                 text = p.read_text(encoding="utf-8")
                 if _re.search(r"^stale:", text, _re.MULTILINE):
                     new_text = _re.sub(r"^stale:.*$", "stale: true", text, count=1, flags=_re.MULTILINE)

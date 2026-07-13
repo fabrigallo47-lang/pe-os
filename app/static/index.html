@@ -157,6 +157,7 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
           <h3>Agents</h3>
           <p class="hint">Each action maps to a policy-table row and is recorded as an event.</p>
           <div class="agentbtns">
+            <button class="btn" id="btn-tick" hidden>Run agents tick</button>
             <button class="btn" id="btn-state">Run state engine</button>
             <button class="btn ghost" id="btn-contra">Contradiction agent</button>
           </div>
@@ -311,6 +312,14 @@ const dlg = id => { window[id].showModal(); };
 let MODE = {writable:true, cloud:false};
 async function loadMode(){
   try { MODE = await api("/api/mode"); } catch(e) {}
+  if (MODE.cloud && MODE.writable){
+    $("btn-tick").hidden = false;
+    ["btn-state","btn-contra","btn-ingest"].forEach(id=>{ const el=$(id); if(el) el.hidden = true; });
+    const bar = document.createElement("div");
+    bar.style.cssText = "background:rgba(79,174,127,.1);border:1px solid var(--green);color:var(--green);border-radius:10px;padding:10px 16px;margin:14px 0;font-size:13px";
+    bar.textContent = "☁ " + (MODE.note || "cloud live mode");
+    document.querySelector("main#tab-deal").prepend(bar);
+  }
   if (!MODE.writable){
     const bar = document.createElement("div");
     bar.setAttribute("role","status");
@@ -456,6 +465,13 @@ async function saveAssumption(aid){
     log(`${aid} now v${r.version} — ${r.note}`, "ok"); setTimeout(refresh, 6000); }
   catch(e){ log("assumption: "+e.message, "err"); }
 }
+$("btn-tick").addEventListener("click", async ()=>{
+  $("btn-tick").disabled = true; log("→ agents tick (full fleet cycle; LLM extraction may take minutes)…");
+  try { const r = await api("/api/agents/tick", {method:"POST"});
+    log(r.report.join("\n") || "tick complete", "ok"); await refresh(); }
+  catch(e){ log("tick: "+e.message, "err"); }
+  $("btn-tick").disabled = false;
+});
 $("btn-ws").addEventListener("click", async ()=>{
   const ws = $("wssel").value;
   $("btn-ws").disabled = true; log(`→ workstream runner: ${ws} (LLM, 1-3 min)…`);

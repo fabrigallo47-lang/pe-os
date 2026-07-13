@@ -33,8 +33,9 @@ except ImportError:
 import os
 
 ROOT = Path(__file__).resolve().parent.parent
-VAULT = ROOT / "vault"
-# On serverless (Vercel) the repo is read-only; the derived index lives in /tmp.
+# On serverless the repo is read-only: the vault lives in a /tmp mirror synced
+# from Blob storage, and the derived index in /tmp too.
+VAULT = Path(os.environ["PEOS_VAULT"]) if os.environ.get("PEOS_VAULT") else ROOT / "vault"
 DB = Path(os.environ["PEOS_DB"]) if os.environ.get("PEOS_DB") else ROOT / ".index" / "vault.db"
 
 # frontmatter field -> edge relation
@@ -125,7 +126,7 @@ def build() -> sqlite3.Connection:
             (
                 node_id,
                 fm.get("type"),
-                str(path.relative_to(ROOT)),
+                str(path.relative_to(VAULT)),
                 title_m.group(1).strip() if title_m else path.stem,
                 fm.get("state"),
                 fm.get("epistemic"),

@@ -489,22 +489,45 @@ Finish by printing the file id and one line per finding."""
     return {"id": oid, "output": r.stdout[-2000:]}
 
 
-def _gateway_json(system: str, user: str, max_tokens: int = 4000):
-    """One gateway call expected to return a JSON body (list or object)."""
+def _llm_text(system: str, user: str, max_tokens: int = 4000) -> str:
+    """One model call. Prefers the Anthropic API key (claude-sonnet-4-6); falls
+    back to Vercel AI Gateway OIDC. Errors surface verbatim — no fake answers."""
     import urllib.request
-    token = os.environ.get("VERCEL_OIDC_TOKEN") or os.environ.get("AI_GATEWAY_API_KEY")
-    if not token:
-        raise HTTPException(501, "no model access (no OIDC token / gateway key)")
-    payload = {"model": os.environ.get("PEOS_MODEL", "anthropic/claude-sonnet-4.6"),
-               "max_tokens": max_tokens,
-               "messages": [{"role": "system", "content": system},
-                            {"role": "user", "content": user}]}
-    req = urllib.request.Request("https://ai-gateway.vercel.sh/v1/chat/completions",
-                                 data=json.dumps(payload).encode(), method="POST",
-                                 headers={"Content-Type": "application/json",
-                                          "Authorization": f"Bearer {token}"})
-    with urllib.request.urlopen(req, timeout=280) as resp:
-        text = json.loads(resp.read())["choices"][0]["message"]["content"]
+    anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
+    try:
+        if anthropic_key:
+            payload = {"model": os.environ.get("PEOS_MODEL", "claude-sonnet-4-6"),
+                       "max_tokens": max_tokens, "system": system,
+                       "messages": [{"role": "user", "content": user}]}
+            req = urllib.request.Request(
+                "https://api.anthropic.com/v1/messages",
+                data=json.dumps(payload).encode(), method="POST",
+                headers={"Content-Type": "application/json", "x-api-key": anthropic_key,
+                         "anthropic-version": "2023-06-01"})
+            with urllib.request.urlopen(req, timeout=280) as resp:
+                return json.loads(resp.read())["content"][0]["text"]
+        token = os.environ.get("VERCEL_OIDC_TOKEN") or os.environ.get("AI_GATEWAY_API_KEY")
+        if not token:
+            raise HTTPException(501, "no model access (no ANTHROPIC_API_KEY, no gateway token)")
+        payload = {"model": os.environ.get("PEOS_GATEWAY_MODEL", "anthropic/claude-sonnet-4.6"),
+                   "max_tokens": max_tokens,
+                   "messages": [{"role": "system", "content": system},
+                                {"role": "user", "content": user}]}
+        req = urllib.request.Request("https://ai-gateway.vercel.sh/v1/chat/completions",
+                                     data=json.dumps(payload).encode(), method="POST",
+                                     headers={"Content-Type": "application/json",
+                                              "Authorization": f"Bearer {token}"})
+        with urllib.request.urlopen(req, timeout=280) as resp:
+            return json.loads(resp.read())["choices"][0]["message"]["content"]
+    except HTTPException:
+        raise
+    except Exception as exc:
+        detail = getattr(exc, "read", lambda: b"")()
+        raise HTTPException(502, f"model error: {exc} {detail[:300] if detail else ''}")
+
+
+def _gateway_json(system: str, user: str, max_tokens: int = 4000):
+    text = _llm_text(system, user, max_tokens)
     m = re.search(r"\[.*\]|\{.*\}", text, re.DOTALL)
     if not m:
         raise ValueError(f"model returned no JSON: {text[:200]}")
@@ -603,33 +626,11 @@ def _vault_context(cap: int = 160_000) -> str:
 
 
 def _ask_via_gateway(question: str) -> str:
-    """Vercel AI Gateway (OIDC-authenticated on deployment, no key to manage)."""
-    import urllib.request
-    token = os.environ.get("VERCEL_OIDC_TOKEN") or os.environ.get("AI_GATEWAY_API_KEY")
-    if not token:
-        raise HTTPException(501, "no model access in this environment (no OIDC token / gateway key)")
-    payload = {
-        "model": os.environ.get("PEOS_MODEL", "anthropic/claude-sonnet-4.6"),
-        "max_tokens": 1200,
-        "messages": [
-            {"role": "system", "content":
-                "You are the PE OS brain interface. Answer strictly from the vault snapshot provided. "
-                "Cite file ids like [c-astrelia-002]. Weigh epistemic types (attested>observed>derived>asserted). "
-                "If the vault does not contain the answer, say so plainly."},
-            {"role": "user", "content": f"VAULT SNAPSHOT:\n{_vault_context()}\n\nQUESTION: {question}"},
-        ],
-    }
-    req = urllib.request.Request(
-        "https://ai-gateway.vercel.sh/v1/chat/completions",
-        data=json.dumps(payload).encode(), method="POST",
-        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"})
-    try:
-        with urllib.request.urlopen(req, timeout=240) as resp:
-            out = json.loads(resp.read())
-        return out["choices"][0]["message"]["content"]
-    except Exception as exc:  # surface the gateway's real error — no fake answers
-        detail = getattr(exc, "read", lambda: b"")()
-        raise HTTPException(502, f"gateway error: {exc} {detail[:300] if detail else ''}")
+    return _llm_text(
+        "You are the PE OS brain interface. Answer strictly from the vault snapshot provided. "
+        "Cite file ids like [c-astrelia-002]. Weigh epistemic types (attested>observed>derived>asserted). "
+        "If the vault does not contain the answer, say so plainly.",
+        f"VAULT SNAPSHOT:\n{_vault_context()}\n\nQUESTION: {question}", max_tokens=1200)
 
 
 @app.post("/api/agents/ask")

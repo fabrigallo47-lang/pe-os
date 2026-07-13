@@ -149,7 +149,7 @@ class Contradiction(Agent):
 
     def act(self, changed):
         indexer.build().close()
-        con = sqlite3.connect(ROOT / ".index" / "vault.db")
+        con = sqlite3.connect(indexer.DB)
         for deal in {Path(p).parts[-3] for p in changed}:
             rows = con.execute(
                 "SELECT subject, GROUP_CONCAT(id || ' [' || COALESCE(epistemic,'?') || ']=' || COALESCE(value,'?'), ' | ') "
@@ -325,7 +325,7 @@ class Staleness(Agent):
     def act(self, changed):
         import re as _re
         indexer.build().close()
-        con = sqlite3.connect(ROOT / ".index" / "vault.db")
+        con = sqlite3.connect(indexer.DB)
         st = _state()
         baseline = st.setdefault("assumption_values", {})
         for path in changed:
@@ -379,7 +379,7 @@ class Coordinator(Agent):
     def act(self, changed):
         import contracts
         indexer.build().close()
-        con = sqlite3.connect(ROOT / ".index" / "vault.db")
+        con = sqlite3.connect(indexer.DB)
         for deal in {Path(p).parts[-3] for p in changed}:
             f = VAULT / "deals" / deal / "deal.md"
             text = f.read_text(encoding="utf-8")
@@ -432,7 +432,7 @@ class Librarian(Agent):
 
     def act(self, changed):
         indexer.build().close()
-        con = sqlite3.connect(ROOT / ".index" / "vault.db")
+        con = sqlite3.connect(indexer.DB)
         rows = con.execute(
             "SELECT qt.dst, c.deal, c.id, c.epistemic, c.subject, c.value "
             "FROM edges b JOIN edges qt ON b.dst = qt.src AND qt.rel='question-type' "

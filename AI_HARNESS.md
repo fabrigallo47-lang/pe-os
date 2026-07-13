@@ -42,6 +42,12 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-13 — V1 LOOP COMPLETE (Fabrizio's 4-step definition, all proven live)
+- New objects: `assumption.md` (statement/value/basis/version; questions link via `tests`) + `workstream-output.md` (findings `tied-to` assumptions, `stale` flag). Indexer: tests/tied-to/basis/uses edges.
+- **Proposer** (LLM, auto-once-per-deal when claims exist & no assumptions): wrote a-aurora-001…005 grounded in claims, linked questions' `tests`. **Workstream runner** (`POST /api/agents/workstream/{deal}` + UI select): produced wso-aurora-commercial_market-001, tied to 3 assumptions, using 7 claims. **Staleness** (deterministic): value change → dependents flagged `stale: true` + ANALYTICAL_OBJECT_SUPERSEDED event. Proven: a-aurora-001 revised 115%→105% ⇒ q-aurora-retention + the wso output stale in 12s.
+- UI: Assumptions section (inline value edit = the staleness trigger), Workstream outputs with STALE badges, stale badges on questions, run-workstream control. PATCH `/api/deal/{deal}/assumptions/{aid}` bumps version + history.
+- Runtime now 9 agents. V1 = upload→extraction ✅ · OS proposes ✅ · workstream run ✅ · staleness cascade ✅.
+
 ### 2026-07-13 — WORKING SYSTEM DELIVERED (7 agents, full autonomous chain proven)
 - **Extractor agent** (LLM via headless claude, acceptEdits, once-per-file state, 120KB autonomous cap): artifact → typed claims bound to questions. Proven live: expert-call transcript → 3 claims (c-aurora-008/009/010), correctly `observed`, subject strings reused, transcription error handled and noted, Evidence sections updated.
 - **Coordinator agent**: rewrites deal.md § State of the deal — derived state, critical open questions ranked by fan-in, contradictions, allowed next transitions. (Next-transition hint currently reads v1-alias rows only.)

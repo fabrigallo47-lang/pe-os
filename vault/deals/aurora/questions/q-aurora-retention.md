@@ -1,5 +1,6 @@
 ---
 type: question
+stale: true
 id: q-aurora-retention
 deal: "[[aurora]]"
 parent: "[[q-aurora-growth-real]]"
@@ -9,6 +10,7 @@ resolution: null
 critical: true
 target-workstream: commercial_market
 depends-on: []
+tests: ["[[a-aurora-001]]"]
 owner: "[[fabrizio]]"
 opened: 2026-07-12
 state-changed: 2026-07-12

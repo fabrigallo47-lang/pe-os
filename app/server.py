@@ -90,8 +90,16 @@ def deal_view(deal: str):
     contras = [{"subject": s, "claims": cs} for s, cs in by_subject.items()
                if len({str(x.get("value")) for x in cs}) > 1]
 
+    assumptions = rows(c, "SELECT frontmatter, title FROM nodes WHERE type='assumption' AND deal=? ORDER BY id", deal)
+    outputs = [{**json.loads(fm), "title": t,
+                "body": (ROOT / p).read_text(encoding="utf-8").split("---", 2)[-1].strip()}
+               for fm, t, p in c.execute(
+                   "SELECT frontmatter, title, path FROM nodes WHERE type='workstream-output' AND deal=? ORDER BY id",
+                   (deal,)).fetchall()]
     return {
         "deal": {**dfm, "title": dtitle},
+        "assumptions": [{**a, "title": t} for a, t in assumptions],
+        "outputs": outputs,
         "state": state, "state_label": state_label(state),
         "trail": [{"event": ev, "from": frm, "to": (t["to"] if t else None),
                    "tid": (t["id"] if t else None), "blocked": blocked}
@@ -293,6 +301,64 @@ def agent_ingest(deal: str, body: IngestIn):
         raise HTTPException(504, "ingest agent timed out (10 min)")
     reindex()
     return {"output": r.stdout[-8000:], "ok": r.returncode == 0}
+
+
+class AssumptionPatch(BaseModel):
+    value: str
+    rationale: str = ""
+
+
+@app.patch("/api/deal/{deal}/assumptions/{aid}")
+def patch_assumption(deal: str, aid: str, body: AssumptionPatch):
+    """V1 step 4 trigger: a human revises an assumption's value. Version bumps,
+    history appends, and the staleness agent propagates to dependents."""
+    f = VAULT / "deals" / deal / "assumptions" / f"{aid}.md"
+    if not f.is_file():
+        raise HTTPException(404, "assumption not found")
+    text = f.read_text(encoding="utf-8")
+    m = re.search(r"^version:\s*(\d+)", text, re.MULTILINE)
+    version = (int(m.group(1)) if m else 1) + 1
+    text = re.sub(r"^value:.*$", f'value: "{body.value}"', text, count=1, flags=re.MULTILINE)
+    text = re.sub(r"^version:.*$", f"version: {version}", text, count=1, flags=re.MULTILINE)
+    text = re.sub(r"^state: proposed", "state: revised", text, count=1, flags=re.MULTILINE)
+    if "## Revision history" in text:
+        text += f"- v{version} ({datetime.now().date()}): {body.value} — {body.rationale or 'revised by human'}\n"
+    f.write_text(text, encoding="utf-8")
+    reindex()
+    return {"id": aid, "version": version,
+            "note": "staleness agent will flag dependents within seconds — watch the feed"}
+
+
+class WorkstreamIn(BaseModel):
+    workstream: str = "commercial_market"
+
+
+@app.post("/api/agents/workstream/{deal}")
+def agent_workstream(deal: str, body: WorkstreamIn):
+    """V1 step 3: run ONE workstream via LLM — structured findings tied to assumptions."""
+    ws = body.workstream
+    odir = VAULT / "deals" / deal / "outputs"
+    odir.mkdir(exist_ok=True)
+    n = len(list(odir.glob(f"wso-{deal}-{ws}-*.md"))) + 1
+    oid = f"wso-{deal}-{ws}-{n:03d}"
+    prompt = f"""You are the PE OS workstream-runner agent for workstream '{ws}'. Work autonomously; never ask questions.
+
+Deal: {deal}. Read vault/ontology/workstream-output.md (schema), vault/deals/{deal}/deal.md, the questions in questions/ with target-workstream: {ws} (and their tests links), the assumptions in assumptions/, and ALL claims in claims/.
+
+Produce ONE file: vault/deals/{deal}/outputs/{oid}.md following the schema exactly:
+- frontmatter: type workstream-output, id {oid}, deal, workstream {ws}, tied-to = the assumption ids your findings bear on, uses = the claim ids consumed, stale: false, supersedes: {'wso-' + deal + '-' + ws + '-' + format(n-1, '03d') if n > 1 else 'null'}, written-by: workstream-runner, produced: today.
+- body: numbered findings. Each finding: one line conclusion; Tied to: assumption id + direction (supports|challenges) + materiality (high|medium|low); Established from: claim ids; Missing evidence that would settle it. End with '## Open per this workstream'.
+Rules: conclusions only from the claims present (cite them); never resolve questions; weigh epistemic types (observed beats asserted); if claims contradict, say the finding is contested and by what.
+Finish by printing the file id and one line per finding."""
+    try:
+        r = subprocess.run(["claude", "-p", prompt, "--permission-mode", "acceptEdits"],
+                           capture_output=True, text=True, cwd=ROOT, timeout=480)
+    except subprocess.TimeoutExpired:
+        raise HTTPException(504, "workstream run timed out")
+    reindex()
+    if not (odir / f"{oid}.md").exists():
+        raise HTTPException(500, f"no output produced: {(r.stderr or r.stdout)[-300:]}")
+    return {"id": oid, "output": r.stdout[-2000:]}
 
 
 class AskIn(BaseModel):

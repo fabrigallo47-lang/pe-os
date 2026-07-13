@@ -9,6 +9,7 @@ resolution: null
 critical: false
 target-workstream: commercial_market
 depends-on: ["[[q-aurora-retention]]"]
+tests: ["[[a-aurora-003]]"]
 owner: "[[fabrizio]]"
 opened: 2026-07-12
 state-changed: 2026-07-12

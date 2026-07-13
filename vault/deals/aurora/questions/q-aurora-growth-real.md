@@ -9,6 +9,7 @@ resolution: null
 critical: true
 target-workstream: financial_qoe
 depends-on: ["[[q-aurora-retention]]"]
+tests: ["[[a-aurora-002]]"]
 owner: "[[fabrizio]]"
 opened: 2026-07-12
 state-changed: 2026-07-12

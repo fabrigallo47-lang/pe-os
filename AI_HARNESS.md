@@ -42,6 +42,13 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-13 — WORKING SYSTEM DELIVERED (7 agents, full autonomous chain proven)
+- **Extractor agent** (LLM via headless claude, acceptEdits, once-per-file state, 120KB autonomous cap): artifact → typed claims bound to questions. Proven live: expert-call transcript → 3 claims (c-aurora-008/009/010), correctly `observed`, subject strings reused, transcription error handled and noted, Evidence sections updated.
+- **Coordinator agent**: rewrites deal.md § State of the deal — derived state, critical open questions ranked by fan-in, contradictions, allowed next transitions. (Next-transition hint currently reads v1-alias rows only.)
+- **Upload connection**: `POST /api/upload` (multipart) → vault/inbox → cascade. UI "Feed the deal" panel + 12s auto-refresh (paused while typing/dialog open).
+- Full chain proven end-to-end: audio → transcript (local whisper) → sentinel event → extractor claims → contradiction ×3 → librarian brain archive → coordinator brief → live UI. Runtime = 7 agents.
+- Ops note: runtime/server restarts kill via pkill; extractor runs cost Claude quota (~90s each).
+
 ### 2026-07-13 — Brain agents + voice input; 5 agents deployed
 - **Librarian** (deterministic, HVA_COMMERCIAL_02): maintains question-type Evidence archives cross-deal from the index — the upward flow deal→brain. Verified: 3 archives populated.
 - **Ask-the-brain** (`POST /api/agents/ask` + UI box): read-only headless Claude over the vault (tools Read/Grep/Glob only). Verified live: cited claims by id, weighed epistemic types, connected retention→growth dependency.

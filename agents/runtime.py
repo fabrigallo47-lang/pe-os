@@ -255,6 +255,96 @@ Artifact: vault/inbox/{src.name}   Deal: {deal}
                 audit(self.id, self.activity_id, "error", f"{src.name}: extraction timed out", [])
 
 
+class Proposer(Agent):
+    """The OS proposes (V1 step 2): once per deal, when claims exist but no
+    assumptions do, it derives the assumption set the deal rests on — quantified,
+    based on the extracted claims — and links the questions that test each one.
+    Runs exactly once autonomously; after that, proposing is human-triggered."""
+    id = "proposer"
+    activity_id = "HVA_COMMERCIAL_01"
+    watches = "deals/*/claims (until assumptions exist)"
+
+    def snapshot(self):
+        return {str(f): f.stat().st_mtime for f in (VAULT / "deals").glob("*/claims/*.md")}
+
+    def act(self, changed):
+        st = _state()
+        for deal in {Path(p).parts[-3] for p in changed}:
+            adir = VAULT / "deals" / deal / "assumptions"
+            if deal in st.get("proposed", []) or (adir.exists() and any(adir.glob("*.md"))):
+                continue
+            adir.mkdir(exist_ok=True)
+            audit(self.id, self.activity_id, "proposal-started", deal, [])
+            prompt = f"""You are the PE OS proposer agent. Work autonomously; never ask questions.
+
+Deal: {deal}. Read vault/deals/{deal}/deal.md (the thesis), every question in questions/, every claim in claims/, and the schemas vault/ontology/assumption.md and vault/ontology/question.md.
+
+1. Derive the 3-5 ASSUMPTIONS the deal proceeds on: each a quantified proposition that must be true for the thesis to hold, grounded in the extracted claims. Write one file each: vault/deals/{deal}/assumptions/a-{deal}-NNN.md following the schema exactly (statement, value quantified, basis = the claim ids it currently rests on, state: proposed, version: 1, proposed-by: proposer). Body: why the deal rests on it + revision history line v1.
+2. For each existing question, add a `tests:` frontmatter field listing the assumption id(s) it tests (only where it genuinely tests one). Do not change any other field, never change state.
+3. If a load-bearing assumption has NO question testing it, create the missing question file per the question schema (state: open, written-by: proposer, critical only if the thesis fails without it, tests: the assumption).
+4. Report one line per file written."""
+            try:
+                r = subprocess.run(["claude", "-p", prompt, "--permission-mode", "acceptEdits"],
+                                   capture_output=True, text=True, cwd=ROOT, timeout=480)
+                new = sorted(f.stem for f in adir.glob("*.md"))
+                st = _state(); st.setdefault("proposed", []).append(deal); _save(st)
+                audit(self.id, self.activity_id, "assumptions-proposed" if new else "proposal-empty",
+                      f"{deal}: {', '.join(new) if new else 'rc=' + str(r.returncode)}", new)
+            except Exception as exc:
+                audit(self.id, self.activity_id, "error", f"{deal}: {exc}", [])
+
+
+class Staleness(Agent):
+    """V1 step 4, deterministic: when an assumption's value changes, every object
+    that depends on it (questions that test it, outputs tied to it) is flagged
+    stale and an ANALYTICAL_OBJECT_SUPERSEDED event is emitted. It never repairs —
+    re-running the work is what clears the flag."""
+    id = "staleness"
+    activity_id = "HVA_COMMERCIAL_02"
+    watches = "deals/*/assumptions"
+
+    def snapshot(self):
+        return {str(f): f.stat().st_mtime for f in (VAULT / "deals").glob("*/assumptions/*.md")}
+
+    def act(self, changed):
+        import re as _re
+        indexer.build().close()
+        con = sqlite3.connect(ROOT / ".index" / "vault.db")
+        st = _state()
+        baseline = st.setdefault("assumption_values", {})
+        for path in changed:
+            f = Path(path)
+            m = _re.search(r"^value:\s*\"?(.+?)\"?\s*$", f.read_text(encoding="utf-8"), _re.MULTILINE)
+            if not m:
+                continue
+            aid, value = f.stem, m.group(1)
+            old = baseline.get(aid)
+            baseline[aid] = value
+            if old is None or old == value:
+                continue  # first sight = baseline; no change = nothing to do
+            deal = f.parts[f.parts.index("deals") + 1]
+            deps = con.execute(
+                "SELECT n.id, n.path FROM edges e JOIN nodes n ON n.id=e.src "
+                "WHERE e.dst=? AND e.rel IN ('tests','tied-to')", (aid,)).fetchall()
+            flagged = []
+            for dep_id, dep_path in deps:
+                p = ROOT / dep_path
+                text = p.read_text(encoding="utf-8")
+                if _re.search(r"^stale:", text, _re.MULTILINE):
+                    new_text = _re.sub(r"^stale:.*$", "stale: true", text, count=1, flags=_re.MULTILINE)
+                else:
+                    new_text = _re.sub(r"^(type:.*)$", r"\1\nstale: true", text, count=1, flags=_re.MULTILINE)
+                if new_text != text:
+                    p.write_text(new_text, encoding="utf-8")
+                    flagged.append(dep_id)
+            if flagged:
+                eid = emit_event(deal, "ANALYTICAL_OBJECT_SUPERSEDED", self.id,
+                                 f"Assumption {aid} changed ('{old}' → '{value}'); stale: {', '.join(flagged)}")
+                audit(self.id, self.activity_id, "staleness-propagated",
+                      f"{aid}: '{old}' → '{value}' ⇒ {len(flagged)} dependent(s) stale", flagged + [eid])
+        _save(st)
+
+
 class Coordinator(Agent):
     """Deterministic desk brief: keeps deal.md § 'State of the deal' current —
     derived state, held gates, open critical questions ranked by structural
@@ -363,7 +453,7 @@ def _save(st: dict):
 
 def main():
     agents = [Sentinel(), StateResolver(), Contradiction(), Librarian(), Transcriber(),
-              Extractor(), Coordinator()]
+              Extractor(), Coordinator(), Proposer(), Staleness()]
     print("PE OS agent runtime — deployed agents:")
     for a in agents:
         print(f"  · {a.id:<15} watches {a.watches:<24} contract {a.activity_id} "

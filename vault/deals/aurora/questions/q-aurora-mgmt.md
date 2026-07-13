@@ -9,6 +9,7 @@ resolution: null
 critical: false
 target-workstream: management_sponsor
 depends-on: []
+tests: ["[[a-aurora-005]]"]
 owner: "[[fabrizio]]"
 opened: 2026-07-12
 state-changed: 2026-07-12

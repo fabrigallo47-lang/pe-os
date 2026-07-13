@@ -134,6 +134,10 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
       <div>
         <h2 class="sec">Question structure <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('qdlg')">+ Add question</button></h2>
         <div id="qtree"></div>
+        <h2 class="sec">Assumptions <span style="font-size:12px;color:var(--muted)">the deal proceeds on — edit a value and watch staleness propagate</span></h2>
+        <div id="assumps"></div>
+        <h2 class="sec">Workstream outputs</h2>
+        <div id="outputs"></div>
         <h2 class="sec">Contradictions <span style="font-size:12px;color:var(--muted)">unresolved</span></h2>
         <div id="contras"></div>
         <h2 class="sec">Evidence <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('cdlg')">+ Add claim</button></h2>
@@ -152,6 +156,11 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
           <div class="agentbtns">
             <button class="btn" id="btn-state">Run state engine</button>
             <button class="btn ghost" id="btn-contra">Contradiction agent</button>
+          </div>
+          <label for="wssel">Run one workstream (LLM — findings tied to assumptions)</label>
+          <div style="display:flex;gap:8px">
+            <select id="wssel"><option>commercial_market</option><option>financial_qoe</option><option>operational</option><option>management_sponsor</option><option>legal</option><option>financing</option></select>
+            <button class="btn ghost" id="btn-ws" style="flex:0 0 auto">Run</button>
           </div>
           <label for="inboxsel">Ingest from inbox (LLM, policy row 3)</label>
           <div style="display:flex;gap:8px">
@@ -307,13 +316,29 @@ async function refresh(){
   $("guard").innerHTML = VIEW.held.length ? `<section class="guard" role="alert"><h2>Investment-committee gate held</h2><p>Transition <strong>${esc(VIEW.held[0].tid)} → ${esc(lbl(VIEW.held[0].to))}</strong> was requested and refused: <strong>${VIEW.held[0].critical_open} critical question(s)</strong> remain open without risk acceptance.</p></section>` : "";
   // question tree
   const kids = {}; qs.forEach(q=>{ const p=(q.parent||"").replace(/[\[\]]/g,""); if(p) (kids[p]=kids[p]||[]).push(q); });
-  const qcard = (q, child) => `<div class="qcard ${child?"child":""}"><div class="qrow"><h3>${esc(q.title)}</h3><div class="qmeta"><span class="badge b-${esc(q.state)}">${esc(q.state.replace("-"," "))}</span>${q.critical?'<span class="badge b-crit">critical</span>':""}${q["target-workstream"]?`<span class="ws">${esc(q["target-workstream"])}</span>`:""}</div></div>${(kids[q.id]||[]).map(c=>qcard(c,true)).join("")}</div>`;
+  const qcard = (q, child) => `<div class="qcard ${child?"child":""}" style="${q.stale?"border-color:var(--red)":""}"><div class="qrow"><h3>${esc(q.title)}</h3><div class="qmeta">${q.stale?'<span class="badge b-crit">STALE</span>':""}<span class="badge b-${esc(q.state)}">${esc(q.state.replace("-"," "))}</span>${q.critical?'<span class="badge b-crit">critical</span>':""}${q["target-workstream"]?`<span class="ws">${esc(q["target-workstream"])}</span>`:""}</div></div>${(kids[q.id]||[]).map(c=>qcard(c,true)).join("")}</div>`;
   $("qtree").innerHTML = qs.filter(q=>!q.parent).map(q=>qcard(q,false)).join("") || '<p class="thesis">No questions yet — add the thesis decomposition.</p>';
   // contradictions
   const ecard = c => `<div class="ecard"><span class="badge b-${esc(c.epistemic)}">${esc(c.epistemic)}</span>${c.derivation?'<span class="works">shows its working</span>':""}<div class="eval">${esc(c.value)}</div><div class="esrc">${esc(c.source?.locator||"")} · ${esc(c.source?.author||"")} · ${esc(c.source?.date||"")}</div></div>`;
   $("contras").innerHTML = VIEW.contradictions.map(x=>`<div class="contra"><div class="chead"><span class="cmark">≠</span><h3>${esc(x.subject)}</h3><span class="cnote">these do not reconcile</span></div><div class="egrid">${x.claims.map(ecard).join("")}</div></div>`).join("") || '<p class="thesis">None detected.</p>';
   // claims list
   $("claims").innerHTML = `<div class="egrid">${VIEW.claims.map(ecard).join("")}</div>`;
+  // assumptions (editable value = staleness trigger)
+  $("assumps").innerHTML = (VIEW.assumptions||[]).map(a=>`
+    <div class="qcard"><div class="qrow"><h3>${esc(a.statement||a.title)}</h3>
+      <div class="qmeta"><span class="badge b-${a.state==="revised"?"accepted-unresolved":"reducing"}">${esc(a.state||"proposed")} v${esc(a.version||1)}</span></div></div>
+      <div style="display:flex;gap:8px;margin-top:10px;align-items:center">
+        <input value="${esc(a.value||"")}" id="av-${esc(a.id)}" aria-label="Assumption value" style="font-family:var(--mono);font-size:13px">
+        <button class="btn ghost" style="flex:0 0 auto;min-height:38px;padding:6px 14px" onclick="saveAssumption('${esc(a.id)}')">Save</button>
+      </div>
+      <div class="esrc" style="margin-top:6px">rests on: ${esc((a.basis||[]).map(b=>String(b).replace(/[\[\]]/g,"")).join(", ")||"—")}</div>
+    </div>`).join("") || '<p class="thesis">None yet — the proposer runs automatically once claims exist.</p>';
+  // workstream outputs
+  $("outputs").innerHTML = (VIEW.outputs||[]).map(o=>`
+    <div class="qcard" style="${o.stale?"border-color:var(--red)":""}"><div class="qrow"><h3>${esc(o.workstream)} — run</h3>
+      <div class="qmeta">${o.stale?'<span class="badge b-crit">STALE — assumption changed</span>':'<span class="badge b-resolved">current</span>'}<span class="ws">${esc(o.id)}</span></div></div>
+      <pre style="white-space:pre-wrap;font-size:12px;color:var(--muted);margin-top:8px;font-family:var(--sans)">${esc(o.body||"")}</pre>
+    </div>`).join("") || '<p class="thesis">None yet — run one from the Agents panel.</p>';
   // timeline
   $("tline").innerHTML = VIEW.trail.map(t=>`<li class="${t.blocked?"blocked":""}"><span class="tdot"></span><div><div class="tkind">${esc(t.event.kind)}</div><div class="twhen">${esc(String(t.event.at||"").replace("T"," · "))} · ${esc(t.event.actor||"")}</div><span class="tmove ${t.blocked?"thold":t.to?"":"tnull"}">${t.blocked?`held at guard ${esc(t.tid)}`:t.to?`${esc(lbl(t.from))} → ${esc(lbl(t.to))}`:"recorded"}</span></div></li>`).join("");
   // form data
@@ -391,6 +416,21 @@ $("btn-contra").addEventListener("click", async ()=>{
     await refresh(); }
   catch(e){ log("contradiction: "+e.message, "err"); }
   $("btn-contra").disabled = false;
+});
+async function saveAssumption(aid){
+  const v = $("av-"+aid).value.trim(); if(!v) return;
+  log(`→ revising ${aid} → "${v}"…`);
+  try { const r = await api(`/api/deal/${DEAL}/assumptions/${aid}`, {method:"PATCH", headers:{"Content-Type":"application/json"}, body:JSON.stringify({value:v})});
+    log(`${aid} now v${r.version} — ${r.note}`, "ok"); setTimeout(refresh, 6000); }
+  catch(e){ log("assumption: "+e.message, "err"); }
+}
+$("btn-ws").addEventListener("click", async ()=>{
+  const ws = $("wssel").value;
+  $("btn-ws").disabled = true; log(`→ workstream runner: ${ws} (LLM, 1-3 min)…`);
+  try { const r = await api(`/api/agents/workstream/${DEAL}`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({workstream:ws})});
+    log(r.output.trim(), "ok"); await refresh(); }
+  catch(e){ log("workstream: "+e.message, "err"); }
+  $("btn-ws").disabled = false;
 });
 $("btn-ingest").addEventListener("click", async ()=>{
   const f = $("inboxsel").value; if(!f) return log("inbox is empty — drop a file into vault/inbox/", "err");

@@ -463,11 +463,52 @@ class WorkstreamIn(BaseModel):
 def agent_workstream(deal: str, body: WorkstreamIn):
     require_writable()
     """V1 step 3: run ONE workstream via LLM — structured findings tied to assumptions."""
+    import shutil
+    sync()
     ws = body.workstream
     odir = VAULT / "deals" / deal / "outputs"
-    odir.mkdir(exist_ok=True)
+    odir.mkdir(parents=True, exist_ok=True)
     n = len(list(odir.glob(f"wso-{deal}-{ws}-*.md"))) + 1
     oid = f"wso-{deal}-{ws}-{n:03d}"
+    if not shutil.which("claude"):
+        # cloud path: model proposes JSON findings; the server writes the typed output
+        droot = VAULT / "deals" / deal
+        ctx = "\n\n".join(f"### {f.relative_to(droot)}\n{f.read_text(encoding='utf-8')}"
+                          for pat in ("questions/*.md", "assumptions/*.md", "claims/*.md")
+                          for f in sorted(droot.glob(pat)))[:130_000]
+        data = _gateway_json(
+            f"You are the PE OS workstream-runner for workstream '{ws}'. From the deal context, produce findings "
+            "grounded ONLY in the claims present (cite claim ids); weigh epistemic types (observed beats asserted); "
+            "if claims contradict, mark the finding contested. Return ONLY JSON: "
+            "{\"findings\":[{\"finding\":str,\"tied_to\":[assumption ids],\"direction\":\"supports|challenges\","
+            "\"materiality\":\"high|medium|low\",\"established_from\":[claim ids],\"missing\":str}],\"open\":str}",
+            f"DEAL CONTEXT ({deal}):\n{ctx}", max_tokens=6000)
+        tied = sorted({a for f_ in data.get("findings", []) for a in f_.get("tied_to", [])})
+        uses = sorted({c for f_ in data.get("findings", []) for c in f_.get("established_from", [])})
+        lines = [f"# {ws} — findings\n"]
+        for i, f_ in enumerate(data.get("findings", []), 1):
+            lines += [f"## F{i} — {f_.get('finding','')}",
+                      f"- Tied to: {' '.join(f'[[{a}]]' for a in f_.get('tied_to', []))} · direction: {f_.get('direction','')} · materiality: {f_.get('materiality','')}",
+                      f"- Established from: {', '.join(f'[[{c}]]' for c in f_.get('established_from', []))}",
+                      f"- Missing evidence that would settle it: {f_.get('missing','')}", ""]
+        lines += ["## Open per this workstream", str(data.get("open", ""))]
+        (odir / f"{oid}.md").write_text(f"""---
+type: workstream-output
+id: {oid}
+deal: "[[{deal}]]"
+workstream: {ws}
+tied-to: [{', '.join(f'"[[{a}]]"' for a in tied)}]
+uses: [{', '.join(f'"[[{c}]]"' for c in uses)}]
+stale: false
+supersedes: {f'"[[wso-{deal}-{ws}-{n-1:03d}]]"' if n > 1 else 'null'}
+written-by: workstream-runner
+produced: {datetime.now().date()}
+---
+
+""" + "\n".join(lines) + "\n", encoding="utf-8")
+        push()
+        reindex()
+        return {"id": oid, "output": f"{oid}: {len(data.get('findings', []))} finding(s) written"}
     prompt = f"""You are the PE OS workstream-runner agent for workstream '{ws}'. Work autonomously; never ask questions.
 
 Deal: {deal}. Read vault/ontology/workstream-output.md (schema), vault/deals/{deal}/deal.md, the questions in questions/ with target-workstream: {ws} (and their tests links), the assumptions in assumptions/, and ALL claims in claims/.
@@ -690,8 +731,8 @@ async def upload(file: UploadFile):
     elif suffix in (".md", ".txt") and len(data) <= 120_000:
         note = "text → extractor will pull typed claims automatically (1-3 min)"
     else:
-        note = ("stored and announced, but autonomous extraction only handles .md/.txt ≤120KB — "
-                "use the Ingest button for this file, or convert it to text")
+        note = ("stored, but automatic extraction only handles .md/.txt ≤120KB — "
+                "export/convert this file to markdown or plain text and upload that")
     return {"stored": f"vault/inbox/{name}", "size": len(data), "note": note,
             "routing": "tip: name files <deal>-… when multiple deals exist"}
 

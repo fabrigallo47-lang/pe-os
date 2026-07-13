@@ -12,4 +12,5 @@ written-by: human
 Contracted backlog (`attested`) beats pipeline conversion assumptions (`asserted`). Observed cohort behavior beats management's stated retention. A model-derived growth rate is only as strong as what its inputs rest on — check the `rests-on` chain before treating a `derived` growth number as evidence.
 
 ## Evidence archive
-(empty — populates from real deals only)
+(maintained by librarian — cross-deal evidence, by what it bears on)
+(empty)

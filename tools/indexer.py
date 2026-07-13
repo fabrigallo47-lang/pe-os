@@ -84,9 +84,13 @@ def links_of(value) -> list[str]:
 
 
 def build() -> sqlite3.Connection:
+    """Atomic rebuild: write to a temp DB, then os.replace — concurrent readers
+    (server + agents) never see a half-built index."""
+    import os
     DB.parent.mkdir(exist_ok=True)
-    DB.unlink(missing_ok=True)
-    con = sqlite3.connect(DB)
+    tmp = DB.with_suffix(f".tmp{os.getpid()}")
+    tmp.unlink(missing_ok=True)
+    con = sqlite3.connect(tmp)
     con.executescript(
         """
         CREATE TABLE nodes (id TEXT PRIMARY KEY, type TEXT, path TEXT, title TEXT,
@@ -134,9 +138,12 @@ def build() -> sqlite3.Connection:
     con.commit()
     n_nodes = con.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]
     n_edges = con.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
+    con.close()
+    import os
+    os.replace(tmp, DB)
     print(f"indexed {n_nodes} nodes, {n_edges} edges -> {DB.relative_to(ROOT)}"
           + (f" ({skipped} files without frontmatter skipped)" if skipped else ""))
-    return con
+    return sqlite3.connect(DB)
 
 
 def report(con: sqlite3.Connection) -> None:

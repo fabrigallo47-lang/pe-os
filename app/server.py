@@ -64,14 +64,20 @@ def home():
 
 @app.get("/api/deals")
 def deals():
-    c = con()
-    out = [{"id": fm.get("id"), "title": t, "state": fm.get("state"), "demo": fm.get("demo", False)}
-           for fm, t in rows(c, "SELECT frontmatter, title FROM nodes WHERE type='deal'")]
+    """Read from the filesystem directly — the vault is canonical, never the index."""
+    out = []
+    for f in sorted((VAULT / "deals").glob("*/deal.md")):
+        text = f.read_text(encoding="utf-8")
+        state = re.search(r"^state:\s*(\S+)", text, re.MULTILINE)
+        title = re.search(r"^# (.+)$", text, re.MULTILINE)
+        out.append({"id": f.parent.name, "title": title.group(1) if title else f.parent.name,
+                    "state": state.group(1) if state else "?"})
     return out
 
 
 @app.get("/api/deal/{deal}")
 def deal_view(deal: str):
+    reindex()  # cheap at this scale; guarantees the view is never stale
     c = con()
     d = rows(c, "SELECT frontmatter, title FROM nodes WHERE type='deal' AND deal=?", deal)
     if not d:
@@ -469,8 +475,16 @@ async def upload(file: UploadFile):
     if len(data) > 200_000_000:
         raise HTTPException(413, "file too large")
     dest.write_bytes(data)
-    return {"stored": f"vault/inbox/{name}", "size": len(data),
-            "note": "agents will pick it up within seconds — watch the live feed"}
+    suffix = dest.suffix.lower()
+    if suffix in (".m4a", ".mp3", ".wav", ".aiff", ".mp4", ".ogg", ".flac", ".webm"):
+        note = "audio → transcriber will produce a transcript, then extraction runs on it"
+    elif suffix in (".md", ".txt") and len(data) <= 120_000:
+        note = "text → extractor will pull typed claims automatically (1-3 min)"
+    else:
+        note = ("stored and announced, but autonomous extraction only handles .md/.txt ≤120KB — "
+                "use the Ingest button for this file, or convert it to text")
+    return {"stored": f"vault/inbox/{name}", "size": len(data), "note": note,
+            "routing": "tip: name files <deal>-… when multiple deals exist"}
 
 
 @app.get("/api/inbox")

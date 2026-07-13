@@ -70,6 +70,16 @@ def deals() -> list[str]:
     return [d.name for d in (VAULT / "deals").iterdir() if d.is_dir()]
 
 
+def deal_for(filename: str) -> str | None:
+    """Route an inbox artifact to a deal: filename prefix wins (astrelia-x.pdf →
+    astrelia); a single existing deal is the fallback; otherwise unroutable."""
+    ds = deals()
+    for d in sorted(ds, key=len, reverse=True):
+        if filename.lower().startswith(d.lower()):
+            return d
+    return ds[0] if len(ds) == 1 else None
+
+
 def emit_event(deal: str, kind: str, actor: str, note: str) -> str:
     d = VAULT / "deals" / deal / "events"
     d.mkdir(parents=True, exist_ok=True)
@@ -93,14 +103,15 @@ class Sentinel(Agent):
                 if f.is_file() and ".16k." not in f.name and f.suffix != ".txt"}
 
     def act(self, changed):
-        ds = deals()
         for path in changed:
             name = Path(path).name
-            if len(ds) == 1:
-                eid = emit_event(ds[0], "ARTIFACT_ARRIVED", self.id, f"Artifact landed in inbox: {name}")
-                audit(self.id, self.activity_id, "artifact-announced", name, [eid])
+            deal = deal_for(name)
+            if deal:
+                eid = emit_event(deal, "ARTIFACT_ARRIVED", self.id, f"Artifact landed in inbox: {name}")
+                audit(self.id, self.activity_id, "artifact-announced", f"{name} → {deal}", [eid])
             else:
-                audit(self.id, self.activity_id, "artifact-pending", f"{name} — multiple deals, needs routing", [])
+                audit(self.id, self.activity_id, "artifact-pending",
+                      f"{name}: no deal prefix and multiple deals — rename to <deal>-… to route", [])
 
 
 class StateResolver(Agent):
@@ -212,18 +223,18 @@ class Extractor(Agent):
     def act(self, changed):
         st = _state()
         done = set(st.get("extracted", []))
-        ds = deals()
         for path in changed:
             src = Path(path)
             if src.name in done:
                 continue
             if src.stat().st_size > self.MAX_BYTES:
-                audit(self.id, self.activity_id, "skipped", f"{src.name} too large for autonomous run", [])
+                audit(self.id, self.activity_id, "skipped", f"{src.name} too large for autonomous run — use the Ingest button", [])
                 continue
-            if len(ds) != 1:
-                audit(self.id, self.activity_id, "pending", f"{src.name}: multiple deals, needs routing", [])
+            deal = deal_for(src.name)
+            if deal is None:
+                audit(self.id, self.activity_id, "pending",
+                      f"{src.name}: no deal prefix and multiple deals — rename to <deal>-… to route", [])
                 continue
-            deal = ds[0]
             before = {f.name for f in (VAULT / "deals" / deal / "claims").glob("*.md")}
             audit(self.id, self.activity_id, "extraction-started", src.name, [])
             prompt = f"""You are the PE OS extractor agent. Work autonomously; never ask questions.

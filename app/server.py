@@ -130,6 +130,65 @@ def ontology():
 
 # ---------------------------------------------------------------- writes (human context — written-by: human)
 
+class DealIn(BaseModel):
+    name: str
+    company: str
+    thesis: str
+
+
+@app.post("/api/deals")
+def create_deal(d: DealIn):
+    """Deal open — real human input, the first of the two ritual inputs."""
+    slug = re.sub(r"[^a-z0-9]+", "-", d.name.lower()).strip("-")[:30]
+    root = VAULT / "deals" / slug
+    if root.exists():
+        raise HTTPException(409, f"deal '{slug}' already exists")
+    for sub in ("questions", "claims", "events", "decisions", "assumptions", "outputs", "exceptions"):
+        (root / sub).mkdir(parents=True)
+    cslug = re.sub(r"[^a-z0-9]+", "-", d.company.lower()).strip("-")[:30]
+    ent = VAULT / "entities" / "companies" / f"{cslug}.md"
+    if not ent.exists():
+        ent.write_text(f"---\ntype: company\nid: {cslug}\naliases: [\"{d.company}\"]\nrole: target\n"
+                       f"written-by: human\n---\n\n# {d.company}\n", encoding="utf-8")
+    (root / "deal.md").write_text(f"""---
+type: deal
+id: {slug}
+company: "[[{cslug}]]"
+state: S0_INTAKE
+lead: "[[fabrizio]]"
+thesis: "{d.thesis}"
+opened: {datetime.now().date()}
+written-by: human
+---
+
+# {d.name}
+
+## Thesis
+{d.thesis}
+
+## State of the deal   <!-- agent-maintained -->
+
+## Questions
+
+## Decisions
+""", encoding="utf-8")
+    (root / "events" / f"ev-{slug}-001.md").write_text(f"""---
+type: event
+id: ev-{slug}-001
+deal: "[[{slug}]]"
+kind: DEAL_REGISTERED
+actor: human
+at: {datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}
+relates-to: []
+supersedes: null
+---
+
+Deal registered via app.
+""", encoding="utf-8")
+    reindex()
+    return {"id": slug}
+
+
 class ClaimIn(BaseModel):
     subject: str
     value: str

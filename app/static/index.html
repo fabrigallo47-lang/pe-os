@@ -115,7 +115,10 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
       <button class="tab" role="tab" aria-selected="false" data-tab="brain">Brain</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="ontology">Ontology &amp; Policy</button>
     </nav>
-    <select id="dealsel" aria-label="Select deal" style="width:auto;min-width:160px"></select>
+    <div style="display:flex;gap:8px;align-items:center">
+      <select id="dealsel" aria-label="Select deal" style="width:auto;min-width:140px"></select>
+      <button class="btn ghost" style="min-height:38px;padding:6px 14px" onclick="dlg('ddlg')">+ New deal</button>
+    </div>
   </div>
 
   <main id="tab-deal">
@@ -211,6 +214,18 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
     <span>Confidential — not for distribution</span>
   </footer>
 </div>
+
+<dialog id="ddlg">
+  <h3>Open a deal</h3>
+  <p class="hint">Real inputs only: the name, the company, and your thesis in one sentence. Then feed it real documents — everything else the agents derive, with provenance.</p>
+  <form id="dform">
+    <label>Deal name</label><input name="name" required>
+    <label>Company</label><input name="company" required>
+    <label>Thesis — what must be true for this to work</label><textarea name="thesis" rows="2" required></textarea>
+    <p class="ferr" id="derr"></p>
+    <div class="dlgbtns"><button type="button" class="btn ghost" onclick="ddlg.close()">Cancel</button><button class="btn">Open deal</button></div>
+  </form>
+</dialog>
 
 <dialog id="cdlg">
   <h3>Add claim (human evidence)</h3>
@@ -462,6 +477,15 @@ const wire = (formId, errId, dlgEl, build, post) => {
     catch(e){ $(errId).textContent = e.message; }
   });
 };
+$("dform").addEventListener("submit", async ev=>{
+  ev.preventDefault(); $("derr").textContent="";
+  const fd = new FormData(ev.target);
+  try { const r = await api("/api/deals", {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({name:fd.get("name"), company:fd.get("company"), thesis:fd.get("thesis")})});
+    ddlg.close(); ev.target.reset(); log(`deal opened: ${r.id} — now feed it a real document`, "ok");
+    await loadDeals(); $("dealsel").value = r.id; DEAL = r.id; await refresh(); }
+  catch(e){ $("derr").textContent = e.message; }
+});
 wire("cform","cerr","cdlg", fd=>({subject:fd.get("subject"),value:fd.get("value"),epistemic:fd.get("epistemic"),bears_on:fd.get("bears_on")?[fd.get("bears_on")]:[],direction:fd.get("direction"),locator:fd.get("locator"),author:fd.get("author"),source_date:fd.get("source_date"),statement:fd.get("statement"),derivation:fd.get("derivation")||null}), ()=>`/api/deal/${DEAL}/claims`);
 wire("qform","qerr","qdlg", fd=>({title:fd.get("title"),bearing:fd.get("bearing"),critical:!!fd.get("critical"),target_workstream:fd.get("target_workstream"),parent:fd.get("parent")||null}), ()=>`/api/deal/${DEAL}/questions`);
 wire("eform","eerr","edlg", fd=>({kind:fd.get("kind"),actor:"human",note:fd.get("note")}), ()=>`/api/deal/${DEAL}/events`);

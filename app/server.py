@@ -675,8 +675,10 @@ async def upload(file: UploadFile):
     """Input connection: anything uploaded lands in vault/inbox — documents,
     transcripts, audio. The deployed agents take it from there (sentinel →
     transcriber/extractor → contradiction → librarian → coordinator)."""
+    sync()  # cold instance: materialize the mirror before writing into it
     name = Path(file.filename or "upload").name  # strip any path component
     dest = VAULT / "inbox" / name
+    dest.parent.mkdir(parents=True, exist_ok=True)
     data = await file.read()
     if len(data) > 200_000_000:
         raise HTTPException(413, "file too large")

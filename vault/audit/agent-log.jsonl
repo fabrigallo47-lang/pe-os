@@ -11,3 +11,10 @@
 {"ts": "2026-07-13T00:08:03", "agent": "transcriber", "contract_activity": "HVA_COMMERCIAL_01", "action": "transcribed", "detail": "expert-call-aurora.aiff \u2192 expert-call-aurora.transcript.md (300 chars, local whisper)", "wrote": ["expert-call-aurora.transcript.md"]}
 {"ts": "2026-07-13T00:08:06", "agent": "sentinel", "contract_activity": "HVA_COMMERCIAL_01", "action": "artifact-announced", "detail": "expert-call-aurora.transcript.md", "wrote": ["ev-aurora-014"]}
 {"ts": "2026-07-13T00:08:06", "agent": "state-resolver", "contract_activity": "HVA_COMMERCIAL_02", "action": "state-derived", "detail": "aurora: S6_UNDERWRITING_VALUATION", "wrote": ["aurora/deal.md"]}
+{"ts": "2026-07-13T17:28:20", "agent": "runtime", "contract_activity": "-", "action": "deployed", "detail": "7 agents online", "wrote": []}
+{"ts": "2026-07-13T17:28:35", "agent": "sentinel", "contract_activity": "HVA_COMMERCIAL_01", "action": "artifact-announced", "detail": "expert-call-aurora.transcript.md", "wrote": ["ev-aurora-015"]}
+{"ts": "2026-07-13T17:28:35", "agent": "state-resolver", "contract_activity": "HVA_COMMERCIAL_02", "action": "state-derived", "detail": "aurora: S6_UNDERWRITING_VALUATION", "wrote": ["aurora/deal.md"]}
+{"ts": "2026-07-13T17:28:35", "agent": "extractor", "contract_activity": "HVA_COMMERCIAL_01", "action": "extraction-started", "detail": "expert-call-aurora.transcript.md", "wrote": []}
+{"ts": "2026-07-13T17:30:01", "agent": "extractor", "contract_activity": "HVA_COMMERCIAL_01", "action": "claims-extracted", "detail": "expert-call-aurora.transcript.md \u2192 3 claim(s): c-aurora-008, c-aurora-009, c-aurora-010", "wrote": ["c-aurora-008.md", "c-aurora-009.md", "c-aurora-010.md"]}
+{"ts": "2026-07-13T17:30:01", "agent": "coordinator", "contract_activity": "HVA_COMMERCIAL_02", "action": "brief-updated", "detail": "aurora: state S6_UNDERWRITING_VALUATION, 2 critical open, 3 contradiction(s)", "wrote": ["aurora/deal.md"]}
+{"ts": "2026-07-13T17:30:04", "agent": "librarian", "contract_activity": "HVA_COMMERCIAL_02", "action": "brain-archives-updated", "detail": "1 question-type archive(s): qt-retention-holds", "wrote": ["qt-retention-holds"]}

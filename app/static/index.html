@@ -140,6 +140,12 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
         <div id="claims"></div>
       </div>
       <div>
+        <div class="panel" style="border-color:var(--gold)">
+          <h3>Feed the deal</h3>
+          <p class="hint">Drop anything here — CIM, model export, transcript, <strong>audio of a call or meeting</strong>. The agents do the rest: transcribe, extract typed claims, bind to questions, flag contradictions, update the brief.</p>
+          <input type="file" id="upfile" aria-label="Upload artifact" style="padding:8px">
+          <div class="agentbtns"><button class="btn" id="btn-upload">Upload to inbox</button></div>
+        </div>
         <div class="panel">
           <h3>Agents</h3>
           <p class="hint">Each action maps to a policy-table row and is recorded as an event.</p>
@@ -343,6 +349,20 @@ async function loadFeed(){
   } catch(e){ $("feed").textContent = "feed unavailable: "+e.message; }
 }
 loadFeed(); setInterval(loadFeed, 5000);
+
+$("btn-upload").addEventListener("click", async ()=>{
+  const f = $("upfile").files[0]; if(!f) return log("choose a file first", "err");
+  $("btn-upload").disabled = true; log(`→ uploading ${f.name}…`);
+  try { const fd = new FormData(); fd.append("file", f);
+    const r = await api("/api/upload", {method:"POST", body: fd});
+    log(`${r.stored} (${r.size} bytes) — ${r.note}`, "ok"); $("upfile").value = "";
+  } catch(e){ log("upload: "+e.message, "err"); }
+  $("btn-upload").disabled = false;
+});
+
+// live deal view: refresh every 12s unless a dialog is open or user is typing
+setInterval(()=>{ if (DEAL && !document.querySelector("dialog[open]")
+  && !["INPUT","TEXTAREA"].includes(document.activeElement?.tagName)) refresh(); }, 12000);
 
 async function loadOntology(){
   const items = await api("/api/ontology");

@@ -23,6 +23,9 @@ The thesis is retention-led growth. This is the load-bearing question: if churn 
 ## Evidence
 - supports: [[c-aurora-005]]
 - contradicts: [[c-aurora-003]]
+- contradicts: [[c-aurora-008]]
+- contradicts: [[c-aurora-009]]
+- context: [[c-aurora-010]]
 
 ## Resolution note | Acceptance rationale
 (open)

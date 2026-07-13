@@ -17,7 +17,7 @@ import sys
 from datetime import datetime
 from pathlib import Path
 
-from fastapi import FastAPI, HTTPException
+from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
@@ -331,6 +331,21 @@ def audit_log(n: int = 20):
         return []
     lines = f.read_text(encoding="utf-8").strip().splitlines()[-n:]
     return [json.loads(x) for x in reversed(lines)]
+
+
+@app.post("/api/upload")
+async def upload(file: UploadFile):
+    """Input connection: anything uploaded lands in vault/inbox — documents,
+    transcripts, audio. The deployed agents take it from there (sentinel →
+    transcriber/extractor → contradiction → librarian → coordinator)."""
+    name = Path(file.filename or "upload").name  # strip any path component
+    dest = VAULT / "inbox" / name
+    data = await file.read()
+    if len(data) > 200_000_000:
+        raise HTTPException(413, "file too large")
+    dest.write_bytes(data)
+    return {"stored": f"vault/inbox/{name}", "size": len(data),
+            "note": "agents will pick it up within seconds — watch the live feed"}
 
 
 @app.get("/api/inbox")

@@ -195,6 +195,119 @@ class Transcriber(Agent):
                 audit(self.id, self.activity_id, "error", f"{src.name}: {exc}", [])
 
 
+class Extractor(Agent):
+    """The working agent: when a text artifact lands, it reads it and turns it into
+    typed, provenanced claims bound to the deal's questions — via headless Claude,
+    autonomously, once per artifact. This is machine_assisted_extraction: it files
+    and links; it never resolves a question and never adjudicates."""
+    id = "extractor"
+    activity_id = "HVA_COMMERCIAL_01"
+    watches = "vault/inbox (*.md,*.txt)"
+    MAX_BYTES = 120_000  # cost guard for autonomous runs
+
+    def snapshot(self):
+        return {str(f): f.stat().st_mtime for f in (VAULT / "inbox").glob("*")
+                if f.is_file() and f.suffix.lower() in (".md", ".txt") and ".16k." not in f.name}
+
+    def act(self, changed):
+        st = _state()
+        done = set(st.get("extracted", []))
+        ds = deals()
+        for path in changed:
+            src = Path(path)
+            if src.name in done:
+                continue
+            if src.stat().st_size > self.MAX_BYTES:
+                audit(self.id, self.activity_id, "skipped", f"{src.name} too large for autonomous run", [])
+                continue
+            if len(ds) != 1:
+                audit(self.id, self.activity_id, "pending", f"{src.name}: multiple deals, needs routing", [])
+                continue
+            deal = ds[0]
+            before = {f.name for f in (VAULT / "deals" / deal / "claims").glob("*.md")}
+            audit(self.id, self.activity_id, "extraction-started", src.name, [])
+            prompt = f"""You are the PE OS extractor agent. Work autonomously; never ask questions.
+
+Artifact: vault/inbox/{src.name}   Deal: {deal}
+
+1. Read the artifact, vault/ontology/claim.md, every file in vault/deals/{deal}/questions/, and the existing claims in vault/deals/{deal}/claims/ (REUSE their exact `subject` strings when the same quantity is meant — contradiction detection groups on subject).
+2. Extract each discrete factual claim from the artifact. Type it: statements of what happened or was said in a recorded interaction = observed; a speaker's assertions about the world = asserted; computed-with-visible-math = derived (requires derivation + rests-on); audited/contractual = attested. When unsure, type DOWN the hierarchy.
+3. For each claim write vault/deals/{deal}/claims/c-{deal}-NNN.md (continue numbering after the highest existing NNN) following the schema EXACTLY: frontmatter with type, id, epistemic, subject, value, bears-on (the question ids it bears on, by meaning), direction (supports|contradicts|context relative to the first bears-on question), source (artifact path, locator such as a line or timestamp, author, date), derivation, rests-on, supersedes, extracted-by: extractor, extracted: today. Body: one sentence + exact quote.
+4. Append each claim link under the matching question's ## Evidence section (- supports:/contradicts:/context: [[id]]).
+5. NEVER change a question's state, never edit existing claims, never touch decisions.
+6. Finish with one line per claim written: id — subject = value (epistemic).
+"""
+            try:
+                r = subprocess.run(["claude", "-p", prompt, "--permission-mode", "acceptEdits"],
+                                   capture_output=True, text=True, cwd=ROOT, timeout=480)
+                after = {f.name for f in (VAULT / "deals" / deal / "claims").glob("*.md")}
+                new = sorted(after - before)
+                st = _state(); st.setdefault("extracted", []).append(src.name); _save(st)
+                if r.returncode == 0 and new:
+                    audit(self.id, self.activity_id, "claims-extracted",
+                          f"{src.name} → {len(new)} claim(s): {', '.join(n.removesuffix('.md') for n in new)}", new)
+                else:
+                    audit(self.id, self.activity_id, "extraction-empty",
+                          f"{src.name}: rc={r.returncode}, no new claims. tail: {r.stdout[-200:]}", [])
+            except FileNotFoundError:
+                audit(self.id, self.activity_id, "error", "claude CLI not found", [])
+            except subprocess.TimeoutExpired:
+                audit(self.id, self.activity_id, "error", f"{src.name}: extraction timed out", [])
+
+
+class Coordinator(Agent):
+    """Deterministic desk brief: keeps deal.md § 'State of the deal' current —
+    derived state, held gates, open critical questions ranked by structural
+    dependency, contradictions, and what the flow allows next. Machine-written
+    section, so it never violates zero-maintenance."""
+    id = "coordinator"
+    activity_id = "HVA_COMMERCIAL_02"
+    watches = "deals/*/{events,claims,questions}"
+    HEAD, TAIL = "## State of the deal", "## Questions"
+
+    def snapshot(self):
+        return {str(f): f.stat().st_mtime
+                for pat in ("*/events/*.md", "*/claims/*.md", "*/questions/*.md")
+                for f in (VAULT / "deals").glob(pat)}
+
+    def act(self, changed):
+        import contracts
+        indexer.build().close()
+        con = sqlite3.connect(ROOT / ".index" / "vault.db")
+        for deal in {Path(p).parts[-3] for p in changed}:
+            f = VAULT / "deals" / deal / "deal.md"
+            text = f.read_text(encoding="utf-8")
+            if self.HEAD not in text or self.TAIL not in text:
+                continue
+            state = (con.execute("SELECT state FROM nodes WHERE type='deal' AND id=?", (deal,))
+                     .fetchone() or ["?"])[0]
+            crit = con.execute(
+                "SELECT n.id, n.title, (SELECT COUNT(*) FROM edges e WHERE e.dst=n.id AND e.rel IN ('depends-on','parent')) fanin "
+                "FROM nodes n WHERE n.type='question' AND n.deal=? AND n.state IN ('open','reducing') "
+                "AND json_extract(n.frontmatter,'$.critical')=1 ORDER BY fanin DESC", (deal,)).fetchall()
+            contras = con.execute(
+                "SELECT subject FROM nodes WHERE type='claim' AND deal=? AND subject IS NOT NULL "
+                "GROUP BY subject HAVING COUNT(DISTINCT value)>1", (deal,)).fetchall()
+            nxt = [t for t in contracts.transitions() if t["from"] == state and t["source"] == "v1-alias"][:4]
+            lines = [f"_(coordinator, {datetime.now().strftime('%Y-%m-%d %H:%M')})_",
+                     f"- **Derived state:** {state}"]
+            if crit:
+                lines.append("- **Blocking the decision** (critical, open — ranked by how much depends on them):")
+                lines += [f"  {i+1}. [[{q}]] — {t} (fan-in {fi})" for i, (q, t, fi) in enumerate(crit)]
+            for (s,) in contras:
+                lines.append(f"- **Unresolved contradiction:** {s}")
+            if nxt:
+                lines.append("- **The flow allows next:** " + "; ".join(f"{t['triggers'][0]} → {t['to']}" for t in nxt))
+            new_section = f"{self.HEAD}   <!-- agent-maintained -->\n" + "\n".join(lines) + "\n\n"
+            head, rest = text.split(self.HEAD, 1)
+            _, tail = rest.split(self.TAIL, 1)
+            new_text = head + new_section + self.TAIL + tail
+            if new_text != text:
+                f.write_text(new_text, encoding="utf-8")
+                audit(self.id, self.activity_id, "brief-updated", f"{deal}: state {state}, "
+                      f"{len(crit)} critical open, {len(contras)} contradiction(s)", [f"{deal}/deal.md"])
+
+
 class Librarian(Agent):
     """The brain's custodian. Cross-deal, deterministic: whenever claims or
     questions change, it rebuilds each question-type's Evidence archive so that
@@ -249,7 +362,8 @@ def _save(st: dict):
 
 
 def main():
-    agents = [Sentinel(), StateResolver(), Contradiction(), Librarian(), Transcriber()]
+    agents = [Sentinel(), StateResolver(), Contradiction(), Librarian(), Transcriber(),
+              Extractor(), Coordinator()]
     print("PE OS agent runtime — deployed agents:")
     for a in agents:
         print(f"  · {a.id:<15} watches {a.watches:<24} contract {a.activity_id} "

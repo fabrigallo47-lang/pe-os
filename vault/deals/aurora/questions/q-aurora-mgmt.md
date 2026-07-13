@@ -22,6 +22,7 @@ Customer concentration of relationships in the founder is a known SaaS churn acc
 
 ## Evidence
 - context: [[c-aurora-003]]
+- context: [[c-aurora-010]]
 
 ## Resolution note | Acceptance rationale
 (open)

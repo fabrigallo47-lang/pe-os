@@ -24,7 +24,9 @@ import sys
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DB = ROOT / ".index" / "vault.db"
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+import indexer  # noqa: E402
+DB = indexer.DB
 BACKBONE = ROOT / "sources" / "workflow-backbone-v1"
 
 

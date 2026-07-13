@@ -308,7 +308,24 @@ const api = async (path, opts) => {
 const log = (msg, cls="") => { const c=$("console"); c.innerHTML += `\n<span class="${cls}">${esc(msg)}</span>`; c.scrollTop = c.scrollHeight; };
 const dlg = id => { window[id].showModal(); };
 
+let MODE = {writable:true, cloud:false};
+async function loadMode(){
+  try { MODE = await api("/api/mode"); } catch(e) {}
+  if (!MODE.writable){
+    const bar = document.createElement("div");
+    bar.setAttribute("role","status");
+    bar.style.cssText = "background:rgba(201,162,75,.12);border:1px solid var(--gold);color:var(--gold);border-radius:10px;padding:10px 16px;margin:14px 0;font-size:13px";
+    bar.textContent = "☁ " + (MODE.note || "read-only cloud mirror");
+    document.querySelector("main#tab-deal").prepend(bar);
+    // hide every control that cannot work here — nothing fake on screen
+    document.querySelectorAll("[data-writable]").forEach(x=>x.hidden = true);
+    ["btn-upload","upfile","btn-state","btn-contra","btn-ws","wssel","btn-ingest","inboxsel"].forEach(id=>{ const el=$(id); if(el) el.closest(".panel")===null ? el.hidden=true : null; });
+    document.querySelectorAll(".panel").forEach(p=>{ if(p.querySelector("#btn-upload,#btn-state")) p.hidden = true; });
+    document.querySelectorAll("h2.sec .mini").forEach(b=>b.hidden = true);
+  }
+}
 async function loadDeals(){
+  await loadMode();
   const ds = await api("/api/deals");
   $("dealsel").innerHTML = ds.map(d=>`<option value="${esc(d.id)}">${esc(d.id)}${d.demo?" (demo)":""}</option>`).join("");
   DEAL = ds[0]?.id;

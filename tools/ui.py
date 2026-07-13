@@ -17,7 +17,8 @@ sys.path.insert(0, str(Path(__file__).resolve().parent))
 from engine import load_transitions  # noqa: E402
 
 ROOT = Path(__file__).resolve().parent.parent
-DB = ROOT / ".index" / "vault.db"
+import indexer  # noqa: E402
+DB = indexer.DB
 
 STATE_ORDER = [
     "S0_INTAKE", "S1_ACCESS_CLEARANCE", "S2_CASE_INGESTION", "S3_SCREENING_ASSESSMENT",

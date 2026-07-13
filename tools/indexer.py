@@ -30,9 +30,12 @@ try:
 except ImportError:
     sys.exit("PyYAML required: run `make setup` (or: python3 -m pip install pyyaml)")
 
+import os
+
 ROOT = Path(__file__).resolve().parent.parent
 VAULT = ROOT / "vault"
-DB = ROOT / ".index" / "vault.db"
+# On serverless (Vercel) the repo is read-only; the derived index lives in /tmp.
+DB = Path(os.environ["PEOS_DB"]) if os.environ.get("PEOS_DB") else ROOT / ".index" / "vault.db"
 
 # frontmatter field -> edge relation
 LINK_FIELDS = {
@@ -141,7 +144,8 @@ def build() -> sqlite3.Connection:
     con.close()
     import os
     os.replace(tmp, DB)
-    print(f"indexed {n_nodes} nodes, {n_edges} edges -> {DB.relative_to(ROOT)}"
+    loc = str(DB.relative_to(ROOT)) if DB.is_relative_to(ROOT) else str(DB)
+    print(f"indexed {n_nodes} nodes, {n_edges} edges -> {loc}"
           + (f" ({skipped} files without frontmatter skipped)" if skipped else ""))
     return sqlite3.connect(DB)
 

@@ -21,13 +21,18 @@ from fastapi import FastAPI, HTTPException, UploadFile
 from fastapi.responses import FileResponse, JSONResponse
 from pydantic import BaseModel
 
+import os
+
 ROOT = Path(__file__).resolve().parent.parent
+IS_CLOUD = os.environ.get("VERCEL") == "1"
+if IS_CLOUD and not os.environ.get("PEOS_DB"):
+    os.environ["PEOS_DB"] = "/tmp/vault.db"
 sys.path.insert(0, str(ROOT / "tools"))
 from engine import load_transitions  # noqa: E402
 from ui import replay, state_label  # noqa: E402
 import indexer  # noqa: E402
 
-DB = ROOT / ".index" / "vault.db"
+DB = indexer.DB
 VAULT = ROOT / "vault"
 
 app = FastAPI(title="PE OS", docs_url=None, redoc_url=None)
@@ -59,7 +64,22 @@ def next_id(deal: str, prefix: str, folder: str) -> str:
 
 @app.get("/")
 def home():
+    if IS_CLOUD and not DB.exists():
+        reindex()  # cold start: build the derived index into /tmp
     return FileResponse(ROOT / "app" / "static" / "index.html")
+
+
+@app.get("/api/mode")
+def mode():
+    return {"cloud": IS_CLOUD, "writable": not IS_CLOUD,
+            "note": ("Cloud mirror: live computed views over the bundled vault. Writes and "
+                     "autonomous agents run on the local node until the cloud datastore (stage 2) is connected."
+                     if IS_CLOUD else "local node — full capability")}
+
+
+def require_writable():
+    if IS_CLOUD:
+        raise HTTPException(501, "read-only cloud mirror — this action runs on the local node (stage 2: Neon datastore)")
 
 
 @app.get("/api/deals")
@@ -144,6 +164,7 @@ class DealIn(BaseModel):
 
 @app.post("/api/deals")
 def create_deal(d: DealIn):
+    require_writable()
     """Deal open — real human input, the first of the two ritual inputs."""
     slug = re.sub(r"[^a-z0-9]+", "-", d.name.lower()).strip("-")[:30]
     root = VAULT / "deals" / slug
@@ -213,6 +234,7 @@ class ClaimIn(BaseModel):
 
 @app.post("/api/deal/{deal}/claims")
 def add_claim(deal: str, c_in: ClaimIn):
+    require_writable()
     if c_in.epistemic not in EPISTEMIC:
         raise HTTPException(422, f"epistemic must be one of {EPISTEMIC}")
     if c_in.epistemic == "derived" and not (c_in.derivation or "").strip():
@@ -257,6 +279,7 @@ class QuestionIn(BaseModel):
 
 @app.post("/api/deal/{deal}/questions")
 def add_question(deal: str, q: QuestionIn):
+    require_writable()
     slug = re.sub(r"[^a-z0-9]+", "-", q.title.lower()).strip("-")[:40]
     qid = f"q-{deal}-{slug}"
     body = f"""---
@@ -299,6 +322,7 @@ class EventIn(BaseModel):
 
 @app.post("/api/deal/{deal}/events")
 def add_event(deal: str, e: EventIn):
+    require_writable()
     eid = next_id(deal, "ev", "events")
     body = f"""---
 type: event
@@ -322,6 +346,7 @@ supersedes: null
 
 @app.post("/api/agents/state/{deal}")
 def agent_state(deal: str):
+    require_writable()
     """Policy row 4: derive + write deal.state (invariant 10)."""
     r = subprocess.run([sys.executable, str(ROOT / "tools" / "engine.py"), deal, "--write"],
                        capture_output=True, text=True, cwd=ROOT, timeout=60)
@@ -333,6 +358,7 @@ def agent_state(deal: str):
 
 @app.post("/api/agents/contradictions/{deal}")
 def agent_contradictions(deal: str):
+    require_writable()
     """Policy row 5: flag contradictions, autonomous. Emits an event per finding batch."""
     view = deal_view(deal)
     found = view["contradictions"]
@@ -350,6 +376,7 @@ class IngestIn(BaseModel):
 
 @app.post("/api/agents/ingest/{deal}")
 def agent_ingest(deal: str, body: IngestIn):
+    require_writable()
     """Policy row 3+4: LLM extraction via headless Claude Code running the /ingest skill.
     Long-running; the UI shows the returned transcript when done."""
     target = (VAULT / "inbox" / body.filename).resolve()
@@ -377,6 +404,7 @@ class AssumptionPatch(BaseModel):
 
 @app.patch("/api/deal/{deal}/assumptions/{aid}")
 def patch_assumption(deal: str, aid: str, body: AssumptionPatch):
+    require_writable()
     """V1 step 4 trigger: a human revises an assumption's value. Version bumps,
     history appends, and the staleness agent propagates to dependents."""
     f = VAULT / "deals" / deal / "assumptions" / f"{aid}.md"
@@ -402,6 +430,7 @@ class WorkstreamIn(BaseModel):
 
 @app.post("/api/agents/workstream/{deal}")
 def agent_workstream(deal: str, body: WorkstreamIn):
+    require_writable()
     """V1 step 3: run ONE workstream via LLM — structured findings tied to assumptions."""
     ws = body.workstream
     odir = VAULT / "deals" / deal / "outputs"
@@ -432,14 +461,57 @@ class AskIn(BaseModel):
     question: str
 
 
+def _vault_context(cap: int = 160_000) -> str:
+    """Compact textual snapshot of the graph for cloud inference (read-only)."""
+    parts = []
+    for pat in ("deals/*/deal.md", "deals/*/questions/*.md", "deals/*/assumptions/*.md",
+                "deals/*/claims/*.md", "library/question-types/*.md"):
+        for f in sorted(VAULT.glob(pat)):
+            parts.append(f"### {f.relative_to(VAULT)}\n{f.read_text(encoding='utf-8')}")
+    return "\n\n".join(parts)[:cap]
+
+
+def _ask_via_gateway(question: str) -> str:
+    """Vercel AI Gateway (OIDC-authenticated on deployment, no key to manage)."""
+    import urllib.request
+    token = os.environ.get("VERCEL_OIDC_TOKEN") or os.environ.get("AI_GATEWAY_API_KEY")
+    if not token:
+        raise HTTPException(501, "no model access in this environment (no OIDC token / gateway key)")
+    payload = {
+        "model": os.environ.get("PEOS_MODEL", "anthropic/claude-sonnet-4.5"),
+        "max_tokens": 1200,
+        "messages": [
+            {"role": "system", "content":
+                "You are the PE OS brain interface. Answer strictly from the vault snapshot provided. "
+                "Cite file ids like [c-astrelia-002]. Weigh epistemic types (attested>observed>derived>asserted). "
+                "If the vault does not contain the answer, say so plainly."},
+            {"role": "user", "content": f"VAULT SNAPSHOT:\n{_vault_context()}\n\nQUESTION: {question}"},
+        ],
+    }
+    req = urllib.request.Request(
+        "https://ai-gateway.vercel.sh/v1/chat/completions",
+        data=json.dumps(payload).encode(), method="POST",
+        headers={"Content-Type": "application/json", "Authorization": f"Bearer {token}"})
+    try:
+        with urllib.request.urlopen(req, timeout=240) as resp:
+            out = json.loads(resp.read())
+        return out["choices"][0]["message"]["content"]
+    except Exception as exc:  # surface the gateway's real error — no fake answers
+        detail = getattr(exc, "read", lambda: b"")()
+        raise HTTPException(502, f"gateway error: {exc} {detail[:300] if detail else ''}")
+
+
 @app.post("/api/agents/ask")
 def agent_ask(body: AskIn):
-    """Chat with the brain: read-only LLM agent over the whole vault (policy row 1+3).
-    Tools restricted to Read/Grep/Glob — it can look, it cannot touch."""
+    """Chat with the brain (policy rows 1+3). Local: headless Claude with read-only
+    tools over the vault. Cloud: AI Gateway with a vault snapshot in-context."""
+    import shutil
+    if not shutil.which("claude"):
+        return {"answer": _ask_via_gateway(body.question)}
     prompt = (
         "You are the PE OS brain interface. Answer the user's question strictly from the "
         "contents of vault/ (questions, claims with epistemic types, events, decisions, "
-        "question-type archives, entities). Cite file ids like [c-aurora-002]. Distinguish "
+        "question-type archives, entities). Cite file ids like [c-astrelia-002]. Distinguish "
         "epistemic types when weighing evidence. If the vault does not contain the answer, "
         f"say so plainly.\n\nQuestion: {body.question}"
     )
@@ -448,8 +520,6 @@ def agent_ask(body: AskIn):
             ["claude", "-p", prompt, "--allowedTools", "Read,Grep,Glob"],
             capture_output=True, text=True, cwd=ROOT, timeout=300,
         )
-    except FileNotFoundError:
-        raise HTTPException(501, "claude CLI not found")
     except subprocess.TimeoutExpired:
         raise HTTPException(504, "brain query timed out (5 min)")
     if r.returncode != 0:
@@ -468,6 +538,7 @@ def audit_log(n: int = 20):
 
 @app.post("/api/upload")
 async def upload(file: UploadFile):
+    require_writable()
     """Input connection: anything uploaded lands in vault/inbox — documents,
     transcripts, audio. The deployed agents take it from there (sentinel →
     transcriber/extractor → contradiction → librarian → coordinator)."""

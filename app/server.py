@@ -737,6 +737,39 @@ async def upload(file: UploadFile):
             "routing": "tip: name files <deal>-… when multiple deals exist"}
 
 
+@app.get("/api/inflow")
+def inflow():
+    """The perception desk's view: every artifact and what became of it —
+    announced? extracted? into which claims? The 'where did my input go' answer."""
+    sync()
+    reindex()
+    st = {}
+    sf = VAULT / "audit" / "runtime-state.json"
+    if sf.exists():
+        st = json.loads(sf.read_text())
+    announced, extracted = set(st.get("announced", [])), set(st.get("extracted", []))
+    c = con()
+    by_artifact: dict[str, list] = {}
+    for (fm,) in c.execute("SELECT frontmatter FROM nodes WHERE type='claim'"):
+        f = json.loads(fm)
+        src = str((f.get("source") or {}).get("artifact", ""))
+        if "inbox/" in src:
+            by_artifact.setdefault(src.split("inbox/")[-1].split(" ")[0], []).append(
+                {"id": f.get("id"), "subject": f.get("subject"), "epistemic": f.get("epistemic")})
+    out = []
+    for f in sorted((VAULT / "inbox").glob("*")):
+        if not f.is_file() or f.name.startswith("."):
+            continue
+        claims = by_artifact.get(f.name, [])
+        auto = f.suffix.lower() in (".md", ".txt") and f.stat().st_size <= 150_000
+        status = ("extracted" if f.name in extracted or claims else
+                  "queued for extraction" if auto and f.name in announced else
+                  "announced" if f.name in announced else
+                  "waiting" if auto else "stored (convert to text for extraction)")
+        out.append({"name": f.name, "size": f.stat().st_size, "status": status, "claims": claims})
+    return out
+
+
 @app.get("/api/inbox")
 def inbox():
     sync()

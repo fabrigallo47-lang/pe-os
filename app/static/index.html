@@ -111,9 +111,12 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
   <div class="topbar">
     <span class="wordmark"><b>◆</b> PE OS</span>
     <nav class="topnav" role="tablist">
-      <button class="tab" role="tab" aria-selected="true" data-tab="deal">Deal</button>
+      <button class="tab" role="tab" aria-selected="true" data-tab="deal">Deal desk</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="inflow">Inflow</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="evidence">Evidence</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="analysis">Analysis</button>
       <button class="tab" role="tab" aria-selected="false" data-tab="brain">Brain</button>
-      <button class="tab" role="tab" aria-selected="false" data-tab="ontology">Ontology &amp; Policy</button>
+      <button class="tab" role="tab" aria-selected="false" data-tab="ontology">Ontology</button>
     </nav>
     <div style="display:flex;gap:8px;align-items:center">
       <select id="dealsel" aria-label="Select deal" style="width:auto;min-width:140px"></select>
@@ -137,62 +140,80 @@ footer{border-top:1px solid var(--line);margin-top:40px;padding-top:18px;display
       <div>
         <h2 class="sec">Question structure <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('qdlg')">+ Add question</button></h2>
         <div id="qtree"></div>
-        <h2 class="sec">Assumptions <span style="font-size:12px;color:var(--muted)">the deal proceeds on — edit a value and watch staleness propagate</span></h2>
-        <div id="assumps"></div>
-        <h2 class="sec">Workstream outputs</h2>
-        <div id="outputs"></div>
-        <h2 class="sec">Contradictions <span style="font-size:12px;color:var(--muted)">unresolved</span></h2>
-        <div id="contras"></div>
-        <h2 class="sec">Evidence <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('cdlg')">+ Add claim</button></h2>
-        <div id="claims"></div>
       </div>
       <div>
-        <div class="panel" style="border-color:var(--gold)">
-          <h3>Feed the deal</h3>
-          <p class="hint">Drop anything here — CIM, model export, transcript, <strong>audio of a call or meeting</strong>. The agents do the rest: transcribe, extract typed claims, bind to questions, flag contradictions, update the brief.</p>
-          <input type="file" id="upfile" aria-label="Upload artifact" style="padding:8px">
-          <div class="agentbtns"><button class="btn" id="btn-upload">Upload to inbox</button></div>
-        </div>
-        <div class="panel">
-          <h3>Agents</h3>
-          <p class="hint">Each action maps to a policy-table row and is recorded as an event.</p>
-          <div class="agentbtns">
-            <button class="btn" id="btn-tick" hidden>Run agents tick</button>
-            <button class="btn" id="btn-state">Run state engine</button>
-            <button class="btn ghost" id="btn-contra">Contradiction agent</button>
-          </div>
-          <label for="wssel">Run one workstream (LLM — findings tied to assumptions)</label>
-          <div style="display:flex;gap:8px">
-            <select id="wssel"><option>commercial_market</option><option>financial_qoe</option><option>operational</option><option>management_sponsor</option><option>legal</option><option>financing</option></select>
-            <button class="btn ghost" id="btn-ws" style="flex:0 0 auto">Run</button>
-          </div>
-          <label for="inboxsel">Ingest from inbox (LLM, policy row 3)</label>
-          <div style="display:flex;gap:8px">
-            <select id="inboxsel" aria-label="Inbox artifact"></select>
-            <button class="btn ghost" id="btn-ingest" style="flex:0 0 auto">Ingest</button>
-          </div>
-          <label for="askbox">Ask the brain (read-only LLM over the whole vault)</label>
-          <div style="display:flex;gap:8px">
-            <input id="askbox" placeholder="e.g. what contradicts the growth plan?">
-            <button class="btn ghost" id="btn-ask" style="flex:0 0 auto">Ask</button>
-          </div>
-          <div class="console" id="console" aria-live="polite">agent console — ready</div>
-        </div>
-        <div class="panel">
-          <h3>Deployed agents — live feed</h3>
-          <p class="hint">The append-only audit log (vault/audit/agent-log.jsonl), refreshed every 5s. Every autonomous action, attributed and contract-bound.</p>
-          <div class="console" id="feed" aria-live="polite" style="max-height:220px">loading…</div>
-        </div>
         <h2 class="sec">Event record <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('edlg')">+ Record event</button></h2>
         <ul class="tline" id="tline"></ul>
       </div>
     </div>
   </main>
 
+  <main id="tab-inflow" hidden>
+    <div class="cols">
+      <div>
+        <h2 class="sec">Inflow — sentinel · transcriber · extractor</h2>
+        <p class="thesis" style="margin-bottom:14px">Everything you feed the system, and what it automatically became: announced → extracted → typed claims, sorted onto the questions they bear on.</p>
+        <div class="panel" style="border-color:var(--gold)">
+          <h3>Feed the deal</h3>
+          <p class="hint">Drop anything — CIM, model export, transcript, audio. Name it <b>&lt;deal&gt;-…</b> to route it. Then run the tick.</p>
+          <input type="file" id="upfile" aria-label="Upload artifact" style="padding:8px">
+          <div class="agentbtns"><button class="btn" id="btn-upload">Upload to inbox</button><button class="btn" id="btn-tick" hidden>Run agents tick</button><button class="btn ghost" id="btn-state">Run state engine</button><button class="btn ghost" id="btn-contra">Contradictions</button></div>
+          <label for="inboxsel">Ingest a specific artifact (LLM)</label>
+          <div style="display:flex;gap:8px">
+            <select id="inboxsel" aria-label="Inbox artifact"></select>
+            <button class="btn ghost" id="btn-ingest" style="flex:0 0 auto">Ingest</button>
+          </div>
+        </div>
+        <div id="inflowlist"></div>
+      </div>
+      <div>
+        <div class="panel">
+          <h3>Agent console</h3>
+          <div class="console" id="console" aria-live="polite">agent console — ready</div>
+        </div>
+        <div class="panel">
+          <h3>Live feed — audit log</h3>
+          <p class="hint">Every autonomous action, attributed and contract-bound. Refreshes every 5s.</p>
+          <div class="console" id="feed" aria-live="polite" style="max-height:260px">loading…</div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <main id="tab-evidence" hidden>
+    <h2 class="sec">Evidence desk — extractor · contradiction <button class="mini btn ghost" style="min-height:34px;padding:5px 12px" onclick="dlg('cdlg')">+ Add claim</button></h2>
+    <h2 class="sec">Contradictions <span style="font-size:12px;color:var(--muted)">unresolved — these do not reconcile</span></h2>
+    <div id="contras"></div>
+    <h2 class="sec">All claims <span style="font-size:12px;color:var(--muted)">typed, provenanced, bound to questions</span></h2>
+    <div id="claims"></div>
+  </main>
+
+  <main id="tab-analysis" hidden>
+    <h2 class="sec">Analysis desk — proposer · workstream runner · staleness</h2>
+    <div class="panel">
+      <h3>Run one workstream</h3>
+      <p class="hint">Findings grounded in the claims, tied to the assumptions they bear on.</p>
+      <div style="display:flex;gap:8px">
+        <select id="wssel"><option>commercial_market</option><option>financial_qoe</option><option>operational</option><option>management_sponsor</option><option>legal</option><option>financing</option></select>
+        <button class="btn" id="btn-ws" style="flex:0 0 auto">Run</button>
+      </div>
+    </div>
+    <h2 class="sec">Assumptions <span style="font-size:12px;color:var(--muted)">edit a value → staleness propagates to everything that depends on it</span></h2>
+    <div id="assumps"></div>
+    <h2 class="sec">Workstream outputs</h2>
+    <div id="outputs"></div>
+  </main>
+
   <main id="tab-brain" hidden>
     <header class="deal" style="padding-bottom:0">
       <div>
-        <p class="crumb">Firm brain — compounds across deals</p>
+        <p class="crumb">Firm brain — librarian · ask</p>
+        <label for="askbox">Ask the brain (read-only LLM over the whole vault)</label>
+        <div style="display:flex;gap:8px;max-width:560px">
+          <input id="askbox" placeholder="e.g. what contradicts the growth plan?">
+          <button class="btn ghost" id="btn-ask" style="flex:0 0 auto">Ask</button>
+        </div>
+        <div class="console" id="brainout" aria-live="polite" style="margin:10px 0;max-width:720px" hidden></div>
         <h1 style="font-size:1.7rem">Memory organized by what it bears on</h1>
         <p class="thesis">Question-type archives are maintained by the librarian agent: every claim filed under any deal flows up here, so the next deal that raises the same question finds everything the firm already paid to learn.</p>
       </div>
@@ -391,13 +412,25 @@ async function refresh(){
   $("inboxsel").innerHTML = inbox.length ? inbox.map(f=>`<option>${esc(f)}</option>`).join("") : "<option value=''>inbox empty</option>";
 }
 
-// tabs
+// tabs — one view per desk
 document.querySelectorAll(".tab").forEach(b=>b.addEventListener("click",()=>{
   document.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected", x===b));
-  ["deal","brain","ontology"].forEach(t=>{ $("tab-"+t).hidden = b.dataset.tab!==t; });
+  ["deal","inflow","evidence","analysis","brain","ontology"].forEach(t=>{ $("tab-"+t).hidden = b.dataset.tab!==t; });
   if (b.dataset.tab==="ontology" && !$("ontolist").children.length) loadOntology();
   if (b.dataset.tab==="brain") loadBrain();
+  if (b.dataset.tab==="inflow") loadInflow();
 }));
+
+async function loadInflow(){
+  try {
+    const items = await api("/api/inflow");
+    $("inflowlist").innerHTML = items.map(it=>`
+      <div class="qcard"><div class="qrow"><h3>${esc(it.name)}</h3>
+        <div class="qmeta"><span class="badge ${it.status==="extracted"?"b-resolved":it.status.startsWith("stored")?"b-open":"b-reducing"}">${esc(it.status)}</span><span class="ws">${(it.size/1024).toFixed(0)} KB</span></div></div>
+      ${it.claims.length?`<div class="esrc" style="margin-top:8px">became ${it.claims.length} claim(s): ${it.claims.map(c=>esc(c.id)+" ["+esc(c.epistemic)+"] "+esc(c.subject)).join(" · ")}</div>`:""}
+      </div>`).join("") || '<p class="thesis">Nothing in the inbox yet.</p>';
+  } catch(e){ $("inflowlist").innerHTML = '<p class="thesis">inflow unavailable: '+esc(e.message)+'</p>'; }
+}
 
 async function loadBrain(){
   const items = await api("/api/brain");
@@ -421,7 +454,7 @@ $("btn-upload").addEventListener("click", async ()=>{
   $("btn-upload").disabled = true; log(`→ uploading ${f.name}…`);
   try { const fd = new FormData(); fd.append("file", f);
     const r = await api("/api/upload", {method:"POST", body: fd});
-    log(`${r.stored} (${r.size} bytes) — ${r.note}`, "ok"); $("upfile").value = "";
+    log(`${r.stored} (${r.size} bytes) — ${r.note}`, "ok"); $("upfile").value = ""; loadInflow();
   } catch(e){ log("upload: "+e.message, "err"); }
   $("btn-upload").disabled = false;
 });
@@ -468,7 +501,7 @@ async function saveAssumption(aid){
 $("btn-tick").addEventListener("click", async ()=>{
   $("btn-tick").disabled = true; log("→ agents tick (full fleet cycle; LLM extraction may take minutes)…");
   try { const r = await api("/api/agents/tick", {method:"POST"});
-    log(r.report.join("\n") || "tick complete", "ok"); await refresh(); }
+    log(r.report.join("\n") || "tick complete", "ok"); await refresh(); loadInflow(); }
   catch(e){ log("tick: "+e.message, "err"); }
   $("btn-tick").disabled = false;
 });
@@ -491,10 +524,10 @@ $("btn-ingest").addEventListener("click", async ()=>{
 
 $("btn-ask").addEventListener("click", async ()=>{
   const q = $("askbox").value.trim(); if(!q) return;
-  $("btn-ask").disabled = true; log(`→ brain: "${q}" (LLM, may take a minute)…`);
+  $("btn-ask").disabled = true; $("brainout").hidden = false; $("brainout").textContent = "thinking… (may take a minute)";
   try { const r = await api("/api/agents/ask", {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({question:q})});
-    log(r.answer, "ok"); }
-  catch(e){ log("brain: "+e.message, "err"); }
+    $("brainout").textContent = r.answer; }
+  catch(e){ $("brainout").textContent = "error: " + e.message; }
   $("btn-ask").disabled = false;
 });
 $("askbox").addEventListener("keydown", e=>{ if(e.key==="Enter") $("btn-ask").click(); });

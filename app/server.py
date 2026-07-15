@@ -84,6 +84,11 @@ def home():
     if IS_CLOUD:
         sync()
         reindex()  # cold start: mirror + index into /tmp
+    return FileResponse(ROOT / "app" / "static" / "canvas.html")
+
+
+@app.get("/desks")
+def desks_page():
     return FileResponse(ROOT / "app" / "static" / "index.html")
 
 

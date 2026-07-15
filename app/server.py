@@ -659,7 +659,8 @@ def agents_tick():
     return {"report": report}
 
 
-FLOW_FILE = ROOT / "app" / "flow.json"
+def _flow_file():
+    return VAULT / "flows" / "flow.json"
 
 
 @app.get("/canvas")
@@ -669,14 +670,19 @@ def canvas_page():
 
 @app.get("/api/flow")
 def get_flow():
-    if FLOW_FILE.exists():
-        return json.loads(FLOW_FILE.read_text())
-    return {"nodes": [], "edges": []}
+    sync()
+    f = _flow_file()
+    return json.loads(f.read_text()) if f.exists() else {"nodes": [], "edges": []}
 
 
 @app.put("/api/flow")
 def put_flow(flow: dict):
-    FLOW_FILE.write_text(json.dumps(flow, indent=1))
+    require_writable()
+    sync()
+    f = _flow_file()
+    f.parent.mkdir(parents=True, exist_ok=True)
+    f.write_text(json.dumps(flow, indent=1))
+    push()
     return {"ok": True}
 
 

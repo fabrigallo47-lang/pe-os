@@ -553,7 +553,11 @@ def _llm_text(system: str, user: str, max_tokens: int = 4000) -> str:
                 headers={"Content-Type": "application/json", "x-api-key": anthropic_key,
                          "anthropic-version": "2023-06-01"})
             with urllib.request.urlopen(req, timeout=280) as resp:
-                return json.loads(resp.read())["content"][0]["text"]
+                blocks = json.loads(resp.read())["content"]
+                text = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+                if not text:
+                    raise ValueError(f"no text block in response: {str(blocks)[:200]}")
+                return text
         token = os.environ.get("VERCEL_OIDC_TOKEN") or os.environ.get("AI_GATEWAY_API_KEY")
         if not token:
             raise HTTPException(501, "no model access (no ANTHROPIC_API_KEY, no gateway token)")

@@ -537,7 +537,7 @@ def _llm_text(system: str, user: str, max_tokens: int = 4000) -> str:
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
     try:
         if anthropic_key:
-            payload = {"model": os.environ.get("PEOS_MODEL", "claude-sonnet-4-6"),
+            payload = {"model": os.environ.get("PEOS_MODEL", "claude-sonnet-5"),
                        "max_tokens": max_tokens, "system": system,
                        "messages": [{"role": "user", "content": user}]}
             req = urllib.request.Request(

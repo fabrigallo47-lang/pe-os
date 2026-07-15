@@ -15,8 +15,8 @@ written-by: human
 Profitable European space tech — €62.1m FY25A revenue (+62% YoY, 25% EBITDA margin), ESA-qualified with zero critical-anomaly deliveries across 14 programs, and the €1.3bn METEOR programme (22 satellites) anchoring the growth case.
 
 ## State of the deal   <!-- agent-maintained -->
-_(coordinator, 2026-07-13 20:49)_
-- **Derived state:** ?
+_(coordinator, 2026-07-15 18:18)_
+- **Derived state:** S0_INTAKE
 - **Blocking the decision** (critical, open — ranked by how much depends on them):
   1. [[q-astrelia-commercial]] — Is the revenue real? For Astrelia, this IS the deal. (fan-in 1)
   2. [[q-astrelia-financial]] — What do the numbers say under Meridian's own assumptions, not the company's? (fan-in 1)
@@ -27,6 +27,7 @@ _(coordinator, 2026-07-13 20:49)_
 - **Unresolved contradiction:** FY30E plan EBITDA
 - **Unresolved contradiction:** FY30E plan EBITDA margin
 - **Unresolved contradiction:** FY30E plan revenue
+- **The flow allows next:** CONFIDENTIAL_MATERIAL_REQUIRED → S1_ACCESS_CLEARANCE; PUBLIC_OR_TEASER_MATERIAL_AVAILABLE → S2_CASE_INGESTION
 
 ## Questions
 

@@ -15,8 +15,9 @@ written-by: human
 test2
 
 ## State of the deal   <!-- agent-maintained -->
-_(coordinator, 2026-07-13 20:49)_
-- **Derived state:** ?
+_(coordinator, 2026-07-15 18:18)_
+- **Derived state:** S0_INTAKE
+- **The flow allows next:** CONFIDENTIAL_MATERIAL_REQUIRED → S1_ACCESS_CLEARANCE; PUBLIC_OR_TEASER_MATERIAL_AVAILABLE → S2_CASE_INGESTION
 
 ## Questions
 

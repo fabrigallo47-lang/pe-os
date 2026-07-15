@@ -79,14 +79,13 @@ label{font-size:10.5px;color:var(--muted)}
     <div class="sideh">Domain agents</div><div id="pal-domain" class="palcol"></div>
     <div class="sideh" style="margin-top:18px">Infrastructure</div><div id="pal-infra" class="palcol"></div>
     <div class="sideh" style="margin-top:18px">Control nodes</div><div id="pal-ctrl" class="palcol"></div>
-  </aside>
+  <p style="font-size:10.5px;color:var(--faint);line-height:1.6;border-top:1px solid var(--line);margin-top:18px;padding-top:12px">Gold port = output, drag to a blue input port to connect. Double-click a wire to remove it. Every node auto-reports to Coordinator &amp; Brain (dashed wires). Click Coordinator or Brain to see their live reasoning and archives.</p></aside>
   <div id="board" style="flex:1"><svg id="wires"></svg></div>
 </div>
 <div id="panel" style="display:none;position:fixed;top:62px;right:0;bottom:0;width:min(560px,92vw);background:rgba(21,28,38,.97);border-left:1px solid var(--accent);z-index:20;overflow:auto;padding:20px">
   <button class="pal" style="float:right" onclick="showPanel(null)">✕ close</button>
   <div id="panelbody" style="font-size:12.5px;line-height:1.6;white-space:pre-wrap;color:var(--muted)"></div>
 </div>
-<p id="hint">drag agents from the palette logic: gold port = output → drag to a blue input port to connect · double-click a wire to remove · every node reports to the coordinator and files to the brain automatically</p>
 <script>
 const DOMAIN = {
   "Financial / QoE":"financial_qoe", "Commercial / Market":"commercial_market", "Legal":"legal",
@@ -105,8 +104,8 @@ const KINDS = {
   "external-event":{io:"external trigger (e.g. VDR arrives, pack received) — flow waits until it occurs", ext:true},
 };
 const FIXED = [
-  {id:"coordinator", kind:"coordinator", x:1150, y:40, fixed:true, io:"main agent — sees every input & output, keeps the deal brief"},
-  {id:"brain", kind:"librarian", x:1150, y:520, fixed:true, io:"the brain — every output is filed here by what it bears on"},
+  {id:"coordinator", kind:"coordinator", x:660, y:24, fixed:true, io:"MAIN AGENT: after every run it re-reads the whole graph and rewrites the deal brief — what blocks the decision (ranked), contradictions, allowed next moves. Click to read its latest reasoning."},
+  {id:"brain", kind:"librarian", x:660, y:430, fixed:true, io:"THE BRAIN: after every run the librarian files each claim into the question-type archive it bears on, so future deals retrieve it by meaning. Click to browse the archives."},
 ];
 let flow = {nodes:[], edges:[]}, seq = 1, wireFrom = null;
 const board = document.getElementById("board"), wires = document.getElementById("wires");
@@ -128,6 +127,7 @@ function nodeEl(n){
     ${n.fixed?"":'<button class="del" aria-label="delete" onclick="delNode(\''+n.id+'\')">✕</button>'}
     ${n.fixed?"":'<span class="port in" data-id="'+n.id+'"></span><span class="port outp" data-id="'+n.id+'"></span>'}`;
   // drag
+  if (n.fixed) el.addEventListener("click", () => showPanel(n.id === "brain" ? "brain" : "coord"));
   el.addEventListener("pointerdown", ev => {
     if (ev.target.classList.contains("port") || ev.target.tagName==="SELECT" || ev.target.tagName==="INPUT" || ev.target.classList.contains("del")) return;
     const sx = ev.clientX - n.x, sy = ev.clientY - n.y;

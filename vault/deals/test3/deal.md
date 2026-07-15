@@ -15,7 +15,7 @@ written-by: human
 test3
 
 ## State of the deal   <!-- agent-maintained -->
-_(coordinator, 2026-07-15 18:18)_
+_(coordinator, 2026-07-15 18:57)_
 - **Derived state:** S0_INTAKE
 - **Blocking the decision** (critical, open — ranked by how much depends on them):
   1. [[q-test3-is-this-true]] — is this true (fan-in 0)

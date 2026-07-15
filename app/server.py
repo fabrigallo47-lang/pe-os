@@ -712,17 +712,28 @@ def run_agent(kind: str, body: RunIn):
     try:
         if kind == "extractor":
             st = rt._state(); done = set(st.get("extracted", []))
+            skipped = []
             for f in sorted((VAULT / "inbox").glob("*")):
-                if f.suffix.lower() in (".md", ".txt") and f.name not in done and f.stat().st_size < 150_000:
-                    d = rt.deal_for(f.name)
-                    if not d:
-                        continue
+                if not f.is_file() or f.name.startswith("."):
+                    continue
+                if f.name in done:
+                    continue
+                if f.suffix.lower() not in (".md", ".txt"):
+                    skipped.append(f"{f.name}: {f.suffix} not extractable — convert to .md/.txt")
+                    continue
+                if f.stat().st_size >= 150_000:
+                    skipped.append(f"{f.name}: too large (>150KB)")
+                    continue
+                d = body.config.get("deal") or rt.deal_for(f.name)
+                if not d:
+                    skipped.append(f"{f.name}: cannot route — {len(rt.deals())} deals exist; rename to <deal>-{f.name}")
+                    continue
                     ids = cloud_extract(d, f)
                     st = rt._state(); st.setdefault("extracted", []).append(f.name); rt._save(st)
                     rt.audit("extractor", "HVA_COMMERCIAL_01", "claims-extracted", f"{f.name} → {len(ids)}", ids)
                     push(); reindex()
                     return {"summary": f"{f.name} → {len(ids)} claims"}
-            return {"summary": "nothing to extract"}
+            return {"summary": "nothing to extract" + ("; skipped → " + " | ".join(skipped) if skipped else " — inbox has no new text files")}
         if kind == "workstream":
             r = agent_workstream(deal, WorkstreamIn(workstream=body.config.get("workstream", "commercial_market")))
             return {"summary": r["output"][-200:]}

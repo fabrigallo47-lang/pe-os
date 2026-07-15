@@ -52,6 +52,8 @@ a{color:var(--faint);font-size:12.5px;text-decoration:none}a:hover{color:var(--i
 .port:hover{transform:translateY(-50%) scale(1.25);background:var(--accent)}
 .del{position:absolute;top:8px;right:10px;color:var(--faint);cursor:pointer;font-size:12px;background:none;border:none;border-radius:6px;width:24px;height:24px}
 .del:hover{color:var(--red);background:var(--surface2)}
+.infob{width:16px;height:16px;border-radius:50%;border:1px solid var(--faint);color:var(--faint);background:none;font-size:10px;font-style:italic;font-family:var(--serif);line-height:1;flex:0 0 auto}
+.infob:hover{color:var(--accent);border-color:var(--accent)}
 .cfg{width:100%;margin-top:8px;background:var(--bg);border:1px solid var(--line);color:var(--ink);border-radius:8px;font-size:11.5px;padding:7px 9px}
 label{font-size:10.5px;color:var(--muted)}
 #hint{position:fixed;bottom:12px;left:20px;right:20px;font-size:11px;color:var(--faint);z-index:10;letter-spacing:.02em}
@@ -87,6 +89,19 @@ label{font-size:10.5px;color:var(--muted)}
   <div id="panelbody" style="font-size:12.5px;line-height:1.6;white-space:pre-wrap;color:var(--muted)"></div>
 </div>
 <script>
+const INFO = {
+  "workstream":"A domain analyst agent. INPUT: the deal's questions for its workstream, the assumptions they test, and every claim extracted so far. HOW: it runs under its epistemic contract from the spec (governing question, what counts as sufficient evidence) and reads the firm brain's cross-deal archives. OUTPUT: a structured findings file — each finding tied to an assumption (supports/challenges + materiality), citing the claim ids it rests on. It never resolves questions and never decides.",
+  "sentinel":"The doorman. Watches the inbox; when a file arrives it announces it as an immutable ARTIFACT_ARRIVED event routed to the right deal (by filename prefix). It never reads content — announcement only.",
+  "extractor":"The reader. Takes one artifact and turns it into typed claims: each with an epistemic label (asserted / derived / observed / attested), a source locator (page, line), and bound to the question it bears on. Runs on Sonnet 5. The server validates every claim against the ontology before writing.",
+  "contradiction":"The skeptic. Groups all claims by subject; when the same quantity has irreconcilable values (deck says 12%, call says 18%) it flags a contradiction event, showing which claim shows its working. It never says who is right — that is human judgment.",
+  "state-resolver":"The referee. Replays the deal's event history through the state-machine contracts and derives the lifecycle state (S0 intake → S13 archive). State is computed, never set by hand; guards can HOLD transitions (e.g. no IC while critical questions are open).",
+  "staleness":"The ripple. When an assumption's value changes, it flags every dependent object (questions testing it, workstream outputs tied to it) as STALE and emits a supersession event. Re-running the work clears the flag.",
+  "ask":"The interface to the brain. Give it a question; it reads the entire vault (read-only) and answers with claim citations, weighing evidence by epistemic type.",
+  "human":"A judgment gate. The flow HOLDS at this node until a person ticks approval — implementing the policy rows that machines may never perform (risk acceptance, decisions).",
+  "external-event":"A wait-for-the-world node. Names an external trigger (VDR arrives, monthly pack lands); the flow pauses here until you mark it occurred.",
+  "coordinator":"The main agent. After every run it re-reads the whole graph and rewrites each deal's brief: derived state, critical open questions ranked by how much depends on them, unresolved contradictions, and what the flow allows next. Click the node to read its output.",
+  "librarian":"The brain's custodian. Files every claim into the question-type archive it bears on, cross-deal — so when a future deal raises the same question, everything the firm already learned is right there. Click the node to browse."
+};
 const DOMAIN = {
   "Financial / QoE":"financial_qoe", "Commercial / Market":"commercial_market", "Legal":"legal",
   "Tax":"tax", "Financing / Debt":"financing", "Operational":"operational",
@@ -122,7 +137,7 @@ function nodeEl(n){
   if (k.human) cfg = `<label style="font-size:10px;color:var(--accent)"><input type="checkbox" ${n.config?.approved?"checked":""} onchange="setCfg('${n.id}','approved',this.checked)"> approved by human</label>`;
   if (k.ext) cfg = `<label style="font-size:10px;color:var(--blue)"><input type="checkbox" ${n.config?.occurred?"checked":""} onchange="setCfg('${n.id}','occurred',this.checked)"> event occurred</label><input class="cfg" placeholder="what event…" value="${esc(n.config?.event||'')}" onchange="setCfg('${n.id}','event',this.value)">`;
   if (k.cfgText) cfg = `<input class="cfg" placeholder="question…" value="${esc(n.config?.question||"")}" onchange="setCfg('${n.id}','question',this.value)">`;
-  el.innerHTML = `<h4><span class="dot" id="dot-${n.id}"></span>${esc(n.label||n.kind)}${n.fixed?"":` <span style="color:var(--muted);font-size:10px">#${esc(n.id.split("_")[1]||"")}</span>`}</h4>
+  el.innerHTML = `<h4><span class="dot" id="dot-${n.id}"></span>${esc(n.label||n.kind)} <button class="infob" aria-label="how this agent works" onclick="event.stopPropagation();showInfo('${n.kind}','${esc(n.label||n.kind)}')">i</button>${n.fixed?"":` <span style="color:var(--muted);font-size:10px">#${esc(n.id.split("_")[1]||"")}</span>`}</h4>
     <div class="io">${esc(n.io || k.io)}</div>${cfg}<div class="out" id="out-${n.id}"></div>
     ${n.fixed?"":'<button class="del" aria-label="delete" onclick="delNode(\''+n.id+'\')">✕</button>'}
     ${n.fixed?"":'<span class="port in" data-id="'+n.id+'"></span><span class="port outp" data-id="'+n.id+'"></span>'}`;
@@ -207,6 +222,11 @@ document.getElementById("run").onclick = async () => {
     catch(e){ dot.className="dot err"; }
   }
   btn.disabled = false;
+};
+window.showInfo = (kind, label) => {
+  const pn = document.getElementById("panel"), pb = document.getElementById("panelbody");
+  pn.style.display = "block";
+  pb.innerHTML = `<h3 style="color:var(--ink);font-family:var(--serif);margin-bottom:10px">${esc(label)}</h3><div style="font-size:13px;line-height:1.7">${esc(INFO[kind]||"")}</div>`;
 };
 window.showPanel = async which => {
   const pn = document.getElementById("panel"), pb = document.getElementById("panelbody");

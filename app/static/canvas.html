@@ -42,6 +42,8 @@ a{color:var(--muted);font-size:12.5px}
   <span class="wordmark"><b>◆</b> Agent Canvas</span>
   <div id="palette"></div>
   <span style="flex:1"></span>
+  <input type="file" id="feed" style="display:none" onchange="feedUp(this)">
+  <button class="btn ghost" onclick="document.getElementById('feed').click()">⇪ Feed data</button>
   <button class="btn ghost" id="save">Save flow</button>
   <button class="btn" id="run">Run flow</button>
   <a href="/">← desks</a>
@@ -168,6 +170,14 @@ document.getElementById("run").onclick = async () => {
     catch(e){ dot.className="dot err"; }
   }
   btn.disabled = false;
+};
+window.feedUp = async inp => {
+  const f = inp.files[0]; if(!f) return;
+  const fd = new FormData(); fd.append("file", f);
+  try { const r = await api("/api/upload", {method:"POST", body:fd});
+    alert(`stored: ${r.stored}\n${r.note}\nNow run a flow with extractor (or a domain agent) to process it.`); }
+  catch(e){ alert("upload failed: "+e.message); }
+  inp.value = "";
 };
 document.getElementById("save").onclick = async () => {
   await api("/api/flow", {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(flow)});

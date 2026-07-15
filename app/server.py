@@ -476,8 +476,15 @@ def agent_workstream(deal: str, body: WorkstreamIn):
         ctx = "\n\n".join(f"### {f.relative_to(droot)}\n{f.read_text(encoding='utf-8')}"
                           for pat in ("questions/*.md", "assumptions/*.md", "claims/*.md")
                           for f in sorted(droot.glob(pat)))[:130_000]
+        import contracts as _contracts
+        eps = _contracts.workstream_schema(ws) or {}
+        brain_ctx = "\n".join(f.read_text(encoding="utf-8")[:1500]
+                              for f in (VAULT / "library" / "question-types").glob("*.md"))[:6000]
         data = _gateway_json(
-            f"You are the PE OS workstream-runner for workstream '{ws}'. From the deal context, produce findings "
+            f"You are the PE OS workstream-runner for workstream '{ws}'.\n"
+            f"YOUR EPISTEMIC CONTRACT (follow it): {json.dumps(eps)[:4000]}\n"
+            f"FIRM BRAIN (cross-deal evidence archives — use what bears on your questions): {brain_ctx}\n"
+            "From the deal context, produce findings "
             "grounded ONLY in the claims present (cite claim ids); weigh epistemic types (observed beats asserted); "
             "if claims contradict, mark the finding contested. Return ONLY JSON: "
             "{\"findings\":[{\"finding\":str,\"tied_to\":[assumption ids],\"direction\":\"supports|challenges\","

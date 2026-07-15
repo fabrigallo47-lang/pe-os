@@ -61,6 +61,15 @@ def automatable_register() -> list[dict]:
     return _load("epistemic_schemas_final.json")["human_vs_automatable_register"]
 
 
+def workstream_schema(ws_id: str) -> dict | None:
+    """The epistemic 'skill' for a workstream: governing question, what it seeks,
+    sufficiency rules. Injected into that agent's prompt — the harness."""
+    for s in _load("epistemic_schemas_final.json")["workstream_schemas"]:
+        if s.get("workstream_id") == ws_id:
+            return s
+    return None
+
+
 def reasoning_operators() -> list[dict]:
     return _load("epistemic_schemas_final.json")["reasoning_operators"]
 

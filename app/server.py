@@ -652,6 +652,74 @@ def agents_tick():
     return {"report": report}
 
 
+FLOW_FILE = ROOT / "app" / "flow.json"
+
+
+@app.get("/canvas")
+def canvas_page():
+    return FileResponse(ROOT / "app" / "static" / "canvas.html")
+
+
+@app.get("/api/flow")
+def get_flow():
+    if FLOW_FILE.exists():
+        return json.loads(FLOW_FILE.read_text())
+    return {"nodes": [], "edges": []}
+
+
+@app.put("/api/flow")
+def put_flow(flow: dict):
+    FLOW_FILE.write_text(json.dumps(flow, indent=1))
+    return {"ok": True}
+
+
+class RunIn(BaseModel):
+    config: dict = {}
+
+
+@app.post("/api/agents/run/{kind}")
+def run_agent(kind: str, body: RunIn):
+    """Canvas executor: one agent, one unit of work, summary out. Same policy
+    rows and audit trail as always — the canvas is just another trigger."""
+    require_writable()
+    sync()
+    sys.path.insert(0, str(ROOT / "agents"))
+    import runtime as rt
+    reindex()
+    deal = body.config.get("deal") or (rt.deals()[0] if len(rt.deals()) == 1 else body.config.get("deal", ""))
+    try:
+        if kind == "extractor":
+            st = rt._state(); done = set(st.get("extracted", []))
+            for f in sorted((VAULT / "inbox").glob("*")):
+                if f.suffix.lower() in (".md", ".txt") and f.name not in done and f.stat().st_size < 150_000:
+                    d = rt.deal_for(f.name)
+                    if not d:
+                        continue
+                    ids = cloud_extract(d, f)
+                    st = rt._state(); st.setdefault("extracted", []).append(f.name); rt._save(st)
+                    rt.audit("extractor", "HVA_COMMERCIAL_01", "claims-extracted", f"{f.name} → {len(ids)}", ids)
+                    push(); reindex()
+                    return {"summary": f"{f.name} → {len(ids)} claims"}
+            return {"summary": "nothing to extract"}
+        if kind == "workstream":
+            r = agent_workstream(deal, WorkstreamIn(workstream=body.config.get("workstream", "commercial_market")))
+            return {"summary": r["output"][-200:]}
+        if kind == "ask":
+            return {"summary": _ask_via_gateway(body.config.get("question", "summarize the open risks"))[:600]}
+        cls = {"sentinel": rt.Sentinel, "state-resolver": rt.StateResolver, "contradiction": rt.Contradiction,
+               "librarian": rt.Librarian, "coordinator": rt.Coordinator, "staleness": rt.Staleness}.get(kind)
+        if not cls:
+            raise HTTPException(404, f"unknown agent kind: {kind}")
+        a = cls()
+        a.act(list(a.snapshot().keys()))
+        push(); reindex()
+        return {"summary": f"{kind}: ran over current graph"}
+    except HTTPException:
+        raise
+    except Exception as exc:
+        raise HTTPException(500, f"{kind}: {exc}")
+
+
 class AskIn(BaseModel):
     question: str
 

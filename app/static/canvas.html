@@ -1,0 +1,173 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PE OS — Agent Canvas</title>
+<style>
+:root{--bg:#0b1622;--surface:#111f2e;--surface2:#17293c;--line:#22384e;--ink:#e9eff5;--muted:#9db0c2;
+--gold:#c9a24b;--green:#4fae7f;--red:#d4685f;--blue:#7fa8cf;
+--serif:"Iowan Old Style",Palatino,Georgia,serif;--sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,sans-serif;--mono:"SF Mono",Menlo,monospace}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;overflow:hidden;height:100vh;display:flex;flex-direction:column}
+header{display:flex;align-items:center;gap:14px;padding:12px 20px;border-bottom:1px solid var(--line);z-index:10;background:var(--bg)}
+.wordmark{font-family:var(--serif);font-size:16px}.wordmark b{color:var(--gold)}
+.btn{background:var(--gold);color:#0b1622;border:none;border-radius:8px;padding:8px 16px;font-weight:600;font-size:13px;cursor:pointer;min-height:38px}
+.btn.ghost{background:none;border:1px solid var(--line);color:var(--ink)}
+.btn:disabled{opacity:.4}
+a{color:var(--muted);font-size:12.5px}
+#palette{display:flex;gap:6px;flex-wrap:wrap}
+.pal{background:var(--surface);border:1px solid var(--line);color:var(--muted);border-radius:99px;padding:6px 12px;font-size:12px;cursor:pointer}
+.pal:hover{color:var(--gold);border-color:var(--gold)}
+#board{position:relative;flex:1;overflow:auto;background-image:radial-gradient(circle, #16263a 1px, transparent 1px);background-size:26px 26px}
+#wires{position:absolute;inset:0;width:3000px;height:2000px;pointer-events:none}
+.node{position:absolute;width:210px;background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:12px 14px;cursor:grab;user-select:none;box-shadow:0 4px 18px rgba(0,0,0,.35)}
+.node.fixed{border-style:dashed;border-color:#56456b}
+.node h4{font-family:var(--serif);font-weight:500;font-size:14.5px;display:flex;align-items:center;gap:8px}
+.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);flex:0 0 auto}
+.dot.run{background:var(--gold);animation:pu 1s infinite}@keyframes pu{50%{opacity:.4}}
+.dot.ok{background:var(--green)}.dot.err{background:var(--red)}
+.node .io{font-size:10.5px;color:var(--muted);margin-top:4px;line-height:1.5}
+.node .out{font-size:10.5px;color:var(--green);margin-top:6px;white-space:pre-wrap;max-height:64px;overflow:auto}
+.port{position:absolute;width:14px;height:14px;border-radius:50%;background:var(--surface2);border:2px solid var(--blue);cursor:crosshair}
+.port.in{left:-8px;top:50%;transform:translateY(-50%)}
+.port.outp{right:-8px;top:50%;transform:translateY(-50%);border-color:var(--gold)}
+.port:hover{background:var(--gold)}
+.del{position:absolute;top:6px;right:8px;color:var(--muted);cursor:pointer;font-size:12px;background:none;border:none}
+.cfg{width:100%;margin-top:6px;background:var(--surface2);border:1px solid var(--line);color:var(--ink);border-radius:6px;font-size:11px;padding:4px 6px}
+#hint{position:fixed;bottom:14px;left:20px;font-size:11.5px;color:var(--muted);z-index:10}
+</style>
+</head>
+<body>
+<header>
+  <span class="wordmark"><b>◆</b> Agent Canvas</span>
+  <div id="palette"></div>
+  <span style="flex:1"></span>
+  <button class="btn ghost" id="save">Save flow</button>
+  <button class="btn" id="run">Run flow</button>
+  <a href="/">← desks</a>
+</header>
+<div id="board"><svg id="wires"></svg></div>
+<p id="hint">drag agents from the palette logic: gold port = output → drag to a blue input port to connect · double-click a wire to remove · every node reports to the coordinator and files to the brain automatically</p>
+<script>
+const DOMAIN = {
+  "Financial / QoE":"financial_qoe", "Commercial / Market":"commercial_market", "Legal":"legal",
+  "Tax":"tax", "Financing / Debt":"financing", "Operational":"operational",
+  "Management / Sponsor":"management_sponsor", "Structuring":"structuring", "Valuation / Returns":"valuation_model",
+};
+const KINDS = {
+  "sentinel":{io:"in: inbox artifact → out: ARTIFACT_ARRIVED event"},
+  "extractor":{io:"in: artifact → out: typed claims bound to questions"},
+  "contradiction":{io:"in: claims → out: contradiction flags"},
+  "state-resolver":{io:"in: events → out: derived deal state"},
+  "staleness":{io:"in: assumption change → out: stale flags"},
+  "workstream":{io:"in: questions+assumptions+claims → out: findings", cfg:["commercial_market","financial_qoe","operational","management_sponsor","legal","financing"]},
+  "ask":{io:"in: question → out: cited answer", cfgText:true},
+};
+const FIXED = [
+  {id:"coordinator", kind:"coordinator", x:1150, y:40, fixed:true, io:"main agent — sees every input & output, keeps the deal brief"},
+  {id:"brain", kind:"librarian", x:1150, y:520, fixed:true, io:"the brain — every output is filed here by what it bears on"},
+];
+let flow = {nodes:[], edges:[]}, seq = 1, wireFrom = null;
+const board = document.getElementById("board"), wires = document.getElementById("wires");
+const api = async (p, o) => { const r = await fetch(p, o); const j = await r.json().catch(()=>({})); if(!r.ok) throw new Error(j.detail||r.status); return j; };
+const esc = s => String(s??"").replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+function nodeEl(n){
+  const el = document.createElement("div");
+  el.className = "node" + (n.fixed ? " fixed" : "");
+  el.style.left = n.x+"px"; el.style.top = n.y+"px"; el.dataset.id = n.id;
+  const k = KINDS[n.kind] || {io:n.io||""};
+  let cfg = "";
+  if (k.cfg) cfg = `<select class="cfg" onchange="setCfg('${n.id}','workstream',this.value)">` + k.cfg.map(o=>`<option ${n.config?.workstream===o?"selected":""}>${o}</option>`).join("") + `</select>`;
+  if (k.cfgText) cfg = `<input class="cfg" placeholder="question…" value="${esc(n.config?.question||"")}" onchange="setCfg('${n.id}','question',this.value)">`;
+  el.innerHTML = `<h4><span class="dot" id="dot-${n.id}"></span>${esc(n.label||n.kind)}${n.fixed?"":` <span style="color:var(--muted);font-size:10px">#${esc(n.id.split("_")[1]||"")}</span>`}</h4>
+    <div class="io">${esc(n.io || k.io)}</div>${cfg}<div class="out" id="out-${n.id}"></div>
+    ${n.fixed?"":'<button class="del" aria-label="delete" onclick="delNode(\''+n.id+'\')">✕</button>'}
+    ${n.fixed?"":'<span class="port in" data-id="'+n.id+'"></span><span class="port outp" data-id="'+n.id+'"></span>'}`;
+  // drag
+  el.addEventListener("pointerdown", ev => {
+    if (ev.target.classList.contains("port") || ev.target.tagName==="SELECT" || ev.target.tagName==="INPUT" || ev.target.classList.contains("del")) return;
+    const sx = ev.clientX - n.x, sy = ev.clientY - n.y;
+    const move = e => { n.x = e.clientX - sx; n.y = e.clientY - sy; el.style.left = n.x+"px"; el.style.top = n.y+"px"; draw(); };
+    const up = () => { window.removeEventListener("pointermove", move); window.removeEventListener("pointerup", up); };
+    window.addEventListener("pointermove", move); window.addEventListener("pointerup", up);
+  });
+  return el;
+}
+window.setCfg = (id, key, val) => { const n = allNodes().find(x=>x.id===id); n.config = {...(n.config||{}), [key]: val}; };
+window.delNode = id => { flow.nodes = flow.nodes.filter(n=>n.id!==id); flow.edges = flow.edges.filter(e=>e.from!==id&&e.to!==id); render(); };
+const allNodes = () => [...FIXED, ...flow.nodes];
+
+function render(){
+  board.querySelectorAll(".node").forEach(x=>x.remove());
+  allNodes().forEach(n => board.appendChild(nodeEl(n)));
+  board.querySelectorAll(".port.outp").forEach(p => p.addEventListener("pointerdown", ev => { ev.stopPropagation(); wireFrom = p.dataset.id; }));
+  board.querySelectorAll(".port.in").forEach(p => p.addEventListener("pointerup", ev => {
+    if (wireFrom && wireFrom !== p.dataset.id){ flow.edges.push({from:wireFrom, to:p.dataset.id}); wireFrom = null; draw(); }
+  }));
+  window.addEventListener("pointerup", ()=>{ wireFrom=null; });
+  draw();
+}
+function center(id, side){
+  const n = allNodes().find(x=>x.id===id);
+  return {x: n.x + (side==="out"?210:0), y: n.y + 34};
+}
+function draw(){
+  let svg = "";
+  // implicit governance wires: every user node ↔ coordinator + brain (faint)
+  flow.nodes.forEach(n => {
+    const a = center(n.id,"out");
+    FIXED.forEach(f => { const b = {x:f.x, y:f.y+34};
+      svg += `<path d="M${a.x},${a.y} C${(a.x+b.x)/2},${a.y} ${(a.x+b.x)/2},${b.y} ${b.x},${b.y}" stroke="#2a3b52" stroke-width="1" fill="none" stroke-dasharray="4 5"/>`; });
+  });
+  flow.edges.forEach((e,i) => {
+    const a = center(e.from,"out"), b = center(e.to,"in");
+    svg += `<path data-i="${i}" d="M${a.x},${a.y} C${(a.x+b.x)/2},${a.y} ${(a.x+b.x)/2},${b.y} ${b.x},${b.y}" stroke="var(--gold)" stroke-width="2.2" fill="none" style="pointer-events:stroke;cursor:pointer"/>`;
+  });
+  wires.innerHTML = svg;
+  wires.querySelectorAll("path[data-i]").forEach(p => p.addEventListener("dblclick", ()=>{ flow.edges.splice(+p.dataset.i,1); draw(); }));
+}
+// palette
+const pal = document.getElementById("palette");
+Object.entries(DOMAIN).forEach(([label, ws]) => {
+  const b = document.createElement("button"); b.className = "pal"; b.style.borderColor = "var(--gold)"; b.textContent = "+ " + label;
+  b.onclick = () => { flow.nodes.push({id:`ws_${seq++}`, kind:"workstream", label, x:80+Math.random()*260, y:80+Math.random()*320,
+    config:{workstream:ws}, io:`in: questions+assumptions+claims → out: ${label} findings tied to assumptions`}); render(); };
+  pal.appendChild(b);
+});
+Object.keys(KINDS).filter(k=>k!=="workstream").forEach(k => {
+  const b = document.createElement("button"); b.className = "pal"; b.textContent = "+ " + k;
+  b.onclick = () => { flow.nodes.push({id:`${k}_${seq++}`, kind:k, x:80+Math.random()*200, y:80+Math.random()*300, config:{}}); render(); };
+  pal.appendChild(b);
+});
+// run: topological order over user edges, sources first
+document.getElementById("run").onclick = async () => {
+  const btn = document.getElementById("run"); btn.disabled = true;
+  const order = [], seen = new Set();
+  const visit = id => { if (seen.has(id)) return; seen.add(id);
+    flow.edges.filter(e=>e.to===id).forEach(e=>visit(e.from)); order.push(id); };
+  flow.nodes.forEach(n=>visit(n.id));
+  for (const id of order){
+    const n = flow.nodes.find(x=>x.id===id); if(!n) continue;
+    const dot = document.getElementById("dot-"+id), out = document.getElementById("out-"+id);
+    dot.className = "dot run"; out.textContent = "running…";
+    try { const r = await api(`/api/agents/run/${n.kind}`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({config:n.config||{}})});
+      dot.className = "dot ok"; out.textContent = r.summary; }
+    catch(e){ dot.className = "dot err"; out.textContent = e.message; }
+  }
+  // coordinator + brain always close the cycle
+  for (const f of FIXED){
+    const dot = document.getElementById("dot-"+f.id); dot.className = "dot run";
+    try { await api(`/api/agents/run/${f.kind}`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({config:{}})}); dot.className="dot ok"; }
+    catch(e){ dot.className="dot err"; }
+  }
+  btn.disabled = false;
+};
+document.getElementById("save").onclick = async () => {
+  await api("/api/flow", {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(flow)});
+  document.getElementById("save").textContent = "Saved ✓"; setTimeout(()=>document.getElementById("save").textContent="Save flow", 1500);
+};
+(async () => { try { const f = await api("/api/flow"); if (f.nodes) flow = f; seq = flow.nodes.length+1; } catch(e){} render(); })();
+</script>
+</body>
+</html>

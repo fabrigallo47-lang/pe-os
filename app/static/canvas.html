@@ -62,6 +62,8 @@ const KINDS = {
   "staleness":{io:"in: assumption change → out: stale flags"},
   "workstream":{io:"in: questions+assumptions+claims → out: findings", cfg:["commercial_market","financial_qoe","operational","management_sponsor","legal","financing"]},
   "ask":{io:"in: question → out: cited answer", cfgText:true},
+  "human":{io:"human judgment node — the flow HOLDS here until a person approves (policy rows 7-8)", human:true},
+  "external-event":{io:"external trigger (e.g. VDR arrives, pack received) — flow waits until it occurs", ext:true},
 };
 const FIXED = [
   {id:"coordinator", kind:"coordinator", x:1150, y:40, fixed:true, io:"main agent — sees every input & output, keeps the deal brief"},
@@ -79,6 +81,8 @@ function nodeEl(n){
   const k = KINDS[n.kind] || {io:n.io||""};
   let cfg = "";
   if (k.cfg) cfg = `<select class="cfg" onchange="setCfg('${n.id}','workstream',this.value)">` + k.cfg.map(o=>`<option ${n.config?.workstream===o?"selected":""}>${o}</option>`).join("") + `</select>`;
+  if (k.human) cfg = `<label style="font-size:10px;color:var(--gold)"><input type="checkbox" ${n.config?.approved?"checked":""} onchange="setCfg('${n.id}','approved',this.checked)"> approved by human</label>`;
+  if (k.ext) cfg = `<label style="font-size:10px;color:var(--blue)"><input type="checkbox" ${n.config?.occurred?"checked":""} onchange="setCfg('${n.id}','occurred',this.checked)"> event occurred</label><input class="cfg" placeholder="what event…" value="${esc(n.config?.event||'')}" onchange="setCfg('${n.id}','event',this.value)">`;
   if (k.cfgText) cfg = `<input class="cfg" placeholder="question…" value="${esc(n.config?.question||"")}" onchange="setCfg('${n.id}','question',this.value)">`;
   el.innerHTML = `<h4><span class="dot" id="dot-${n.id}"></span>${esc(n.label||n.kind)}${n.fixed?"":` <span style="color:var(--muted);font-size:10px">#${esc(n.id.split("_")[1]||"")}</span>`}</h4>
     <div class="io">${esc(n.io || k.io)}</div>${cfg}<div class="out" id="out-${n.id}"></div>
@@ -150,6 +154,8 @@ document.getElementById("run").onclick = async () => {
   for (const id of order){
     const n = flow.nodes.find(x=>x.id===id); if(!n) continue;
     const dot = document.getElementById("dot-"+id), out = document.getElementById("out-"+id);
+    if (n.kind === "human"){ if(n.config?.approved){ dot.className="dot ok"; out.textContent="changed: approval recorded · opened: downstream may proceed"; } else { dot.className="dot err"; out.textContent="HELD — awaiting human approval"; break; } continue; }
+    if (n.kind === "external-event"){ if(n.config?.occurred){ dot.className="dot ok"; out.textContent=`changed: ${n.config?.event||"event"} occurred · opened: downstream`; } else { dot.className="dot err"; out.textContent=`waiting: ${n.config?.event||"external event"}`; break; } continue; }
     dot.className = "dot run"; out.textContent = "running…";
     try { const r = await api(`/api/agents/run/${n.kind}`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({config:n.config||{}})});
       dot.className = "dot ok"; out.textContent = r.summary; }

@@ -4,17 +4,17 @@ id: plan-astrelia
 deal: "[[astrelia]]"
 written-by: phase-coordinator
 produced: 2026-07-15
-phase: S0_INTAKE
+phase: S3_SCREENING_ASSESSMENT
 claims extracted: 32
 contradictions: 3
 ---
 
 # Plan — astrelia
 
-_(phase-coordinator, 2026-07-15 19:56)_
+_(phase-coordinator, 2026-07-15 20:23)_
 
 ## Current phase
-`S0_INTAKE` — 6 critical question(s) open, 32 claim(s), 3 contradiction(s)
+`S3_SCREENING_ASSESSMENT` — 6 critical question(s) open, 32 claim(s), 3 contradiction(s)
 
 ## Critical open questions
 - [[q-astrelia-commercial]] — Is the revenue real? For Astrelia, this IS the deal.
@@ -28,12 +28,11 @@ _(phase-coordinator, 2026-07-15 19:56)_
 - claims stable at 32
 
 ## What it opened (proposed next steps)
-- [agent] → extractor: Process any unextracted inbox artifacts
-- [agent] → sentinel: Announce any un-announced inbox artifacts
-- [agent] → proposer: Derive assumption set from extracted claims (once per deal)
+- [agent] → contradiction: Contradiction check before screening decision
+- [human] → screening-decision [HUMAN GATE]: Human screening gate (policy row 7)
 
 ## Allowed next transitions (from contracts)
-- DEAL_IDENTITY_RESOLVED_ACCESS_REQUIRED → S1_ACCESS_CLEARANCE
-- DEAL_IDENTITY_RESOLVED_PUBLIC_ROUTE → S2_CASE_INGESTION
-- CONFIDENTIAL_MATERIAL_REQUIRED → S1_ACCESS_CLEARANCE
-- PUBLIC_OR_TEASER_MATERIAL_AVAILABLE → S2_CASE_INGESTION
+- SCREEN_PROCEED → S4_QUESTION_PLANNING
+- SCREEN_DECLINED → SX_TERMINATED_STALLED_DECLINED
+- SCREEN_DEFERRED → S3_SCREENING_ASSESSMENT
+- ACCELERATED_DILIGENCE_EXCEPTION → S5_DILIGENCE_ACTIVE

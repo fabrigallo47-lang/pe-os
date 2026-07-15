@@ -2,7 +2,7 @@
 type: deal
 id: astrelia
 company: "[[astrelia-co]]"
-state: S0_INTAKE
+state: S3_SCREENING_ASSESSMENT
 lead: "[[fabrizio]]"
 thesis: "Profitable European space tech — €62.1m FY25A revenue (+62% YoY, 25% EBITDA margin), ESA-qualified with zero critical-anomaly deliveries across 14 programs, and the €1.3bn METEOR programme (22 satellites) anchoring the growth case."
 opened: 2026-07-13
@@ -15,8 +15,8 @@ written-by: human
 Profitable European space tech — €62.1m FY25A revenue (+62% YoY, 25% EBITDA margin), ESA-qualified with zero critical-anomaly deliveries across 14 programs, and the €1.3bn METEOR programme (22 satellites) anchoring the growth case.
 
 ## State of the deal   <!-- agent-maintained -->
-_(coordinator, 2026-07-15 19:56)_
-- **Derived state:** S0_INTAKE
+_(coordinator, 2026-07-15 20:22)_
+- **Derived state:** S3_SCREENING_ASSESSMENT
 - **Blocking the decision** (critical, open — ranked by how much depends on them):
   1. [[q-astrelia-commercial]] — Is the revenue real? For Astrelia, this IS the deal. (fan-in 1)
   2. [[q-astrelia-financial]] — What do the numbers say under Meridian's own assumptions, not the company's? (fan-in 1)
@@ -27,7 +27,7 @@ _(coordinator, 2026-07-15 19:56)_
 - **Unresolved contradiction:** FY30E plan EBITDA
 - **Unresolved contradiction:** FY30E plan EBITDA margin
 - **Unresolved contradiction:** FY30E plan revenue
-- **The flow allows next:** CONFIDENTIAL_MATERIAL_REQUIRED → S1_ACCESS_CLEARANCE; PUBLIC_OR_TEASER_MATERIAL_AVAILABLE → S2_CASE_INGESTION
+- **The flow allows next:** SCREENING_APPROVED → S4_QUESTION_PLANNING
 
 ## Questions
 

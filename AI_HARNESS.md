@@ -42,6 +42,18 @@ See `CLAUDE.md` — the eight invariants there are load-bearing; this file adds 
 
 ## 4. Session log & findings (append every task — newest first)
 
+### 2026-07-15 — Brain + Knowledge Graph + Phase Coordinator + IC Assembler (Parts A/B/C of plan 04)
+- **Graph API** (`GET /api/graph?deal=<optional>` + `GET /api/node/{id}`): returns nodes+links from the SQLite index with degree, stale flag, epistemic type. Verified: astrelia returns 55 nodes, firm-wide 91 nodes, 142 edges.
+- **`/graph` page** (`app/static/graph.html`): force-directed knowledge graph, no external libraries — custom simulation (~100 lines: repulsion + spring + gravity). Visual language of canvas.html (graphite bg, champagne accent). Color by type (7 types), red ring for stale, node size by degree. Click node → side panel reads raw markdown via `GET /api/node/{id}`. Linked from canvas header as "Graph" button.
+- **`vault/BRAIN.md`**: human-readable vault index — folder map, graph reading guide, Obsidian tips, agent coordination diagram. Indexed as type `brain-index`.
+- **`PhaseCoordinator` agent** (deterministic, `HVA_COMMERCIAL_02`): reads derived state, maps to phase playbook (S0–S9), proposes next steps. Writes `deals/<id>/plan.md` with type/written-by frontmatter, changed + opened sections, allowed transitions from contracts. Emits `PLAN_UPDATED`. Never calls other agents. Verified live: plan.md with correct frontmatter and both sections.
+- **"Run plan" button** in canvas.html header: calls `POST /api/agents/run/phase-coordinator`, gets `proposed[]`, executes agent steps sequentially, skips human/external-event nodes. Wired via `#runplan` button.
+- **`IcAssembler` agent** (`HVA_COMMERCIAL_01`, LLM): reads full deal graph (questions, claims by epistemic type, assumptions+versions, contradictions, workstream outputs, prior decisions) via SQLite. Writes `deals/<id>/ic/ic-package.md` (v1+) with all 7 required sections. Previous versions archived as `ic-package-vN.md` (append-only). LLM paths: ANTHROPIC_API_KEY → Vercel AI Gateway → headless claude CLI (OAuth fallback). Verified live: v1 written in ~77s via claude CLI with all 7 sections present.
+- **Runtime extended**: 11 agents deployed (was 9). Both new agents verified with contract binding: `phase-coordinator` → HVA_COMMERCIAL_02 [deterministic_automation], `ic-assembler` → HVA_COMMERCIAL_01 [machine_assisted_extraction].
+- **Audit log verified**: `phase-coordinator` + `ic-assembler` entries with contract_activity IDs visible in `/api/audit`.
+- `make report` clean: 91 nodes, 142 edges, no schema errors.
+- CLAUDE.md build-order: brain+graph+coordinator loop ✅ · IC assembler ✅.
+
 ### 2026-07-13 — V1 LOOP COMPLETE (Fabrizio's 4-step definition, all proven live)
 - New objects: `assumption.md` (statement/value/basis/version; questions link via `tests`) + `workstream-output.md` (findings `tied-to` assumptions, `stale` flag). Indexer: tests/tied-to/basis/uses edges.
 - **Proposer** (LLM, auto-once-per-deal when claims exist & no assumptions): wrote a-aurora-001…005 grounded in claims, linked questions' `tests`. **Workstream runner** (`POST /api/agents/workstream/{deal}` + UI select): produced wso-aurora-commercial_market-001, tied to 3 assumptions, using 7 claims. **Staleness** (deterministic): value change → dependents flagged `stale: true` + ANALYTICAL_OBJECT_SUPERSEDED event. Proven: a-aurora-001 revised 115%→105% ⇒ q-aurora-retention + the wso output stale in 12s.

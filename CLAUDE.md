@@ -39,7 +39,7 @@ tools/          indexer.py (vault → .index/vault.db, rebuilt on demand)
 
 - New deal → `/open-deal`. Artifact arrives → `/ingest`. Anytime → `/contradictions`. Decision moment → `/ic-record`.
 - After any vault write: `make index`. Health check: `make report`.
-- Build order status: **1 decision-record ✅ schema · 2 questions+evidence ✅ schema · 3 contradiction agent ✅ v1 · 4 policy table ✅ · 5 cross-question retrieval ⬜ · then: origination/ownership/exit loops ⬜.** Next milestone: run one full past deal through the pipeline end-to-end.
+- Build order status: **1 decision-record ✅ schema · 2 questions+evidence ✅ schema · 3 contradiction agent ✅ v1 · 4 policy table ✅ · 5 knowledge graph ✅ · 6 phase coordinator ✅ · 7 IC assembler ✅ · 8 origination/ownership/exit loops ⬜.** Runtime: 11 agents. Next: outcome loop + deal lifecycle close.
 
 ## Conventions
 

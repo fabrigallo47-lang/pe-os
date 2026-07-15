@@ -66,12 +66,14 @@ label{font-size:10.5px;color:var(--muted)}
 <header>
   <span class="wordmark"><b>◆</b> PE OS</span><select id="dealsel" aria-label="deal" style="width:150px;height:34px;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:0 10px;font-size:12.5px"></select>
   <button class="pal" style="border-color:var(--accent);color:var(--accent)" onclick="showPanel(null)">Canvas</button>
+  <button class="pal" onclick="location.href='/graph'">Graph</button>
   <button class="pal" onclick="showPanel('brain')">Brain · recent changes</button>
   <button class="pal" onclick="showPanel('coord')">Coordinator · reasonings</button>
-  
+
   <span style="flex:1"></span>
   <input type="file" id="feed" style="display:none" onchange="feedUp(this)">
   <button class="btn ghost" onclick="document.getElementById('feed').click()">⇪ Feed data</button>
+  <button class="btn ghost" id="runplan">Run plan</button>
   <button class="btn ghost" id="save">Save flow</button>
   <button class="btn" id="run">Run flow</button>
   <a href="/desks">← desks</a>
@@ -257,6 +259,43 @@ window.feedUp = async inp => {
 document.getElementById("save").onclick = async () => {
   await api("/api/flow", {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(flow)});
   document.getElementById("save").textContent = "Saved ✓"; setTimeout(()=>document.getElementById("save").textContent="Save flow", 1500);
+};
+
+// Run plan: calls phase-coordinator, then executes proposed agent steps sequentially
+document.getElementById("runplan").onclick = async () => {
+  const btn = document.getElementById("runplan");
+  btn.disabled = true; btn.textContent = "Running plan…";
+  const deal = document.getElementById("dealsel").value;
+  try {
+    const planResult = await api("/api/agents/run/phase-coordinator", {
+      method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({config:{deal}})
+    });
+    const proposed = planResult.proposed || [];
+    let log = `Phase coordinator: ${planResult.summary}\n\nProposed steps (${proposed.length}):\n`;
+    for (const step of proposed) {
+      if (step.kind !== "agent") {
+        log += `  [${step.kind}] ${step.target}: ${step.why} — skipped (not an agent step)\n`;
+        continue;
+      }
+      log += `  Running ${step.target}…\n`;
+      try {
+        const cfg = {deal, ...(step.config || {})};
+        if (step.target === "workstream" && !cfg.workstream) cfg.workstream = "commercial_market";
+        const r = await api(`/api/agents/run/${step.target}`, {
+          method:"POST", headers:{"Content-Type":"application/json"},
+          body: JSON.stringify({config: cfg})
+        });
+        log += `  → ${r.summary || "ok"}\n`;
+      } catch(e) {
+        log += `  → error: ${e.message}\n`;
+      }
+    }
+    alert(log);
+  } catch(e) {
+    alert(`Run plan failed: ${e.message}`);
+  }
+  btn.disabled = false; btn.textContent = "Run plan";
 };
 (async () => {
   try { const ds = await api("/api/deals");

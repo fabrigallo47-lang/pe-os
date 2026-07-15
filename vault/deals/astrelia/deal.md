@@ -15,7 +15,7 @@ written-by: human
 Profitable European space tech — €62.1m FY25A revenue (+62% YoY, 25% EBITDA margin), ESA-qualified with zero critical-anomaly deliveries across 14 programs, and the €1.3bn METEOR programme (22 satellites) anchoring the growth case.
 
 ## State of the deal   <!-- agent-maintained -->
-_(coordinator, 2026-07-15 18:57)_
+_(coordinator, 2026-07-15 19:56)_
 - **Derived state:** S0_INTAKE
 - **Blocking the decision** (critical, open — ranked by how much depends on them):
   1. [[q-astrelia-commercial]] — Is the revenue real? For Astrelia, this IS the deal. (fan-in 1)

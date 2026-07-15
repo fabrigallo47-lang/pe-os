@@ -458,6 +458,467 @@ class Librarian(Agent):
                   f"{len(wrote)} question-type archive(s): {', '.join(wrote)}", wrote)
 
 
+class PhaseCoordinator(Agent):
+    """Part B — The palingenetic phase coordinator. Deterministic core:
+    reads the derived deal state, maps it to the phase playbook, and proposes
+    the next steps (what changed + what it opened). Writes deals/<id>/plan.md;
+    emits PLAN_UPDATED event; audit under HVA_COMMERCIAL_02.
+
+    Dispatch is STATE-MEDIATED: this agent never calls other agents.
+    The plan's `proposed` list is returned to the canvas where the human
+    presses 'Run plan' to execute them sequentially."""
+    id = "phase-coordinator"
+    activity_id = "HVA_COMMERCIAL_02"  # deterministic_automation
+    watches = "deals/*/{events,claims,questions,assumptions}"
+
+    # Phase playbook: deal state prefix → proposed steps
+    PLAYBOOK = {
+        # S0–S3 origination / screening
+        "S0": [{"kind": "agent", "target": "extractor",  "why": "Process any unextracted inbox artifacts"},
+               {"kind": "agent", "target": "sentinel",   "why": "Announce any un-announced inbox artifacts"},
+               {"kind": "agent", "target": "proposer",   "why": "Derive assumption set from extracted claims (once per deal)"}],
+        "S1": [{"kind": "agent", "target": "extractor",  "why": "Extract claims from ingested material"},
+               {"kind": "agent", "target": "proposer",   "why": "Propose assumptions if claims exist and assumptions are missing"}],
+        "S2": [{"kind": "agent", "target": "extractor",  "why": "Extract from case material"},
+               {"kind": "agent", "target": "contradiction", "why": "Flag contradictions in new claims"},
+               {"kind": "agent", "target": "librarian",  "why": "Update cross-deal brain archives"}],
+        "S3": [{"kind": "agent", "target": "contradiction", "why": "Contradiction check before screening decision"},
+               {"kind": "human", "target": "screening-decision", "why": "Human screening gate (policy row 7)"}],
+        # S4–S5 diligence
+        "S4": [{"kind": "agent", "target": "workstream", "why": "Run workstream for each open critical question's target-workstream"},
+               {"kind": "agent", "target": "contradiction", "why": "Contradiction check over expanded evidence base"}],
+        "S5": [{"kind": "agent", "target": "workstream", "why": "Complete remaining workstream analyses"},
+               {"kind": "agent", "target": "contradiction", "why": "Contradiction check"},
+               {"kind": "agent", "target": "staleness",   "why": "Flag stale assumptions after workstream revisions"}],
+        # S6–S7 underwriting / IC
+        "S6": [{"kind": "agent", "target": "ic-assembler", "why": "Assemble IC package from full graph"},
+               {"kind": "human", "target": "ic-gate",    "why": "IC decision gate — human only (policy row 8)"}],
+        "S7": [{"kind": "agent", "target": "ic-assembler", "why": "Regenerate IC package with final positions"},
+               {"kind": "human", "target": "ic-decision", "why": "Investment committee decision — authority-only human action"}],
+        # S8+ post-IC — human/external events only
+        "S8": [{"kind": "external-event", "target": "legal-execution", "why": "Legal/documentation phase — requires external events"}],
+        "S9": [{"kind": "external-event", "target": "closing", "why": "Closing — requires external confirmation"}],
+    }
+
+    def snapshot(self):
+        return {str(f): f.stat().st_mtime
+                for pat in ("*/events/*.md", "*/claims/*.md", "*/questions/*.md", "*/assumptions/*.md")
+                for f in (VAULT / "deals").glob(pat)}
+
+    def act(self, changed):
+        for deal in {Path(p).parts[-3] for p in changed}:
+            self.run(deal)
+
+    def run(self, deal: str) -> dict:
+        """Core dispatch: read state, build plan, write plan.md, emit event."""
+        import re as _re
+        indexer.build().close()
+        db = sqlite3.connect(indexer.DB)
+
+        # 1. Derived state (never compute here — read what state-resolver wrote)
+        state_row = db.execute(
+            "SELECT frontmatter FROM nodes WHERE type='deal' AND id=?", (deal,)).fetchone()
+        if not state_row:
+            return {"summary": f"{deal}: not in index", "proposed": []}
+        dfm = json.loads(state_row[0])
+        state = dfm.get("state", "S0_INTAKE")
+        phase_key = state.split("_")[0] if "_" in state else state[:2]
+
+        # 2. Open critical questions
+        crit_open = db.execute(
+            "SELECT n.id, n.title, n.frontmatter FROM nodes n "
+            "WHERE n.type='question' AND n.deal=? AND n.state IN ('open','reducing') "
+            "AND json_extract(n.frontmatter,'$.critical')=1", (deal,)).fetchall()
+
+        # 3. Claims + contradictions
+        claim_rows = db.execute(
+            "SELECT id, epistemic FROM nodes WHERE type='claim' AND deal=?", (deal,)).fetchall()
+        contra_rows = db.execute(
+            "SELECT subject FROM nodes WHERE type='claim' AND deal=? AND subject IS NOT NULL "
+            "GROUP BY subject HAVING COUNT(DISTINCT value)>1", (deal,)).fetchall()
+
+        # 4. Assumptions
+        assume_rows = db.execute(
+            "SELECT id, frontmatter FROM nodes WHERE type='assumption' AND deal=?", (deal,)).fetchall()
+        stale_assumes = [aid for aid, fm_r in assume_rows if json.loads(fm_r).get("stale")]
+
+        # 5. Previous plan (to compute what changed)
+        plan_path = VAULT / "deals" / deal / "plan.md"
+        prev_plan_text = plan_path.read_text(encoding="utf-8") if plan_path.exists() else ""
+
+        # 6. Workstream outputs
+        output_rows = db.execute(
+            "SELECT id, frontmatter FROM nodes WHERE type='workstream-output' AND deal=?", (deal,)).fetchall()
+
+        # 7. Allowed next transitions from contracts
+        allowed_next = [t for t in contracts.transitions()
+                        if t["from"] == state][:6]
+
+        db.close()
+
+        # --- build changed / opened sections ---
+        # What changed: derive from diff of known counts vs previous plan
+        prev_claim_count = 0
+        prev_contra_count = 0
+        if prev_plan_text:
+            m = _re.search(r"claims extracted: (\d+)", prev_plan_text)
+            if m:
+                prev_claim_count = int(m.group(1))
+            m = _re.search(r"contradictions: (\d+)", prev_plan_text)
+            if m:
+                prev_contra_count = int(m.group(1))
+
+        new_claims = len(claim_rows) - prev_claim_count
+        new_contras = len(contra_rows) - prev_contra_count
+
+        changed_lines = []
+        if new_claims > 0:
+            changed_lines.append(f"- +{new_claims} new claim(s) extracted (total {len(claim_rows)})")
+        elif prev_plan_text:
+            changed_lines.append(f"- claims stable at {len(claim_rows)}")
+        else:
+            changed_lines.append(f"- {len(claim_rows)} claim(s) in graph")
+        if new_contras > 0:
+            changed_lines.append(f"- {new_contras} new contradiction(s) surfaced (total {len(contra_rows)})")
+        if stale_assumes:
+            changed_lines.append(f"- {len(stale_assumes)} assumption(s) stale: {', '.join(stale_assumes)}")
+        if output_rows and not prev_plan_text:
+            changed_lines.append(f"- {len(output_rows)} workstream output(s) exist")
+        if not changed_lines:
+            changed_lines.append("- no material change since last plan")
+
+        # What it opened: proposed next steps from playbook
+        proposed = self.PLAYBOOK.get(phase_key, self.PLAYBOOK.get("S0", []))
+
+        # Enrich proposed with workstream-specific steps for open critical questions
+        ws_targets = list({json.loads(fm_r).get("target-workstream")
+                           for _, title, fm_r in crit_open
+                           if json.loads(fm_r).get("target-workstream")} - {None, ""})
+        if ws_targets and phase_key in ("S4", "S5"):
+            proposed = [s for s in proposed if s.get("target") != "workstream"]
+            for ws in ws_targets[:3]:
+                proposed.append({"kind": "agent", "target": "workstream",
+                                  "why": f"Workstream '{ws}' has open critical questions",
+                                  "config": {"workstream": ws}})
+
+        opened_lines = []
+        for step in proposed:
+            gate = " [HUMAN GATE]" if step["kind"] == "human" else ""
+            ext = " [EXTERNAL EVENT]" if step["kind"] == "external-event" else ""
+            opened_lines.append(f"- [{step['kind']}] → {step['target']}{gate}{ext}: {step['why']}")
+
+        # Allowed transitions summary
+        trans_lines = [f"- {t['triggers'][0]} → {t['to']}" for t in allowed_next[:4]] or ["(none found in contracts)"]
+
+        now = datetime.now().strftime("%Y-%m-%d %H:%M")
+        plan_text = f"""---
+type: plan
+id: plan-{deal}
+deal: "[[{deal}]]"
+written-by: phase-coordinator
+produced: {datetime.now().date()}
+phase: {state}
+claims extracted: {len(claim_rows)}
+contradictions: {len(contra_rows)}
+---
+
+# Plan — {deal}
+
+_(phase-coordinator, {now})_
+
+## Current phase
+`{state}` — {len(crit_open)} critical question(s) open, {len(claim_rows)} claim(s), {len(contra_rows)} contradiction(s)
+
+## Critical open questions
+{chr(10).join(f"- [[{qid}]] — {qtitle}" for qid, qtitle, _ in crit_open) or "- (none)"}
+
+## What changed
+{chr(10).join(changed_lines)}
+
+## What it opened (proposed next steps)
+{chr(10).join(opened_lines)}
+
+## Allowed next transitions (from contracts)
+{chr(10).join(trans_lines)}
+"""
+        plan_path.write_text(plan_text, encoding="utf-8")
+
+        # Emit PLAN_UPDATED event
+        eid = emit_event(deal, "PLAN_UPDATED", self.id, f"Phase coordinator plan written for {deal} (state: {state})")
+        audit(self.id, self.activity_id, "plan-updated",
+              f"{deal}: phase {state}, {len(proposed)} proposed steps, plan.md written",
+              [f"deals/{deal}/plan.md", eid])
+
+        summary = (f"{deal}: plan written — phase {state}, {len(crit_open)} critical open, "
+                   f"{len(proposed)} proposed steps")
+        return {"summary": summary, "proposed": proposed}
+
+
+class IcAssembler(Agent):
+    """Part C — Self-assembling IC package (LLM on claude-sonnet-5).
+    Contract HVA_COMMERCIAL_01 (machine_assisted_extraction). Reads the full
+    deal graph (questions+states, claims by epistemic type, assumptions+versions,
+    contradictions, workstream outputs, prior decisions) and writes
+    deals/<id>/ic/ic-package.md. Previous versions kept append-only as
+    ic-package-vN.md. Never writes a decision record — the human decides."""
+    id = "ic-assembler"
+    activity_id = "HVA_COMMERCIAL_01"  # machine_assisted_extraction
+    watches = "deals/*/ic"
+
+    def snapshot(self):
+        return {str(f): f.stat().st_mtime for f in (VAULT / "deals").glob("*/ic/*.md")}
+
+    def act(self, changed):
+        for deal in {Path(p).parts[-4] for p in changed if Path(p).parts[-2] == "ic"}:
+            self.run(deal)
+
+    def run(self, deal: str) -> dict:
+        """Assemble the IC package via LLM and write it as deals/<id>/ic/ic-package.md."""
+        import sys as _sys
+        # Load vault context for this deal
+        deal_root = VAULT / "deals" / deal
+        ic_dir = deal_root / "ic"
+        ic_dir.mkdir(parents=True, exist_ok=True)
+
+        # Build version: keep previous as ic-package-vN.md
+        pkg_path = ic_dir / "ic-package.md"
+        version = 1
+        if pkg_path.exists():
+            existing_versions = sorted(ic_dir.glob("ic-package-v*.md"))
+            version = len(existing_versions) + 2
+            # Archive the current one
+            archive_path = ic_dir / f"ic-package-v{version - 1}.md"
+            archive_path.write_text(pkg_path.read_text(encoding="utf-8"), encoding="utf-8")
+
+        # --- Gather context ---
+        indexer.build().close()
+        db = sqlite3.connect(indexer.DB)
+
+        questions = db.execute(
+            "SELECT id, title, state, frontmatter FROM nodes WHERE type='question' AND deal=? ORDER BY id",
+            (deal,)).fetchall()
+        claims = db.execute(
+            "SELECT id, epistemic, subject, value, frontmatter FROM nodes WHERE type='claim' AND deal=? ORDER BY id",
+            (deal,)).fetchall()
+        assumptions = db.execute(
+            "SELECT id, title, frontmatter FROM nodes WHERE type='assumption' AND deal=? ORDER BY id",
+            (deal,)).fetchall()
+        events = db.execute(
+            "SELECT id, frontmatter FROM nodes WHERE type='event' AND deal=? ORDER BY id",
+            (deal,)).fetchall()
+        outputs = db.execute(
+            "SELECT id, path FROM nodes WHERE type='workstream-output' AND deal=? ORDER BY id",
+            (deal,)).fetchall()
+        decisions = db.execute(
+            "SELECT id, title, frontmatter FROM nodes WHERE type='decision' AND deal=? ORDER BY id",
+            (deal,)).fetchall()
+
+        # Contradictions: same subject, >1 distinct value
+        contra_rows = db.execute(
+            "SELECT subject, GROUP_CONCAT(id || ' [' || COALESCE(epistemic,'?') || ']=' || COALESCE(value,'?'), ' | ') "
+            "FROM nodes WHERE type='claim' AND deal=? AND subject IS NOT NULL "
+            "GROUP BY subject HAVING COUNT(DISTINCT value) > 1", (deal,)).fetchall()
+
+        # Prior IC packages (for footer diff)
+        prior_pkgs = sorted(ic_dir.glob("ic-package-v*.md"))
+
+        db.close()
+
+        # Format context sections
+        def fmt_questions(qs):
+            lines = []
+            for qid, qtitle, qstate, fm_r in qs:
+                fm = json.loads(fm_r)
+                crit = " [CRITICAL]" if fm.get("critical") else ""
+                ws = f" [ws:{fm.get('target-workstream','')}]" if fm.get("target-workstream") else ""
+                lines.append(f"  - [{qstate}]{crit}{ws} {qid}: {qtitle}")
+            return "\n".join(lines) or "  (none)"
+
+        def fmt_claims(cs):
+            by_ep: dict = {}
+            for cid, ep, subj, val, _ in cs:
+                by_ep.setdefault(ep or "asserted", []).append(f"  {cid}: {subj} = {val}")
+            lines = []
+            for ep in ("attested", "observed", "derived", "asserted"):
+                if ep in by_ep:
+                    lines.append(f"  [{ep}]")
+                    lines.extend(by_ep[ep][:20])
+            return "\n".join(lines) or "  (none)"
+
+        def fmt_assumptions(as_):
+            lines = []
+            for aid, atitle, fm_r in as_:
+                fm = json.loads(fm_r)
+                stale = " [STALE]" if fm.get("stale") else ""
+                lines.append(f"  {aid} v{fm.get('version',1)}{stale}: {fm.get('value','?')} — {atitle or fm.get('statement','')}")
+            return "\n".join(lines) or "  (none)"
+
+        def fmt_contras(cs):
+            lines = []
+            for subj, detail in cs:
+                lines.append(f"  {subj}: {detail}")
+            return "\n".join(lines) or "  (none)"
+
+        def fmt_outputs(os_):
+            lines = []
+            for oid, opath in os_:
+                full = VAULT / opath
+                if full.exists():
+                    body = full.read_text(encoding="utf-8")
+                    # first 400 chars of body after frontmatter
+                    body_text = body.split("---", 2)[-1].strip()[:400]
+                    lines.append(f"  {oid}:\n  {body_text}")
+            return "\n".join(lines) or "  (none)"
+
+        def fmt_decisions(ds):
+            lines = []
+            for did, dtitle, fm_r in ds:
+                lines.append(f"  {did}: {dtitle}")
+            return "\n".join(lines) or "  (none)"
+
+        # Deal frontmatter
+        deal_fm_raw = (VAULT / "deals" / deal / "deal.md").read_text(encoding="utf-8")
+        thesis = ""
+        state = "S0_INTAKE"
+        m = __import__("re").search(r"^thesis:\s*\"?(.+?)\"?\s*$", deal_fm_raw, __import__("re").MULTILINE)
+        if m:
+            thesis = m.group(1)
+        m = __import__("re").search(r"^state:\s*(\S+)", deal_fm_raw, __import__("re").MULTILINE)
+        if m:
+            state = m.group(1)
+
+        # Prior version footer
+        prev_footer = ""
+        if prior_pkgs:
+            prev_text = prior_pkgs[-1].read_text(encoding="utf-8")
+            prev_m = __import__("re").search(r"## Footer.*?$", prev_text, __import__("re").DOTALL)
+            if prev_m:
+                prev_footer = prev_m.group(0)[:400]
+
+        now_str = datetime.now().strftime("%Y-%m-%d %H:%M")
+
+        system_prompt = (
+            "You are the PE OS ic-assembler agent. Your role is EPISTEMIC ONLY — you assemble the "
+            "decision basis, you NEVER write the decision itself. The human decides. "
+            "Produce a structured IC package in plain markdown. "
+            "You MUST include ALL of these sections in your output, clearly headed:\n"
+            "1. ## Recommendation-neutral decision basis\n"
+            "2. ## Resolved questions (with strongest epistemic chain)\n"
+            "3. ## Accepted-unresolved ledger (what proceeding accepts; exposure)\n"
+            "4. ## Unresolved contradictions (verbatim from the graph)\n"
+            "5. ## Assumptions table (id | value | version | stale)\n"
+            "6. ## IC Shadowing (likely objections inferred from question types + past decisions)\n"
+            "7. ## Footer: changed / opened since previous package\n"
+            "Be precise, cite claim ids, weigh epistemic types "
+            "(attested > observed > derived > asserted). "
+            "Do not invent any data not present in the context."
+        )
+
+        user_prompt = (
+            f"DEAL: {deal}\n"
+            f"THESIS: {thesis}\n"
+            f"DERIVED STATE: {state}\n\n"
+            f"QUESTIONS:\n{fmt_questions(questions)}\n\n"
+            f"CLAIMS BY EPISTEMIC TYPE:\n{fmt_claims(claims)}\n\n"
+            f"ASSUMPTIONS:\n{fmt_assumptions(assumptions)}\n\n"
+            f"CONTRADICTIONS:\n{fmt_contras(contra_rows)}\n\n"
+            f"WORKSTREAM OUTPUTS:\n{fmt_outputs(outputs)}\n\n"
+            f"PRIOR DECISIONS:\n{fmt_decisions(decisions)}\n\n"
+            f"PREVIOUS IC FOOTER (for diff):\n{prev_footer}\n\n"
+            "Produce the complete IC package following all 7 sections above."
+        )
+
+        # Call LLM: prefer ANTHROPIC_API_KEY (direct), then AI Gateway, then headless claude CLI.
+        import json as _json
+        import os as _os
+        import shutil as _shutil
+        import urllib.request
+        anthropic_key = _os.environ.get("ANTHROPIC_API_KEY")
+        gateway_token = _os.environ.get("VERCEL_OIDC_TOKEN") or _os.environ.get("AI_GATEWAY_API_KEY")
+        ic_body = None
+        last_exc = None
+        if anthropic_key:
+            try:
+                payload = {
+                    "model": _os.environ.get("PEOS_MODEL", "claude-sonnet-5"),
+                    "max_tokens": 8000,
+                    "system": system_prompt,
+                    "messages": [{"role": "user", "content": user_prompt}]
+                }
+                req = urllib.request.Request(
+                    "https://api.anthropic.com/v1/messages",
+                    data=_json.dumps(payload).encode(), method="POST",
+                    headers={"Content-Type": "application/json",
+                             "x-api-key": anthropic_key,
+                             "anthropic-version": "2023-06-01"})
+                with urllib.request.urlopen(req, timeout=280) as resp:
+                    blocks = _json.loads(resp.read())["content"]
+                    ic_body = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+            except Exception as exc:
+                last_exc = exc
+        if ic_body is None and gateway_token:
+            try:
+                payload = {
+                    "model": _os.environ.get("PEOS_GATEWAY_MODEL", "anthropic/claude-sonnet-4.6"),
+                    "max_tokens": 8000,
+                    "messages": [{"role": "system", "content": system_prompt},
+                                 {"role": "user", "content": user_prompt}]
+                }
+                req = urllib.request.Request(
+                    "https://ai-gateway.vercel.sh/v1/chat/completions",
+                    data=_json.dumps(payload).encode(), method="POST",
+                    headers={"Content-Type": "application/json",
+                             "Authorization": f"Bearer {gateway_token}"})
+                with urllib.request.urlopen(req, timeout=280) as resp:
+                    ic_body = _json.loads(resp.read())["choices"][0]["message"]["content"]
+            except Exception as exc:
+                last_exc = exc
+        if ic_body is None and _shutil.which("claude"):
+            # Fallback: headless claude CLI (uses OAuth, same as extractor/proposer)
+            prompt_text = f"SYSTEM: {system_prompt}\n\nUSER: {user_prompt}"
+            try:
+                r = subprocess.run(
+                    ["claude", "-p", prompt_text, "--permission-mode", "acceptEdits"],
+                    capture_output=True, text=True, cwd=ROOT, timeout=480)
+                if r.returncode == 0 and r.stdout.strip():
+                    ic_body = r.stdout.strip()
+                else:
+                    last_exc = RuntimeError(f"claude CLI returned rc={r.returncode}: {r.stderr[:200]}")
+            except Exception as exc:
+                last_exc = exc
+        if not ic_body:
+            raise RuntimeError(f"ic-assembler: all LLM paths failed. Last error: {last_exc}")
+
+        # Write ic-package.md with frontmatter
+        pkg_text = f"""---
+type: ic-package
+id: ic-package-{deal}
+deal: "[[{deal}]]"
+version: {version}
+produced: {datetime.now().date()}
+written-by: ic-assembler
+state: {state}
+---
+
+# IC Package — {deal}
+
+_(ic-assembler, {now_str}, v{version})_
+
+{ic_body}
+"""
+        pkg_path.write_text(pkg_text, encoding="utf-8")
+
+        audit(self.id, self.activity_id, "ic-package-written",
+              f"{deal}: v{version}, {len(questions)} questions, {len(claims)} claims, "
+              f"{len(contra_rows)} contradiction(s)",
+              [f"deals/{deal}/ic/ic-package.md"])
+
+        summary = (f"{deal}: IC package v{version} written — {len(questions)} questions, "
+                   f"{len(claims)} claims, {len(contra_rows)} contradiction(s), "
+                   f"{len(contra_rows)} contradictions verbatim")
+        return {"summary": summary}
+
+
 def _state() -> dict:
     return json.loads(STATE_FILE.read_text()) if STATE_FILE.exists() else {}
 
@@ -469,7 +930,8 @@ def _save(st: dict):
 
 def main():
     agents = [Sentinel(), StateResolver(), Contradiction(), Librarian(), Transcriber(),
-              Extractor(), Coordinator(), Proposer(), Staleness()]
+              Extractor(), Coordinator(), Proposer(), Staleness(), PhaseCoordinator(),
+              IcAssembler()]
     print("PE OS agent runtime — deployed agents:")
     for a in agents:
         print(f"  · {a.id:<15} watches {a.watches:<24} contract {a.activity_id} "

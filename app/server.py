@@ -677,6 +677,72 @@ def canvas_page():
     return FileResponse(ROOT / "app" / "static" / "canvas.html")
 
 
+@app.get("/graph")
+def graph_page():
+    return FileResponse(ROOT / "app" / "static" / "graph.html")
+
+
+@app.get("/api/graph")
+def api_graph(deal: str | None = None):
+    """Part A: knowledge graph — nodes + edges from the SQLite index.
+    Firm-wide by default; filter by deal when ?deal= given. Calls sync+reindex
+    first so the view is never stale. Returns stale flag, epistemic type, degree."""
+    sync()
+    reindex()
+    c = con()
+    if deal:
+        node_rows = c.execute(
+            "SELECT id, type, title, deal, state, epistemic, frontmatter FROM nodes WHERE deal=?",
+            (deal,)).fetchall()
+    else:
+        node_rows = c.execute(
+            "SELECT id, type, title, deal, state, epistemic, frontmatter FROM nodes").fetchall()
+    # compute degree map
+    ids = {r[0] for r in node_rows}
+    degree: dict[str, int] = {}
+    for nid in ids:
+        d_out = c.execute("SELECT COUNT(*) FROM edges WHERE src=?", (nid,)).fetchone()[0]
+        d_in  = c.execute("SELECT COUNT(*) FROM edges WHERE dst=?", (nid,)).fetchone()[0]
+        degree[nid] = d_out + d_in
+    nodes = []
+    for nid, ntype, title, ndeal, state, epistemic, fm_raw in node_rows:
+        fm = json.loads(fm_raw) if fm_raw else {}
+        stale = bool(fm.get("stale"))
+        nodes.append({"id": nid, "type": ntype or "unknown", "title": title or nid,
+                      "deal": ndeal, "state": state, "epistemic": epistemic,
+                      "stale": stale, "degree": degree.get(nid, 0)})
+    if deal:
+        edge_rows = c.execute(
+            "SELECT e.src, e.dst, e.rel FROM edges e "
+            "JOIN nodes s ON s.id=e.src JOIN nodes t ON t.id=e.dst "
+            "WHERE s.deal=? OR t.deal=?", (deal, deal)).fetchall()
+    else:
+        edge_rows = c.execute("SELECT src, dst, rel FROM edges").fetchall()
+    links = [{"source": src, "target": dst, "rel": rel} for src, dst, rel in edge_rows]
+    c.close()
+    return {"nodes": nodes, "links": links}
+
+
+@app.get("/api/node/{node_id:path}")
+def api_node(node_id: str):
+    """Part A: raw markdown content of a node from nodes.path. Used by the graph
+    side-panel click to show file content without a separate vault read."""
+    sync()
+    reindex()
+    c = con()
+    row = c.execute("SELECT path, frontmatter, title FROM nodes WHERE id=?", (node_id,)).fetchone()
+    c.close()
+    if not row:
+        raise HTTPException(404, f"node not found: {node_id}")
+    fpath, fm_raw, title = row
+    full = VAULT / fpath
+    if not full.exists():
+        raise HTTPException(404, f"file missing from vault: {fpath}")
+    content = full.read_text(encoding="utf-8")
+    fm = json.loads(fm_raw) if fm_raw else {}
+    return {"id": node_id, "path": fpath, "title": title, "frontmatter": fm, "content": content}
+
+
 @app.get("/api/flow")
 def get_flow():
     sync()
@@ -739,8 +805,19 @@ def run_agent(kind: str, body: RunIn):
             return {"summary": r["output"][-200:]}
         if kind == "ask":
             return {"summary": _ask_via_gateway(body.config.get("question", "summarize the open risks"))[:600]}
+        if kind == "phase-coordinator":
+            a = rt.PhaseCoordinator()
+            result = a.run(deal)
+            push(); reindex()
+            return {"summary": result["summary"], "proposed": result.get("proposed", [])}
+        if kind == "ic-assembler":
+            a = rt.IcAssembler()
+            result = a.run(deal)
+            push(); reindex()
+            return {"summary": result["summary"]}
         cls = {"sentinel": rt.Sentinel, "state-resolver": rt.StateResolver, "contradiction": rt.Contradiction,
-               "librarian": rt.Librarian, "coordinator": rt.Coordinator, "staleness": rt.Staleness}.get(kind)
+               "librarian": rt.Librarian, "coordinator": rt.Coordinator, "staleness": rt.Staleness,
+               "proposer": rt.Proposer}.get(kind)
         if not cls:
             raise HTTPException(404, f"unknown agent kind: {kind}")
         a = cls()

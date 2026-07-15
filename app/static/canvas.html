@@ -39,7 +39,10 @@ a{color:var(--muted);font-size:12.5px}
 </head>
 <body>
 <header>
-  <span class="wordmark"><b>◆</b> Agent Canvas</span>
+  <span class="wordmark"><b>◆</b> PE OS</span>
+  <button class="pal" style="border-color:var(--gold);color:var(--gold)" onclick="showPanel(null)">Canvas</button>
+  <button class="pal" onclick="showPanel('brain')">Brain · recent changes</button>
+  <button class="pal" onclick="showPanel('coord')">Coordinator · reasonings</button>
   <div id="palette"></div>
   <span style="flex:1"></span>
   <input type="file" id="feed" style="display:none" onchange="feedUp(this)">
@@ -49,6 +52,10 @@ a{color:var(--muted);font-size:12.5px}
   <a href="/">← desks</a>
 </header>
 <div id="board"><svg id="wires"></svg></div>
+<div id="panel" style="display:none;position:fixed;top:62px;right:0;bottom:0;width:min(560px,92vw);background:var(--surface);border-left:1px solid var(--gold);z-index:20;overflow:auto;padding:20px">
+  <button class="pal" style="float:right" onclick="showPanel(null)">✕ close</button>
+  <div id="panelbody" style="font-size:12.5px;line-height:1.6;white-space:pre-wrap;color:var(--muted)"></div>
+</div>
 <p id="hint">drag agents from the palette logic: gold port = output → drag to a blue input port to connect · double-click a wire to remove · every node reports to the coordinator and files to the brain automatically</p>
 <script>
 const DOMAIN = {
@@ -170,6 +177,24 @@ document.getElementById("run").onclick = async () => {
     catch(e){ dot.className="dot err"; }
   }
   btn.disabled = false;
+};
+window.showPanel = async which => {
+  const pn = document.getElementById("panel"), pb = document.getElementById("panelbody");
+  if (!which){ pn.style.display = "none"; return; }
+  pn.style.display = "block"; pb.textContent = "loading…";
+  try {
+    if (which === "brain"){
+      const items = await api("/api/brain");
+      pb.innerHTML = "<h3 style='color:var(--ink);font-family:var(--serif)'>Firm brain — archives (librarian-maintained)</h3>" +
+        items.map(it=>`<h4 style="color:var(--gold);margin:14px 0 4px">${esc(it.name)} · ${esc(it.kind)}</h4><div>${esc(it.content.split("---").pop().trim().slice(0,900))}</div>`).join("");
+    } else {
+      const d = await api("/api/coordinator");
+      pb.innerHTML = "<h3 style='color:var(--ink);font-family:var(--serif)'>Coordinator — latest briefs</h3>" +
+        d.briefs.map(b=>`<h4 style="color:var(--gold);margin:14px 0 4px">${esc(b.deal)}</h4><div>${esc(b.brief)}</div>`).join("") +
+        "<h3 style='color:var(--ink);font-family:var(--serif);margin-top:20px'>Recent reasonings (audit)</h3>" +
+        d.reasonings.map(r=>`<div style="margin:6px 0"><span style="color:var(--green)">${esc(r.ts.replace("T"," "))}</span> <b style="color:var(--ink)">${esc(r.agent)}</b> · ${esc(r.action)} — ${esc(r.detail)}</div>`).join("");
+    }
+  } catch(e){ pb.textContent = "error: " + e.message; }
 };
 window.feedUp = async inp => {
   const f = inp.files[0]; if(!f) return;

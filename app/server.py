@@ -818,6 +818,26 @@ async def upload(file: UploadFile):
             "routing": "tip: name files <deal>-… when multiple deals exist"}
 
 
+@app.get("/api/coordinator")
+def coordinator_view():
+    """The main agent's recent reasonings: latest brief per deal + its audit trail."""
+    sync()
+    briefs = []
+    for f in sorted((VAULT / "deals").glob("*/deal.md")):
+        text = f.read_text(encoding="utf-8")
+        if "## State of the deal" in text:
+            sec = text.split("## State of the deal", 1)[1].split("## Questions")[0]
+            briefs.append({"deal": f.parent.name, "brief": sec.replace("<!-- agent-maintained -->", "").strip()[:1500]})
+    log = []
+    af = VAULT / "audit" / "agent-log.jsonl"
+    if af.exists():
+        for line in af.read_text(encoding="utf-8").strip().splitlines()[-60:]:
+            r = json.loads(line)
+            if r.get("agent") in ("coordinator", "librarian", "staleness", "contradiction"):
+                log.append(r)
+    return {"briefs": briefs, "reasonings": list(reversed(log))[:20]}
+
+
 @app.get("/api/inflow")
 def inflow():
     """The perception desk's view: every artifact and what became of it —

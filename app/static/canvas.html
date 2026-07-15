@@ -64,7 +64,7 @@ label{font-size:10.5px;color:var(--muted)}
 </head>
 <body>
 <header>
-  <span class="wordmark"><b>◆</b> PE OS</span>
+  <span class="wordmark"><b>◆</b> PE OS</span><select id="dealsel" aria-label="deal" style="width:150px;height:34px;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:0 10px;font-size:12.5px"></select>
   <button class="pal" style="border-color:var(--accent);color:var(--accent)" onclick="showPanel(null)">Canvas</button>
   <button class="pal" onclick="showPanel('brain')">Brain · recent changes</button>
   <button class="pal" onclick="showPanel('coord')">Coordinator · reasonings</button>
@@ -211,7 +211,7 @@ document.getElementById("run").onclick = async () => {
     if (n.kind === "human"){ if(n.config?.approved){ dot.className="dot ok"; out.textContent="changed: approval recorded · opened: downstream may proceed"; } else { dot.className="dot err"; out.textContent="HELD — awaiting human approval"; break; } continue; }
     if (n.kind === "external-event"){ if(n.config?.occurred){ dot.className="dot ok"; out.textContent=`changed: ${n.config?.event||"event"} occurred · opened: downstream`; } else { dot.className="dot err"; out.textContent=`waiting: ${n.config?.event||"external event"}`; break; } continue; }
     dot.className = "dot run"; out.textContent = "running…";
-    try { const r = await api(`/api/agents/run/${n.kind}`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({config:n.config||{}})});
+    try { const r = await api(`/api/agents/run/${n.kind}`, {method:"POST", headers:{"Content-Type":"application/json"}, body:JSON.stringify({config:{...(n.config||{}), deal: document.getElementById("dealsel").value}})});
       dot.className = "dot ok"; out.textContent = r.summary; }
     catch(e){ dot.className = "dot err"; out.textContent = e.message; }
   }
@@ -249,7 +249,7 @@ window.showPanel = async which => {
 window.feedUp = async inp => {
   const f = inp.files[0]; if(!f) return;
   const fd = new FormData(); fd.append("file", f);
-  try { const r = await api("/api/upload", {method:"POST", body:fd});
+  try { const r = await api("/api/upload?deal="+encodeURIComponent(document.getElementById("dealsel").value), {method:"POST", body:fd});
     alert(`stored: ${r.stored}\n${r.note}\nNow run a flow with extractor (or a domain agent) to process it.`); }
   catch(e){ alert("upload failed: "+e.message); }
   inp.value = "";
@@ -258,7 +258,9 @@ document.getElementById("save").onclick = async () => {
   await api("/api/flow", {method:"PUT", headers:{"Content-Type":"application/json"}, body:JSON.stringify(flow)});
   document.getElementById("save").textContent = "Saved ✓"; setTimeout(()=>document.getElementById("save").textContent="Save flow", 1500);
 };
-(async () => { try { const f = await api("/api/flow"); if (f.nodes) flow = f; seq = flow.nodes.length+1; } catch(e){} render(); })();
+(async () => {
+  try { const ds = await api("/api/deals");
+    document.getElementById("dealsel").innerHTML = ds.map(d=>`<option value="${esc(d.id)}">${esc(d.id)}</option>`).join(""); } catch(e){} try { const f = await api("/api/flow"); if (f.nodes) flow = f; seq = flow.nodes.length+1; } catch(e){} render(); })();
 </script>
 </body>
 </html>

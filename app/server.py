@@ -812,13 +812,15 @@ def audit_log(n: int = 20):
 
 
 @app.post("/api/upload")
-async def upload(file: UploadFile):
+async def upload(file: UploadFile, deal: str | None = None):
     require_writable()
     """Input connection: anything uploaded lands in vault/inbox — documents,
     transcripts, audio. The deployed agents take it from there (sentinel →
     transcriber/extractor → contradiction → librarian → coordinator)."""
     sync()  # cold instance: materialize the mirror before writing into it
     name = Path(file.filename or "upload").name  # strip any path component
+    if deal and not name.lower().startswith(deal.lower()):
+        name = f"{deal}-{name}"  # deal scoping: route by selection, not by convention
     dest = VAULT / "inbox" / name
     dest.parent.mkdir(parents=True, exist_ok=True)
     data = await file.read()

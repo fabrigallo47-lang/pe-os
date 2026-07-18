@@ -1,0 +1,11 @@
+﻿field,legal_values,required,meaning
+relation_type,START | INPUT | FINALIZATION | GATE | INFLUENCE | FEEDBACK | DOCUMENTARY_INHERITANCE,YES,Causal/documentary relation rendered by the edge.
+kernel_treatment,AXIOM | ENFORCE | CONFIGURE | SUGGEST,YES,How the product treats the edge at runtime.
+archetype_condition,UNIVERSAL or a controlled condition string or NONE,YES,Condition under which the treatment applies.
+claim_basis,ANALYTIC | EMPIRICAL | UNVERIFIED,YES,Why the claim exists.
+primary_evidence_class,SPONSOR_SELF_DESCRIBED | SPONSOR_DERIVATIVE | SPONSOR_BEHAVIOURAL | CO_INVESTOR_BEHAVIOURAL,YES,Strongest primary evidence class.
+vault_evidence_class,asserted | derived | observed | attested,YES,Mapped frozen-vault evidence label; attested currently has no source mapping.
+evidence_count,non-negative integer,YES,Count interpreted together with evidence_unit and denominator.
+evidence_unit,manager families | behavioural deal families | opportunities | independent documentary families,YES,Unit of the evidence count.
+confidence,HIGH | MEDIUM | LOW,YES,Confidence label; confidence_reason is mandatory.
+authority_type,advise | recommend | authorize_spend | approve_offer | approve_investment | execute | fund,PROPOSED,Richer authority enum proposed to replace a flat permission model.

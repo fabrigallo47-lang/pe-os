@@ -20,6 +20,7 @@ The operating system for private markets. One typed graph in the middle; small c
 ```bash
 make setup      # once: venv + deps
 make app        # live UI + API          → http://127.0.0.1:8787
+make watch      # inbox watcher: drop a file → pipeline auto-activates
 make agents     # deploy the agent runtime (watches vault, acts, audits)
 make state DEAL=aurora   # derive a deal's state by event replay
 make report     # open questions · contradictions · unbound claims
@@ -48,9 +49,8 @@ Open `vault/` in Obsidian anytime — same truth, different projection.
 | `agents/` | The deployed runtime. Every agent binds to a row of the human-vs-automatable register; `human_judgment_required` and `authority_only_human_action` classes refuse to deploy. |
 | `tools/` | `contracts.py` (loads the machine contracts as data) · `engine.py` (state resolution by event replay + guards) · `indexer.py` (vault → SQLite) · `ui.py` (static export) |
 | `app/` | FastAPI server + live UI. The API is the policy boundary: writes are ontology-validated, agent endpoints map to policy rows. |
-| `sources/` | Founding documents and contract packages: manifesto + OSPM (why), `workflow-backbone-v1/` (first executable spec), `domain-contracts-final/` (77 entities, 46 transitions, 877 permission policies, epistemic schemas, product requirements) |
 | `docs/` | `00` problem structure · `01` spec/stack · `02` backbone map · `03` architecture (canonical) · `report/` client teaser · `ui/` static exports |
-| `CLAUDE.md` / `AI_HARNESS.md` | Agent operating manual: the 10 invariants, playbooks, append-only session log |
+| `CLAUDE.md` | Agent operating manual: the 10 invariants, build-order status, conventions |
 
 ## The rules that don't bend
 

@@ -1,0 +1,15 @@
+.venv
+.models
+.index
+.git
+deploy
+docs/ui
+sources/domain-contracts-final/dealroom-anon-v1.html
+sources/OSPM.pdf
+sources/manifesto.md
+sources/current-process-map.png
+vault/inbox/*.aiff
+vault/inbox/*.wav
+vault/inbox/*.m4a
+Makefile
+tools/extract_dealroom.js

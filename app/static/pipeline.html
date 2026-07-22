@@ -1,0 +1,511 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1"/>
+<title>PE OS — Agent Pipeline</title>
+<style>
+:root{
+  --bg:#02060a;--bg2:#061019;--panel:rgba(6,15,22,.82);
+  --line:rgba(126,220,255,.14);--line2:rgba(126,220,255,.28);
+  --text:#edf8ff;--muted:#7993a2;--faint:#3d5562;
+  --cyan:#56e7ff;--teal:#46ffd0;--green:#68ff9f;--amber:#ffbd57;--red:#ff5576;--violet:#a985ff;--blue:#7db6ff;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,system-ui,sans-serif;font-size:13px;overflow:hidden}
+.topbar{height:56px;display:flex;align-items:center;padding:0 24px;gap:16px;border-bottom:1px solid var(--line);background:rgba(2,7,11,.92);backdrop-filter:blur(12px)}
+.brand{font-weight:700;letter-spacing:.1em;font-size:11px;color:var(--cyan)}
+.topbar h1{font-size:13px;font-weight:500;color:var(--muted);letter-spacing:.04em}
+.pill{display:inline-flex;align-items:center;gap:6px;padding:5px 10px;border:1px solid var(--line2);border-radius:999px;font-size:9px;text-transform:uppercase;letter-spacing:.08em;color:var(--muted)}
+.pill.live i{width:5px;height:5px;border-radius:50%;background:var(--green);box-shadow:0 0 8px var(--green);animation:pulse 2s infinite}
+@keyframes pulse{0%,100%{opacity:.5}50%{opacity:1}}
+.pill.link{cursor:pointer;color:var(--cyan);border-color:rgba(86,231,255,.28)}
+.pill.link:hover{background:rgba(86,231,255,.06)}
+.layout{display:grid;grid-template-columns:1fr 380px;height:calc(100vh - 56px)}
+
+/* ── Pipeline canvas ───────────────────────────────────────────────────── */
+.pipeline{position:relative;overflow:hidden;border-right:1px solid var(--line)}
+svg#pipe{width:100%;height:100%}
+
+/* node boxes */
+.pnode{transition:filter .25s}
+.pnode:hover{filter:brightness(1.25)}
+.node-box{rx:12;ry:12}
+.node-label{font-family:Inter,sans-serif;font-size:11px;font-weight:600;fill:#edf8ff;text-anchor:middle;dominant-baseline:middle}
+.node-sub{font-family:Inter,sans-serif;font-size:9px;fill:#7993a2;text-anchor:middle;dominant-baseline:middle}
+.node-count{font-family:Inter,sans-serif;font-size:22px;font-weight:300;fill:#edf8ff;text-anchor:middle;dominant-baseline:middle}
+.edge-path{fill:none;stroke-width:1.5;opacity:.55;marker-end:url(#arrow)}
+.edge-active{stroke-width:2.5;opacity:1;stroke-dasharray:none}
+.pulse-dot{r:4;animation:pulseDot 1.4s ease-in-out infinite}
+@keyframes pulseDot{0%,100%{r:3;opacity:.6}50%{r:5.5;opacity:1}}
+
+/* ── Right panel ───────────────────────────────────────────────────────── */
+.right{display:flex;flex-direction:column;overflow:hidden}
+.panel-head{padding:14px 18px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:10px;font-size:10px;text-transform:uppercase;letter-spacing:.1em;color:var(--muted);flex-shrink:0}
+.panel-head b{font-size:11px;color:var(--text);text-transform:none;letter-spacing:normal}
+
+/* brain panel */
+.brain-panel{flex:0 0 auto;border-bottom:1px solid var(--line)}
+.qt-list{padding:10px 18px;display:flex;flex-direction:column;gap:4px;max-height:220px;overflow-y:auto}
+.qt-row{display:flex;align-items:center;gap:10px;padding:7px 10px;border-radius:9px;background:rgba(6,18,26,.55);border:1px solid transparent;font-size:10px;cursor:pointer;transition:border-color .18s}
+.qt-row:hover{border-color:rgba(126,220,255,.18)}
+.qt-row .qt-id{color:var(--cyan);font-family:'SF Mono',Menlo,monospace;min-width:155px;font-size:9px}
+.qt-row .qt-cnt{color:var(--green);font-weight:600;min-width:32px;text-align:right}
+.qt-row .qt-bar{flex:1;height:3px;background:#0e2433;border-radius:3px;overflow:hidden}
+.qt-row .qt-bar b{display:block;height:100%;background:linear-gradient(90deg,var(--cyan),var(--green))}
+.qt-detail{padding:12px 18px;background:rgba(4,14,22,.7);border-bottom:1px solid var(--line);font-size:10px;line-height:1.6;color:#8fb3c4;max-height:120px;overflow-y:auto;display:none}
+.qt-detail.show{display:block}
+.qt-detail code{color:var(--cyan);background:rgba(86,231,255,.07);padding:1px 4px;border-radius:3px;font-size:9px}
+
+/* audit log */
+.log-panel{flex:1;overflow:hidden;display:flex;flex-direction:column}
+.log-body{flex:1;overflow-y:auto;padding:10px 18px;display:flex;flex-direction:column;gap:5px}
+.log-entry{padding:8px 10px;border-radius:9px;background:rgba(6,18,26,.55);border:1px solid transparent;font-size:9px;line-height:1.5;transition:border-color .18s}
+.log-entry.new{border-color:rgba(86,231,255,.22);animation:fadeIn .4s ease}
+@keyframes fadeIn{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.log-entry .ts{color:var(--faint);font-family:'SF Mono',Menlo,monospace}
+.log-entry .agent{font-weight:600;margin-left:8px}
+.log-entry .action{color:var(--muted);margin-left:6px}
+.log-entry .detail{color:#5e8293;margin-top:3px;font-size:8.5px;word-break:break-word}
+.log-entry.extractor .agent{color:var(--amber)}
+.log-entry.librarian .agent,.log-entry.brain .agent{color:var(--violet)}
+.log-entry.contradiction .agent{color:var(--red)}
+.log-entry.coordinator,.log-entry.phase-coordinator,.log-entry.state-resolver{color:var(--blue)}
+.log-entry.coordinator .agent,.log-entry.phase-coordinator .agent,.log-entry.state-resolver .agent{color:var(--blue)}
+.log-entry.proposer .agent,.log-entry.ic-assembler .agent{color:var(--teal)}
+.log-entry.sentinel .agent{color:#98a6b8}
+.run-bar{padding:12px 18px;border-top:1px solid var(--line);display:flex;gap:8px;flex-shrink:0}
+.btn{border:1px solid var(--line2);border-radius:9px;background:rgba(8,24,34,.8);color:#a9c1cd;padding:8px 14px;font-size:9px;letter-spacing:.05em;cursor:pointer;font-family:inherit;transition:all .15s}
+.btn:hover{border-color:rgba(86,231,255,.44);color:var(--text)}
+.btn.primary{background:linear-gradient(135deg,rgba(86,231,255,.15),rgba(70,255,208,.07));border-color:rgba(86,231,255,.38);color:#dffaff}
+.btn:disabled{opacity:.4;cursor:default}
+.deal-sel{background:rgba(6,15,22,.8);border:1px solid var(--line2);color:var(--text);border-radius:9px;padding:7px 10px;font-size:10px;font-family:inherit;cursor:pointer;flex:1}
+</style>
+</head>
+<body>
+<header class="topbar">
+  <span class="brand">PE OS</span>
+  <h1>Agent Pipeline — Live</h1>
+  <span class="pill live"><i></i> watching vault</span>
+  <span class="pill link" onclick="location.href='/preview'">← Field</span>
+  <span class="pill link" onclick="location.href='/graph'">Graph</span>
+  <span style="flex:1"></span>
+  <select class="deal-sel" id="dealSel" style="width:140px;padding:5px 8px;font-size:9px;height:30px"></select>
+</header>
+
+<div class="layout">
+
+<!-- ── Pipeline SVG ─────────────────────────────────────────────────────── -->
+<div class="pipeline">
+<svg id="pipe" viewBox="0 0 820 620" preserveAspectRatio="xMidYMid meet">
+<defs>
+  <marker id="arrow" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="rgba(126,220,255,.5)"/>
+  </marker>
+  <marker id="arrow-active" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#56e7ff"/>
+  </marker>
+  <marker id="arrow-brain" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">
+    <path d="M0,0 L0,6 L8,3 z" fill="#a985ff"/>
+  </marker>
+  <filter id="glow"><feGaussianBlur in="SourceGraphic" stdDeviation="4" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+  <filter id="glow-strong"><feGaussianBlur in="SourceGraphic" stdDeviation="8" result="blur"/><feMerge><feMergeNode in="blur"/><feMergeNode in="SourceGraphic"/></feMerge></filter>
+</defs>
+
+<!-- Background grid -->
+<rect width="820" height="620" fill="#02060a"/>
+<g opacity=".06">
+  <line x1="0" y1="155" x2="820" y2="155" stroke="#56e7ff" stroke-width="1"/>
+  <line x1="0" y1="310" x2="820" y2="310" stroke="#56e7ff" stroke-width="1"/>
+  <line x1="0" y1="465" x2="820" y2="465" stroke="#56e7ff" stroke-width="1"/>
+  <line x1="205" y1="0" x2="205" y2="620" stroke="#56e7ff" stroke-width="1"/>
+  <line x1="410" y1="0" x2="410" y2="620" stroke="#56e7ff" stroke-width="1"/>
+  <line x1="615" y1="0" x2="615" y2="620" stroke="#56e7ff" stroke-width="1"/>
+</g>
+
+<!-- Layer labels -->
+<text x="410" y="22" text-anchor="middle" fill="rgba(86,231,255,.28)" font-size="9" letter-spacing=".14em" font-family="Inter,sans-serif">PERCEPTION</text>
+<text x="410" y="185" text-anchor="middle" fill="rgba(86,231,255,.28)" font-size="9" letter-spacing=".14em" font-family="Inter,sans-serif">GRAPH / STATE</text>
+<text x="410" y="345" text-anchor="middle" fill="rgba(86,231,255,.28)" font-size="9" letter-spacing=".14em" font-family="Inter,sans-serif">FUNCTIONAL AGENTS</text>
+<text x="410" y="500" text-anchor="middle" fill="rgba(86,231,255,.28)" font-size="9" letter-spacing=".14em" font-family="Inter,sans-serif">BRAIN / LIBRARY</text>
+
+<!-- ─── Nodes ─── -->
+
+<!-- Inbox -->
+<g class="pnode" id="n-inbox" transform="translate(120,50)">
+  <rect class="node-box" x="-60" y="-28" width="120" height="56" fill="rgba(12,28,42,.85)" stroke="rgba(126,220,255,.22)" stroke-width="1"/>
+  <text class="node-label" y="-6">Inbox</text>
+  <text class="node-sub" y="10">vault/inbox</text>
+  <text class="node-count" id="cnt-inbox" y="-6" style="display:none">0</text>
+</g>
+
+<!-- Sentinel -->
+<g class="pnode" id="n-sentinel" transform="translate(360,75)">
+  <rect class="node-box" x="-60" y="-28" width="120" height="56" fill="rgba(12,28,42,.85)" stroke="rgba(126,220,255,.22)" stroke-width="1"/>
+  <text class="node-label" y="-6">Sentinel</text>
+  <text class="node-sub" y="10">perceives arrivals</text>
+</g>
+
+<!-- Transcriber -->
+<g class="pnode" id="n-transcriber" transform="translate(600,75)">
+  <rect class="node-box" x="-60" y="-28" width="120" height="56" fill="rgba(12,28,42,.85)" stroke="rgba(152,166,184,.18)" stroke-width="1" stroke-dasharray="4,3"/>
+  <text class="node-label" y="-6" fill="#6b7889">Transcriber</text>
+  <text class="node-sub" y="10">audio → text</text>
+</g>
+
+<!-- Knowledge Graph -->
+<g class="pnode" id="n-graph" transform="translate(410,220)">
+  <rect class="node-box" x="-90" y="-36" width="180" height="72" fill="rgba(8,22,38,.9)" stroke="rgba(86,231,255,.4)" stroke-width="1.5"/>
+  <text class="node-label" y="-12" font-size="13">Knowledge Graph</text>
+  <text class="node-sub" y="6">SQLite index · </text>
+  <text id="cnt-nodes" class="node-sub" y="6" dx="44">…</text>
+  <text id="cnt-edges" class="node-sub" y="20"> nodes · … edges</text>
+</g>
+
+<!-- PhaseCoordinator -->
+<g class="pnode" id="n-phasecoord" transform="translate(200,220)">
+  <rect class="node-box" x="-70" y="-36" width="140" height="72" fill="rgba(8,22,38,.9)" stroke="rgba(125,182,255,.35)" stroke-width="1.2"/>
+  <text class="node-label" y="-12" fill="#7db6ff">Phase</text>
+  <text class="node-label" y="5" fill="#7db6ff">Coordinator</text>
+  <text class="node-sub" y="22">orchestrates plan</text>
+</g>
+
+<!-- StateResolver -->
+<g class="pnode" id="n-state" transform="translate(620,220)">
+  <rect class="node-box" x="-65" y="-28" width="130" height="56" fill="rgba(12,28,42,.85)" stroke="rgba(125,182,255,.22)" stroke-width="1"/>
+  <text class="node-label" y="-6" fill="#7db6ff">State Resolver</text>
+  <text class="node-sub" y="10">derives deal.state</text>
+</g>
+
+<!-- Functional agents row -->
+<g class="pnode" id="n-extractor" transform="translate(90,380)">
+  <rect class="node-box" x="-56" y="-28" width="112" height="56" fill="rgba(12,28,42,.85)" stroke="rgba(255,189,87,.28)" stroke-width="1"/>
+  <text class="node-label" y="-6" fill="#ffbd57">Extractor</text>
+  <text class="node-sub" y="10">claims from artifacts</text>
+</g>
+
+<g class="pnode" id="n-proposer" transform="translate(230,380)">
+  <rect class="node-box" x="-56" y="-28" width="112" height="56" fill="rgba(12,28,42,.85)" stroke="rgba(70,255,208,.22)" stroke-width="1"/>
+  <text class="node-label" y="-6" fill="#46ffd0">Proposer</text>
+  <text class="node-sub" y="10">derives assumptions</text>
+</g>
+
+<g class="pnode" id="n-contra" transform="translate(370,380)">
+  <rect class="node-box" x="-56" y="-28" width="112" height="56" fill="rgba(12,28,42,.85)" stroke="rgba(255,85,118,.25)" stroke-width="1"/>
+  <text class="node-label" y="-6" fill="#ff5576">Contradiction</text>
+  <text class="node-sub" y="10">flags conflicts</text>
+</g>
+
+<g class="pnode" id="n-coord" transform="translate(510,380)">
+  <rect class="node-box" x="-56" y="-28" width="112" height="56" fill="rgba(12,28,42,.85)" stroke="rgba(125,182,255,.22)" stroke-width="1"/>
+  <text class="node-label" y="-6" fill="#7db6ff">Coordinator</text>
+  <text class="node-sub" y="10">brief → deal.md</text>
+</g>
+
+<g class="pnode" id="n-staleness" transform="translate(650,380)">
+  <rect class="node-box" x="-56" y="-28" width="112" height="56" fill="rgba(12,28,42,.85)" stroke="rgba(255,189,87,.18)" stroke-width="1"/>
+  <text class="node-label" y="-6" fill="#ffbd57">Staleness</text>
+  <text class="node-sub" y="10">flags stale objects</text>
+</g>
+
+<!-- Librarian / Brain -->
+<g class="pnode" id="n-librarian" transform="translate(255,530)">
+  <rect class="node-box" x="-70" y="-36" width="140" height="72" fill="rgba(22,10,42,.9)" stroke="rgba(169,133,255,.45)" stroke-width="1.5" filter="url(#glow)"/>
+  <text class="node-label" y="-12" fill="#a985ff">Librarian · Brain</text>
+  <text class="node-sub" y="5">builds cross-deal</text>
+  <text class="node-sub" y="19">evidence archives</text>
+</g>
+
+<!-- Library -->
+<g class="pnode" id="n-library" transform="translate(560,530)">
+  <rect class="node-box" x="-80" y="-36" width="160" height="72" fill="rgba(14,8,30,.9)" stroke="rgba(169,133,255,.32)" stroke-width="1.2"/>
+  <text class="node-label" y="-12" fill="#a985ff">Library</text>
+  <text class="node-sub" y="5">vault/library/</text>
+  <text id="cnt-qt" class="node-sub" y="19">… QT archives</text>
+</g>
+
+<!-- ─── Static edges ─── -->
+<!-- Inbox → Sentinel -->
+<path id="e-inbox-sentinel" class="edge-path" d="M180,50 Q270,50 300,75" stroke="rgba(126,220,255,.3)"/>
+<!-- Inbox → Extractor -->
+<path id="e-inbox-extractor" class="edge-path" d="M120,78 L90,352" stroke="rgba(255,189,87,.25)"/>
+<!-- Sentinel → Graph -->
+<path id="e-sentinel-graph" class="edge-path" d="M360,103 L370,184" stroke="rgba(126,220,255,.3)"/>
+<!-- Graph → PhaseCoord -->
+<path id="e-graph-pc" class="edge-path" d="M320,220 L270,220" stroke="rgba(125,182,255,.4)"/>
+<!-- Graph → StateResolver -->
+<path id="e-graph-state" class="edge-path" d="M500,220 L555,220" stroke="rgba(125,182,255,.3)"/>
+<!-- PhaseCoord → Extractor -->
+<path id="e-pc-extractor" class="edge-path" d="M155,248 Q120,300 120,352" stroke="rgba(125,182,255,.3)"/>
+<!-- PhaseCoord → Proposer -->
+<path id="e-pc-proposer" class="edge-path" d="M170,248 L218,352" stroke="rgba(125,182,255,.3)"/>
+<!-- PhaseCoord → Contradiction -->
+<path id="e-pc-contra" class="edge-path" d="M200,252 L340,360" stroke="rgba(125,182,255,.3)"/>
+<!-- PhaseCoord → Coordinator -->
+<path id="e-pc-coord" class="edge-path" d="M230,252 L480,360" stroke="rgba(125,182,255,.3)"/>
+<!-- PhaseCoord → Staleness -->
+<path id="e-pc-staleness" class="edge-path" d="M245,252 L620,360" stroke="rgba(125,182,255,.3)"/>
+<!-- Extractor → Graph (writes claims) -->
+<path id="e-extractor-graph" class="edge-path" d="M130,352 Q180,300 320,230" stroke="rgba(255,189,87,.2)" stroke-dasharray="5,3"/>
+<!-- Extractor → Brain (reads methodology) -->
+<path id="e-extractor-brain" class="edge-path" d="M100,408 Q120,470 185,510" stroke="rgba(169,133,255,.35)" stroke-dasharray="4,3" marker-end="url(#arrow-brain)"/>
+<!-- Contradiction → Graph -->
+<path id="e-contra-graph" class="edge-path" d="M380,352 Q400,290 410,256" stroke="rgba(255,85,118,.2)" stroke-dasharray="5,3"/>
+<!-- Librarian → Library -->
+<path id="e-lib-library" class="edge-path" d="M325,530 L480,530" stroke="rgba(169,133,255,.4)"/>
+<!-- Agents → Librarian (reads from brain) -->
+<path id="e-extractor-lib" class="edge-path" d="M90,408 Q120,480 185,515" stroke="rgba(169,133,255,.25)"/>
+<path id="e-proposer-lib" class="edge-path" d="M230,408 L240,494" stroke="rgba(169,133,255,.25)"/>
+<!-- Graph → Librarian (reads graph) -->
+<path id="e-graph-lib" class="edge-path" d="M360,256 Q280,380 270,494" stroke="rgba(169,133,255,.3)"/>
+<!-- IC Assembler / Coord → Graph (reads) -->
+<path id="e-coord-graph" class="edge-path" d="M500,352 Q480,290 450,256" stroke="rgba(125,182,255,.2)" stroke-dasharray="5,3"/>
+
+<!-- Active pulse dots (shown when agent fires) -->
+<circle id="pulse-extractor" class="pulse-dot" fill="#ffbd57" cx="90" cy="380" style="display:none"/>
+<circle id="pulse-librarian" class="pulse-dot" fill="#a985ff" cx="255" cy="530" style="display:none"/>
+<circle id="pulse-contra" class="pulse-dot" fill="#ff5576" cx="370" cy="380" style="display:none"/>
+<circle id="pulse-coord" class="pulse-dot" fill="#7db6ff" cx="510" cy="380" style="display:none"/>
+<circle id="pulse-proposer" class="pulse-dot" fill="#46ffd0" cx="230" cy="380" style="display:none"/>
+<circle id="pulse-sentinel" class="pulse-dot" fill="#98a6b8" cx="360" cy="75" style="display:none"/>
+<circle id="pulse-state" class="pulse-dot" fill="#7db6ff" cx="620" cy="220" style="display:none"/>
+<circle id="pulse-phasecoord" class="pulse-dot" fill="#7db6ff" cx="200" cy="220" style="display:none"/>
+<circle id="pulse-staleness" class="pulse-dot" fill="#ffbd57" cx="650" cy="380" style="display:none"/>
+
+<!-- Legend -->
+<g transform="translate(24,580)">
+  <circle cx="8" cy="8" r="5" fill="#ffbd57"/>
+  <text x="18" y="12" fill="#7993a2" font-size="8" font-family="Inter,sans-serif">extraction</text>
+  <circle cx="100" cy="8" r="5" fill="#a985ff"/>
+  <text x="110" y="12" fill="#7993a2" font-size="8" font-family="Inter,sans-serif">brain</text>
+  <circle cx="168" cy="8" r="5" fill="#7db6ff"/>
+  <text x="178" y="12" fill="#7993a2" font-size="8" font-family="Inter,sans-serif">orchestration</text>
+  <circle cx="278" cy="8" r="5" fill="#ff5576"/>
+  <text x="288" y="12" fill="#7993a2" font-size="8" font-family="Inter,sans-serif">contradiction</text>
+  <line x1="380" y1="8" x2="410" y2="8" stroke="rgba(126,220,255,.5)" stroke-width="1.5" stroke-dasharray="4,2"/>
+  <text x="416" y="12" fill="#7993a2" font-size="8" font-family="Inter,sans-serif">reads graph</text>
+</g>
+
+</svg>
+</div>
+
+<!-- ── Right panel ─────────────────────────────────────────────────────── -->
+<div class="right">
+  <!-- Brain panel -->
+  <div class="brain-panel">
+    <div class="panel-head"><b>Brain · Library</b><span style="flex:1"></span><span id="brain-total" style="font-size:9px;color:var(--violet)"></span></div>
+    <div class="qt-list" id="qtList"></div>
+    <div class="qt-detail" id="qtDetail"></div>
+  </div>
+  <!-- Audit log -->
+  <div class="log-panel">
+    <div class="panel-head"><b>Live audit log</b><span style="flex:1"></span><span id="log-count" style="font-size:9px;color:var(--muted)"></span></div>
+    <div class="log-body" id="logBody"></div>
+    <div class="run-bar">
+      <button class="btn primary" id="btnTick" onclick="runTick()">▶ Run agent tick</button>
+      <button class="btn" id="btnPC" onclick="runPhaseCoord()">Phase plan</button>
+      <button class="btn" id="btnLib" onclick="runLibrarian()">Refresh brain</button>
+    </div>
+  </div>
+</div>
+
+</div>
+
+<script>
+/* ── PE OS Pipeline View ─────────────────────────────────────────────────── */
+(function(){
+  let currentDeal = null;
+  let lastLogTs = null;
+  let brainData = {};
+
+  const AGENT_COLORS = {
+    sentinel:'#98a6b8', extractor:'#ffbd57', proposer:'#46ffd0',
+    contradiction:'#ff5576', 'state-resolver':'#7db6ff',
+    coordinator:'#7db6ff', 'phase-coordinator':'#7db6ff',
+    librarian:'#a985ff', staleness:'#ffbd57', 'ic-assembler':'#46ffd0',
+    brain:'#a985ff',
+  };
+  const AGENT_PULSE = {
+    sentinel:'pulse-sentinel', extractor:'pulse-extractor', proposer:'pulse-proposer',
+    contradiction:'pulse-contra', 'state-resolver':'pulse-state',
+    coordinator:'pulse-coord', 'phase-coordinator':'pulse-phasecoord',
+    librarian:'pulse-librarian', staleness:'pulse-staleness',
+  };
+
+  // ── Deals ──────────────────────────────────────────────────────────────
+  async function loadDeals(){
+    const deals = await fetch('/api/deals').then(r=>r.json());
+    const sel = document.getElementById('dealSel');
+    sel.innerHTML = deals.map(d=>`<option value="${d.id}">${d.id.toUpperCase()} · ${d.state}</option>`).join('');
+    sel.onchange = ()=>{ currentDeal=sel.value; loadGraphStats(); };
+    currentDeal = deals[0]?.id;
+    await loadGraphStats();
+  }
+
+  // ── Graph stats ─────────────────────────────────────────────────────────
+  async function loadGraphStats(){
+    if(!currentDeal) return;
+    try {
+      const g = await fetch(`/api/graph?deal=${currentDeal}`).then(r=>r.json());
+      document.getElementById('cnt-nodes').textContent = g.nodes.length;
+      document.getElementById('cnt-edges').textContent = g.links.length;
+      // Update inbox count
+      const inbox = await fetch('/api/inbox').then(r=>r.json());
+      document.getElementById('cnt-inbox').style.display='none';
+    } catch(e){}
+  }
+
+  // ── Brain ─────────────────────────────────────────────────────────────
+  async function loadBrain(){
+    try {
+      const entries = await fetch('/api/brain').then(r=>r.json());
+      const qts = entries.filter(e=>e.kind==='question-type');
+      brainData = {};
+      let total = 0;
+      for(const qt of qts){
+        const lines = (qt.content||'').split('\n');
+        const archiveStart = lines.findIndex(l=>l.includes('## Evidence archive'));
+        const evidenceLines = archiveStart>=0
+          ? lines.slice(archiveStart+2).filter(l=>l.startsWith('- [['))
+          : [];
+        brainData[qt.name] = {content: qt.content, entries: evidenceLines};
+        total += evidenceLines.length;
+      }
+      document.getElementById('brain-total').textContent = `${total} cross-deal entries`;
+      document.getElementById('cnt-qt').textContent = `${qts.length} QT archives`;
+      renderBrainList();
+    } catch(e){ console.warn('brain:', e); }
+  }
+
+  function renderBrainList(){
+    const list = document.getElementById('qtList');
+    const maxCount = Math.max(...Object.values(brainData).map(d=>d.entries.length), 1);
+    list.innerHTML = Object.entries(brainData)
+      .sort((a,b)=>b[1].entries.length - a[1].entries.length)
+      .map(([id, d])=>{
+        const pct = Math.round((d.entries.length/maxCount)*100);
+        return `<div class="qt-row" onclick="showQtDetail('${id}')">
+          <span class="qt-id">${id}</span>
+          <div class="qt-bar"><b style="width:${pct}%"></b></div>
+          <span class="qt-cnt">${d.entries.length}</span>
+        </div>`;
+      }).join('');
+  }
+
+  function showQtDetail(id){
+    const d = brainData[id]; if(!d) return;
+    const el = document.getElementById('qtDetail');
+    const lines = (d.content||'').split('\n');
+    const methodLines = lines.filter(l=>!l.startsWith('---') && !l.match(/^(type|id|domain|decomposes|written-by):/) && l.trim());
+    const method = methodLines.slice(0, 12).join('\n');
+    const evidence = d.entries.slice(0,4).map(e=>`<code>${e.replace('- ','')}</code>`).join('<br>');
+    el.innerHTML = `<div style="color:var(--cyan);font-weight:600;margin-bottom:6px">${id}</div>
+      <div style="white-space:pre-wrap;margin-bottom:8px">${method}</div>
+      ${evidence ? `<div style="color:var(--muted);margin-top:6px;font-size:8px">Recent evidence:<br>${evidence}</div>` : ''}`;
+    el.classList.toggle('show', true);
+  }
+
+  // ── Audit log ──────────────────────────────────────────────────────────
+  async function pollLog(){
+    try {
+      const entries = await fetch('/api/audit?n=40').then(r=>r.json());
+      const body = document.getElementById('logBody');
+      const existing = new Set([...body.querySelectorAll('.log-entry')].map(e=>e.dataset.ts));
+      const newEntries = entries.filter(e=>!existing.has(e.ts));
+      if(!newEntries.length) return;
+
+      for(const e of newEntries.reverse()){
+        const agent = e.agent||'';
+        const cls = agent.replace(/[^a-z-]/g,'');
+        const color = AGENT_COLORS[agent]||'#7993a2';
+        const div = document.createElement('div');
+        div.className = `log-entry ${cls} new`;
+        div.dataset.ts = e.ts;
+        div.innerHTML = `<div>
+          <span class="ts">${e.ts.slice(11,19)}</span>
+          <span class="agent" style="color:${color}">${agent}</span>
+          <span class="action">${e.action||''}</span>
+        </div>
+        <div class="detail">${(e.detail||'').substring(0,120)}</div>`;
+        body.insertBefore(div, body.firstChild);
+        flashPulse(agent);
+      }
+      // Cap log at 60 entries
+      while(body.children.length > 60) body.removeChild(body.lastChild);
+      document.getElementById('log-count').textContent = `${entries.length} recent`;
+    } catch(e){}
+  }
+
+  function flashPulse(agent){
+    const pulseId = AGENT_PULSE[agent];
+    if(!pulseId) return;
+    const el = document.getElementById(pulseId);
+    if(!el) return;
+    el.style.display='';
+    // Highlight the corresponding node box
+    const nodeMap = {
+      sentinel:'n-sentinel', extractor:'n-extractor', proposer:'n-proposer',
+      contradiction:'n-contra', 'state-resolver':'n-state',
+      coordinator:'n-coord', 'phase-coordinator':'n-phasecoord',
+      librarian:'n-librarian', staleness:'n-staleness',
+    };
+    const nid = nodeMap[agent];
+    if(nid){
+      const node = document.getElementById(nid);
+      if(node){
+        const rect = node.querySelector('rect');
+        if(rect){
+          const orig = rect.getAttribute('stroke');
+          const color = AGENT_COLORS[agent]||'#56e7ff';
+          rect.setAttribute('stroke', color);
+          rect.setAttribute('stroke-width','2.5');
+          rect.setAttribute('filter','url(#glow)');
+          setTimeout(()=>{
+            rect.setAttribute('stroke', orig||'rgba(126,220,255,.22)');
+            rect.setAttribute('stroke-width','1');
+            rect.removeAttribute('filter');
+          }, 3000);
+        }
+      }
+    }
+    setTimeout(()=>{ el.style.display='none'; }, 3500);
+  }
+
+  // ── Run buttons ────────────────────────────────────────────────────────
+  async function run(url, body, btnId){
+    const btn = document.getElementById(btnId);
+    if(btn){ btn.disabled=true; btn.textContent='Running…'; }
+    try {
+      const res = await fetch(url, {method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+      const d = await res.json();
+      if(d.report){ d.report.forEach(r=>console.log(r)); }
+      // refresh log + brain immediately
+      await pollLog();
+      await loadBrain();
+      await loadGraphStats();
+    } catch(e){ console.warn(e); }
+    if(btn){ btn.disabled=false; btn.textContent = btn.id==='btnTick'?'▶ Run agent tick': btn.id==='btnPC'?'Phase plan':'Refresh brain'; }
+  }
+
+  window.runTick = ()=>run('/api/agents/tick', {}, 'btnTick');
+  window.runPhaseCoord = ()=>run(`/api/agents/run/phase-coordinator`, {config:{deal:currentDeal}}, 'btnPC');
+  window.runLibrarian = ()=>run('/api/agents/run/librarian', {}, 'btnLib');
+
+  // ── Init ──────────────────────────────────────────────────────────────
+  async function init(){
+    await loadDeals();
+    await loadBrain();
+    await pollLog();
+    setInterval(pollLog, 4000);
+    setInterval(loadBrain, 30000);
+    setInterval(loadGraphStats, 20000);
+
+    // Animate the graph → brain edge on load to show the flow
+    setTimeout(()=>flashPulse('librarian'), 800);
+  }
+
+  document.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>

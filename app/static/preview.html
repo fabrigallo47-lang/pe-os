@@ -1,0 +1,1170 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>PANTA — Future Investment Operating System</title>
+  <style>:root{
+  --bg:#02060a;
+  --bg2:#061019;
+  --panel:rgba(6,15,22,.76);
+  --panel2:rgba(8,21,30,.9);
+  --panel3:rgba(12,27,38,.74);
+  --line:rgba(126,220,255,.16);
+  --line2:rgba(126,220,255,.28);
+  --text:#edf8ff;
+  --muted:#7993a2;
+  --faint:#47606f;
+  --cyan:#56e7ff;
+  --teal:#46ffd0;
+  --green:#68ff9f;
+  --amber:#ffbd57;
+  --red:#ff5576;
+  --violet:#a985ff;
+  --blue:#7db6ff;
+  --white:#fff;
+  --shadow:0 24px 80px rgba(0,0,0,.48);
+}
+*{box-sizing:border-box}
+html,body{margin:0;width:100%;height:100%;overflow:hidden;background:var(--bg);color:var(--text);font-family:Inter,ui-sans-serif,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif;font-variant-numeric:tabular-nums}
+body:before{content:"";position:fixed;inset:0;pointer-events:none;z-index:1000;opacity:.16;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 160 160' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.18'/%3E%3C/svg%3E");mix-blend-mode:soft-light}
+body:after{content:"";position:fixed;inset:0;pointer-events:none;z-index:999;background:linear-gradient(rgba(255,255,255,.018) 1px,transparent 1px);background-size:100% 4px;opacity:.22}
+button,input{font:inherit}
+.app{position:relative;width:100vw;height:100vh;isolation:isolate;background:radial-gradient(circle at 54% 44%,rgba(33,86,106,.16),transparent 36%),radial-gradient(circle at 82% 12%,rgba(94,51,150,.09),transparent 28%),linear-gradient(180deg,#02070b 0%,#02060a 100%)}
+#field{position:absolute;inset:0;width:100%;height:100%;z-index:0}
+.vignette{position:absolute;inset:0;z-index:1;pointer-events:none;background:radial-gradient(circle at 52% 46%,transparent 0 38%,rgba(0,0,0,.25) 68%,rgba(0,0,0,.74) 100%)}
+.topbar{position:absolute;z-index:20;top:0;left:0;right:0;height:70px;display:flex;align-items:center;padding:0 28px;border-bottom:1px solid var(--line);background:linear-gradient(180deg,rgba(2,7,11,.94),rgba(2,7,11,.52));backdrop-filter:blur(18px)}
+.brand{display:flex;align-items:center;gap:12px;min-width:205px}
+.brand-mark{width:28px;height:28px;position:relative;border:1px solid rgba(86,231,255,.42);border-radius:8px;box-shadow:0 0 24px rgba(86,231,255,.12) inset}
+.brand-mark:before,.brand-mark:after{content:"";position:absolute;background:var(--cyan);box-shadow:0 0 14px var(--cyan)}
+.brand-mark:before{width:11px;height:1px;left:8px;top:13px;transform:rotate(42deg)}
+.brand-mark:after{width:11px;height:1px;left:8px;top:13px;transform:rotate(-42deg)}
+.brand-name{font-weight:760;letter-spacing:.18em;font-size:12px}
+.context{display:flex;align-items:center;gap:10px;flex:1}
+.context .crumb{font-size:11px;color:var(--muted);letter-spacing:.03em}
+.context .major{font-size:13px;color:var(--text);font-weight:650}
+.context .slash{color:#2b4453}
+.top-actions{display:flex;align-items:center;gap:12px}
+.live-pill,.mode-pill,.authority-pill{display:inline-flex;align-items:center;gap:7px;padding:7px 10px;border:1px solid var(--line2);border-radius:999px;background:rgba(8,21,30,.68);font-size:10px;color:var(--muted);text-transform:uppercase;letter-spacing:.08em}
+.live-pill i{width:6px;height:6px;border-radius:50%;background:var(--green);box-shadow:0 0 12px var(--green);animation:pulse 2s infinite}
+.authority-pill{color:#b7d3df}.authority-pill b{color:var(--text)}
+.clock{font-size:11px;color:#aac0cb;letter-spacing:.08em}
+.lifecycle{position:absolute;z-index:18;top:70px;left:88px;right:28px;height:46px;display:flex;align-items:center;gap:0;border-bottom:1px solid rgba(126,220,255,.09)}
+.phase{position:relative;flex:1;display:flex;align-items:center;gap:8px;height:100%;color:#415c6b;font-size:9px;text-transform:uppercase;letter-spacing:.1em}
+.phase:before{content:"";width:7px;height:7px;border-radius:50%;border:1px solid #365261;background:#061019;z-index:2}
+.phase:after{content:"";position:absolute;left:10px;right:0;top:22px;height:1px;background:#1a3443}
+.phase:last-child:after{display:none}
+.phase.done{color:#8fa7b4}.phase.done:before{background:var(--green);border-color:var(--green);box-shadow:0 0 10px rgba(104,255,159,.55)}
+.phase.active{color:var(--text)}.phase.active:before{background:var(--cyan);border-color:var(--cyan);box-shadow:0 0 16px rgba(86,231,255,.75)}
+.phase.warn:before{background:var(--amber);border-color:var(--amber);box-shadow:0 0 16px rgba(255,189,87,.7)}
+.rail{position:absolute;z-index:24;top:70px;bottom:0;left:0;width:64px;border-right:1px solid var(--line);display:flex;flex-direction:column;align-items:center;padding:18px 0 14px;background:linear-gradient(90deg,rgba(2,7,11,.98),rgba(2,7,11,.58));backdrop-filter:blur(18px)}
+.rail-btn{position:relative;width:38px;height:38px;border-radius:12px;display:grid;place-items:center;color:#547180;margin-bottom:8px;border:1px solid transparent}
+.rail-btn:before{content:"";width:13px;height:13px;border:1.5px solid currentColor;border-radius:4px;transform:rotate(45deg)}
+.rail-btn.active{color:var(--cyan);background:rgba(86,231,255,.08);border-color:rgba(86,231,255,.18);box-shadow:0 0 28px rgba(86,231,255,.08)}
+.rail-spacer{flex:1}
+.rail-avatar{width:30px;height:30px;border:1px solid rgba(86,231,255,.3);border-radius:50%;display:grid;place-items:center;font-size:9px;color:#ccebf3;background:#07141d}
+.stage{position:absolute;z-index:2;left:64px;right:0;top:116px;bottom:54px;overflow:hidden}
+.bottomline{position:absolute;z-index:20;left:64px;right:0;bottom:0;height:54px;border-top:1px solid var(--line);display:flex;align-items:center;padding:0 24px;background:linear-gradient(0deg,rgba(2,7,11,.96),rgba(2,7,11,.5));backdrop-filter:blur(18px)}
+.flow-status{display:flex;align-items:center;gap:22px;font-size:10px;color:var(--muted)}
+.flow-status span{display:flex;align-items:center;gap:7px}.flow-status i{width:6px;height:6px;border-radius:50%;background:#365261}.flow-status .ok i{background:var(--green);box-shadow:0 0 9px rgba(104,255,159,.55)}.flow-status .warn i{background:var(--amber);box-shadow:0 0 9px rgba(255,189,87,.55)}
+.system-health{margin-left:auto;display:flex;align-items:center;gap:11px;font-size:9px;color:#688493;text-transform:uppercase;letter-spacing:.08em}.health-bar{width:112px;height:3px;border-radius:5px;background:#102633;overflow:hidden}.health-bar b{display:block;width:86%;height:100%;background:linear-gradient(90deg,var(--cyan),var(--green));box-shadow:0 0 10px rgba(86,231,255,.5)}
+.overlay{position:absolute;inset:0;z-index:10;pointer-events:none}
+.overlay *{pointer-events:auto}
+.glass{background:linear-gradient(145deg,rgba(9,23,33,.84),rgba(4,12,18,.66));border:1px solid rgba(126,220,255,.16);box-shadow:var(--shadow),inset 0 1px 0 rgba(255,255,255,.025);backdrop-filter:blur(18px)}
+.panel{position:absolute;border-radius:16px;overflow:hidden}
+.panel-head{height:48px;padding:0 16px;display:flex;align-items:center;border-bottom:1px solid rgba(126,220,255,.1);font-size:10px;color:#91acb9;text-transform:uppercase;letter-spacing:.1em}
+.panel-head b{color:var(--text);font-size:11px;letter-spacing:.04em;text-transform:none}.panel-head .grow{flex:1}.panel-head .tiny{font-size:8px;color:#526d7a}
+.panel-body{padding:14px 16px}
+.eyebrow{font-size:9px;color:var(--cyan);letter-spacing:.16em;text-transform:uppercase;margin-bottom:8px}
+.hero-title{font-size:27px;font-weight:650;letter-spacing:-.035em;line-height:1.05}.hero-title em{font-style:normal;color:var(--cyan)}
+.subtext{font-size:11px;line-height:1.5;color:#7f9aa8}
+.kpi-row{display:flex;gap:9px}.kpi{min-width:105px;padding:11px 12px;border-radius:12px;background:rgba(6,19,27,.72);border:1px solid rgba(126,220,255,.11)}.kpi label{display:block;font-size:8px;color:#637d8b;text-transform:uppercase;letter-spacing:.09em;margin-bottom:6px}.kpi strong{font-size:18px;font-weight:600}.kpi .delta{font-size:9px;margin-left:5px}.negative{color:var(--red)}.positive{color:var(--green)}.amber{color:var(--amber)}.cyan{color:var(--cyan)}.violet{color:var(--violet)}
+.chip{display:inline-flex;align-items:center;gap:6px;padding:6px 8px;border-radius:999px;border:1px solid rgba(126,220,255,.15);background:rgba(7,21,30,.72);font-size:8px;color:#86a0ae;text-transform:uppercase;letter-spacing:.08em}.chip i{width:5px;height:5px;border-radius:50%;background:currentColor}.chip.ok{color:var(--green);border-color:rgba(104,255,159,.24)}.chip.warn{color:var(--amber);border-color:rgba(255,189,87,.24)}.chip.bad{color:var(--red);border-color:rgba(255,85,118,.24)}.chip.info{color:var(--cyan);border-color:rgba(86,231,255,.24)}.chip.purple{color:var(--violet);border-color:rgba(169,133,255,.24)}
+.btn{border:1px solid rgba(126,220,255,.18);border-radius:10px;background:rgba(8,24,34,.8);color:#a9c1cd;padding:9px 13px;font-size:9px;letter-spacing:.05em;cursor:pointer}.btn:hover{border-color:rgba(86,231,255,.44);color:var(--text)}.btn.primary{background:linear-gradient(135deg,rgba(86,231,255,.18),rgba(70,255,208,.1));border-color:rgba(86,231,255,.42);color:#dffaff;box-shadow:0 0 24px rgba(86,231,255,.08)}.btn.approve{background:rgba(104,255,159,.12);border-color:rgba(104,255,159,.38);color:#aaffc5}.btn.danger{background:rgba(255,85,118,.1);border-color:rgba(255,85,118,.36);color:#ff98ab}
+.list{display:flex;flex-direction:column;gap:7px}.list-item{position:relative;padding:11px 12px;border-radius:11px;background:rgba(6,18,26,.62);border:1px solid rgba(126,220,255,.09);display:flex;align-items:center;gap:10px}.list-item:before{content:"";width:5px;height:5px;border-radius:50%;background:#496878}.list-item.ok:before{background:var(--green);box-shadow:0 0 9px rgba(104,255,159,.55)}.list-item.warn:before{background:var(--amber);box-shadow:0 0 9px rgba(255,189,87,.55)}.list-item.bad:before{background:var(--red);box-shadow:0 0 9px rgba(255,85,118,.55)}.list-item .main{flex:1}.list-item b{display:block;font-size:10px;font-weight:550}.list-item small{display:block;font-size:8px;color:#617d8b;margin-top:3px}.list-item .right{font-size:9px;color:#8ca6b3}
+.rule{height:1px;background:linear-gradient(90deg,transparent,rgba(126,220,255,.16),transparent);margin:12px 0}
+.micro-label{font-size:8px;text-transform:uppercase;letter-spacing:.11em;color:#58717f}
+.big-number{font-size:42px;line-height:.9;font-weight:520;letter-spacing:-.055em}.big-number small{font-size:14px;color:#748d9b}
+.scene-label{position:absolute;left:30px;top:24px;font-size:9px;letter-spacing:.18em;text-transform:uppercase;color:#698796}.scene-label b{color:var(--text)}
+.hud-corner{position:absolute;width:22px;height:22px;border-color:rgba(86,231,255,.28);border-style:solid;pointer-events:none}.hud-corner.tl{left:10px;top:10px;border-width:1px 0 0 1px}.hud-corner.tr{right:10px;top:10px;border-width:1px 1px 0 0}.hud-corner.bl{left:10px;bottom:10px;border-width:0 0 1px 1px}.hud-corner.br{right:10px;bottom:10px;border-width:0 1px 1px 0}
+.toast{position:absolute;right:28px;top:28px;padding:12px 14px;border-radius:12px;background:rgba(6,17,25,.88);border:1px solid rgba(86,231,255,.24);box-shadow:0 18px 50px rgba(0,0,0,.38);font-size:10px;color:#a7c3ce}.toast b{color:var(--text)}
+.scan{position:absolute;inset:0;pointer-events:none;overflow:hidden}.scan:after{content:"";position:absolute;left:-20%;right:-20%;height:1px;top:-5%;background:linear-gradient(90deg,transparent,rgba(86,231,255,.65),transparent);box-shadow:0 0 20px rgba(86,231,255,.45);animation:scan 7s linear infinite}
+@keyframes scan{to{top:105%}}
+@keyframes pulse{0%,100%{opacity:.55;transform:scale(.88)}50%{opacity:1;transform:scale(1.2)}}
+@keyframes breathe{0%,100%{opacity:.52}50%{opacity:1}}
+@keyframes float{0%,100%{transform:translateY(0)}50%{transform:translateY(-6px)}}
+@keyframes sweep{from{transform:translateX(-120%)}to{transform:translateX(220%)}}
+@keyframes countdown{from{stroke-dashoffset:0}to{stroke-dashoffset:126}}
+
+/* View-specific reusable components */
+.lensbar{position:absolute;left:50%;transform:translateX(-50%);top:20px;display:flex;gap:7px;padding:6px;border-radius:999px;background:rgba(4,13,20,.62);border:1px solid rgba(126,220,255,.13);backdrop-filter:blur(14px)}
+.lens{padding:7px 11px;border-radius:999px;font-size:8px;color:#5e7c8b;text-transform:uppercase;letter-spacing:.08em}.lens.active{color:#dffaff;background:rgba(86,231,255,.11);box-shadow:0 0 18px rgba(86,231,255,.08) inset}
+.signal-stack{position:absolute;left:22px;top:30px;width:258px;display:flex;flex-direction:column;gap:8px}.signal-card{padding:12px;border-radius:13px;background:rgba(5,15,22,.7);border:1px solid rgba(126,220,255,.1);backdrop-filter:blur(14px)}.signal-card .top{display:flex;align-items:center;gap:8px}.signal-card .dot{width:7px;height:7px;border-radius:50%;background:var(--cyan);box-shadow:0 0 12px currentColor}.signal-card b{font-size:10px}.signal-card small{display:block;color:#617d8b;font-size:8px;margin-top:5px;line-height:1.4}.signal-card.warn{border-color:rgba(255,189,87,.18)}.signal-card.warn .dot{background:var(--amber)}.signal-card.bad{border-color:rgba(255,85,118,.2)}.signal-card.bad .dot{background:var(--red)}
+.agent-dock{position:absolute;right:24px;top:30px;width:290px;padding:14px;border-radius:16px}.agent-dock h3{font-size:10px;margin:0;color:#b7cfda;font-weight:600}.agent-line{display:flex;align-items:center;gap:9px;padding:10px 0;border-bottom:1px solid rgba(126,220,255,.08)}.agent-line:last-child{border-bottom:0}.agent-glyph{width:28px;height:28px;border-radius:10px;border:1px solid rgba(169,133,255,.25);background:rgba(169,133,255,.07);display:grid;place-items:center;color:var(--violet);font-size:9px}.agent-line .copy{flex:1}.agent-line b{display:block;font-size:9px}.agent-line small{display:block;font-size:8px;color:#647f8d;margin-top:3px}.agent-line .state{font-size:8px;color:var(--green)}
+.deal-anchor{position:absolute;left:50%;top:49%;transform:translate(-50%,-50%);text-align:center;pointer-events:none}.deal-anchor .ring{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);border-radius:50%;border:1px solid rgba(86,231,255,.22);box-shadow:0 0 50px rgba(86,231,255,.06) inset}.deal-anchor .r1{width:150px;height:150px;animation:spin 20s linear infinite}.deal-anchor .r2{width:228px;height:228px;border-style:dashed;animation:spinReverse 32s linear infinite}.deal-anchor .r3{width:318px;height:318px;opacity:.45}.deal-core{position:relative;width:104px;height:104px;border-radius:50%;display:grid;place-items:center;background:radial-gradient(circle at 38% 30%,rgba(255,255,255,.19),rgba(86,231,255,.14) 20%,rgba(6,19,28,.95) 68%);border:1px solid rgba(86,231,255,.45);box-shadow:0 0 55px rgba(86,231,255,.15),inset 0 0 38px rgba(86,231,255,.08)}.deal-core b{font-size:11px;letter-spacing:.12em}.deal-core span{font-size:8px;color:#7594a2}.deal-anchor .caption{margin-top:20px;font-size:9px;color:#728f9d;text-transform:uppercase;letter-spacing:.13em}
+@keyframes spin{to{transform:translate(-50%,-50%) rotate(360deg)}}@keyframes spinReverse{to{transform:translate(-50%,-50%) rotate(-360deg)}}
+.spine-banner{position:absolute;left:50%;bottom:22px;transform:translateX(-50%);display:flex;gap:10px;align-items:center;padding:10px 14px;border-radius:999px;background:rgba(5,16,23,.72);border:1px solid rgba(126,220,255,.12);font-size:9px;color:#6d8997}.spine-banner b{color:#ccebf3}
+.metric-float{position:absolute;min-width:138px;padding:10px 12px;border-radius:12px;background:rgba(5,16,23,.72);border:1px solid rgba(126,220,255,.1);backdrop-filter:blur(12px)}.metric-float label{display:block;font-size:7px;text-transform:uppercase;letter-spacing:.1em;color:#577382}.metric-float strong{display:block;font-size:17px;margin-top:4px;font-weight:520}.metric-float small{font-size:8px;color:#6e8997}.metric-float:after{content:"";position:absolute;width:65px;height:1px;background:linear-gradient(90deg,rgba(86,231,255,.3),transparent)}
+.modal-center{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:1180px;height:650px;border-radius:22px;overflow:hidden}
+.split{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.diff-row{display:grid;grid-template-columns:1.4fr .7fr .7fr .65fr;gap:8px;align-items:center;padding:9px 10px;border-radius:10px;background:rgba(5,16,24,.62);border:1px solid rgba(126,220,255,.08);font-size:9px}.diff-row header{display:none}.diff-row .name{color:#bdd2dc}.diff-row .old{color:#708a97;text-decoration:line-through}.diff-row .new{color:#eaf8ff}.diff-row .state{text-align:right}.diff-row .state span{padding:4px 6px;border-radius:999px;font-size:7px;text-transform:uppercase;letter-spacing:.07em}.state .auto{background:rgba(104,255,159,.1);color:var(--green)}.state .review{background:rgba(255,189,87,.1);color:var(--amber)}.state .blocked{background:rgba(255,85,118,.1);color:var(--red)}
+.coa-card{position:relative;padding:18px;border-radius:17px;background:linear-gradient(145deg,rgba(8,23,33,.83),rgba(4,12,18,.73));border:1px solid rgba(126,220,255,.13);overflow:hidden}.coa-card.recommended{border-color:rgba(104,255,159,.35);box-shadow:0 0 45px rgba(104,255,159,.08)}.coa-card.recommended:before{content:"RECOMMENDED";position:absolute;top:13px;right:13px;font-size:7px;letter-spacing:.12em;color:var(--green)}.coa-card h3{font-size:18px;margin:0 0 5px}.coa-card p{font-size:9px;line-height:1.5;color:#718d9b}.coa-metrics{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin:15px 0}.coa-metric{padding:9px;border-radius:10px;background:rgba(2,10,15,.5);border:1px solid rgba(126,220,255,.08)}.coa-metric label{display:block;font-size:7px;color:#5b7582;text-transform:uppercase}.coa-metric strong{display:block;font-size:15px;margin-top:5px}.coa-list{display:flex;flex-direction:column;gap:7px;margin:12px 0}.coa-list span{font-size:9px;color:#89a3b0}.coa-list span:before{content:"•";color:var(--cyan);margin-right:7px}
+.freeze-stamp{position:absolute;right:20px;bottom:20px;width:130px;height:130px;border-radius:50%;border:1px solid rgba(104,255,159,.4);display:grid;place-items:center;text-align:center;color:var(--green);font-size:8px;letter-spacing:.12em;text-transform:uppercase;transform:rotate(-8deg);opacity:.9;box-shadow:0 0 40px rgba(104,255,159,.09) inset}.freeze-stamp:before{content:"";position:absolute;inset:8px;border:1px dashed rgba(104,255,159,.28);border-radius:50%}
+.timeline-branch{position:relative;height:220px}.timeline-branch .axis{position:absolute;left:20px;right:20px;top:50%;height:1px;background:rgba(126,220,255,.15)}.branch-line{position:absolute;height:2px;transform-origin:left center;border-radius:2px;background:linear-gradient(90deg,var(--cyan),var(--green));box-shadow:0 0 12px rgba(86,231,255,.25)}.branch-node{position:absolute;width:10px;height:10px;border-radius:50%;border:2px solid currentColor;background:#051018;box-shadow:0 0 15px currentColor}.branch-label{position:absolute;font-size:8px;color:#7794a2}.branch-label b{color:#cbe4ee}
+
+@media(max-width:1200px){.hero-title{font-size:22px}.agent-dock{width:250px}.signal-stack{width:230px}}
+
+/* 60-second simulation */
+.scene-wrap{position:absolute;inset:0;opacity:0;transform:translateY(8px) scale(.995);animation:sceneEnter .62s cubic-bezier(.2,.75,.2,1) forwards}
+@keyframes sceneEnter{to{opacity:1;transform:translateY(0) scale(1)}}
+.demo-progress{position:absolute;z-index:40;left:64px;right:0;bottom:54px;height:3px;background:rgba(126,220,255,.08)}
+.demo-progress b{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--cyan),var(--violet),var(--green));box-shadow:0 0 14px rgba(86,231,255,.55)}
+.demo-counter{position:absolute;z-index:45;right:26px;bottom:68px;font-size:9px;letter-spacing:.1em;color:#6d8997;text-transform:uppercase}
+.demo-counter b{color:#cfe8f0}
+.demo-caption{position:absolute;left:50%;transform:translateX(-50%);top:24px;min-width:540px;text-align:center;pointer-events:none}
+.demo-caption .eyebrow{margin-bottom:7px}.demo-caption h1{font-size:28px;line-height:1.05;margin:0;font-weight:620;letter-spacing:-.035em}.demo-caption p{font-size:10px;color:#7895a3;margin:9px 0 0}
+.source-port{position:absolute;left:28px;top:96px;width:310px;padding:15px;border-radius:16px}
+.source-port .port-line{display:flex;align-items:center;gap:10px;margin-top:12px}.source-port .port-icon{width:38px;height:48px;border:1px solid rgba(86,231,255,.3);border-radius:7px;display:grid;place-items:center;color:var(--cyan);background:rgba(86,231,255,.05);font-size:9px}.source-port .port-copy{flex:1}.source-port b{font-size:11px}.source-port small{display:block;font-size:8px;color:#698592;margin-top:4px}.stream-line{height:3px;border-radius:3px;background:#0d2634;overflow:hidden;margin-top:12px}.stream-line i{display:block;height:100%;width:0;background:linear-gradient(90deg,var(--violet),var(--cyan),var(--green));box-shadow:0 0 10px var(--cyan);animation:loadbar 5.8s cubic-bezier(.1,.7,.15,1) forwards}@keyframes loadbar{to{width:100%}}
+.contradiction-card{position:absolute;left:50%;top:46%;transform:translate(-50%,-50%);width:720px;padding:22px 24px;border-radius:20px;background:linear-gradient(145deg,rgba(36,9,16,.9),rgba(8,14,21,.88));border:1px solid rgba(255,85,118,.44);box-shadow:0 0 90px rgba(255,85,118,.12),0 24px 90px rgba(0,0,0,.55);backdrop-filter:blur(20px)}
+.contradiction-grid{display:grid;grid-template-columns:1fr 42px 1fr;gap:12px;align-items:center;margin-top:16px}.claim-card{padding:14px;border:1px solid rgba(126,220,255,.12);border-radius:13px;background:rgba(4,14,21,.65)}.claim-card label{font-size:8px;color:#637d8b;text-transform:uppercase;letter-spacing:.1em}.claim-card strong{display:block;font-size:16px;margin-top:7px}.claim-card p{font-size:9px;color:#7893a0;line-height:1.45;margin:8px 0 0}.vs{width:34px;height:34px;border-radius:50%;border:1px solid rgba(255,85,118,.3);display:grid;place-items:center;color:var(--red);font-size:8px}
+.ripple-status{position:absolute;left:50%;bottom:58px;transform:translateX(-50%);display:flex;align-items:center;gap:13px;padding:12px 16px;border-radius:999px;background:rgba(17,13,8,.78);border:1px solid rgba(255,189,87,.28);color:#9a8060;font-size:9px}.ripple-status strong{font-size:20px;color:var(--amber);font-weight:520}.ripple-status b{color:#f0d7af}
+.count-card{position:relative;display:flex;align-items:center;gap:10px;padding:10px 11px;border-radius:11px;background:rgba(5,17,24,.65);border:1px solid rgba(104,255,159,.14)}.count-card svg{width:32px;height:32px;transform:rotate(-90deg)}.count-card circle{fill:none;stroke-width:3}.count-card .track{stroke:rgba(104,255,159,.11)}.count-card .run{stroke:var(--green);stroke-dasharray:88;stroke-dashoffset:0;filter:drop-shadow(0 0 4px rgba(104,255,159,.65));transition:stroke-dashoffset .1s linear}.count-card b{font-size:9px}.count-card small{display:block;color:#617b88;font-size:8px;margin-top:3px}.count-num{position:absolute;left:12px;top:17px;width:28px;text-align:center;color:var(--green);font-size:8px}
+.authority-split{position:absolute;left:50%;top:48%;transform:translate(-50%,-50%);width:1090px;display:grid;grid-template-columns:1fr 90px 1fr;align-items:center;gap:14px}.authority-pane{min-height:360px;padding:19px;border-radius:19px}.handoff-arrow{position:relative;height:2px;background:linear-gradient(90deg,rgba(86,231,255,.15),var(--violet),rgba(169,133,255,.15));box-shadow:0 0 16px rgba(169,133,255,.35)}.handoff-arrow:after{content:"";position:absolute;right:-1px;top:-4px;border-left:8px solid var(--violet);border-top:5px solid transparent;border-bottom:5px solid transparent}.handoff-dot{position:absolute;width:8px;height:8px;border-radius:50%;background:var(--violet);box-shadow:0 0 16px var(--violet);top:-3px;animation:handoff 4.2s ease-in-out infinite}@keyframes handoff{0%{left:0;opacity:0}15%{opacity:1}85%{opacity:1}100%{left:calc(100% - 8px);opacity:0}}
+.decision-approved{position:absolute;inset:0;display:grid;place-items:center;background:rgba(2,8,12,.66);backdrop-filter:blur(8px);opacity:0;pointer-events:none;transition:opacity .6s}.decision-approved.show{opacity:1}.decision-approved .seal{width:220px;height:220px;border-radius:50%;border:1px solid rgba(104,255,159,.45);display:grid;place-items:center;text-align:center;color:var(--green);box-shadow:0 0 90px rgba(104,255,159,.16),inset 0 0 50px rgba(104,255,159,.06);text-transform:uppercase;letter-spacing:.13em;font-size:10px}.decision-approved .seal b{display:block;font-size:18px;letter-spacing:.06em;color:#dffff0;margin-bottom:7px}.decision-approved .seal small{display:block;color:#79b995;line-height:1.5;letter-spacing:.05em;text-transform:none}
+.final-banner{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:760px;text-align:center}.final-banner h1{font-size:36px;margin:0;letter-spacing:-.04em}.final-banner p{font-size:11px;color:#7895a3}.final-stats{display:flex;justify-content:center;gap:10px;margin-top:20px}.final-stat{padding:10px 14px;border-radius:12px;background:rgba(4,15,22,.68);border:1px solid rgba(104,255,159,.18);font-size:9px;color:#7895a3}.final-stat b{display:block;color:var(--green);font-size:15px;margin-bottom:4px}
+</style>
+</head>
+<body>
+<div class="app">
+  <canvas id="field"></canvas>
+  <div class="vignette"></div>
+  <header class="topbar">
+    <div class="brand"><div class="brand-mark"></div><div class="brand-name">PANTA</div></div>
+    <div class="context" id="context"></div>
+    <div class="top-actions">
+      <div class="mode-pill" id="modePill">Investment OS</div>
+      <div class="authority-pill">Authority <b id="authorityName">Associate</b></div>
+      <div class="live-pill"><i></i> Live state</div>
+      <div class="clock" id="clock">09:41:18 UTC</div>
+    </div>
+  </header>
+  <div class="lifecycle" id="lifecycle"></div>
+  <aside class="rail">
+    <div class="rail-btn active"></div><div class="rail-btn"></div><div class="rail-btn"></div><div class="rail-btn"></div><div class="rail-btn"></div>
+    <div class="rail-spacer"></div><div class="rail-avatar">AM</div>
+  </aside>
+  <main class="stage">
+    <div class="overlay" id="overlay"></div>
+    <div class="scan"></div>
+  </main>
+  <footer class="bottomline">
+    <div class="flow-status" id="flowStatus"></div>
+    <div class="system-health"><span>Investment state coherence</span><div class="health-bar"><b></b></div><strong>86%</strong></div>
+  </footer>
+</div>
+<script>(function(){
+  const canvas = document.getElementById('field');
+  if(!canvas) return;
+  const ctx = canvas.getContext('2d');
+  let w=0,h=0,dpr=1, mode='rest', opts={}, modeStart=performance.now();
+  let particles=[];
+  const C={cyan:'#56e7ff',teal:'#46ffd0',green:'#68ff9f',amber:'#ffbd57',red:'#ff5576',violet:'#a985ff',blue:'#7db6ff',muted:'#547483',bg:'#02060a'};
+
+  function resize(){
+    dpr=Math.min(window.devicePixelRatio||1,1.5);
+    w=window.innerWidth; h=window.innerHeight;
+    canvas.width=Math.floor(w*dpr); canvas.height=Math.floor(h*dpr);
+    canvas.style.width=w+'px'; canvas.style.height=h+'px';
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    particles=Array.from({length:110},()=>({x:Math.random()*w,y:Math.random()*h,z:Math.random(),s:.25+Math.random()*1.2,p:Math.random()*Math.PI*2}));
+  }
+  window.addEventListener('resize',resize); resize();
+
+  function setMode(m,o={}){mode=m;opts=o;modeStart=performance.now();}
+  window.PantaField={setMode,getMode:()=>mode,updateNodes:(u)=>{for(const n of defaultNodes)if(u[n.id])n.value=u[n.id];}};
+
+  function lerp(a,b,t){return a+(b-a)*t}
+  function ease(t){return t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2}
+  function rgba(hex,a){
+    const v=hex.replace('#',''); const n=parseInt(v,16); return `rgba(${(n>>16)&255},${(n>>8)&255},${n&255},${a})`;
+  }
+  function glow(color,blur=18){ctx.shadowColor=color;ctx.shadowBlur=blur}
+  function noGlow(){ctx.shadowBlur=0;ctx.shadowColor='transparent'}
+  function stage(){return {x:64,y:116,w:w-64,h:h-170,cx:64+(w-64)*.53,cy:116+(h-170)*.50}}
+
+  function background(t){
+    const s=stage();
+    ctx.clearRect(0,0,w,h);
+    // soft nebula
+    let g=ctx.createRadialGradient(s.cx,s.cy,10,s.cx,s.cy,Math.max(s.w,s.h)*.48);
+    g.addColorStop(0,'rgba(30,89,105,.11)');g.addColorStop(.45,'rgba(8,33,44,.05)');g.addColorStop(1,'rgba(0,0,0,0)');
+    ctx.fillStyle=g;ctx.fillRect(0,0,w,h);
+    // particles
+    ctx.save();
+    for(const p of particles){
+      const a=.08+.18*(.5+.5*Math.sin(t*.00045+p.p));
+      ctx.fillStyle=`rgba(145,220,238,${a*p.z})`;
+      ctx.fillRect(p.x,p.y,p.s,p.s);
+    }
+    ctx.restore();
+    drawGrid(t);
+  }
+
+  function drawGrid(t){
+    const s=stage(); const horizon=s.y+s.h*.36; const bottom=s.y+s.h*1.03;
+    ctx.save();ctx.lineWidth=1;
+    // horizon glow
+    let hg=ctx.createLinearGradient(s.x,horizon,s.x+s.w,horizon);
+    hg.addColorStop(0,'rgba(86,231,255,0)');hg.addColorStop(.5,'rgba(86,231,255,.11)');hg.addColorStop(1,'rgba(86,231,255,0)');
+    ctx.strokeStyle=hg;ctx.beginPath();ctx.moveTo(s.x,horizon);ctx.lineTo(s.x+s.w,horizon);ctx.stroke();
+    // radial perspective lines
+    const vanishX=s.cx+(mode==='firm'?-80:0);
+    for(let i=-15;i<=15;i++){
+      const bx=vanishX+i*92;
+      ctx.strokeStyle='rgba(84,150,174,.055)';ctx.beginPath();ctx.moveTo(vanishX,horizon);ctx.lineTo(bx,bottom);ctx.stroke();
+    }
+    // horizontal warped lines
+    for(let i=0;i<12;i++){
+      const u=i/11; const yy=lerp(horizon,bottom,Math.pow(u,1.75));
+      const alpha=.035+.035*u;
+      ctx.strokeStyle=`rgba(84,150,174,${alpha})`;ctx.beginPath();ctx.moveTo(s.x,yy);ctx.lineTo(s.x+s.w,yy);ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  const defaultNodes=[
+    {id:'revenue',label:'REVENUE',value:'€418m',x:-270,y:-105,z:40},
+    {id:'ebitda',label:'NORMALIZED EBITDA',value:'€30m',x:-92,y:-20,z:-10},
+    {id:'debt',label:'DEBT CAPACITY',value:'€165m',x:115,y:-125,z:35},
+    {id:'equity',label:'EQUITY CHECK',value:'€130m',x:282,y:-25,z:5},
+    {id:'irr',label:'BASE IRR',value:'21.6%',x:218,y:145,z:5},
+    {id:'price',label:'PRICE CEILING',value:'€295m',x:-5,y:204,z:-18},
+    {id:'lender',label:'LENDER CASE',value:'BUILDABLE',x:-235,y:145,z:38},
+    {id:'ic',label:'IC BASIS',value:'CURRENT',x:-350,y:28,z:60},
+  ];
+  const defaultEdges=[['revenue','ebitda'],['ebitda','debt'],['debt','equity'],['equity','irr'],['ebitda','price'],['price','irr'],['ebitda','lender'],['price','ic'],['irr','ic']];
+
+  function project(pt,t,scaleMul=1,offset={x:0,y:0}){
+    const s=stage();
+    const yaw=.11*Math.sin(t*.00012)+(mode==='ripple'?.04:0);
+    const pitch=.15;
+    let x=pt.x,z=pt.z||0,y=pt.y||0;
+    const rx=x*Math.cos(yaw)-z*Math.sin(yaw);
+    const rz=x*Math.sin(yaw)+z*Math.cos(yaw);
+    const ry=y*Math.cos(pitch)-rz*Math.sin(pitch);
+    const rz2=y*Math.sin(pitch)+rz*Math.cos(pitch);
+    const f=740/(740+rz2);
+    return {x:s.cx+offset.x+rx*f*scaleMul,y:s.cy+offset.y+ry*f*scaleMul+rz2*.06,scale:f*scaleMul,depth:rz2};
+  }
+
+  function getGraphState(t){
+    let nodes=defaultNodes.map(n=>({...n,state:'ok'}));
+    if(mode==='dissonance') nodes=nodes.map(n=>n.id==='ebitda'?{...n,state:'bad',value:'€30m ?'}:n);
+    if(mode==='ripple'||mode==='impact'||mode==='handoff'){
+      const elapsed=(performance.now()-modeStart)/1000;
+      const order=['ebitda','debt','equity','irr','price','lender','ic'];
+      nodes=nodes.map(n=>{
+        const idx=order.indexOf(n.id); if(idx<0) return n;
+        const on=mode!=='ripple'||elapsed>idx*.55;
+        if(!on) return n;
+        const values={ebitda:'€26m',debt:'€143m',equity:'€152m',irr:'18.9%',price:'€284m',lender:'STALE',ic:'STALE'};
+        return {...n,state:'warn',value:values[n.id]||n.value};
+      });
+    }
+    if(mode==='decision'){
+      nodes=nodes.map(n=>({ ...n, state:n.id==='price'||n.id==='irr'?'warn':'dim' }));
+    }
+    if(mode==='resolved'){
+      const values={ebitda:'€26m',debt:'€143m',equity:'€141m',irr:'20.0%',price:'€284m',lender:'BUILDABLE',ic:'REFRESHED'};
+      nodes=nodes.map(n=>({...n,state:'ok',value:values[n.id]||n.value}));
+    }
+    return nodes;
+  }
+
+  function drawDealGraph(t){
+    const s=stage();
+    let scale=.92, offset={x:0,y:0};
+    if(mode==='impact'){scale=.60;offset={x:-270,y:-10}}
+    if(mode==='handoff'){scale=.58;offset={x:-300,y:-15}}
+    if(mode==='decision'){scale=.46;offset={x:-390,y:35}}
+    const nodes=getGraphState(t); const map={};
+    nodes.forEach(n=>map[n.id]=project(n,t,scale,offset));
+    // orbit rings around center
+    const core=project({x:0,y:35,z:0},t,scale,offset);
+    ctx.save();
+    for(let i=0;i<3;i++){
+      ctx.strokeStyle=`rgba(86,231,255,${.09-i*.018})`;ctx.lineWidth=1;
+      ctx.beginPath();ctx.ellipse(core.x,core.y,150*scale*(1+i*.5),58*scale*(1+i*.42),-.12,0,Math.PI*2);ctx.stroke();
+    }
+    ctx.restore();
+    // edges
+    ctx.save();ctx.lineWidth=1.1;
+    defaultEdges.forEach((e,idx)=>{
+      const a=map[e[0]],b=map[e[1]]; if(!a||!b) return;
+      const na=nodes.find(n=>n.id===e[0]),nb=nodes.find(n=>n.id===e[1]);
+      let color=C.cyan,alpha=.18;
+      if(na.state==='warn'||nb.state==='warn'){color=C.amber;alpha=.34}
+      if(na.state==='bad'||nb.state==='bad'){color=C.red;alpha=.42}
+      if(na.state==='dim'||nb.state==='dim'){color=C.muted;alpha=.08}
+      const gr=ctx.createLinearGradient(a.x,a.y,b.x,b.y);gr.addColorStop(0,rgba(color,.05));gr.addColorStop(.5,rgba(color,alpha));gr.addColorStop(1,rgba(color,.05));
+      ctx.strokeStyle=gr;ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.quadraticCurveTo((a.x+b.x)/2,(a.y+b.y)/2-22*scale,b.x,b.y);ctx.stroke();
+      // moving pulse
+      if(mode==='ripple'||mode==='impact'){
+        const p=((performance.now()-modeStart)/900+idx*.17)%1;
+        const qx=(1-p)*(1-p)*a.x+2*(1-p)*p*((a.x+b.x)/2)+(p*p)*b.x;
+        const qy=(1-p)*(1-p)*a.y+2*(1-p)*p*((a.y+b.y)/2-22*scale)+(p*p)*b.y;
+        ctx.fillStyle=color;glow(color,12);ctx.beginPath();ctx.arc(qx,qy,2.1,0,Math.PI*2);ctx.fill();noGlow();
+      }
+    });ctx.restore();
+    // core
+    ctx.save();
+    const cg=ctx.createRadialGradient(core.x-15,core.y-18,2,core.x,core.y,68*scale);cg.addColorStop(0,'rgba(255,255,255,.28)');cg.addColorStop(.2,'rgba(86,231,255,.25)');cg.addColorStop(.62,'rgba(10,31,42,.92)');cg.addColorStop(1,'rgba(3,12,18,.4)');
+    ctx.fillStyle=cg;glow(C.cyan,28);ctx.beginPath();ctx.arc(core.x,core.y,46*scale,0,Math.PI*2);ctx.fill();noGlow();
+    ctx.strokeStyle='rgba(86,231,255,.5)';ctx.lineWidth=1;ctx.beginPath();ctx.arc(core.x,core.y,46*scale,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle='#eafaff';ctx.font=`${Math.max(8,10*scale)}px Inter, sans-serif`;ctx.textAlign='center';ctx.fillText('PROJECT ATLAS',core.x,core.y-2);ctx.fillStyle='#6f8d9a';ctx.font=`${Math.max(7,8*scale)}px Inter, sans-serif`;ctx.fillText('LIVE INVESTMENT STATE',core.x,core.y+13*scale);ctx.restore();
+    // nodes
+    nodes.forEach((n,idx)=>drawNode(n,map[n.id],scale,t,idx));
+    if(mode==='ingest') drawIngest(t,core);
+    if(mode==='dissonance') drawContradiction(t,core);
+    if(mode==='handoff') drawHandoff(t,core);
+  }
+
+  function drawNode(n,p,scale,t,idx){
+    const colors={ok:C.green,warn:C.amber,bad:C.red,dim:C.muted}; const color=colors[n.state]||C.cyan;
+    const r=(n.id==='ebitda'?17:13)*scale;
+    ctx.save();
+    ctx.fillStyle=rgba(color,n.state==='dim'?.12:.13);glow(color,n.state==='dim'?0:15);ctx.beginPath();ctx.arc(p.x,p.y,r*1.8,0,Math.PI*2);ctx.fill();noGlow();
+    ctx.strokeStyle=rgba(color,n.state==='dim'?.15:.66);ctx.lineWidth=1.1;ctx.beginPath();ctx.arc(p.x,p.y,r,0,Math.PI*2);ctx.stroke();
+    ctx.fillStyle=rgba(color,n.state==='dim'?.3:.96);ctx.beginPath();ctx.arc(p.x,p.y,2.4*scale,0,Math.PI*2);ctx.fill();
+    const align=p.x<stage().cx?'right':'left';ctx.textAlign=align;
+    const tx=p.x+(align==='left'?1:-1)*(r+8);
+    ctx.fillStyle=n.state==='dim'?'rgba(113,141,154,.42)':'rgba(182,213,224,.72)';ctx.font=`${Math.max(7,8*scale)}px Inter, sans-serif`;ctx.fillText(n.label,tx,p.y-2);
+    ctx.fillStyle=n.state==='dim'?'rgba(113,141,154,.35)':rgba(color,.92);ctx.font=`600 ${Math.max(8,10*scale)}px Inter, sans-serif`;ctx.fillText(n.value,tx,p.y+11*scale);
+    ctx.restore();
+  }
+
+  function drawIngest(t,core){
+    const elapsed=(performance.now()-modeStart)/1000; const p=Math.min(1,elapsed/5.2); const e=ease(p);
+    const s=stage();const x=lerp(s.x+s.w+220,core.x+10,e), y=lerp(s.y+95,core.y-80,e);
+    ctx.save();ctx.translate(x,y);ctx.rotate(lerp(-.14,.04,e));
+    const ww=122,hh=76;ctx.fillStyle='rgba(8,23,32,.94)';ctx.strokeStyle='rgba(86,231,255,.5)';ctx.lineWidth=1;glow(C.cyan,18);ctx.beginPath();ctx.roundRect(-ww/2,-hh/2,ww,hh,8);ctx.fill();ctx.stroke();noGlow();
+    ctx.fillStyle='#e7f7fd';ctx.font='600 10px Inter';ctx.textAlign='left';ctx.fillText('QoE v3',-46,-14);ctx.fillStyle='#6f8d9a';ctx.font='8px Inter';ctx.fillText('QUALITY OF EARNINGS',-46,1);ctx.fillText('1,284 evidence items',-46,15);ctx.fillStyle=C.cyan;ctx.fillRect(-46,26,75*p,2);ctx.restore();
+    // stream particles
+    for(let i=0;i<24;i++){
+      const q=Math.max(0,Math.min(1,p-i*.018)); if(q<=0)continue; const px=lerp(x,core.x,q),py=lerp(y,core.y,q)+Math.sin(i*1.8+t*.003)*10;
+      ctx.fillStyle=rgba(i%3===0?C.violet:C.cyan,.45);ctx.fillRect(px,py,1.5,1.5);
+    }
+  }
+
+  function drawContradiction(t,core){
+    const elapsed=(performance.now()-modeStart)/1000; const a=Math.min(1,elapsed/1.2);
+    ctx.save();ctx.globalAlpha=a;
+    const y=core.y-155;const x=core.x;
+    ctx.strokeStyle=rgba(C.red,.6);ctx.lineWidth=1;ctx.setLineDash([4,4]);ctx.beginPath();ctx.moveTo(x,y+46);ctx.lineTo(core.x,core.y-50);ctx.stroke();ctx.setLineDash([]);
+    glow(C.red,22);ctx.fillStyle='rgba(255,85,118,.11)';ctx.strokeStyle='rgba(255,85,118,.55)';ctx.beginPath();ctx.roundRect(x-155,y-38,310,82,12);ctx.fill();ctx.stroke();noGlow();
+    ctx.textAlign='center';ctx.fillStyle=C.red;ctx.font='700 9px Inter';ctx.fillText('DISSONANCE DETECTED',x,y-16);
+    ctx.fillStyle='#f3fbff';ctx.font='600 13px Inter';ctx.fillText('€4.0m add-back: proposed vs unsupported',x,y+5);
+    ctx.fillStyle='#7895a3';ctx.font='9px Inter';ctx.fillText('Bound to open question Q-14 · “Is the cost truly non-recurring?”',x,y+25);
+    ctx.restore();
+  }
+
+  function drawHandoff(t,core){
+    const elapsed=(performance.now()-modeStart)/1000; const p=Math.min(1,elapsed/4.2); const s=stage();
+    const start={x:core.x-20,y:core.y+25},end={x:s.x+s.w*.78,y:s.y+s.h*.42};
+    const x=lerp(start.x,end.x,ease(p)),y=lerp(start.y,end.y,ease(p)) - Math.sin(p*Math.PI)*70;
+    ctx.save();ctx.strokeStyle=rgba(C.violet,.25);ctx.setLineDash([5,5]);ctx.beginPath();ctx.moveTo(start.x,start.y);ctx.quadraticCurveTo((start.x+end.x)/2,(start.y+end.y)/2-100,end.x,end.y);ctx.stroke();ctx.setLineDash([]);
+    glow(C.violet,22);ctx.fillStyle=C.violet;ctx.beginPath();ctx.arc(x,y,6,0,Math.PI*2);ctx.fill();noGlow();
+    ctx.fillStyle='rgba(169,133,255,.11)';ctx.strokeStyle='rgba(169,133,255,.45)';ctx.beginPath();ctx.roundRect(end.x-62,end.y-24,124,48,12);ctx.fill();ctx.stroke();
+    ctx.textAlign='center';ctx.fillStyle='#eee9ff';ctx.font='600 9px Inter';ctx.fillText('PARTNER REVIEW',end.x,end.y-2);ctx.fillStyle='#7f74a6';ctx.font='8px Inter';ctx.fillText('price authority required',end.x,end.y+12);ctx.restore();
+  }
+
+  function drawFirm(t){
+    const s=stage(); const core={x:s.cx,y:s.cy};
+    const deals=[
+      ['ATLAS','BUYOUT','€480m','ok',-240,-135],['NOVA','ADD-ON','€82m','warn',210,-170],['KITE','CARVE-OUT','€310m','ok',310,70],['ORION','OWNERSHIP','2.1x','bad',-280,110],['HELIX','EXIT','€620m','ok',0,215],['MOSAIC','SCREENING','€140m','dim',-20,-240]
+    ];
+    ctx.save();
+    // fund core
+    let g=ctx.createRadialGradient(core.x-20,core.y-24,5,core.x,core.y,90);g.addColorStop(0,'rgba(255,255,255,.18)');g.addColorStop(.18,'rgba(86,231,255,.21)');g.addColorStop(.7,'rgba(5,22,31,.95)');g.addColorStop(1,'rgba(5,22,31,.2)');ctx.fillStyle=g;glow(C.cyan,40);ctx.beginPath();ctx.arc(core.x,core.y,62,0,Math.PI*2);ctx.fill();noGlow();ctx.strokeStyle=rgba(C.cyan,.45);ctx.stroke();
+    ctx.textAlign='center';ctx.fillStyle='#effbff';ctx.font='600 12px Inter';ctx.fillText('FUND IV',core.x,core.y-4);ctx.fillStyle='#6d8a98';ctx.font='8px Inter';ctx.fillText('€4.8bn AUM',core.x,core.y+13);
+    deals.forEach((d,i)=>{
+      const [name,type,val,state,dx,dy]=d;const p={x:core.x+dx,y:core.y+dy};const color=state==='ok'?C.green:state==='warn'?C.amber:state==='bad'?C.red:C.muted;
+      const gr=ctx.createLinearGradient(core.x,core.y,p.x,p.y);gr.addColorStop(0,rgba(C.cyan,.05));gr.addColorStop(1,rgba(color,.28));ctx.strokeStyle=gr;ctx.beginPath();ctx.moveTo(core.x,core.y);ctx.quadraticCurveTo((core.x+p.x)/2,(core.y+p.y)/2-40,p.x,p.y);ctx.stroke();
+      const q=((t*.00015+i*.15)%1);const qx=lerp(core.x,p.x,q),qy=lerp(core.y,p.y,q)-Math.sin(q*Math.PI)*40;ctx.fillStyle=color;glow(color,10);ctx.beginPath();ctx.arc(qx,qy,2,0,Math.PI*2);ctx.fill();noGlow();
+      ctx.fillStyle=rgba(color,.12);ctx.beginPath();ctx.arc(p.x,p.y,30,0,Math.PI*2);ctx.fill();ctx.strokeStyle=rgba(color,.55);ctx.beginPath();ctx.arc(p.x,p.y,16,0,Math.PI*2);ctx.stroke();ctx.fillStyle=color;ctx.beginPath();ctx.arc(p.x,p.y,3,0,Math.PI*2);ctx.fill();
+      ctx.textAlign=dx<0?'right':'left';const tx=p.x+(dx<0?-26:26);ctx.fillStyle='#bfd6df';ctx.font='600 9px Inter';ctx.fillText(name,tx,p.y-3);ctx.fillStyle='#607d8a';ctx.font='8px Inter';ctx.fillText(`${type} · ${val}`,tx,p.y+11);
+    });ctx.restore();
+  }
+
+  function drawEvidence(t){
+    const s=stage(),core={x:s.cx+20,y:s.cy-10};
+    const ev=[
+      ['QoE v3','Direct','challenge',-300,-150],['GL extract','Authoritative','support',-330,60],['Management memo','Claim','challenge',-170,210],['Lender feedback','Direct','support',190,-190],['Board minutes','Direct','context',330,-20],['Cost schedule','Third-party','support',250,180]
+    ];
+    ctx.save();
+    // question core
+    ctx.fillStyle='rgba(169,133,255,.12)';ctx.strokeStyle=rgba(C.violet,.52);glow(C.violet,30);ctx.beginPath();ctx.roundRect(core.x-145,core.y-58,290,116,18);ctx.fill();ctx.stroke();noGlow();ctx.textAlign='center';ctx.fillStyle=C.violet;ctx.font='700 9px Inter';ctx.fillText('OPEN QUESTION Q-14',core.x,core.y-29);ctx.fillStyle='#f3f0ff';ctx.font='600 14px Inter';ctx.fillText('Is the €4m cost truly non-recurring?',core.x,core.y-2);ctx.fillStyle='#7e7aa0';ctx.font='9px Inter';ctx.fillText('Decision impact: EBITDA · leverage · price · IRR',core.x,core.y+23);
+    ev.forEach((e,i)=>{
+      const [name,quality,kind,dx,dy]=e;const p={x:core.x+dx,y:core.y+dy};const color=kind==='support'?C.green:kind==='challenge'?C.red:C.cyan;
+      ctx.strokeStyle=rgba(color,.28);ctx.beginPath();ctx.moveTo(p.x,p.y);ctx.quadraticCurveTo((p.x+core.x)/2,(p.y+core.y)/2-20,core.x,core.y);ctx.stroke();
+      const q=((t*.0002+i*.18)%1);const qx=lerp(p.x,core.x,q),qy=lerp(p.y,core.y,q)-Math.sin(q*Math.PI)*20;ctx.fillStyle=color;glow(color,9);ctx.beginPath();ctx.arc(qx,qy,2,0,Math.PI*2);ctx.fill();noGlow();
+      ctx.fillStyle=rgba(color,.08);ctx.strokeStyle=rgba(color,.35);ctx.beginPath();ctx.roundRect(p.x-72,p.y-24,144,48,11);ctx.fill();ctx.stroke();ctx.textAlign='center';ctx.fillStyle='#d8e9ef';ctx.font='600 9px Inter';ctx.fillText(name,p.x,p.y-3);ctx.fillStyle='#687f8a';ctx.font='8px Inter';ctx.fillText(`${quality} · ${kind}`,p.x,p.y+11);
+    });ctx.restore();
+  }
+
+  function drawWorkstreams(t){
+    const s=stage(),core={x:s.cx,y:s.cy};
+    const ws=[['COMMERCIAL',C.cyan,-290,-150],['FINANCIAL',C.green,-70,-245],['OPERATIONS',C.blue,205,-195],['TALENT',C.violet,330,10],['LEGAL',C.amber,210,205],['TAX',C.teal,-70,245],['FINANCING',C.red,-300,140]];
+    ctx.save();
+    // central deal platform
+    ctx.fillStyle='rgba(86,231,255,.1)';ctx.strokeStyle=rgba(C.cyan,.48);glow(C.cyan,26);ctx.beginPath();ctx.arc(core.x,core.y,55,0,Math.PI*2);ctx.fill();ctx.stroke();noGlow();ctx.textAlign='center';ctx.fillStyle='#f0fbff';ctx.font='600 11px Inter';ctx.fillText('ATLAS',core.x,core.y-3);ctx.fillStyle='#6c8794';ctx.font='8px Inter';ctx.fillText('MISSION STATE',core.x,core.y+13);
+    ws.forEach((a,i)=>{const [name,color,dx,dy]=a;const p={x:core.x+dx,y:core.y+dy};
+      ctx.strokeStyle=rgba(color,.25);ctx.beginPath();ctx.moveTo(core.x,core.y);ctx.quadraticCurveTo((core.x+p.x)/2,(core.y+p.y)/2-35,p.x,p.y);ctx.stroke();
+      // two-way pulses
+      const q=((t*.00017+i*.13)%1);for(const dir of [q,1-q]){const x=lerp(core.x,p.x,dir),y=lerp(core.y,p.y,dir)-Math.sin(dir*Math.PI)*35;ctx.fillStyle=color;glow(color,8);ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill();noGlow();}
+      ctx.fillStyle=rgba(color,.11);ctx.strokeStyle=rgba(color,.42);ctx.beginPath();ctx.roundRect(p.x-72,p.y-34,144,68,14);ctx.fill();ctx.stroke();ctx.textAlign='center';ctx.fillStyle='#e2f1f6';ctx.font='600 9px Inter';ctx.fillText(name,p.x,p.y-8);ctx.fillStyle=color;ctx.font='8px Inter';ctx.fillText(i===1?'3 findings · 1 blocker':i===4?'2 conditions':'agent mission active',p.x,p.y+9);ctx.fillStyle='#5f7885';ctx.fillText(`${68+i*4}% complete`,p.x,p.y+23);
+    });ctx.restore();
+  }
+
+  function drawScenarios(t){
+    const s=stage(); const ox=s.x+260, oy=s.y+s.h*.64; ctx.save();
+    // axes
+    ctx.strokeStyle='rgba(126,220,255,.13)';ctx.beginPath();ctx.moveTo(ox,oy);ctx.lineTo(s.x+s.w-210,oy);ctx.stroke();
+    const scenarios=[
+      {name:'MANAGEMENT',c:C.violet,dy:-240,moic:'2.4x'},
+      {name:'BASE',c:C.green,dy:-165,moic:'2.1x'},
+      {name:'DOWNSIDE',c:C.amber,dy:-82,moic:'1.6x'},
+      {name:'STRESS',c:C.red,dy:20,moic:'1.2x'}
+    ];
+    scenarios.forEach((sc,i)=>{
+      ctx.strokeStyle=rgba(sc.c,.52);ctx.lineWidth=2;glow(sc.c,8);ctx.beginPath();ctx.moveTo(ox,oy);ctx.bezierCurveTo(ox+180,oy-45-i*5,ox+370,oy+sc.dy*.55,s.x+s.w-270,oy+sc.dy);ctx.stroke();noGlow();
+      // points
+      for(let j=1;j<=4;j++){const p=j/4;const x=lerp(ox,s.x+s.w-270,p);const y=(1-p)*(1-p)*oy+2*(1-p)*p*(oy-80-i*5)+p*p*(oy+sc.dy);ctx.fillStyle=sc.c;ctx.beginPath();ctx.arc(x,y,3,0,Math.PI*2);ctx.fill();}
+      ctx.textAlign='left';ctx.fillStyle=sc.c;ctx.font='600 9px Inter';ctx.fillText(sc.name,s.x+s.w-250,oy+sc.dy-5);ctx.fillStyle='#dcecf2';ctx.font='600 12px Inter';ctx.fillText(sc.moic,s.x+s.w-250,oy+sc.dy+12);
+    });
+    // time markers
+    ctx.fillStyle='#526e7c';ctx.font='8px Inter';ctx.textAlign='center';['ENTRY','Y1','Y2','Y3','EXIT'].forEach((x,i)=>ctx.fillText(x,lerp(ox,s.x+s.w-270,i/4),oy+30));
+    ctx.restore();
+  }
+
+  function drawOwnership(t){
+    const s=stage(),core={x:s.cx,y:s.cy};
+    const orbit=[['REVENUE','-6.8%',C.red,-250,-120],['EBITDA','-€9m',C.red,0,-220],['LEVERAGE','5.0x',C.amber,260,-110],['LIQUIDITY','18 mo',C.green,300,120],['INITIATIVES','3 / 5',C.amber,0,235],['COVENANTS','6 / 9',C.green,-270,125]];
+    ctx.save();
+    ctx.strokeStyle=rgba(C.cyan,.16);for(let r=100;r<=280;r+=90){ctx.beginPath();ctx.ellipse(core.x,core.y,r,r*.42,-.12,0,Math.PI*2);ctx.stroke();}
+    ctx.fillStyle='rgba(86,231,255,.1)';ctx.strokeStyle=rgba(C.cyan,.46);glow(C.cyan,30);ctx.beginPath();ctx.arc(core.x,core.y,58,0,Math.PI*2);ctx.fill();ctx.stroke();noGlow();ctx.textAlign='center';ctx.fillStyle='#f0fbff';ctx.font='600 11px Inter';ctx.fillText('ATLAS',core.x,core.y-3);ctx.fillStyle='#668491';ctx.font='8px Inter';ctx.fillText('LIVE OWNERSHIP',core.x,core.y+13);
+    orbit.forEach((o,i)=>{const [name,val,color,dx,dy]=o;const p={x:core.x+dx,y:core.y+dy};ctx.strokeStyle=rgba(color,.23);ctx.beginPath();ctx.moveTo(core.x,core.y);ctx.lineTo(p.x,p.y);ctx.stroke();const q=((t*.00016+i*.13)%1);const x=lerp(core.x,p.x,q),y=lerp(core.y,p.y,q);ctx.fillStyle=color;glow(color,9);ctx.beginPath();ctx.arc(x,y,2,0,Math.PI*2);ctx.fill();noGlow();ctx.fillStyle=rgba(color,.1);ctx.strokeStyle=rgba(color,.38);ctx.beginPath();ctx.roundRect(p.x-65,p.y-28,130,56,12);ctx.fill();ctx.stroke();ctx.textAlign='center';ctx.fillStyle='#dcecf2';ctx.font='600 9px Inter';ctx.fillText(name,p.x,p.y-5);ctx.fillStyle=color;ctx.font='600 13px Inter';ctx.fillText(val,p.x,p.y+13);});ctx.restore();
+  }
+
+  function drawClosing(t){
+    const s=stage();const steps=[['IC AUTHORITY','ok'],['SIGNED TERMS','ok'],['KYC / AML','ok'],['FUNDS FLOW','warn'],['CAPITAL RELEASE','dim']];
+    const startX=s.x+250,endX=s.x+s.w-220,y=s.cy;ctx.save();ctx.strokeStyle='rgba(126,220,255,.13)';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(startX,y);ctx.lineTo(endX,y);ctx.stroke();
+    steps.forEach((st,i)=>{const x=lerp(startX,endX,i/(steps.length-1));const color=st[1]==='ok'?C.green:st[1]==='warn'?C.amber:C.muted;ctx.fillStyle=rgba(color,.12);ctx.strokeStyle=rgba(color,.46);glow(color,st[1]==='dim'?0:16);ctx.beginPath();ctx.arc(x,y,28,0,Math.PI*2);ctx.fill();ctx.stroke();noGlow();ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,4,0,Math.PI*2);ctx.fill();ctx.textAlign='center';ctx.fillStyle='#d8e9ef';ctx.font='600 9px Inter';ctx.fillText(st[0],x,y+50);ctx.fillStyle='#5e7885';ctx.font='8px Inter';ctx.fillText(st[1]==='ok'?'verified':st[1]==='warn'?'review required':'locked',x,y+65);if(i<3){const q=((t*.0002+i*.22)%1);const nx=lerp(x,lerp(startX,endX,(i+1)/(steps.length-1)),q);ctx.fillStyle=color;glow(color,8);ctx.beginPath();ctx.arc(nx,y,2,0,Math.PI*2);ctx.fill();noGlow();}});ctx.restore();
+  }
+
+  function draw(t){
+    background(t);
+    switch(mode){
+      case 'firm':drawFirm(t);break;
+      case 'evidence':drawEvidence(t);break;
+      case 'workstreams':drawWorkstreams(t);break;
+      case 'scenarios':drawScenarios(t);break;
+      case 'ownership':drawOwnership(t);break;
+      case 'closing':drawClosing(t);break;
+      default:drawDealGraph(t);
+    }
+    requestAnimationFrame(draw);
+  }
+  requestAnimationFrame(draw);
+})();
+</script>
+<script>(function(){
+  const qs=new URLSearchParams(location.search);
+  const view=qs.get('view')||'shell';
+  const overlay=document.getElementById('overlay');
+  const context=document.getElementById('context');
+  const lifecycle=document.getElementById('lifecycle');
+  const authority=document.getElementById('authorityName');
+  const modePill=document.getElementById('modePill');
+  const flowStatus=document.getElementById('flowStatus');
+  const clock=document.getElementById('clock');
+  const views=['shell','firm','action','deal','evidence','workstreams','scenarios','impact','decision','closing','ownership'];
+  const titles={
+    shell:'Universal Operating Field',firm:'Firm Command Field',action:'My Action Vector',deal:'Deal Cockpit',evidence:'Question & Evidence Field',workstreams:'Workstream Mission Formation',scenarios:'Scenario Flight Lab',impact:'Change Impact & Write-back',decision:'Partner Decision Room',closing:'Execution & Closing Control',ownership:'Ownership & Re-underwriting'
+  };
+
+  function tick(){const d=new Date();clock.textContent=d.toISOString().slice(11,19)+' UTC'} tick();setInterval(tick,1000);
+  function ctx(parts){context.innerHTML=parts.map((p,i)=>`${i?'<span class="slash">/</span>':''}<span class="${i===parts.length-1?'major':'crumb'}">${p}</span>`).join('')}
+  function phases(active=2,warning=-1){
+    const ps=['Screen','Diligence','Underwrite','Decide','Execute','Own','Exit'];
+    lifecycle.innerHTML=ps.map((p,i)=>`<div class="phase ${i<active?'done':''} ${i===active?'active':''} ${i===warning?'warn':''}">${p}</div>`).join('');
+  }
+  function flow(items){flowStatus.innerHTML=items.map(x=>`<span class="${x[1]||''}"><i></i>${x[0]}</span>`).join('')}
+  function setField(m){window.PantaField&&window.PantaField.setMode(m)}
+  function corners(){return '<i class="hud-corner tl"></i><i class="hud-corner tr"></i><i class="hud-corner bl"></i><i class="hud-corner br"></i>'}
+  function chips(arr){return `<div style="display:flex;gap:7px;flex-wrap:wrap">${arr.map(c=>`<span class="chip ${c[1]||''}"><i></i>${c[0]}</span>`).join('')}</div>`}
+  function signal(title,copy,state=''){return `<div class="signal-card ${state}"><div class="top"><span class="dot"></span><b>${title}</b></div><small>${copy}</small></div>`}
+  function agent(name,task,state='Working',glyph='AI'){return `<div class="agent-line"><div class="agent-glyph">${glyph}</div><div class="copy"><b>${name}</b><small>${task}</small></div><div class="state">${state}</div></div>`}
+  function kpi(label,value,delta='',cls=''){return `<div class="kpi"><label>${label}</label><strong class="${cls}">${value}</strong>${delta?`<span class="delta ${cls}">${delta}</span>`:''}</div>`}
+  function metric(label,value,copy,style){const lv=window.PEOS_METRICS&&window.PEOS_METRICS[label]||value;return `<div class="metric-float" style="${style}"><label>${label}</label><strong>${lv}</strong><small>${copy||''}</small></div>`}
+  function listItem(title,sub,right='',state=''){return `<div class="list-item ${state}"><div class="main"><b>${title}</b><small>${sub}</small></div><div class="right">${right}</div></div>`}
+  function nav(){
+    const idx=views.indexOf(view); const prev=views[(idx-1+views.length)%views.length],next=views[(idx+1)%views.length];
+    return `<div style="position:absolute;right:18px;bottom:18px;display:flex;gap:7px;z-index:80"><a class="btn" href="?view=${prev}">←</a><span class="btn" style="pointer-events:none">${idx+1}/${views.length}</span><a class="btn primary" href="?view=${next}">→</a></div>`;
+  }
+
+  const renderers={
+    shell(){
+      ctx(['Fund IV','Project Atlas','Diligence']);phases(2);authority.textContent='Associate';modePill.textContent='Explore · Causality';setField('rest');
+      flow([['842 linked objects','ok'],['12 agent missions','ok'],['3 reviews due','warn'],['0 authority conflicts','ok']]);
+      overlay.innerHTML=`
+        <div class="scene-label">UNIVERSAL SHELL · <b>EXPLORE MODE</b></div>
+        <div class="lensbar"><span class="lens active">Causality</span><span class="lens">Evidence</span><span class="lens">Freshness</span><span class="lens">Work</span><span class="lens">Authority</span></div>
+        <div class="signal-stack">
+          ${signal('New QoE source indexed','1,284 evidence items reconciled to the existing financial basis.')}
+          ${signal('Question Q-14 unresolved','€4m add-back remains material to leverage and price.','warn')}
+          ${signal('Next gate in 18 hours','Three conditions remain before the underwrite can become decision-ready.')}
+        </div>
+        <div class="agent-dock glass">${corners()}<div class="panel-head" style="height:34px;padding:0"><b>Autonomous formation</b><span class="grow"></span><span class="tiny">12 live</span></div>
+          ${agent('Evidence agent','Reconcile QoE v3 against GL and management claims','Working','E')}
+          ${agent('Model agent','Maintain the working underwriting branch','Live','M')}
+          ${agent('Financing agent','Test lender EBITDA and debt capacity','Live','F')}
+          ${agent('Memo agent','Keep the IC narrative synchronized','Standby','N')}
+        </div>
+        ${metric('Normalized EBITDA','€30m','approved basis','left:29%;top:20%')}
+        ${metric('Debt capacity','€165m','current lender case','left:66%;top:23%')}
+        ${metric('Base IRR','21.6%','20.0% policy floor','left:67%;top:68%')}
+        ${metric('Price ceiling','€295m','current offer authority','left:28%;top:70%')}
+        <div class="spine-banner"><span class="chip ok"><i></i>canonical state coherent</span><b>One living investment state</b><span>· 842 objects · 127 active dependencies</span></div>
+        ${nav()}`;
+    },
+
+    firm(){
+      ctx(['Fund IV','Portfolio & Pipeline','Live command']);phases(2);authority.textContent='Partner';modePill.textContent='Portfolio · Decision risk';setField('firm');
+      flow([['11 active deals','ok'],['4 ownership missions','ok'],['2 partner decisions','warn'],['€4.8bn AUM','ok']]);
+      overlay.innerHTML=`
+        <div class="scene-label">FIRM COMMAND FIELD · <b>PORTFOLIO LENS</b></div>
+        <div class="lensbar"><span class="lens">Returns</span><span class="lens active">Decision risk</span><span class="lens">Liquidity</span><span class="lens">Thesis health</span><span class="lens">Freshness</span></div>
+        <div class="panel glass" style="left:22px;top:34px;width:290px;height:380px">${corners()}<div class="panel-head"><b>Signals requiring command</b><span class="grow"></span><span class="chip warn"><i></i>6</span></div><div class="panel-body list">
+          ${listItem('Atlas · offer authority stale','QoE changed the supportable price ceiling','Partner review','warn')}
+          ${listItem('Orion · covenant runway','Headroom falls below policy in October','Re-underwrite','bad')}
+          ${listItem('Nova · add-on ready','Commercial and financing workstreams converged','IC packet','ok')}
+          ${listItem('Helix · exit window','Executable offer now exceeds hold value','Review','ok')}
+          ${listItem('Kite · separation risk','ERP migration milestone slipped 21 days','Ops owner','warn')}
+        </div></div>
+        <div class="panel glass" style="right:24px;top:44px;width:290px;height:330px">${corners()}<div class="panel-head"><b>Capital formation</b></div><div class="panel-body">
+          <div class="eyebrow">Fund IV live state</div><div class="hero-title">Capital moves through a <em>single field</em>.</div><div class="subtext" style="margin-top:12px">Deals, ownership cases and exits are shown by their decision state—not by the folder they live in.</div>
+          <div class="rule"></div>${chips([['3 gates due','warn'],['€730m pending','info'],['1 hard blocker','bad'],['86% coherent','ok']])}
+          <div class="rule"></div><div class="micro-label">Current command priority</div><div style="font-size:16px;margin-top:8px">Project Atlas repricing</div><div class="subtext">Decision impact is larger than all other active signals combined.</div>
+        </div></div>
+        <div class="spine-banner"><b>Change the lens, not the underlying reality.</b><span>Each deal remains one canonical object.</span></div>
+        ${nav()}`;
+    },
+
+    action(){
+      ctx(['Fund IV','Alex Morgan','Action Vector']);phases(2);authority.textContent='Associate';modePill.textContent='My work · Impact';setField('workstreams');
+      flow([['9 items assigned','warn'],['3 require judgment','warn'],['4 agent-ready','ok'],['2 blocked by authority','bad']]);
+      overlay.innerHTML=`
+        <div class="scene-label">MY ACTION VECTOR · <b>WHAT ONLY YOU CAN DO</b></div>
+        <div class="panel glass" style="left:28px;top:36px;width:300px;height:570px">${corners()}<div class="panel-head"><b>Attention queue</b><span class="grow"></span><span class="tiny">ranked by decision impact</span></div><div class="panel-body list">
+          ${listItem('Accept QoE treatment','Confirm the financial reviewer’s treatment of a €4m add-back','8 min','bad')}
+          ${listItem('Choose evidence request','Customer cohort gap blocks the retention question','12 min','warn')}
+          ${listItem('Review lender terms','Cash sweep changed in the latest draft','6 min','warn')}
+          ${listItem('Validate operating owner','Capacity initiative lacks an accountable owner','4 min','')}
+          ${listItem('Approve agent write-back','Four low-risk updates are ready','2 min','ok')}
+        </div></div>
+        <div class="panel glass" style="left:37%;top:74px;width:430px;height:470px">${corners()}<div class="panel-head"><b>Selected action · Atlas QoE</b><span class="grow"></span><span class="chip bad"><i></i>material</span></div><div class="panel-body">
+          <div class="eyebrow">Your judgment is required</div><div class="hero-title">Is the €4m cost <em>truly non-recurring?</em></div>
+          <div class="subtext" style="margin-top:12px">The system has reconciled the evidence and prepared two defensible treatments. Your choice determines which model branch remains valid.</div>
+          <div class="rule"></div>
+          <div class="split"><div class="coa-card recommended" style="padding:13px"><h3 style="font-size:13px">Reject add-back</h3><p>QoE and ledger evidence indicate the cost recurs under ordinary operations.</p></div><div class="coa-card" style="padding:13px"><h3 style="font-size:13px">Keep as upside</h3><p>Preserve the management case without using it in the approved base.</p></div></div>
+          <div class="rule"></div>${chips([['EBITDA −€4m','bad'],['IRR −2.7 pts','bad'],['price review','warn']])}
+          <div style="display:flex;gap:8px;margin-top:16px"><button class="btn primary">Open evidence field</button><button class="btn">Delegate follow-up</button></div>
+        </div></div>
+        <div class="agent-dock glass" style="top:88px">${corners()}<div class="panel-head" style="height:34px;padding:0"><b>Agents waiting on you</b></div>${agent('Model agent','Ready to regenerate four cases','Blocked','M')}${agent('Financing agent','Ready to rebuild lender case','Blocked','F')}${agent('Memo agent','Draft delta narrative prepared','Blocked','N')}</div>
+        ${nav()}`;
+    },
+
+    deal(){
+      ctx(['Fund IV','Project Atlas','Deal cockpit']);phases(2);authority.textContent='Associate';modePill.textContent='Deal · Causality';setField('rest');
+      flow([['Current phase: diligence','ok'],['Next gate: underwrite','warn'],['4 open questions','warn'],['1 material contradiction','bad']]);
+      overlay.innerHTML=`
+        <div class="scene-label">PROJECT ATLAS · <b>DEAL COCKPIT</b></div>
+        <div class="lensbar"><span class="lens active">Investment state</span><span class="lens">Questions</span><span class="lens">Economics</span><span class="lens">Workstreams</span><span class="lens">Timeline</span></div>
+        <div class="panel glass" style="left:24px;top:36px;width:280px;height:520px">${corners()}<div class="panel-head"><b>What changed</b><span class="grow"></span><span class="chip bad"><i></i>1 material</span></div><div class="panel-body">
+          ${signal('QoE v3 arrived','The financial basis contains one new contradiction.','bad')}
+          ${signal('Commercial case strengthened','Retention cohort is now fully reconciled.')}
+          ${signal('Lender terms refreshed','Pricing improved by 25 bps; cash sweep unchanged.')}
+          <div class="rule"></div><div class="micro-label">Readiness for next gate</div><div class="big-number" style="margin-top:10px">78<small>%</small></div><div class="subtext">Blocked by one material financial question and two conditions.</div>
+          <div style="margin-top:15px"><button class="btn primary">Resolve next blocker</button></div>
+        </div></div>
+        <div class="panel glass" style="right:24px;top:36px;width:300px;height:520px">${corners()}<div class="panel-head"><b>Decision posture</b><span class="grow"></span><span class="chip warn"><i></i>conditional</span></div><div class="panel-body">
+          <div class="eyebrow">Current recommendation</div><div class="hero-title" style="font-size:23px">Proceed—<em>subject to price discipline.</em></div><div class="subtext" style="margin-top:12px">The thesis remains supported, but the current offer only works if normalized EBITDA holds.</div>
+          <div class="rule"></div><div class="kpi-row" style="flex-wrap:wrap">${kpi('Base IRR','21.6%','+1.6 pts','positive')}${kpi('MOIC','2.1x','','cyan')}${kpi('Debt','5.5x','','amber')}${kpi('Equity','€130m','','')}</div>
+          <div class="rule"></div><div class="micro-label">Next authorized action</div><div style="font-size:14px;margin-top:8px">Promote working case to decision-ready</div><div class="subtext">Requires Q-14 resolution, lender case refresh and partner price authority.</div>
+        </div></div>
+        <div class="spine-banner"><span class="chip ok"><i></i>3 phases complete</span><b>One gate away from decision readiness.</b></div>
+        ${nav()}`;
+    },
+
+    evidence(){
+      ctx(['Project Atlas','Question Q-14','Evidence field']);phases(2);authority.textContent='Financial reviewer';modePill.textContent='Evidence · Challenge';setField('evidence');
+      flow([['6 evidence sources','ok'],['2 contradict','bad'],['1 open question','warn'],['confidence: medium','warn']]);
+      overlay.innerHTML=`
+        <div class="scene-label">QUESTION & EVIDENCE FIELD · <b>Q-14</b></div>
+        <div class="panel glass" style="left:24px;top:42px;width:285px;height:520px">${corners()}<div class="panel-head"><b>Open questions</b></div><div class="panel-body list">
+          ${listItem('Q-14 · Recurrence of €4m cost','Material to EBITDA, leverage and price','Selected','bad')}
+          ${listItem('Q-22 · Customer cohort gap','Commercial evidence request pending','2 days','warn')}
+          ${listItem('Q-31 · Maintenance capex','Operational estimate requires site data','4 days','')}
+          ${listItem('Q-44 · Founder transition','Risk accepted subject to retention terms','Closed','ok')}
+        </div></div>
+        <div class="panel glass" style="right:24px;top:42px;width:300px;height:520px">${corners()}<div class="panel-head"><b>Evidence intelligence</b><span class="grow"></span><span class="chip warn"><i></i>medium</span></div><div class="panel-body">
+          <div class="micro-label">System conclusion</div><div style="font-size:17px;line-height:1.3;margin-top:8px">The add-back is <span class="negative">not supported</span> in the base case.</div>
+          <div class="subtext" style="margin-top:10px">The ledger and QoE indicate recurring economics. Management’s explanation remains a claim, not independent evidence.</div>
+          <div class="rule"></div>${chips([['relevance high','ok'],['reliability high','ok'],['completeness 78%','warn'],['recency current','ok']])}
+          <div class="rule"></div><div class="micro-label">Best next evidence</div><div style="font-size:13px;margin-top:7px">12-month cost center history</div><div class="subtext">Would distinguish one-off remediation from an ordinary operating requirement.</div>
+          <div style="display:flex;gap:7px;margin-top:14px"><button class="btn primary">Request evidence</button><button class="btn">Accept treatment</button></div>
+        </div></div>
+        <div class="spine-banner"><b>Evidence is shown by its relationship to the question—not by the folder it came from.</b></div>
+        ${nav()}`;
+    },
+
+    workstreams(){
+      ctx(['Project Atlas','Diligence','Mission formation']);phases(2);authority.textContent='Deal lead';modePill.textContent='Work · Formation';setField('workstreams');
+      flow([['7 workstreams active','ok'],['34 agent tasks','ok'],['9 human reviews','warn'],['2 cross-stream blockers','bad']]);
+      overlay.innerHTML=`
+        <div class="scene-label">WORKSTREAM MISSION FORMATION · <b>ONE DEAL, SEVEN FUNCTIONS</b></div>
+        <div class="panel glass" style="left:24px;top:42px;width:286px;height:520px">${corners()}<div class="panel-head"><b>Mission queue</b></div><div class="panel-body list">
+          ${listItem('Financial · Q-14','Resolve add-back and rebuild economic basis','Critical','bad')}
+          ${listItem('Commercial · retention','Cohort evidence now reconciled','Complete','ok')}
+          ${listItem('Operations · capacity','Site data changed capex timing','Review','warn')}
+          ${listItem('Financing · lender case','Waiting on accepted EBITDA','Blocked','warn')}
+          ${listItem('Legal · key consent','Consent path confirmed','Complete','ok')}
+        </div></div>
+        <div class="panel glass" style="right:24px;top:42px;width:300px;height:520px">${corners()}<div class="panel-head"><b>Formation control</b><span class="grow"></span><span class="chip info"><i></i>live</span></div><div class="panel-body">
+          <div class="eyebrow">Selected workstream</div><div class="hero-title" style="font-size:23px">Financial diligence is the <em>lead formation.</em></div><div class="subtext" style="margin-top:10px">Its current finding drives financing, valuation, the IC basis and the seller negotiation position.</div>
+          <div class="rule"></div>${agent('QoE agent','Reconcile adjustment categories and recurrence','Working','Q')}${agent('Model agent','Hold dependent cases in amber','Waiting','M')}${agent('Financing agent','Prepare lender branch at €26m EBITDA','Ready','F')}
+          <div class="rule"></div><button class="btn primary">Open cross-stream impact</button>
+        </div></div>
+        <div class="spine-banner"><b>Agents coordinate around mission outcomes; humans remain accountable for judgment and authority.</b></div>
+        ${nav()}`;
+    },
+
+    scenarios(){
+      ctx(['Project Atlas','Underwriting','Scenario flight lab']);phases(2);authority.textContent='VP';modePill.textContent='Futures · Branches';setField('scenarios');
+      flow([['4 active branches','ok'],['18 assumptions varied','ok'],['1 policy breach','bad'],['approved case preserved','ok']]);
+      overlay.innerHTML=`
+        <div class="scene-label">MODEL & SCENARIO FLIGHT LAB · <b>FUTURES, NOT SENSITIVITY TABLES</b></div>
+        <div class="panel glass" style="left:24px;top:44px;width:280px;height:515px">${corners()}<div class="panel-head"><b>Flight controls</b></div><div class="panel-body">
+          <div class="micro-label">Active variable</div><div style="font-size:16px;margin:8px 0 14px">Normalized EBITDA</div>
+          ${['Revenue growth','Gross margin','Working capital','Interest rate','Exit multiple'].map((x,i)=>`<div style="margin-bottom:14px"><div style="display:flex;font-size:9px;color:#809ba8"><span>${x}</span><span style="margin-left:auto">${[7.2,32.5,8.4,6.1,10.5][i]}%</span></div><div style="height:3px;background:#0d2532;margin-top:6px;border-radius:3px"><div style="height:100%;width:${[68,54,46,62,73][i]}%;background:linear-gradient(90deg,var(--cyan),var(--violet));border-radius:3px"></div></div></div>`).join('')}
+          <div class="rule"></div><button class="btn primary">Fork current branch</button><button class="btn" style="margin-left:6px">Compare</button>
+        </div></div>
+        <div class="panel glass" style="right:24px;top:44px;width:305px;height:515px">${corners()}<div class="panel-head"><b>Selected trajectory · Base</b><span class="grow"></span><span class="chip ok"><i></i>coherent</span></div><div class="panel-body">
+          <div class="kpi-row" style="flex-wrap:wrap">${kpi('MOIC','2.1x','','positive')}${kpi('IRR','21.6%','','positive')}${kpi('Debt paydown','€88m','','cyan')}${kpi('Min liquidity','€15m','','amber')}</div>
+          <div class="rule"></div><div class="micro-label">Most sensitive causal path</div><div style="font-size:13px;line-height:1.45;margin-top:8px">Retention → Revenue → EBITDA → Debt paydown → Exit equity</div>
+          <div class="subtext" style="margin-top:8px">A 2-point retention miss reduces base IRR by 1.4 points and brings covenant headroom within 0.3x.</div>
+          <div class="rule"></div>${chips([['management 2.4x','purple'],['base 2.1x','ok'],['downside 1.6x','warn'],['stress 1.2x','bad']])}
+        </div></div>
+        <div class="spine-banner"><b>Every scenario is a branch of reality; none can overwrite the approved case by accident.</b></div>
+        ${nav()}`;
+    },
+
+    impact(){
+      ctx(['Project Atlas','QoE v3','Change impact']);phases(2,2);authority.textContent='Associate';modePill.textContent='Change · Write-back';setField('impact');
+      flow([['1 trigger','bad'],['7 downstream objects stale','warn'],['4 agent proposals ready','ok'],['1 authority escalation','bad']]);
+      overlay.innerHTML=`
+        <div class="scene-label">CHANGE IMPACT REVIEW · <b>THE SIGNATURE INTERACTION</b></div>
+        <div class="panel glass" style="left:22px;top:32px;width:300px;height:565px">${corners()}<div class="panel-head"><b>Trigger</b><span class="grow"></span><span class="chip bad"><i></i>material</span></div><div class="panel-body">
+          <div class="eyebrow">QoE v3 · page 34</div><div class="hero-title" style="font-size:22px">€4.0m add-back <em class="negative">rejected.</em></div><div class="subtext" style="margin-top:10px">The cost is recurring and inherited by the buyer. Management’s prior treatment is superseded.</div>
+          <div class="rule"></div>${chips([['source direct','ok'],['reviewer attested','ok'],['question Q-14','warn']])}
+          <div class="rule"></div><div class="micro-label">Cascade</div>
+          <div class="list" style="margin-top:9px">${listItem('EBITDA','€30m → €26m','−€4m','bad')}${listItem('Debt capacity','€165m → €143m','−€22m','warn')}${listItem('Equity check','€130m → €152m','+€22m','warn')}${listItem('Base IRR','21.6% → 18.9%','−2.7 pts','bad')}${listItem('Price ceiling','€295m → €284m','−€11m','bad')}</div>
+        </div></div>
+        <div class="panel glass" style="right:22px;top:32px;width:380px;height:565px">${corners()}<div class="panel-head"><b>Agent change set</b><span class="grow"></span><span class="chip purple"><i></i>4 proposals</span></div><div class="panel-body">
+          <div class="diff-row"><span class="name">Normalized EBITDA</span><span class="old">€30m</span><span class="new">€26m</span><span class="state"><span class="review">Review</span></span></div>
+          <div class="diff-row"><span class="name">Lender model branch</span><span class="old">v12</span><span class="new">v13</span><span class="state"><span class="auto">Auto · 05</span></span></div>
+          <div class="diff-row"><span class="name">Sensitivity pack</span><span class="old">stale</span><span class="new">rebuilt</span><span class="state"><span class="auto">Auto · 03</span></span></div>
+          <div class="diff-row"><span class="name">IC delta narrative</span><span class="old">v5</span><span class="new">v6 draft</span><span class="state"><span class="review">Review</span></span></div>
+          <div class="diff-row"><span class="name">Offer price ceiling</span><span class="old">€295m</span><span class="new">€284m</span><span class="state"><span class="blocked">Partner</span></span></div>
+          <div class="rule"></div><div class="micro-label">Unlocks after approval</div>${listItem('Lender case becomes buildable','Debt capacity can be rerun on accepted EBITDA','','ok')}${listItem('IC basis regains coherence','Decision package can be refreshed','','ok')}
+          <div class="rule"></div><div style="display:flex;gap:8px"><button class="btn approve">Accept safe changes</button><button class="btn primary">Review all diffs</button></div>
+          <div class="subtext" style="margin-top:10px">No canonical value changes until the relevant human or policy authority approves it.</div>
+        </div></div>
+        <div class="spine-banner"><b>One fact changed. The system found every consequence before a human had to.</b></div>
+        ${nav()}`;
+    },
+
+    decision(){
+      ctx(['Project Atlas','Partner review','Price authority']);phases(3,3);authority.textContent='Partner';modePill.textContent='Decision · Authority';setField('decision');
+      flow([['Decision basis frozen','ok'],['2 courses of action','ok'],['1 policy threshold crossed','bad'],['quorum valid','ok']]);
+      overlay.innerHTML=`
+        <div class="scene-label">PARTNER DECISION ROOM · <b>COURSES OF ACTION</b></div>
+        <div class="panel glass" style="left:22px;top:44px;width:280px;height:500px">${corners()}<div class="panel-head"><b>Why you are here</b><span class="grow"></span><span class="chip bad"><i></i>authority</span></div><div class="panel-body">
+          <div class="eyebrow">Policy breach</div><div class="hero-title" style="font-size:22px">Current offer is <em class="negative">€11m above</em> the new ceiling.</div><div class="subtext" style="margin-top:10px">Base IRR falls below the 20.0% fund threshold after the QoE treatment.</div>
+          <div class="rule"></div>${kpi('EBITDA','€26m','−€4m','negative')}${kpi('Base IRR','18.9%','−2.7 pts','negative')}
+          <div class="rule"></div>${chips([['QoE attested','ok'],['model v13','info'],['evidence current','ok'],['authority valid','ok']])}
+          <div class="rule"></div><div class="micro-label">Agent recommendation</div><div style="font-size:13px;margin-top:7px">Reprice to €284m and rebuild the lender case.</div>
+        </div></div>
+        <div style="position:absolute;left:340px;right:24px;top:58px;display:grid;grid-template-columns:1fr 1fr;gap:18px">
+          <div class="coa-card recommended"><h3>Reprice to €284m</h3><p>Restore the minimum return and keep the lender case inside the accepted financial basis.</p><div class="coa-metrics"><div class="coa-metric"><label>Base IRR</label><strong class="positive">20.0%</strong></div><div class="coa-metric"><label>Equity</label><strong>€141m</strong></div><div class="coa-metric"><label>Authority</label><strong class="positive">Partner</strong></div></div><div class="coa-list"><span>Seller negotiation reopens</span><span>€4m preserved as upside only</span><span>No policy exception required</span></div><button class="btn approve">Approve reprice</button></div>
+          <div class="coa-card"><h3>Hold at €295m</h3><p>Accept the lower return and maintain the current offer despite the changed earnings basis.</p><div class="coa-metrics"><div class="coa-metric"><label>Base IRR</label><strong class="negative">18.9%</strong></div><div class="coa-metric"><label>Equity</label><strong>€152m</strong></div><div class="coa-metric"><label>Authority</label><strong class="amber">IC</strong></div></div><div class="coa-list"><span>Explicit risk acceptance required</span><span>Investment committee escalation</span><span>Current offer authority remains stale</span></div><button class="btn danger">Escalate to IC</button></div>
+        </div>
+        <div class="spine-banner"><b>The partner decides the economic consequence—not the accounting fact.</b></div>
+        ${nav()}`;
+    },
+
+    closing(){
+      ctx(['Project Atlas','Execution','Closing control']);phases(4,4);authority.textContent='Closing officer';modePill.textContent='Execution · Release';setField('closing');
+      flow([['4 of 5 controls verified','warn'],['€141m capital pending','warn'],['0 document inconsistencies','ok'],['1 release authority','bad']]);
+      overlay.innerHTML=`
+        <div class="scene-label">EXECUTION & CLOSING CONTROL · <b>CAPITAL RELEASE</b></div>
+        <div class="panel glass" style="left:24px;top:38px;width:300px;height:520px">${corners()}<div class="panel-head"><b>Release conditions</b><span class="grow"></span><span class="chip warn"><i></i>4 / 5</span></div><div class="panel-body list">
+          ${listItem('Investment authority','Partner decision and IC scope verified','Complete','ok')}
+          ${listItem('Executed agreements','Economic terms match the approved basis','Complete','ok')}
+          ${listItem('KYC / AML','All parties cleared','Complete','ok')}
+          ${listItem('Funds flow','Bank details and allocations reconciled','Complete','ok')}
+          ${listItem('Capital release','Final treasury authority pending','Locked','warn')}
+          <div class="rule"></div><button class="btn primary">Open release packet</button>
+        </div></div>
+        <div class="panel glass" style="right:24px;top:38px;width:300px;height:520px">${corners()}<div class="panel-head"><b>Capital control</b><span class="grow"></span><span class="chip bad"><i></i>non-delegable</span></div><div class="panel-body">
+          <div class="eyebrow">Proposed release</div><div class="big-number">€141<small>m</small></div><div class="subtext" style="margin-top:10px">One capital action will create the live exposure and ownership baseline.</div>
+          <div class="rule"></div>${chips([['sources & uses reconciled','ok'],['documents executed','ok'],['conditions satisfied','ok'],['treasury pending','warn']])}
+          <div class="rule"></div><div class="micro-label">Segregation of duties</div><div style="font-size:13px;margin-top:7px">Prepared by deal team · released by treasury</div><div class="subtext">The same actor cannot prepare and release the funds.</div>
+          <div style="margin-top:16px"><button class="btn danger">Release locked</button></div>
+        </div></div>
+        <div class="spine-banner"><b>The operating system can prepare everything. Capital still moves only under explicit authority.</b></div>
+        ${nav()}`;
+    },
+
+    ownership(){
+      ctx(['Portfolio','Project Atlas','Live ownership']);phases(5);authority.textContent='Operating partner';modePill.textContent='Ownership · Thesis';setField('ownership');
+      flow([['Original underwrite preserved','ok'],['2 assumptions broken','bad'],['3 initiatives on track','ok'],['1 re-underwrite trigger','warn']]);
+      overlay.innerHTML=`
+        <div class="scene-label">OWNERSHIP & RE-UNDERWRITING · <b>LIVING THESIS</b></div>
+        <div class="panel glass" style="left:24px;top:36px;width:295px;height:530px">${corners()}<div class="panel-head"><b>Thesis drift</b><span class="grow"></span><span class="chip bad"><i></i>2 broken</span></div><div class="panel-body">
+          <div class="eyebrow">Original investment case</div><div class="hero-title" style="font-size:22px">Growth is intact. <em class="negative">Execution is not.</em></div><div class="subtext" style="margin-top:10px">Revenue is 6.8% below plan and the margin initiative is nine months late. Liquidity remains adequate.</div>
+          <div class="rule"></div>${listItem('Pricing power','Supported by current data','Intact','ok')}${listItem('Sales capacity','Hiring delay limits conversion','Broken','bad')}${listItem('Procurement savings','Supplier renegotiation slipped','Delayed','warn')}${listItem('Exit multiple','Comparable set unchanged','Intact','ok')}
+          <div class="rule"></div><button class="btn primary">Open re-underwrite</button>
+        </div></div>
+        <div class="panel glass" style="right:24px;top:36px;width:310px;height:530px">${corners()}<div class="panel-head"><b>Initiative formation</b><span class="grow"></span><span class="chip info"><i></i>5 live</span></div><div class="panel-body">
+          ${agent('Commercial agent','Track cohort, price and pipeline signals','Live','C')}${agent('Operations agent','Monitor capacity and procurement milestones','Live','O')}${agent('Capital agent','Test covenant and liquidity paths','Live','F')}
+          <div class="rule"></div><div class="micro-label">Courses of action ready</div><div class="list" style="margin-top:8px">${listItem('Hold & reset plan','Preserve capital; replace two initiatives','','ok')}${listItem('Follow-on capital','Fund sales capacity and systems','€18m','warn')}${listItem('Prepare early exit','Current value below hold case','Not recommended','')}</div>
+        </div></div>
+        <div class="spine-banner"><b>The approved underwrite becomes the ownership baseline—not an archived memo.</b></div>
+        ${nav()}`;
+    }
+  };
+
+  window.__peosRenderers=renderers; window.__peosView=view;
+  window.PEOS_METRICS={};
+  (renderers[view]||renderers.shell)();
+  document.title=`PANTA — ${titles[view]||titles.shell}`;
+})();
+</script>
+<script>
+/* ── PE OS Live Backend Integration ─────────────────────────────────────── */
+(function(){
+  const STATE_PHASE = {
+    S0_INTAKE:0, S1_INITIAL_ACCESS:0, S2_CASE_BUILDING:1, S3_SCREENING_ASSESSMENT:1,
+    S4_PURSUIT:1, S5_ACTIVE_DILIGENCE:2, S6_FINAL_SYNTHESIS:2,
+    S7_INVESTMENT_COMMITTEE:3, S8_PRE_CLOSE:4, S9_ACQUISITION:4,
+    S10_OWNERSHIP:5, S11_REALIZATION:5, S12_EXIT_REALIZATION:7,
+  };
+
+  function extractMetrics(claims){
+    const targets = {
+      'opening firm EBITDA':'ebitda_firm',
+      'QoE-normalized EBITDA':'ebitda_qoe',
+      'FY2025E revenue':'revenue',
+      'enterprise value':'ev',
+      'first-lien opening debt':'debt',
+      'opening net leverage ratio':'leverage',
+    };
+    const m = {};
+    for(const c of (claims||[])){
+      for(const [k,n] of Object.entries(targets)){
+        if(c.subject===k && !m[n]) m[n]=c.value||'';
+      }
+    }
+    return m;
+  }
+
+  function parseNum(s){
+    if(!s) return null;
+    const x=String(s).match(/[\d.]+/);
+    return x?parseFloat(x[0]):null;
+  }
+
+  // ── view-specific DOM patches (run after renderer rebuilds overlay) ──────
+
+  function patchShell(d){
+    const stack = document.querySelector('.signal-stack');
+    if(!stack) return;
+    const openQs=(d.questions||[]).filter(q=>['open','reducing'].includes(q.state));
+    const contras=(d.contradictions||[]).length;
+    const nc=(d.claims||[]).length;
+    const items=[];
+    if(nc) items.push({t:`${nc} claims indexed`,c:`${openQs.length} open question${openQs.length===1?'':'s'} awaiting resolution.`,s:''});
+    if(openQs.length){
+      const top=openQs.find(q=>q.critical)||openQs[0];
+      const isCrit=!!top.critical;
+      items.push({t:(top.title||top.id||'Open question').substring(0,60),c:(isCrit?'Critical':'Open')+' — resolution required before next gate.',s:isCrit?'bad':'warn'});
+    }
+    if(contras) items.push({t:`${contras} contradiction candidate${contras===1?'':'s'}`,c:`${contras} claim subject${contras===1?' has':' have'} conflicting values across sources.`,s:contras>10?'bad':'warn'});
+    else if(nc) items.push({t:'All claims reconcile',c:`No contradictions across ${nc} indexed claims.`,s:''});
+    stack.innerHTML=items.map(s=>`<div class="signal-card ${s.s}"><div class="top"><span class="dot"></span><b>${s.t}</b></div><small>${s.c}</small></div>`).join('');
+  }
+
+  function patchEvidence(d){
+    const qBody=document.querySelector('.panel-body.list');
+    if(!qBody) return;
+    const qs=(d.questions||[]).slice(0,6);
+    if(!qs.length) return;
+    qBody.innerHTML=qs.map(q=>{
+      const s=q.state==='resolved'||q.state==='accepted-unresolved'?'ok':q.critical?'bad':'warn';
+      const bc=(d.claims||[]).filter(c=>(c['bears-on']||[]).some(b=>b.includes(q.id||''))).length;
+      const qt=(q.title||q.id||'').replace(/[<>&]/g,x=>({'<':'&lt;','>':'&gt;','&':'&amp;'}[x]));
+      return `<div class="list-item ${s}"><div class="main"><b>${qt.substring(0,55)}</b><small>${bc} claim${bc===1?'':'s'} · ${q.state||'open'}</small></div><div class="right">${q.state==='resolved'?'Resolved':q.state==='accepted-unresolved'?'Accepted':q.critical?'Critical':'Open'}</div></div>`;
+    }).join('');
+  }
+
+  function patchDeal(d){
+    const kpiRow=document.querySelector('.kpi-row');
+    if(!kpiRow) return;
+    const m=extractMetrics(d.claims||[]);
+    const ev=parseNum(m.ev),debt=parseNum(m.debt),ebitda=parseNum(m.ebitda_firm);
+    const leverage=ebitda&&debt?(debt/ebitda).toFixed(1)+'x':'—';
+    const equity=ev&&debt?`$${(ev-debt).toFixed(1)}m`:'—';
+    kpiRow.innerHTML=[
+      ['Base IRR',d.state==='S12_EXIT_REALIZATION'?'8.7%':'—','',''],
+      ['Leverage',leverage,'','amber'],
+      ['EV',ev?`$${ev}m`:'—','','cyan'],
+      ['Equity',equity,'',''],
+    ].map(([l,v,dl,c])=>`<div class="kpi"><label>${l}</label><strong class="${c}">${v}</strong>${dl?`<span class="delta ${c}">${dl}</span>`:''}</div>`).join('');
+  }
+
+  function patchWorkstreams(d){
+    const qBody=document.querySelector('.panel-body.list');
+    if(!qBody) return;
+    const outs=(d.outputs||[]);
+    if(!outs.length) return;
+    qBody.innerHTML=outs.slice(0,5).map(o=>{
+      const ws=(o.workstream||'unknown').replace(/_/g,' ');
+      const s=o.stale?'warn':'ok';
+      const preview=(o.body||'').replace(/[#*`>-]/g,'').trim().replace(/\s+/g,' ').substring(0,72);
+      return `<div class="list-item ${s}"><div class="main"><b>${ws}</b><small>${preview}…</small></div><div class="right">${o.stale?'Stale':'Live'}</div></div>`;
+    }).join('');
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
+  function applyLiveData(d){
+    window.__peosData = d;
+    const deal = d.deal||{};
+    const metrics = extractMetrics(d.claims);
+
+    // Canvas deal-graph nodes
+    const ev=parseNum(metrics.ev), debt=parseNum(metrics.debt);
+    const equity = ev&&debt ? (ev-debt).toFixed(1) : null;
+    window.PantaField && window.PantaField.updateNodes({
+      revenue: metrics.revenue ? `$${parseNum(metrics.revenue)}m` : null,
+      ebitda:  metrics.ebitda_firm ? `$${parseNum(metrics.ebitda_firm)}m` : null,
+      debt:    debt ? `$${debt}m` : null,
+      equity:  equity ? `$${equity}m` : null,
+      price:   ev ? `$${ev}m` : null,
+      ic:      d.state==='S12_EXIT_REALIZATION' ? 'EXITED' : 'CURRENT',
+      lender:  (d.contradictions&&d.contradictions.length>10)?'WATCH':'BUILDABLE',
+    });
+
+    // Metric floats (shell view)
+    window.PEOS_METRICS = {
+      'Normalized EBITDA': metrics.ebitda_firm ? `$${parseNum(metrics.ebitda_firm)}m` : '?',
+      'Debt capacity':     debt ? `$${debt}m` : '?',
+      'Base IRR':          d.state==='S12_EXIT_REALIZATION' ? '8.7%' : '—',
+      'Price ceiling':     ev ? `$${ev}m` : '?',
+    };
+
+    // Lifecycle rail
+    const phaseIdx = STATE_PHASE[d.state] ?? 2;
+    const lifecycle = document.getElementById('lifecycle');
+    if(lifecycle){
+      const ps=['Screen','Diligence','Underwrite','Decide','Execute','Own','Exit'];
+      lifecycle.innerHTML = ps.map((p,i)=>
+        `<div class="phase ${i<phaseIdx?'done':''} ${i===phaseIdx&&phaseIdx<7?'active':''} ${i===phaseIdx&&phaseIdx===7?'done':''}">${p}</div>`
+      ).join('');
+    }
+
+    // Flow status bar
+    const openQs=(d.questions||[]).filter(q=>['open','reducing'].includes(q.state));
+    const flowStatus=document.getElementById('flowStatus');
+    if(flowStatus){
+      flowStatus.innerHTML=[
+        [`${(d.claims||[]).length} linked claims`,'ok'],
+        [`${openQs.length} open questions`, openQs.length?'warn':'ok'],
+        [`${(d.contradictions||[]).length} contradiction candidates`, (d.contradictions||[]).length>5?'warn':'ok'],
+        [`${d.state_label||d.state||'?'}`,'ok'],
+      ].map(x=>`<span class="${x[1]}"><i></i>${x[0]}</span>`).join('');
+    }
+
+    // Context breadcrumb
+    const ctx=document.getElementById('context');
+    if(ctx){
+      const label=(deal.id||'deal').toUpperCase();
+      ctx.innerHTML=`<span class="crumb">Portfolio</span><span class="slash">/</span><span class="major">${label}</span><span class="slash">/</span><span class="crumb">${d.state_label||d.state||''}</span>`;
+    }
+
+    // Re-render the current view with updated PEOS_METRICS
+    if(window.__peosRenderers && window.__peosView){
+      (window.__peosRenderers[window.__peosView]||window.__peosRenderers.shell)();
+      // Second-pass: overwrite hardcoded demo content with live vault data
+      const v=window.__peosView||'shell';
+      if(v==='shell') patchShell(d);
+      else if(v==='evidence') patchEvidence(d);
+      else if(v==='deal') patchDeal(d);
+      else if(v==='workstreams') patchWorkstreams(d);
+    }
+  }
+
+  // ── Deal selector + "+" button ───────────────────────────────────────────
+
+  async function refreshDealSelector(selectId){
+    const topbar = document.querySelector('.top-actions');
+    if(!topbar) return null;
+    let sel = document.getElementById('peos-deal-sel');
+    if(!sel){
+      sel = document.createElement('select');
+      sel.id = 'peos-deal-sel';
+      sel.style.cssText='background:rgba(6,15,22,.8);border:1px solid rgba(126,220,255,.2);color:#dffaff;border-radius:8px;padding:5px 10px;font-size:10px;letter-spacing:.04em;cursor:pointer;height:34px;margin-right:6px';
+      topbar.insertBefore(sel, topbar.firstChild);
+      sel.onchange = () => loadDeal(sel.value);
+
+      const addBtn = document.createElement('button');
+      addBtn.title = 'New deal + extraction';
+      addBtn.innerHTML = '+';
+      addBtn.style.cssText='background:rgba(86,231,255,.1);border:1px solid rgba(86,231,255,.3);color:#dffaff;border-radius:8px;width:34px;height:34px;font-size:18px;line-height:1;cursor:pointer;margin-right:10px;flex-shrink:0';
+      addBtn.onclick = openDemoModal;
+      topbar.insertBefore(addBtn, sel.nextSibling);
+    }
+    const dealsRes = await fetch('/api/deals');
+    const deals = await dealsRes.json();
+    const real = deals.filter(d=>!d.demo);
+    sel.innerHTML = real.map(d=>`<option value="${d.id}"${d.id===selectId?' selected':''}>${d.id.toUpperCase()}</option>`).join('');
+    return real;
+  }
+
+  async function init(){
+    try {
+      const real = await refreshDealSelector();
+      if(!real||!real.length) return;
+      await loadDeal(real[0].id);
+    } catch(e){ console.warn('PE OS backend:', e.message); }
+  }
+
+  async function loadDeal(id){
+    const sel = document.getElementById('peos-deal-sel');
+    if(sel) sel.value = id;
+    const res = await fetch(`/api/deal/${id}`);
+    const d = await res.json();
+    applyLiveData(d);
+  }
+
+  // ── Demo modal ────────────────────────────────────────────────────────────
+
+  const MODAL_CSS = `
+    position:fixed;inset:0;z-index:9999;background:rgba(0,5,10,.72);
+    backdrop-filter:blur(10px);display:grid;place-items:center;
+  `;
+  const CARD_CSS = `
+    width:520px;padding:28px 30px;border-radius:20px;
+    background:linear-gradient(145deg,rgba(9,23,33,.97),rgba(4,12,18,.92));
+    border:1px solid rgba(126,220,255,.22);
+    box-shadow:0 28px 90px rgba(0,0,0,.65),inset 0 1px 0 rgba(255,255,255,.02);
+  `;
+  const INPUT_CSS = `
+    width:100%;background:rgba(3,12,19,.72);border:1px solid rgba(126,220,255,.18);
+    color:#edf8ff;border-radius:10px;padding:9px 13px;font-size:12px;
+    outline:none;font-family:inherit;transition:border-color .18s;
+  `;
+  const LABEL_CSS = `
+    display:block;font-size:8px;color:#6a8799;text-transform:uppercase;
+    letter-spacing:.11em;margin-bottom:6px;
+  `;
+  const PRIMARY_BTN = `
+    width:100%;background:linear-gradient(135deg,rgba(86,231,255,.16),rgba(70,255,208,.07));
+    border:1px solid rgba(86,231,255,.36);color:#dffaff;border-radius:10px;
+    padding:12px;font-size:11px;font-weight:600;letter-spacing:.06em;cursor:pointer;
+    transition:opacity .15s;font-family:inherit;
+  `;
+  const SEC_BTN = `
+    background:rgba(6,18,26,.65);border:1px solid rgba(126,220,255,.14);color:#7993a2;
+    border-radius:10px;padding:12px 18px;font-size:11px;cursor:pointer;font-family:inherit;
+  `;
+
+  function demoModalHTML(){
+    return `<div id="dm-overlay" style="${MODAL_CSS}">
+<div style="${CARD_CSS}">
+  <div style="display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:22px">
+    <div>
+      <div style="font-size:8px;color:#56e7ff;letter-spacing:.18em;text-transform:uppercase;margin-bottom:7px">PE OS · Local demo</div>
+      <div style="font-size:20px;font-weight:650;letter-spacing:-.02em">New deal + extraction</div>
+    </div>
+    <button id="dm-close" style="background:none;border:none;color:#5a7585;font-size:22px;cursor:pointer;line-height:1;padding:2px 6px;border-radius:6px" title="close">×</button>
+  </div>
+
+  <!-- Step 1 -->
+  <div id="dm-s1">
+    <div style="font-size:8px;color:#56e7ff;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:50%;border:1px solid rgba(86,231,255,.35);display:grid;place-items:center;font-size:9px">1</span> Deal identity</div>
+    <div style="display:flex;flex-direction:column;gap:11px">
+      <div><label style="${LABEL_CSS}">Deal name</label><input id="dm-name" placeholder="e.g. Meridian" style="${INPUT_CSS}" /></div>
+      <div><label style="${LABEL_CSS}">Company</label><input id="dm-company" placeholder="e.g. Meridian Technologies Ltd" style="${INPUT_CSS}" /></div>
+      <div><label style="${LABEL_CSS}">Investment thesis</label><textarea id="dm-thesis" rows="3" placeholder="Describe the core investment hypothesis in 2-3 sentences." style="${INPUT_CSS}resize:vertical;line-height:1.5"></textarea></div>
+    </div>
+    <button id="dm-create" style="${PRIMARY_BTN}margin-top:18px">Create deal →</button>
+  </div>
+
+  <!-- Step 2 -->
+  <div id="dm-s2" style="display:none">
+    <div style="font-size:8px;color:#56e7ff;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:50%;border:1px solid rgba(86,231,255,.35);display:grid;place-items:center;font-size:9px">2</span> Artifact upload</div>
+    <div id="dm-drop" style="border:2px dashed rgba(126,220,255,.22);border-radius:14px;padding:30px 20px;text-align:center;cursor:pointer;transition:border-color .2s">
+      <div style="font-size:30px;margin-bottom:10px;opacity:.35">⇪</div>
+      <div style="font-size:11px;color:#8aa5b2">Drop a <code style="color:#56e7ff;background:rgba(86,231,255,.08);padding:1px 5px;border-radius:4px">.md</code> or <code style="color:#56e7ff;background:rgba(86,231,255,.08);padding:1px 5px;border-radius:4px">.txt</code> file, or click to browse</div>
+      <div style="font-size:9px;color:#405a68;margin-top:6px">CIM · QoE report · model summary · call transcript</div>
+    </div>
+    <input type="file" id="dm-file" accept=".md,.txt" style="display:none">
+    <div id="dm-fname" style="font-size:10px;color:#56e7ff;margin-top:9px;min-height:14px"></div>
+    <div style="display:flex;gap:8px;margin-top:14px">
+      <button id="dm-extract" style="${PRIMARY_BTN}">Upload & extract →</button>
+      <button id="dm-skip" style="${SEC_BTN}">Skip</button>
+    </div>
+  </div>
+
+  <!-- Step 3 -->
+  <div id="dm-s3" style="display:none">
+    <div style="font-size:8px;color:#56e7ff;letter-spacing:.14em;text-transform:uppercase;margin-bottom:14px;display:flex;align-items:center;gap:8px"><span style="width:18px;height:18px;border-radius:50%;border:1px solid rgba(86,231,255,.35);display:grid;place-items:center;font-size:9px">3</span> Extraction log</div>
+    <div id="dm-log" style="font-family:'SF Mono',Menlo,monospace;font-size:10px;color:#68ff9f;background:rgba(2,9,13,.8);border:1px solid rgba(104,255,159,.14);border-radius:10px;padding:14px 16px;min-height:130px;max-height:210px;overflow-y:auto;line-height:1.75;white-space:pre-wrap"></div>
+    <button id="dm-done" style="${PRIMARY_BTN.replace('rgba(86,231,255,.16)','rgba(104,255,159,.12)').replace('rgba(70,255,208,.07)','rgba(104,255,159,.04)').replace('rgba(86,231,255,.36)','rgba(104,255,159,.35)').replace('#dffaff','#b0ffd0')}display:none;margin-top:14px">Open deal in field →</button>
+  </div>
+</div></div>`;
+  }
+
+  function openDemoModal(){
+    if(document.getElementById('dm-overlay')) return;
+    window.__demo = {};
+    document.body.insertAdjacentHTML('beforeend', demoModalHTML());
+
+    const close = ()=>{ const el=document.getElementById('dm-overlay'); if(el) el.remove(); };
+    document.getElementById('dm-close').onclick = close;
+    document.getElementById('dm-overlay').onclick = e=>{ if(e.target.id==='dm-overlay') close(); };
+
+    document.getElementById('dm-create').onclick = demoCreate;
+
+    const drop = document.getElementById('dm-drop');
+    const fileIn = document.getElementById('dm-file');
+    drop.onclick = ()=>fileIn.click();
+    drop.ondragover = e=>{ e.preventDefault(); drop.style.borderColor='rgba(86,231,255,.6)'; };
+    drop.ondragleave = ()=>{ drop.style.borderColor='rgba(126,220,255,.22)'; };
+    drop.ondrop = e=>{ e.preventDefault(); drop.style.borderColor='rgba(126,220,255,.22)'; demoSetFile(e.dataTransfer.files[0]); };
+    fileIn.onchange = ()=>demoSetFile(fileIn.files[0]);
+
+    document.getElementById('dm-extract').onclick = demoUploadExtract;
+    document.getElementById('dm-skip').onclick = demoSkip;
+    document.getElementById('dm-done').onclick = demoDone;
+
+    // Focus first input
+    setTimeout(()=>document.getElementById('dm-name').focus(), 80);
+  }
+
+  function demoSetFile(f){
+    if(!f) return;
+    window.__demo.file = f;
+    document.getElementById('dm-fname').textContent = `✓ ${f.name} · ${(f.size/1024).toFixed(1)} KB`;
+  }
+
+  function demoLog(msg, ok=true){
+    const log = document.getElementById('dm-log');
+    if(!log) return;
+    const line = document.createElement('div');
+    line.style.color = ok ? '#68ff9f' : '#ff8fa0';
+    line.textContent = msg;
+    log.appendChild(line);
+    log.scrollTop = log.scrollHeight;
+  }
+
+  async function demoCreate(){
+    const name = document.getElementById('dm-name').value.trim();
+    const company = document.getElementById('dm-company').value.trim();
+    const thesis = document.getElementById('dm-thesis').value.trim();
+    if(!name||!company||!thesis){
+      document.getElementById('dm-name').style.borderColor='rgba(255,85,118,.55)';
+      return;
+    }
+    const btn = document.getElementById('dm-create');
+    btn.disabled=true; btn.style.opacity='.5'; btn.textContent='Creating…';
+    try {
+      const res = await fetch('/api/deals',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({name,company,thesis})});
+      const d = await res.json();
+      if(!res.ok) throw new Error(d.detail||JSON.stringify(d));
+      window.__demo.dealId = d.id;
+      document.getElementById('dm-s1').style.display='none';
+      document.getElementById('dm-s2').style.display='block';
+    } catch(e){
+      btn.disabled=false; btn.style.opacity='1'; btn.textContent='Create deal →';
+      demoGoLog(); demoLog('Error creating deal: '+e.message, false);
+    }
+  }
+
+  function demoGoLog(){
+    document.getElementById('dm-s1').style.display='none';
+    document.getElementById('dm-s2').style.display='none';
+    document.getElementById('dm-s3').style.display='block';
+  }
+
+  async function demoUploadExtract(){
+    if(!window.__demo.file){ document.getElementById('dm-fname').style.color='#ff8fa0'; document.getElementById('dm-fname').textContent='← select a file first'; return; }
+    const deal = window.__demo.dealId;
+    demoGoLog();
+    demoLog(`Deal created: ${deal}`);
+    demoLog('Uploading artifact…');
+    try {
+      const fd = new FormData();
+      fd.append('file', window.__demo.file);
+      const up = await fetch(`/api/upload?deal=${deal}`,{method:'POST',body:fd});
+      const upd = await up.json();
+      if(!up.ok) throw new Error(upd.detail||'upload failed');
+      demoLog(`Stored → ${upd.stored}`);
+      demoLog(`${upd.note}`);
+      demoLog('Running extraction agent (LLM call — may take ~30s)…');
+      const ex = await fetch('/api/agents/run/extractor',{method:'POST',headers:{'Content-Type':'application/json'},body:JSON.stringify({config:{deal}})});
+      const exd = await ex.json();
+      if(!ex.ok) throw new Error(exd.detail||'extraction failed');
+      demoLog(exd.summary||'Done.');
+      demoLog('✓ Extraction complete.');
+    } catch(e){ demoLog('Error: '+e.message, false); }
+    document.getElementById('dm-done').style.display='block';
+  }
+
+  function demoSkip(){
+    const deal = window.__demo.dealId;
+    demoGoLog();
+    demoLog(`Deal created: ${deal}`);
+    demoLog('No artifact uploaded.');
+    demoLog('✓ Deal is ready (empty).');
+    document.getElementById('dm-done').style.display='block';
+  }
+
+  async function demoDone(){
+    const id = window.__demo.dealId;
+    const el = document.getElementById('dm-overlay');
+    if(el) el.remove();
+    await refreshDealSelector(id);
+    await loadDeal(id);
+  }
+
+  // ─────────────────────────────────────────────────────────────────────────
+
+  window.addEventListener('DOMContentLoaded', init);
+})();
+</script>
+</body>
+</html>

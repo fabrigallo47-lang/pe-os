@@ -1,0 +1,105 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow"><title>astrelia — Deal Intelligence</title>
+<style>
+:root {
+  --bg:#0b1622; --surface:#111f2e; --surface2:#17293c; --line:#22384e;
+  --ink:#e9eff5; --muted:#9db0c2; --gold:#c9a24b; --green:#4fae7f; --red:#d4685f; --blue:#7fa8cf;
+  --serif:"Iowan Old Style","Palatino Linotype",Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+  --mono:"SF Mono",Menlo,Consolas,monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:16px;line-height:1.55;-webkit-font-smoothing:antialiased}
+.wrap{max-width:1180px;margin:0 auto;padding:0 24px 80px}
+a{color:var(--gold)}
+.topbar{display:flex;justify-content:space-between;align-items:center;padding:18px 0;border-bottom:1px solid var(--line);font-size:12px;letter-spacing:.18em;text-transform:uppercase;color:var(--muted)}
+.topbar .wordmark{color:var(--ink);font-family:var(--serif);font-size:17px;letter-spacing:.04em;text-transform:none}
+.topbar .wordmark b{color:var(--gold);font-weight:600}
+header.deal{padding:40px 0 8px}
+.crumb{font-size:12px;letter-spacing:.16em;text-transform:uppercase;color:var(--gold);margin-bottom:14px;font-weight:600}
+h1{font-family:var(--serif);font-weight:500;font-size:clamp(1.9rem,4vw,2.7rem);line-height:1.12;margin-bottom:10px}
+.thesis{color:var(--muted);max-width:70ch;font-size:1.04rem}
+.statechip{display:inline-flex;align-items:center;gap:8px;margin-top:16px;border:1px solid var(--gold);color:var(--gold);border-radius:99px;padding:7px 16px;font-size:12.5px;letter-spacing:.1em;text-transform:uppercase;font-weight:600}
+.statechip .pulse{width:8px;height:8px;border-radius:50%;background:var(--gold)}
+@media (prefers-reduced-motion: no-preference){.statechip .pulse{animation:pu 2.6s ease-in-out infinite}@keyframes pu{0%,100%{opacity:.45}50%{opacity:1}}}
+/* rail */
+.rail{list-style:none;display:flex;gap:0;overflow-x:auto;padding:30px 0 12px;border-bottom:1px solid var(--line)}
+.rail li{position:relative;flex:1 0 84px;text-align:center;padding-top:18px}
+.rail li::before{content:"";position:absolute;top:5px;left:-50%;width:100%;height:2px;background:var(--line)}
+.rail li:first-child::before{display:none}
+.rail .dot{position:absolute;top:0;left:50%;transform:translateX(-50%);width:12px;height:12px;border-radius:50%;background:var(--line);border:2px solid var(--line)}
+.rail li.done .dot{background:var(--green);border-color:var(--green)}
+.rail li.done::before{background:var(--green)}
+.rail li.current .dot{background:var(--gold);border-color:var(--gold);box-shadow:0 0 0 5px rgba(201,162,75,.18)}
+.rail li.current::before{background:var(--green)}
+.snum{display:block;font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+.sname{display:block;font-size:10.5px;color:var(--muted);line-height:1.25;padding:0 4px}
+.rail li.current .sname,.rail li.current .snum{color:var(--gold);font-weight:600}
+/* kpis */
+.kpis{display:grid;grid-template-columns:repeat(5,1fr);gap:14px;padding:26px 0}
+.kpi{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+.kpi .n{font-family:var(--serif);font-size:1.7rem;color:var(--ink);font-variant-numeric:tabular-nums}
+.kpi .l{font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;color:var(--muted);margin-top:2px}
+/* guard */
+.guard{border:1px solid var(--red);background:rgba(212,104,95,.07);border-radius:14px;padding:22px 26px;margin:6px 0 28px}
+.guard h2{font-family:var(--serif);font-size:1.25rem;color:var(--red);margin-bottom:6px}
+.guard p{color:var(--muted);max-width:80ch} .guard strong{color:var(--ink)}
+/* layout */
+.cols{display:grid;grid-template-columns:1.6fr 1fr;gap:28px;align-items:start}
+section h2.sec{font-family:var(--serif);font-size:1.35rem;font-weight:500;margin:26px 0 14px}
+.badge{display:inline-block;font-size:10.5px;letter-spacing:.09em;text-transform:uppercase;font-weight:600;border-radius:99px;padding:3px 10px;border:1px solid}
+.b-open{color:#e0a49e;border-color:#8a5049} .b-red2{color:var(--blue);border-color:#3d5a77}
+.b-green{color:var(--green);border-color:#2e6b4f} .b-gold{color:var(--gold);border-color:#8a7134}
+.b-crit{color:var(--red);border-color:var(--red)}
+/* questions */
+.qcard{background:var(--surface);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:12px}
+.qcard.d1{margin-left:26px;background:var(--surface2)} .qcard.d2{margin-left:52px}
+.qrow{display:flex;justify-content:space-between;gap:14px;align-items:baseline;flex-wrap:wrap}
+.qcard h3{font-family:var(--serif);font-weight:500;font-size:1.06rem}
+.qmeta{display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.ws{font-family:var(--mono);font-size:10.5px;color:var(--muted)}
+/* evidence */
+.contra{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--red);border-radius:12px;padding:18px 20px;margin-bottom:16px}
+.chead{display:flex;align-items:baseline;gap:10px;margin-bottom:12px;flex-wrap:wrap}
+.cmark{color:var(--red);font-size:1.2rem;font-weight:700}
+.chead h3{font-family:var(--serif);font-weight:500;font-size:1.1rem}
+.cnote{font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--red)}
+.egrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px}
+.ecard{background:var(--surface2);border:1px solid var(--line);border-radius:10px;padding:12px 14px}
+.eval{font-family:var(--serif);font-size:1.25rem;margin:8px 0 4px;font-variant-numeric:tabular-nums}
+.esrc{font-size:11.5px;color:var(--muted)}
+.works{font-size:10.5px;color:var(--green);letter-spacing:.06em;text-transform:uppercase;font-weight:600}
+/* timeline */
+.tline{list-style:none;border-left:2px solid var(--line);margin-left:6px}
+.tline li{position:relative;padding:0 0 20px 22px}
+.tdot{position:absolute;left:-7px;top:5px;width:12px;height:12px;border-radius:50%;background:var(--green);border:2px solid var(--bg)}
+.tline li.blocked .tdot{background:var(--red)}
+.tkind{font-family:var(--mono);font-size:12.5px}
+.twhen{font-size:11.5px;color:var(--muted);margin:2px 0}
+.tmove{font-size:11.5px;color:var(--green)} .thold{color:var(--red);font-weight:600} .tnull{color:var(--muted)}
+footer{border-top:1px solid var(--line);margin-top:44px;padding-top:22px;display:flex;justify-content:space-between;gap:12px;flex-wrap:wrap;font-size:12px;color:var(--muted)}
+@media (max-width: 900px){.cols{grid-template-columns:1fr}.kpis{grid-template-columns:repeat(2,1fr)}}
+</style></head>
+<body><div class="wrap">
+  <div class="topbar"><span class="wordmark"><b>◆</b> Deal Intelligence</span><span>Private &amp; Confidential</span></div>
+  <header class="deal">
+    <p class="crumb">Live deal · astrelia-co</p>
+    <h1>Astrelia</h1>
+    <p class="thesis">Profitable European space tech — €62.1m FY25A revenue (+62% YoY, 25% EBITDA margin), ESA-qualified with zero critical-anomaly deliveries across 14 programs, and the €1.3bn METEOR programme (22 satellites) anchoring the growth case.</p>
+    <span class="statechip"><span class="pulse"></span>Intake (S0)</span>
+  </header>
+  <ul class="rail" aria-label="Deal lifecycle state machine"><li class="current"><span class="dot" aria-hidden="true"></span><span class="snum">S0</span><span class="sname">Intake</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S1</span><span class="sname">Access Clearance</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S2</span><span class="sname">Case Ingestion</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S3</span><span class="sname">Screening Assessment</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S4</span><span class="sname">Question Planning</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S5</span><span class="sname">Diligence Active</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S6</span><span class="sname">Underwriting Valuation</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S7</span><span class="sname">Investment Decision</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S8</span><span class="sname">Execution Documentation</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S9</span><span class="sname">Closing Administration</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S10</span><span class="sname">Monitoring</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S11</span><span class="sname">Reunderwriting</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S12</span><span class="sname">Exit Realization</span></li><li class="todo"><span class="dot" aria-hidden="true"></span><span class="snum">S13</span><span class="sname">Closed Archive</span></li></ul>
+  <div class="kpis"><div class="kpi"><div class="n">9 / 9</div><div class="l">questions open</div></div><div class="kpi"><div class="n">6</div><div class="l">critical blockers</div></div><div class="kpi"><div class="n">3</div><div class="l">contradictions</div></div><div class="kpi"><div class="n">32</div><div class="l">claims held</div></div><div class="kpi"><div class="n">5</div><div class="l">events recorded</div></div></div>
+  
+  <div class="cols">
+    <div>
+      <section aria-labelledby="qh"><h2 class="sec" id="qh">Question structure</h2><div class="qcard d0"><div class="qrow"><h3>Is the revenue real? For Astrelia, this IS the deal.</h3><div class="qmeta"><span class="badge b-open">open</span><span class="badge b-crit">critical</span><span class="ws">commercial_market</span></div></div><div class="qcard d1"><div class="qrow"><h3>61.2% of plan revenue has no named counterparty</h3><div class="qmeta"><span class="badge b-open">open</span><span class="badge b-crit">critical</span><span class="ws">commercial_market</span></div></div></div></div><div class="qcard d0"><div class="qrow"><h3>What do the numbers say under Meridian&#x27;s own assumptions, not the company&#x27;s?</h3><div class="qmeta"><span class="badge b-open">open</span><span class="badge b-crit">critical</span><span class="ws">financial_qoe</span></div></div><div class="qcard d1"><div class="qrow"><h3>NebulaOS margins 65–80% assumed vs 17–25% on hardware</h3><div class="qmeta"><span class="badge b-open">open</span><span class="badge b-crit">critical</span><span class="ws">financial_qoe</span></div></div></div></div><div class="qcard d0"><div class="qrow"><h3>Is the market and Astrelia&#x27;s competitive position real?</h3><div class="qmeta"><span class="badge b-open">open</span><span class="ws">commercial_market</span></div></div></div><div class="qcard d0"><div class="qrow"><h3>Can we win this and paper it?</h3><div class="qmeta"><span class="badge b-open">open</span><span class="ws">structuring</span></div></div></div><div class="qcard d0"><div class="qrow"><h3>Can they build at the scale the plan assumes?</h3><div class="qmeta"><span class="badge b-open">open</span><span class="badge b-crit">critical</span><span class="ws">operational</span></div></div><div class="qcard d1"><div class="qrow"><h3>14 units delivered against serial-production volumes the plan assumes</h3><div class="qmeta"><span class="badge b-open">open</span><span class="badge b-crit">critical</span><span class="ws">operational</span></div></div></div></div><div class="qcard d0"><div class="qrow"><h3>At what price does this clear our return bar?</h3><div class="qmeta"><span class="badge b-open">open</span><span class="ws">valuation_model</span></div></div></div></section>
+      <section aria-labelledby="ch"><h2 class="sec" id="ch">Contradictions — unresolved</h2><div class="contra"><div class="chead"><span class="cmark" aria-hidden="true">≠</span><h3>FY30E plan revenue</h3><span class="cnote">these do not reconcile</span></div><div class="egrid"><div class="ecard"><div class="etop"><span class="badge b-open">asserted</span></div><div class="eval">€996.76m (P&amp;L table)</div><div class="esrc">line 8 (P&amp;L table, revenue row) · Astrelia management (business plan via dealroom-anon-v1.html) · 2025-07-08</div></div><div class="ecard"><div class="etop"><span class="badge b-red2">derived</span> <span class="works">shows its working</span></div><div class="eval">€922.93m implied by summing FY30E segment tranches — €73.83m below the €996.76m P&amp;L revenue line</div><div class="esrc">lines 26-29 (Segment revenue tranches) vs line 8 (P&amp;L revenue row) · extractor (arithmetic over Astrelia management figures) · 2025-07-08</div></div></div></div><div class="contra"><div class="chead"><span class="cmark" aria-hidden="true">≠</span><h3>FY30E plan EBITDA</h3><span class="cnote">these do not reconcile</span></div><div class="egrid"><div class="ecard"><div class="etop"><span class="badge b-open">asserted</span></div><div class="eval">€323.94m (P&amp;L table)</div><div class="esrc">line 16 (P&amp;L table, ebitda row) · Astrelia management (business plan via dealroom-anon-v1.html) · 2025-07-08</div></div><div class="ecard"><div class="etop"><span class="badge b-open">asserted</span></div><div class="eval">€288m at 31% margin (Base Case scenario)</div><div class="esrc">line 21 (Plan scenarios, Base Case) · Astrelia management / Meridian deal team (dealroom-anon-v1.html) · 2025-07-08</div></div></div></div><div class="contra"><div class="chead"><span class="cmark" aria-hidden="true">≠</span><h3>FY30E plan EBITDA margin</h3><span class="cnote">these do not reconcile</span></div><div class="egrid"><div class="ecard"><div class="etop"><span class="badge b-open">asserted</span></div><div class="eval">31% (Base Case, stated)</div><div class="esrc">line 21 (Plan scenarios, Base Case) · Astrelia management / Meridian deal team (dealroom-anon-v1.html) · 2025-07-08</div></div><div class="ecard"><div class="etop"><span class="badge b-red2">derived</span> <span class="works">shows its working</span></div><div class="eval">32.5% implied by the P&amp;L table (323.94 / 996.76)</div><div class="esrc">lines 8, 16 (P&amp;L table, revenue and ebitda rows) · extractor (arithmetic over Astrelia management figures) · 2025-07-08</div></div></div></div></section>
+    </div>
+    <div>
+      <section aria-labelledby="th"><h2 class="sec" id="th">Event record</h2><ul class="tline"><li class=""><span class="tdot" aria-hidden="true"></span><div><div class="tkind">DEAL_REGISTERED</div><div class="twhen">2026-07-13 20:22:52 · human</div><span class="tmove">START → Intake</span></div></li><li class=""><span class="tdot" aria-hidden="true"></span><div><div class="tkind">ARTIFACT_ARRIVED</div><div class="twhen">2026-07-13 20:38:10 · sentinel</div><span class="tmove tnull">recorded</span></div></li><li class=""><span class="tdot" aria-hidden="true"></span><div><div class="tkind">ARTIFACT_ARRIVED</div><div class="twhen">2026-07-13 20:38:10 · sentinel</div><span class="tmove tnull">recorded</span></div></li><li class=""><span class="tdot" aria-hidden="true"></span><div><div class="tkind">ARTIFACT_ARRIVED</div><div class="twhen">2026-07-13 20:38:10 · sentinel</div><span class="tmove tnull">recorded</span></div></li><li class=""><span class="tdot" aria-hidden="true"></span><div><div class="tkind">CONTRADICTION_FLAGGED</div><div class="twhen">2026-07-13 20:49:14 · contradiction</div><span class="tmove tnull">recorded</span></div></li></ul></section>
+    </div>
+  </div>
+  <footer><span>Generated 2026-07-13 20:57 — read-only projection of the deal graph; state derived by event replay, never set by hand.</span><span>Confidential — not for distribution</span></footer>
+</div></body></html>

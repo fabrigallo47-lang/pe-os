@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>PE OS — Knowledge Graph</title>
+<style>
+:root{
+  --bg:#0c1016; --grid:#131a24; --surface:#151c26; --surface2:#1b2431; --line:#26303f; --line-strong:#34404f;
+  --ink:#eef2f7; --muted:#98a6b8; --faint:#6b7889;
+  --accent:#c9a24b; --accent-ink:#0c1016; --green:#53b98a; --red:#e07a72; --blue:#7fa8cf;
+  --serif:"Iowan Old Style",Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  --mono:"SF Mono",Menlo,monospace;
+  --r:10px; --shadow:0 1px 2px rgba(0,0,0,.4),0 8px 24px rgba(0,0,0,.35);
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;height:100vh;display:flex;flex-direction:column;overflow:hidden;-webkit-font-smoothing:antialiased}
+header{display:flex;align-items:center;gap:16px;padding:0 20px;height:56px;border-bottom:1px solid var(--line);background:rgba(12,16,22,.9);backdrop-filter:blur(8px);z-index:10;flex-shrink:0}
+.wordmark{font-family:var(--serif);font-size:16px;letter-spacing:.02em}.wordmark b{color:var(--accent);font-weight:600}
+button{font:inherit;cursor:pointer}
+button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.btn{background:var(--accent);color:var(--accent-ink);border:none;border-radius:var(--r);padding:0 18px;font-weight:600;font-size:13px;height:38px;transition:opacity .15s ease}
+.btn:hover{opacity:.9}
+.btn.ghost{background:transparent;border:1px solid var(--line-strong);color:var(--ink)}
+.btn.ghost:hover{border-color:var(--accent);color:var(--accent)}
+.pal{background:var(--surface);border:1px solid var(--line);color:var(--muted);border-radius:999px;padding:0 14px;height:32px;font-size:12px;font-weight:500;letter-spacing:.02em;transition:all .15s ease}
+.pal:hover{color:var(--ink);border-color:var(--line-strong);background:var(--surface2)}
+.pal.active{border-color:var(--accent);color:var(--accent)}
+a{color:var(--faint);font-size:12.5px;text-decoration:none}a:hover{color:var(--ink)}
+#main{display:flex;flex:1;min-height:0}
+canvas{display:block;flex:1;cursor:grab}
+canvas:active{cursor:grabbing}
+#panel{width:min(440px,40vw);border-left:1px solid var(--line);background:var(--surface);overflow-y:auto;flex-shrink:0;display:flex;flex-direction:column}
+#panel.hidden{display:none}
+#phead{padding:14px 16px 10px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between}
+#phead h3{font-family:var(--serif);font-size:15px;font-weight:500;letter-spacing:.01em}
+#pbody{padding:14px 16px;font-size:12px;line-height:1.65;color:var(--muted);flex:1;overflow-y:auto;white-space:pre-wrap;font-family:var(--mono)}
+#legend{position:fixed;bottom:12px;left:20px;display:flex;flex-wrap:wrap;gap:10px;z-index:5}
+.lgnd{display:flex;align-items:center;gap:5px;font-size:11px;color:var(--muted)}
+.lgnd-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}
+#stats{position:fixed;bottom:12px;right:20px;font-size:11px;color:var(--faint);z-index:5}
+#loading{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:13px;color:var(--muted);pointer-events:none;z-index:20}
+select{height:34px;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:0 10px;font-size:12.5px;font:inherit}
+</style>
+</head>
+<body>
+<header>
+  <span class="wordmark"><b>◆</b> PE OS</span>
+  <button class="pal active" onclick="">Graph</button>
+  <button class="pal" onclick="location.href='/canvas'">Canvas</button>
+  <span style="flex:1"></span>
+  <select id="dealsel" aria-label="filter by deal"><option value="">All deals</option></select>
+  <button class="btn ghost" id="reload">Reload</button>
+  <a href="/desks" style="margin-left:8px">← desks</a>
+</header>
+<div id="main">
+  <canvas id="cvs"></canvas>
+  <div id="panel" class="hidden">
+    <div id="phead">
+      <h3 id="ptitle">Node</h3>
+      <button class="pal" onclick="closePanel()" style="height:28px;padding:0 10px">✕</button>
+    </div>
+    <div id="pbody"></div>
+  </div>
+</div>
+<div id="legend"></div>
+<div id="stats"></div>
+<div id="loading">Loading graph…</div>
+
+<script>
+// ── colour by node type ─────────────────────────────────────────────────────
+const TYPE_COLOR = {
+  question:      "#7fa8cf",
+  claim:         "#53b98a",
+  assumption:    "#c9a24b",
+  decision:      "#b87fd4",
+  event:         "#98a6b8",
+  entity:        "#e0a070",
+  "question-type": "#5bbdce",
+  deal:          "#c9a24b",
+  plan:          "#8dd4c8",
+  "workstream-output": "#e07a72",
+  "ic-package":  "#d4a0e0",
+};
+const DEFAULT_COLOR = "#6b7889";
+const STALE_RING = "#e07a72";
+
+function typeColor(t){ return TYPE_COLOR[t] || DEFAULT_COLOR; }
+
+// ── state ───────────────────────────────────────────────────────────────────
+let nodes = [], links = [], sim = null;
+let transform = {x: 0, y: 0, k: 1};
+let drag = null, pan = null;
+let hoveredId = null, selectedId = null;
+const cvs = document.getElementById("cvs");
+const ctx = cvs.getContext("2d");
+
+// ── force simulation ──────────────────────────────────────────────────────
+function buildSim(ns, ls) {
+  // adjacency for degree (already in node)
+  const byId = {};
+  ns.forEach(n => { n.vx = 0; n.vy = 0; byId[n.id] = n; });
+  // initial placement in a circle
+  ns.forEach((n, i) => {
+    const angle = (2 * Math.PI * i) / ns.length;
+    const r = Math.max(150, Math.sqrt(ns.length) * 32);
+    n.x = Math.cos(angle) * r;
+    n.y = Math.sin(angle) * r;
+  });
+  return { ns, ls, byId, alpha: 1.0 };
+}
+
+function tick(sim) {
+  if (sim.alpha < 0.001) return;
+  sim.alpha *= 0.97;
+  const ns = sim.ns, ls = sim.ls, byId = sim.byId;
+  const k2 = 18000;  // repulsion constant
+
+  // repulsion
+  for (let i = 0; i < ns.length; i++) {
+    for (let j = i + 1; j < ns.length; j++) {
+      const a = ns[i], b = ns[j];
+      let dx = b.x - a.x, dy = b.y - a.y;
+      const d2 = dx*dx + dy*dy + 1;
+      const f = k2 / d2;
+      dx /= Math.sqrt(d2); dy /= Math.sqrt(d2);
+      a.vx -= dx * f; a.vy -= dy * f;
+      b.vx += dx * f; b.vy += dy * f;
+    }
+  }
+  // spring along links
+  for (const l of ls) {
+    const s = byId[l.source], t = byId[l.target];
+    if (!s || !t) continue;
+    let dx = t.x - s.x, dy = t.y - s.y;
+    const d = Math.sqrt(dx*dx + dy*dy) + 0.001;
+    const ideal = 90;
+    const f = (d - ideal) * 0.04 * sim.alpha;
+    dx /= d; dy /= d;
+    s.vx += dx * f; s.vy += dy * f;
+    t.vx -= dx * f; t.vy -= dy * f;
+  }
+  // gravity to centre
+  for (const n of ns) {
+    n.vx += -n.x * 0.006 * sim.alpha;
+    n.vy += -n.y * 0.006 * sim.alpha;
+  }
+  // integrate (skip pinned)
+  for (const n of ns) {
+    if (n._pinned) continue;
+    n.vx *= 0.82; n.vy *= 0.82;
+    n.x += n.vx; n.y += n.vy;
+  }
+}
+
+// ── render ────────────────────────────────────────────────────────────────
+function resize() {
+  cvs.width = cvs.offsetWidth * devicePixelRatio;
+  cvs.height = cvs.offsetHeight * devicePixelRatio;
+  ctx.scale(devicePixelRatio, devicePixelRatio);
+}
+
+function nodeRadius(n) {
+  return Math.max(6, Math.min(18, 7 + Math.sqrt(n.degree || 0) * 2));
+}
+
+function toScreen(wx, wy) {
+  return { x: wx * transform.k + transform.x, y: wy * transform.k + transform.y };
+}
+function toWorld(sx, sy) {
+  return { x: (sx - transform.x) / transform.k, y: (sy - transform.y) / transform.k };
+}
+
+function draw() {
+  const W = cvs.offsetWidth, H = cvs.offsetHeight;
+  ctx.clearRect(0, 0, W, H);
+
+  // links
+  for (const l of sim.ls) {
+    const s = sim.byId[l.source], t = sim.byId[l.target];
+    if (!s || !t) continue;
+    const a = toScreen(s.x, s.y), b = toScreen(t.x, t.y);
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y); ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = l.source === selectedId || l.target === selectedId
+      ? "#34404f" : "#1e2a38";
+    ctx.lineWidth = l.source === selectedId || l.target === selectedId ? 1.5 : 0.8;
+    ctx.stroke();
+    // label on hover
+    if (l.source === hoveredId || l.target === hoveredId) {
+      ctx.fillStyle = "#6b7889";
+      ctx.font = `9px ${getComputedStyle(document.body).getPropertyValue("--mono")}`;
+      ctx.fillText(l.rel, (a.x+b.x)/2, (a.y+b.y)/2 - 3);
+    }
+  }
+
+  // nodes
+  for (const n of sim.ns) {
+    const p = toScreen(n.x, n.y);
+    const r = nodeRadius(n);
+    const isHov = n.id === hoveredId;
+    const isSel = n.id === selectedId;
+
+    // stale ring
+    if (n.stale) {
+      ctx.beginPath(); ctx.arc(p.x, p.y, r + 3, 0, Math.PI*2);
+      ctx.strokeStyle = STALE_RING; ctx.lineWidth = 1.5; ctx.stroke();
+    }
+    // fill
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, Math.PI*2);
+    ctx.fillStyle = typeColor(n.type);
+    ctx.globalAlpha = isHov || isSel ? 1 : 0.82;
+    ctx.fill();
+    ctx.globalAlpha = 1;
+    // selected ring
+    if (isSel) {
+      ctx.beginPath(); ctx.arc(p.x, p.y, r + 2, 0, Math.PI*2);
+      ctx.strokeStyle = "#c9a24b"; ctx.lineWidth = 2; ctx.stroke();
+    }
+    // label
+    if (r > 8 || isHov || isSel) {
+      ctx.font = `${isHov || isSel ? 600 : 400} 10px ${getComputedStyle(document.body).getPropertyValue("--sans")}`;
+      ctx.fillStyle = isHov || isSel ? "#eef2f7" : "#98a6b8";
+      const label = (n.title || n.id).slice(0, 28);
+      ctx.fillText(label, p.x + r + 4, p.y + 4);
+    }
+  }
+}
+
+// ── animation loop ─────────────────────────────────────────────────────────
+let rafId = null;
+function loop() {
+  if (sim) tick(sim);
+  draw();
+  rafId = requestAnimationFrame(loop);
+}
+
+// ── hit test ───────────────────────────────────────────────────────────────
+function hitNode(sx, sy) {
+  if (!sim) return null;
+  const w = toWorld(sx, sy);
+  let best = null, bestD = Infinity;
+  for (const n of sim.ns) {
+    const dx = n.x - w.x, dy = n.y - w.y;
+    const d = Math.sqrt(dx*dx + dy*dy);
+    if (d < nodeRadius(n) + 4 && d < bestD) { bestD = d; best = n; }
+  }
+  return best;
+}
+
+// ── interaction ─────────────────────────────────────────────────────────────
+cvs.addEventListener("mousemove", e => {
+  const rect = cvs.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  if (drag) {
+    const w = toWorld(sx, sy);
+    drag.node.x = w.x; drag.node.y = w.y;
+    drag.node._pinned = true;
+  } else if (pan) {
+    transform.x += e.clientX - pan.lx;
+    transform.y += e.clientY - pan.ly;
+    pan.lx = e.clientX; pan.ly = e.clientY;
+  } else {
+    const hit = hitNode(sx, sy);
+    hoveredId = hit ? hit.id : null;
+    cvs.style.cursor = hit ? "pointer" : "grab";
+  }
+});
+
+cvs.addEventListener("pointerdown", e => {
+  const rect = cvs.getBoundingClientRect();
+  const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+  const hit = hitNode(sx, sy);
+  if (hit) {
+    drag = { node: hit };
+    cvs.setPointerCapture(e.pointerId);
+  } else {
+    pan = { lx: e.clientX, ly: e.clientY };
+    cvs.style.cursor = "grabbing";
+  }
+});
+
+cvs.addEventListener("pointerup", e => {
+  if (drag) {
+    const rect = cvs.getBoundingClientRect();
+    const sx = e.clientX - rect.left, sy = e.clientY - rect.top;
+    const hit = hitNode(sx, sy);
+    if (hit && !drag._moved) openPanel(hit);
+    drag = null;
+  }
+  pan = null;
+  cvs.style.cursor = "grab";
+});
+
+cvs.addEventListener("click", e => {
+  if (drag) return;
+  const rect = cvs.getBoundingClientRect();
+  const hit = hitNode(e.clientX - rect.left, e.clientY - rect.top);
+  if (hit) { selectedId = hit.id; openPanel(hit); }
+  else { selectedId = null; closePanel(); }
+});
+
+cvs.addEventListener("wheel", e => {
+  e.preventDefault();
+  const rect = cvs.getBoundingClientRect();
+  const mx = e.clientX - rect.left, my = e.clientY - rect.top;
+  const factor = e.deltaY < 0 ? 1.1 : 0.91;
+  transform.x = mx + (transform.x - mx) * factor;
+  transform.y = my + (transform.y - my) * factor;
+  transform.k *= factor;
+}, {passive: false});
+
+window.addEventListener("resize", () => { resize(); });
+
+// ── panel ──────────────────────────────────────────────────────────────────
+async function openPanel(n) {
+  const panel = document.getElementById("panel");
+  const pbody = document.getElementById("pbody");
+  const ptitle = document.getElementById("ptitle");
+  panel.classList.remove("hidden");
+  ptitle.textContent = (n.title || n.id).slice(0, 60);
+  pbody.textContent = "loading…";
+  try {
+    const r = await fetch(`/api/node/${encodeURIComponent(n.id)}`);
+    if (!r.ok) throw new Error(await r.text());
+    const d = await r.json();
+    pbody.textContent = d.content;
+  } catch(e) {
+    pbody.textContent = `error: ${e.message}`;
+  }
+}
+window.closePanel = function() {
+  document.getElementById("panel").classList.add("hidden");
+  selectedId = null;
+};
+
+// ── legend ─────────────────────────────────────────────────────────────────
+function buildLegend() {
+  const leg = document.getElementById("legend");
+  leg.innerHTML = "";
+  const types = [...new Set(nodes.map(n=>n.type))].sort();
+  types.forEach(t => {
+    const el = document.createElement("div");
+    el.className = "lgnd";
+    el.innerHTML = `<span class="lgnd-dot" style="background:${typeColor(t)}"></span><span>${t}</span>`;
+    leg.appendChild(el);
+  });
+  // stale indicator
+  const st = document.createElement("div");
+  st.className = "lgnd";
+  st.innerHTML = `<span class="lgnd-dot" style="background:transparent;border:1.5px solid ${STALE_RING}"></span><span>stale</span>`;
+  leg.appendChild(st);
+}
+
+// ── load ───────────────────────────────────────────────────────────────────
+async function load(deal) {
+  document.getElementById("loading").style.display = "flex";
+  try {
+    const url = deal ? `/api/graph?deal=${encodeURIComponent(deal)}` : "/api/graph";
+    const d = await fetch(url).then(r => r.json());
+    nodes = d.nodes || [];
+    links = d.links || [];
+    sim = buildSim(nodes, links);
+    if (rafId) cancelAnimationFrame(rafId);
+    resize();
+    // centre the transform
+    transform = { x: cvs.offsetWidth/2, y: cvs.offsetHeight/2, k: 1 };
+    loop();
+    buildLegend();
+    document.getElementById("stats").textContent =
+      `${nodes.length} nodes · ${links.length} links`;
+  } catch(e) {
+    document.getElementById("loading").textContent = "error: " + e.message;
+    return;
+  }
+  document.getElementById("loading").style.display = "none";
+}
+
+// ── deal selector + reload ─────────────────────────────────────────────────
+(async () => {
+  try {
+    const ds = await fetch("/api/deals").then(r=>r.json());
+    const sel = document.getElementById("dealsel");
+    ds.forEach(d => {
+      const o = document.createElement("option");
+      o.value = d.id; o.textContent = d.id;
+      sel.appendChild(o);
+    });
+    sel.addEventListener("change", () => load(sel.value));
+  } catch(e) {}
+  load(document.getElementById("dealsel").value);
+})();
+
+document.getElementById("reload").onclick = () => load(document.getElementById("dealsel").value);
+</script>
+</body>
+</html>

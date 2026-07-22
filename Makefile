@@ -1,4 +1,4 @@
-.PHONY: setup index report check state
+.PHONY: setup index report check state watch dev
 
 PY := .venv/bin/python3
 
@@ -23,8 +23,30 @@ ui: index ## Generate the static deal dashboard export (usage: make ui DEAL=auro
 app: index ## Run the live app (http://127.0.0.1:8787)
 	.venv/bin/uvicorn app.server:app --host 127.0.0.1 --port 8787
 
+watch: ## Watch vault/inbox/ and auto-trigger pipeline on new artifacts
+	$(PY) tools/watcher.py
+
+dev: index ## Run app + inbox watcher together (two panes via tmux, or run separately)
+	@echo "Starting app on :8787  — open a second terminal and run: make watch"
+	.venv/bin/uvicorn app.server:app --host 127.0.0.1 --port 8787
+
 agents: index ## Deploy the agent runtime (watches vault, acts under contracts)
 	$(PY) agents/runtime.py
 
 contracts: ## Show what the machine contracts load
 	$(PY) tools/contracts.py
+
+extract: ## Extract unextracted inbox files for all deals (or --deal DEAL --file FILE)
+	$(PY) tools/extract.py $(ARGS)
+
+derive: ## Aggregation pass: derive ultimate-parent concentrations from any customer schedule in inbox
+	$(PY) tools/derive_concentrations.py $(ARGS)
+
+grade-keystone: ## Run the Keystone Layer-1 + Layer-2 arc grader (answer key never ingested)
+	$(PY) tools/grade_keystone.py
+
+grade-keystone-arc: ## Run arc tests only (Layer-2 event chronology)
+	$(PY) tools/grade_keystone.py --arc
+
+bind-keystone: ## Retroactively bind Layer-1 keystone claims to questions via subject-to-QID map
+	$(PY) tools/bind_keystone_claims.py

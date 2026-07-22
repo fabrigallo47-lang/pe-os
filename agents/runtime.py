@@ -36,6 +36,45 @@ POLL_SECONDS = 3
 FORBIDDEN = {"human_judgment_required", "authority_only_human_action"}
 
 
+# ---------------------------------------------------------------------------
+# Direct Anthropic API helper — avoids Claude CLI (which has per-session and
+# monthly limits). Used by any agent that needs LLM reasoning locally.
+# ---------------------------------------------------------------------------
+
+def _api_json(system: str, user: str, max_tokens: int = 8000) -> object:
+    """Call Anthropic API directly, return parsed JSON from the response."""
+    import os, urllib.request, re as _re
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not key:
+        raise RuntimeError("ANTHROPIC_API_KEY not set")
+    model = os.environ.get("PEOS_MODEL", "claude-sonnet-5")
+    payload = {
+        "model": model, "max_tokens": max_tokens,
+        "thinking": {"type": "adaptive"}, "output_config": {"effort": "low"},
+        "system": system, "messages": [{"role": "user", "content": user}],
+    }
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=json.dumps(payload).encode(), method="POST",
+        headers={"Content-Type": "application/json", "x-api-key": key,
+                 "anthropic-version": "2023-06-01"})
+    with urllib.request.urlopen(req, timeout=300) as resp:
+        blocks = json.loads(resp.read())["content"]
+        text = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
+    if not text:
+        raise ValueError("no text block in response")
+    fence = _re.search(r"```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```", text)
+    m = fence or _re.search(r"(\[[\s\S]*\]|\{[\s\S]*\})", text)
+    if not m:
+        raise ValueError(f"no JSON in response: {text[:200]}")
+    raw = m.group(1)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        cleaned = _re.sub(r",\s*([}\]])", r"\1", raw)
+        return json.loads(cleaned)
+
+
 def audit(agent: str, activity_id: str, action: str, detail: str, wrote: list[str]):
     AUDIT.parent.mkdir(parents=True, exist_ok=True)
     rec = {"ts": datetime.now().isoformat(timespec="seconds"), "agent": agent,
@@ -291,21 +330,55 @@ class Proposer(Agent):
                 continue
             adir.mkdir(exist_ok=True)
             audit(self.id, self.activity_id, "proposal-started", deal, [])
-            prompt = f"""You are the PE OS proposer agent. Work autonomously; never ask questions.
-
-Deal: {deal}. Read vault/deals/{deal}/deal.md (the thesis), every question in questions/, every claim in claims/, and the schemas vault/ontology/assumption.md and vault/ontology/question.md.
-
-1. Derive the 3-5 ASSUMPTIONS the deal proceeds on: each a quantified proposition that must be true for the thesis to hold, grounded in the extracted claims. Write one file each: vault/deals/{deal}/assumptions/a-{deal}-NNN.md following the schema exactly (statement, value quantified, basis = the claim ids it currently rests on, state: proposed, version: 1, proposed-by: proposer). Body: why the deal rests on it + revision history line v1.
-2. For each existing question, add a `tests:` frontmatter field listing the assumption id(s) it tests (only where it genuinely tests one). Do not change any other field, never change state.
-3. If a load-bearing assumption has NO question testing it, create the missing question file per the question schema (state: open, written-by: proposer, critical only if the thesis fails without it, tests: the assumption).
-4. Report one line per file written."""
             try:
-                r = subprocess.run(["claude", "-p", prompt, "--permission-mode", "acceptEdits"],
-                                   capture_output=True, text=True, cwd=ROOT, timeout=480)
-                new = sorted(f.stem for f in adir.glob("*.md"))
+                # Read deal context
+                deal_txt = (VAULT / "deals" / deal / "deal.md").read_text(encoding="utf-8")
+                q_files = sorted((VAULT / "deals" / deal / "questions").glob("*.md"))
+                questions_txt = "\n\n".join(
+                    f"[{f.stem}]\n{f.read_text(encoding='utf-8')[:300]}" for f in q_files[:20])
+                # Sample claims (first 60, prioritise those with numeric values)
+                claim_files = sorted((VAULT / "deals" / deal / "claims").glob("*.md"))
+                claims_txt = "\n".join(
+                    f"- {f.stem}: {f.read_text(encoding='utf-8').splitlines()[1] if len(f.read_text().splitlines())>1 else ''}"
+                    for f in claim_files[:80])
+
+                system = (
+                    "You are the PE OS proposer agent. Return ONLY a JSON array of assumptions. "
+                    "Each item: {id (string 'a-<deal>-NNN'), statement (one sentence quantified proposition "
+                    "that must be true for the thesis to hold), value (the specific quantified value, "
+                    "e.g. '$11.4m'), basis (list of claim ids from claims/), state: 'proposed', version: 1, "
+                    "tests_questions (list of question ids from questions/ that test this assumption)}. "
+                    "Produce 4-6 assumptions. Focus on the claims that most directly determine whether "
+                    "the thesis works. Include one assumption per major risk dimension."
+                )
+                user = (
+                    f"DEAL: {deal}\n\nTHESIS / DEAL.MD:\n{deal_txt[:800]}\n\n"
+                    f"QUESTIONS:\n{questions_txt[:2000]}\n\n"
+                    f"CLAIMS SAMPLE:\n{claims_txt[:3000]}"
+                )
+                items = _api_json(system, user)
+                new = []
+                for item in items:
+                    aid = str(item.get("id", f"a-{deal}-{len(new)+1:03d}"))
+                    basis = item.get("basis", []) or []
+                    basis_yaml = "\n".join(f"  - {b}" for b in basis) or "  []"
+                    tests = item.get("tests_questions", []) or []
+                    tests_yaml = "\n".join(f"  - {q}" for q in tests) or "  []"
+                    content = (
+                        f"---\ntype: assumption\nid: {aid}\ndeal: \"[[{deal}]]\"\n"
+                        f"statement: \"{str(item.get('statement','')).replace(chr(34), chr(39))}\"\n"
+                        f"value: \"{item.get('value','?')}\"\nbasis:\n{basis_yaml}\n"
+                        f"tests:\n{tests_yaml}\nstate: proposed\nversion: 1\nstale: false\n"
+                        f"proposed-by: proposer\nwritten-by: proposer\n---\n\n"
+                        f"## {aid}\n\n{item.get('statement','')}\n\n"
+                        f"**Value**: {item.get('value','?')}\n\n"
+                        f"v1 (proposer): derived from {len(basis)} claims.\n"
+                    )
+                    (adir / f"{aid}.md").write_text(content, encoding="utf-8")
+                    new.append(aid)
                 st = _state(); st.setdefault("proposed", []).append(deal); _save(st)
                 audit(self.id, self.activity_id, "assumptions-proposed" if new else "proposal-empty",
-                      f"{deal}: {', '.join(new) if new else 'rc=' + str(r.returncode)}", new)
+                      f"{deal}: {', '.join(new)}", new)
             except Exception as exc:
                 audit(self.id, self.activity_id, "error", f"{deal}: {exc}", [])
 
@@ -554,6 +627,9 @@ class PhaseCoordinator(Agent):
         allowed_next = [t for t in contracts.transitions()
                         if t["from"] == state][:6]
 
+        # 8. Kernel gates for current phase (P3: process kernel integration)
+        kernel_mandatory = contracts.gates_for_state(state)
+
         db.close()
 
         # --- build changed / opened sections ---
@@ -610,6 +686,17 @@ class PhaseCoordinator(Agent):
         # Allowed transitions summary
         trans_lines = [f"- {t['triggers'][0]} → {t['to']}" for t in allowed_next[:4]] or ["(none found in contracts)"]
 
+        # Kernel gate lines (P3): mandatory checkpoints from process kernel for this state
+        kernel_lines = []
+        for kg in kernel_mandatory:
+            badge = "AXIOM — non-configurable" if kg["kernel_treatment"] == "AXIOM" else "ENFORCE — required"
+            kernel_lines.append(
+                f"- [{badge}] {kg['component_id']}: {kg['description'][:80]}"
+                + (f"\n  locked: {kg['locked_elements']}" if kg['locked_elements'] and kg['locked_elements'] != "None." else "")
+            )
+        if not kernel_lines:
+            kernel_lines.append("- (no AXIOM/ENFORCE gates mapped to this phase)")
+
         now = datetime.now().strftime("%Y-%m-%d %H:%M")
         plan_text = f"""---
 type: plan
@@ -637,6 +724,9 @@ _(phase-coordinator, {now})_
 
 ## What it opened (proposed next steps)
 {chr(10).join(opened_lines)}
+
+## Kernel gates for this phase (process kernel — non-negotiable)
+{chr(10).join(kernel_lines)}
 
 ## Allowed next transitions (from contracts)
 {chr(10).join(trans_lines)}

@@ -542,16 +542,22 @@ Finish by printing the file id and one line per finding."""
     return {"id": oid, "output": r.stdout[-2000:]}
 
 
-def _llm_text(system: str, user: str, max_tokens: int = 4000) -> str:
-    """One model call. Prefers the Anthropic API key (claude-sonnet-4-6); falls
-    back to Vercel AI Gateway OIDC. Errors surface verbatim — no fake answers."""
+def _llm_text(system: str, user: str, max_tokens: int = 8000) -> str:
+    """One model call. Prefers the Anthropic API key; falls back to Vercel AI Gateway.
+    For claude-sonnet-5 uses adaptive thinking with effort=low so output is always a
+    text block (not consumed by thinking tokens). Errors surface verbatim."""
     import urllib.request
     anthropic_key = os.environ.get("ANTHROPIC_API_KEY")
     try:
         if anthropic_key:
-            payload = {"model": os.environ.get("PEOS_MODEL", "claude-sonnet-5"),
-                       "max_tokens": max_tokens, "system": system,
+            model = os.environ.get("PEOS_MODEL", "claude-sonnet-5")
+            payload = {"model": model, "max_tokens": max_tokens, "system": system,
                        "messages": [{"role": "user", "content": user}]}
+            # claude-sonnet-5 uses adaptive thinking; set effort=low so extraction
+            # stays in text blocks and doesn't exhaust the token budget thinking.
+            if "sonnet-5" in model or "fable" in model:
+                payload["thinking"] = {"type": "adaptive"}
+                payload["output_config"] = {"effort": "low"}
             req = urllib.request.Request(
                 "https://api.anthropic.com/v1/messages",
                 data=json.dumps(payload).encode(), method="POST",
@@ -583,31 +589,111 @@ def _llm_text(system: str, user: str, max_tokens: int = 4000) -> str:
         raise HTTPException(502, f"model error: {exc} {detail[:300] if detail else ''}")
 
 
-def _gateway_json(system: str, user: str, max_tokens: int = 4000):
+def _gateway_json(system: str, user: str, max_tokens: int = 8000):
     text = _llm_text(system, user, max_tokens)
-    m = re.search(r"\[.*\]|\{.*\}", text, re.DOTALL)
+    # prefer ```json fences, then bare array/object
+    fence = re.search(r"```(?:json)?\s*(\[[\s\S]*?\]|\{[\s\S]*?\})\s*```", text)
+    m = fence or re.search(r"(\[[\s\S]*\]|\{[\s\S]*\})", text)
     if not m:
         raise ValueError(f"model returned no JSON: {text[:200]}")
-    return json.loads(m.group(0))
+    raw = m.group(1)
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        # strip trailing comma before ] or } — common LLM mistake
+        cleaned = re.sub(r",\s*([}\]])", r"\1", raw)
+        return json.loads(cleaned)
+
+
+_EXTRACT_SYSTEM = """\
+You are the PE OS extractor agent for a private equity firm.
+Extract every discrete factual claim from the artifact that would be useful for deal analysis.
+
+EPISTEMIC TYPING (get these right):
+- asserted: document states a fact (seller CIM, management report)
+- observed: direct observation or recorded interaction (meeting notes, call transcripts)
+- attested: third-party verified (QoE firm certifies, auditor confirms)
+- derived: you computed it from other values (requires derivation field)
+
+SUBJECT NAMING (critical — prevents false contradictions):
+- Use a DIFFERENT subject for each distinct EBITDA definition:
+  "reported EBITDA", "seller-adjusted EBITDA", "QoE-normalized EBITDA",
+  "firm-underwritten EBITDA", "covenant EBITDA" — never all under "EBITDA"
+- Use a DIFFERENT subject for billing-account vs ultimate-parent concentration:
+  "largest billing-account customer concentration" vs "largest ultimate-parent customer concentration"
+- Reuse EXISTING subject strings when the exact same quantity/basis/definition is meant
+- Create a NEW subject when definition, basis, party, or time period differs
+
+Return ONLY a JSON array. Each element:
+{"subject": "...", "value": "...", "epistemic": "asserted|derived|observed|attested",
+ "bears_on": ["question-id", ...], "direction": "supports|contradicts|context",
+ "locator": "section/line", "author": "party", "statement": "one complete sentence",
+ "derivation": "computation string or null"}\
+"""
+
+
+def _brain_context(deal: str, max_chars: int = 5000) -> str:
+    """Read question-type archives from the brain library relevant to this deal's questions.
+    Returns a compact excerpt: methodology + top evidence entries per QT, capped at max_chars.
+    This is how agents go from the knowledge graph → the brain when they need methodology."""
+    c = con()
+    # Find question-types linked from this deal's questions
+    qt_ids = [row[0] for row in c.execute(
+        "SELECT DISTINCT e2.dst FROM edges e1 JOIN edges e2 ON e1.dst=e2.src "
+        "WHERE e1.rel='bears-on' AND e2.rel='question-type' "
+        "AND e1.src IN (SELECT id FROM nodes WHERE type='claim' AND deal=?)", (deal,)
+    ).fetchall()]
+    c.close()
+    if not qt_ids:
+        qt_ids = [f.stem for f in (VAULT / "library" / "question-types").glob("qt-*.md")][:6]
+    parts = []
+    for qt_id in qt_ids[:8]:
+        f = VAULT / "library" / "question-types" / f"{qt_id}.md"
+        if not f.exists():
+            continue
+        text = f.read_text(encoding="utf-8")
+        # Include methodology + up to 5 evidence entries
+        lines = text.splitlines()
+        methodology = []
+        evidence = []
+        in_arch = False
+        for ln in lines:
+            if ln.startswith("## Evidence archive"):
+                in_arch = True
+                continue
+            if in_arch:
+                if ln.startswith("- [[") and len(evidence) < 5:
+                    evidence.append(ln)
+            elif not ln.startswith("---") and not ln.startswith("type:") and not ln.startswith("id:"):
+                methodology.append(ln)
+        excerpt = "\n".join(methodology[:20]) + ("\n\nCross-deal evidence:\n" + "\n".join(evidence) if evidence else "")
+        parts.append(f"[{qt_id}]\n{excerpt.strip()}")
+    result = "\n\n---\n".join(parts)
+    return result[:max_chars] if result else "(brain library empty — run librarian)"
 
 
 def cloud_extract(deal: str, artifact: Path) -> list[str]:
-    """Gateway extraction: artifact text → typed claim files. The model proposes
-    JSON; the SERVER writes files through the same validated template as humans."""
-    questions = "\n".join(f"- {f.stem}: {f.read_text(encoding='utf-8').split('# ',1)[1].splitlines()[0]}"
-                          for f in (VAULT / "deals" / deal / "questions").glob("*.md"))
+    """Extract claims from one artifact for one deal (works for any deal).
+    Model proposes JSON; server writes files through the validated claim template.
+    Reads from the brain library for methodology context before extracting.
+    After extraction, automatically runs derivation pass if artifact has a
+    customer concentration table."""
+    q_dir = VAULT / "deals" / deal / "questions"
+    questions = "\n".join(
+        f"- {f.stem}: {f.read_text(encoding='utf-8').split('# ',1)[1].splitlines()[0]}"
+        for f in sorted(q_dir.glob("*.md"))
+    ) if q_dir.exists() else "(no questions defined yet)"
     existing_subjects = sorted({json.loads(fm).get("subject") for fm, in
                                 con().execute("SELECT frontmatter FROM nodes WHERE type='claim' AND deal=?", (deal,))
                                 if json.loads(fm).get("subject")})
+    brain = _brain_context(deal)
+    text = artifact.read_text(encoding="utf-8")[:100_000]
     data = _gateway_json(
-        "You are the PE OS extractor agent. Extract discrete factual claims from the artifact. "
-        "Return ONLY a JSON array; each item: {subject (reuse an existing subject string when the same "
-        "quantity is meant), value, epistemic (asserted|derived|observed|attested — type DOWN when unsure; "
-        "recorded-interaction statements are observed), bears_on (list of question ids, by meaning), "
-        "direction (supports|contradicts|context), locator (line/section), author, statement (one sentence), "
-        "derivation (string or null — required if derived)}.",
-        f"DEAL QUESTIONS:\n{questions}\n\nEXISTING SUBJECTS: {existing_subjects}\n\n"
-        f"ARTIFACT ({artifact.name}):\n{artifact.read_text(encoding='utf-8')[:100_000]}")
+        _EXTRACT_SYSTEM,
+        f"DEAL: {deal}\nDEAL QUESTIONS:\n{questions}\n\n"
+        f"FIRM BRAIN (cross-deal methodology — use subject names and epistemic standards from here):\n{brain}\n\n"
+        f"EXISTING SUBJECTS (reuse when same quantity/basis): {existing_subjects}\n\n"
+        f"ARTIFACT ({artifact.name}):\n{text}")
     written = []
     for item in data:
         if item.get("epistemic") not in EPISTEMIC:
@@ -620,6 +706,17 @@ def cloud_extract(deal: str, artifact: Path) -> list[str]:
                     author=str(item.get("author", "")), artifact=f"vault/inbox/{artifact.name}",
                     statement=str(item.get("statement", "")), derivation=item.get("derivation"))
         written.append(add_claim(deal, c)["id"])
+
+    # Auto-run concentration derivation for data-room files with a customer schedule
+    full_text = artifact.read_text(encoding="utf-8")
+    if "ultimate parent" in full_text[:8000].lower() and "% revenue" in full_text[:8000].lower():
+        try:
+            sys.path.insert(0, str(ROOT / "tools"))
+            import derive_concentrations as dc
+            dc.derive_for_artifact(deal, artifact)
+        except Exception:
+            pass  # non-fatal; standard claims already written
+
     return written
 
 
@@ -680,6 +777,16 @@ def canvas_page():
 @app.get("/graph")
 def graph_page():
     return FileResponse(ROOT / "app" / "static" / "graph.html")
+
+
+@app.get("/preview")
+def preview_page():
+    return FileResponse(ROOT / "app" / "static" / "preview.html")
+
+
+@app.get("/pipeline")
+def pipeline_page():
+    return FileResponse(ROOT / "app" / "static" / "pipeline.html")
 
 
 @app.get("/api/graph")
@@ -790,15 +897,17 @@ def run_agent(kind: str, body: RunIn):
                 if f.stat().st_size >= 150_000:
                     skipped.append(f"{f.name}: too large (>150KB)")
                     continue
-                d = body.config.get("deal") or rt.deal_for(f.name)
+                d = rt.deal_for(f.name) or body.config.get("deal")  # filename routing wins; config is fallback
                 if not d:
                     skipped.append(f"{f.name}: cannot route — {len(rt.deals())} deals exist; rename to <deal>-{f.name}")
                     continue
-                    ids = cloud_extract(d, f)
-                    st = rt._state(); st.setdefault("extracted", []).append(f.name); rt._save(st)
-                    rt.audit("extractor", "HVA_COMMERCIAL_01", "claims-extracted", f"{f.name} → {len(ids)}", ids)
-                    push(); reindex()
-                    return {"summary": f"{f.name} → {len(ids)} claims"}
+                if body.config.get("deal") and d != body.config.get("deal"):
+                    continue  # config scopes the run to one deal; other deals' files wait their turn
+                ids = cloud_extract(d, f)
+                st = rt._state(); st.setdefault("extracted", []).append(f.name); rt._save(st)
+                rt.audit("extractor", "HVA_COMMERCIAL_01", "claims-extracted", f"{f.name} → {len(ids)}", ids)
+                push(); reindex()
+                return {"summary": f"{f.name} → {len(ids)} claims"}
             return {"summary": "nothing to extract" + ("; skipped → " + " | ".join(skipped) if skipped else " — inbox has no new text files")}
         if kind == "workstream":
             r = agent_workstream(deal, WorkstreamIn(workstream=body.config.get("workstream", "commercial_market")))

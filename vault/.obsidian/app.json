@@ -1,0 +1,16 @@
+{
+  "legacyEditor": false,
+  "defaultViewMode": "source",
+  "alwaysUpdateLinks": true,
+  "newFileLocation": "current",
+  "newLinkFormat": "shortest",
+  "useMarkdownLinks": false,
+  "showInlineTitle": true,
+  "showViewHeader": false,
+  "foldHeading": true,
+  "foldIndent": true,
+  "spellcheck": false,
+  "strictLineBreaks": false,
+  "readableLineLength": true,
+  "tabSize": 4
+}

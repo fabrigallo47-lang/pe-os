@@ -3,6 +3,7 @@
 
 .venv/
 __pycache__/
+*.pyc
 .DS_Store
 
 # Obsidian workspace state (keep vault content, not app state)
@@ -10,3 +11,23 @@ vault/.obsidian/workspace*.json
 vault/.obsidian/cache/
 .models/
 .vercel
+.env.local
+
+# Local Claude Code settings
+settings.local.json
+
+# Deal data — excluded from public repo (populate via /open-deal + /ingest)
+vault/deals/
+vault/inbox/
+vault/audit/
+vault/entities/people/
+
+# Domain source documents and private research
+sources/
+
+# Operating manual (internal AI session log)
+AI_HARNESS.md
+
+# Secrets / keys
+.env
+*.key

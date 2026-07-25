@@ -9,6 +9,7 @@ Run:  make app   (uvicorn on http://127.0.0.1:8787)
 """
 from __future__ import annotations
 
+import asyncio
 import json
 import re
 import sqlite3
@@ -18,7 +19,7 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile
-from fastapi.responses import FileResponse, JSONResponse
+from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
 from pydantic import BaseModel
 
 import os
@@ -943,6 +944,11 @@ class AskIn(BaseModel):
     question: str
 
 
+class ChatMsg(BaseModel):
+    message: str
+    deal: str | None = None
+
+
 def _vault_context(cap: int = 160_000) -> str:
     """Compact textual snapshot of the graph for cloud inference (read-only)."""
     parts = []
@@ -986,6 +992,347 @@ def agent_ask(body: AskIn):
         raise HTTPException(500, (r.stderr or r.stdout)[-500:])
     return {"answer": r.stdout.strip()}
 
+
+# ---------------------------------------------------------------- brain chat (SSE, agentic loop)
+
+_CHAT_TOOLS = [
+    {
+        "name": "query_brain",
+        "description": (
+            "Query the PE OS knowledge vault. Use this to answer factual questions about what is stored. "
+            "query_type: 'stats'=graph totals, 'deals'=list all deals, 'questions'=deal questions, "
+            "'claims'=claim summary, 'assumptions'=deal assumptions, 'question_types'=brain library."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query_type": {
+                    "type": "string",
+                    "enum": ["stats", "deals", "questions", "claims", "assumptions", "question_types"],
+                },
+                "deal": {"type": "string", "description": "Deal ID e.g. 'keystone'. Required for questions/claims/assumptions."},
+                "filter": {"type": "string", "description": "Optional text filter on results."},
+            },
+            "required": ["query_type"],
+        },
+    },
+    {
+        "name": "run_contradiction_check",
+        "description": "Run the contradiction detector on a deal — groups all claims by subject and surfaces any with conflicting values.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"deal": {"type": "string", "description": "Deal ID to check."}},
+            "required": ["deal"],
+        },
+    },
+    {
+        "name": "run_lifecycle_state",
+        "description": "Replay the deal's event history through the state machine and return the current lifecycle state plus recent event trail.",
+        "input_schema": {
+            "type": "object",
+            "properties": {"deal": {"type": "string", "description": "Deal ID."}},
+            "required": ["deal"],
+        },
+    },
+]
+
+
+def _chat_tool_query_brain(inputs: dict) -> dict:
+    q_type = inputs.get("query_type", "stats")
+    deal = inputs.get("deal")
+    filt = (inputs.get("filter") or "").lower()
+    steps = []
+    c = con()
+    try:
+        if q_type == "stats":
+            steps.append("Counting nodes and edges in the knowledge graph...")
+            total = c.execute("SELECT COUNT(*) FROM nodes").fetchone()[0]
+            n_deals = c.execute("SELECT COUNT(*) FROM nodes WHERE type='deal'").fetchone()[0]
+            n_q = c.execute("SELECT COUNT(*) FROM nodes WHERE type='question'").fetchone()[0]
+            n_c = c.execute("SELECT COUNT(*) FROM nodes WHERE type='claim'").fetchone()[0]
+            n_e = c.execute("SELECT COUNT(*) FROM edges").fetchone()[0]
+            steps.append(f"Graph: {total} nodes · {n_e} edges")
+            output = f"{n_deals} deals · {n_q} questions · {n_c} claims · {n_e} edges in the knowledge graph"
+
+        elif q_type == "deals":
+            steps.append("Loading deal list from the vault...")
+            deal_rows = c.execute(
+                "SELECT id, state FROM nodes WHERE type='deal' ORDER BY id"
+            ).fetchall()
+            parts = []
+            for d_id, state in deal_rows:
+                if filt and filt not in d_id.lower():
+                    continue
+                n_q = c.execute("SELECT COUNT(*) FROM nodes WHERE type='question' AND deal=?", (d_id,)).fetchone()[0]
+                n_c = c.execute("SELECT COUNT(*) FROM nodes WHERE type='claim' AND deal=?", (d_id,)).fetchone()[0]
+                parts.append(f"• {d_id}: state={state or '?'} · {n_q} questions · {n_c} claims")
+            steps.append(f"Found {len(deal_rows)} deals")
+            output = "\n".join(parts) if parts else "No deals found."
+
+        elif q_type == "questions" and deal:
+            steps.append(f"Loading questions for deal '{deal}'...")
+            q_rows = c.execute(
+                "SELECT id, state, title, frontmatter FROM nodes WHERE type='question' AND deal=? ORDER BY id",
+                (deal,),
+            ).fetchall()
+            n_crit = sum(1 for _, st, _, fm in q_rows
+                         if json.loads(fm or "{}").get("critical") and st in ("open", "reducing"))
+            steps.append(f"Found {len(q_rows)} questions · {n_crit} critical open")
+            parts = []
+            for qid, state, title, fm_raw in q_rows:
+                if filt and filt not in (qid + (title or "")).lower():
+                    continue
+                critical = "⚠ " if json.loads(fm_raw or "{}").get("critical") else ""
+                parts.append(f"• {critical}{qid} [{state}]: {title or '(no title)'}")
+            output = "\n".join(parts) if parts else "No questions found."
+
+        elif q_type == "claims" and deal:
+            steps.append(f"Summarising claims for deal '{deal}'...")
+            total_c = c.execute(
+                "SELECT COUNT(*) FROM nodes WHERE type='claim' AND deal=?", (deal,)
+            ).fetchone()[0]
+            by_epi = c.execute(
+                "SELECT epistemic, COUNT(*) FROM nodes WHERE type='claim' AND deal=? GROUP BY epistemic",
+                (deal,),
+            ).fetchall()
+            bound = c.execute(
+                "SELECT COUNT(DISTINCT e.src) FROM edges e JOIN nodes n ON e.src=n.id "
+                "WHERE n.type='claim' AND n.deal=? AND e.rel='bears-on'",
+                (deal,),
+            ).fetchone()[0]
+            steps.append(f"{total_c} claims · {bound} bound to questions")
+            epi_str = " · ".join(f"{ep or '?'}={cnt}" for ep, cnt in by_epi)
+            output = f"{total_c} claims ({epi_str})\n{bound} bound to questions · {total_c - bound} unbound"
+
+        elif q_type == "assumptions" and deal:
+            steps.append(f"Loading assumptions for deal '{deal}'...")
+            a_rows = c.execute(
+                "SELECT id, frontmatter FROM nodes WHERE type='assumption' AND deal=? ORDER BY id",
+                (deal,),
+            ).fetchall()
+            parts = []
+            for aid, fm_raw in a_rows:
+                fm = json.loads(fm_raw or "{}")
+                stmt = fm.get("statement", "")
+                if filt and filt not in (aid + stmt).lower():
+                    continue
+                parts.append(f"• {aid} [{fm.get('state', '?')}]: {stmt[:90]}")
+            steps.append(f"Found {len(a_rows)} assumptions")
+            output = "\n".join(parts) if parts else "No assumptions found."
+
+        elif q_type == "question_types":
+            steps.append("Loading brain question-type library...")
+            qt_files = sorted((VAULT / "library" / "question-types").glob("qt-*.md"))
+            parts = []
+            for f in qt_files:
+                heading = next((ln.lstrip("# ") for ln in f.read_text(encoding="utf-8").splitlines()
+                                if ln.startswith("# ")), f.stem)
+                if not filt or filt in (f.stem + heading).lower():
+                    parts.append(f"• {f.stem}: {heading}")
+            steps.append(f"Found {len(qt_files)} question types in the brain")
+            output = "\n".join(parts) if parts else "Brain library empty."
+        else:
+            output = f"query_type '{q_type}' requires a 'deal' parameter." if not deal else f"Unknown query_type '{q_type}'."
+    finally:
+        c.close()
+    return {"steps": steps, "output": output}
+
+
+def _chat_tool_contradiction(inputs: dict) -> dict:
+    deal = inputs.get("deal", "")
+    steps = [f"Scanning claims for deal '{deal}' grouped by subject..."]
+    c = con()
+    try:
+        total = c.execute(
+            "SELECT COUNT(*) FROM nodes WHERE type='claim' AND deal=?", (deal,)
+        ).fetchone()[0]
+        steps.append(f"Found {total} claims — grouping by subject, looking for value conflicts...")
+        rows_data = c.execute(
+            "SELECT subject, COUNT(DISTINCT value) as cnt, "
+            "GROUP_CONCAT(id || ' [' || COALESCE(epistemic,'?') || ']=' || COALESCE(value,'?'), ' | ') "
+            "FROM nodes WHERE type='claim' AND deal=? AND subject IS NOT NULL "
+            "GROUP BY subject HAVING COUNT(DISTINCT value) > 1",
+            (deal,),
+        ).fetchall()
+    finally:
+        c.close()
+    if not rows_data:
+        steps.append("All subjects have consistent values — no contradictions detected.")
+        return {"steps": steps, "output": "No contradictions detected."}
+    steps.append(f"Found {len(rows_data)} subject(s) with conflicting values.")
+    lines = []
+    for subject, cnt, claims_str in rows_data:
+        lines.append(f"SUBJECT: {subject}  ({cnt} distinct values)")
+        for part in claims_str.split(" | ")[:6]:
+            lines.append(f"  {part}")
+        lines.append("")
+    return {"steps": steps, "output": f"{len(rows_data)} contradiction(s):\n\n" + "\n".join(lines)}
+
+
+def _chat_tool_lifecycle(inputs: dict) -> dict:
+    deal = inputs.get("deal", "")
+    steps = [f"Loading events for deal '{deal}'..."]
+    c = con()
+    try:
+        ev_rows = c.execute(
+            "SELECT frontmatter FROM nodes WHERE type='event' AND deal=? ORDER BY id", (deal,)
+        ).fetchall()
+        q_rows = c.execute(
+            "SELECT frontmatter FROM nodes WHERE type='question' AND deal=?", (deal,)
+        ).fetchall()
+    finally:
+        c.close()
+    events = [json.loads(r[0]) for r in ev_rows]
+    questions = [json.loads(r[0]) for r in q_rows]
+    steps.append(f"Replaying {len(events)} events through the 46-transition state machine contracts...")
+    crit_open = [q for q in questions if q.get("critical") and q.get("state") in ("open", "reducing")]
+    state, trail, held = replay(events, load_transitions(), crit_open)
+    steps.append(f"Derived state: {state_label(state)} ({state})")
+    if held:
+        steps.append(f"⚠ {len(held)} transition(s) HELD by guards")
+    trail_lines = []
+    for ev, frm, t, blocked in trail[-12:]:
+        to = t["to"] if t else frm
+        marker = " [HELD]" if blocked else ""
+        trail_lines.append(f"• {str(ev.get('at', ''))[:10]}  {ev.get('kind', '?')}  →  {state_label(to)}{marker}")
+    output = f"State: {state_label(state)} ({state})\n\nEvent trail (last {len(trail_lines)}):\n" + "\n".join(trail_lines)
+    if held:
+        output += "\n\n⚠ Held: " + ", ".join(t["id"] for t in held)
+    return {"steps": steps, "output": output}
+
+
+def _chat_execute_tool(name: str, inputs: dict) -> dict:
+    if name == "query_brain":
+        return _chat_tool_query_brain(inputs)
+    if name == "run_contradiction_check":
+        return _chat_tool_contradiction(inputs)
+    if name == "run_lifecycle_state":
+        return _chat_tool_lifecycle(inputs)
+    return {"steps": [], "output": f"unknown tool: {name}"}
+
+
+def _chat_api_call(messages: list, system: str) -> dict:
+    import urllib.request
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not key:
+        raise RuntimeError("ANTHROPIC_API_KEY not set — cannot use brain chat")
+    model = os.environ.get("PEOS_MODEL", "claude-sonnet-5")
+    payload: dict = {
+        "model": model, "max_tokens": 4000,
+        "system": system, "messages": messages,
+        "tools": _CHAT_TOOLS, "tool_choice": {"type": "auto"},
+    }
+    if "sonnet-5" in model or "fable" in model:
+        payload["thinking"] = {"type": "adaptive"}
+        payload["output_config"] = {"effort": "low"}
+    req = urllib.request.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=json.dumps(payload).encode(), method="POST",
+        headers={"Content-Type": "application/json", "x-api-key": key,
+                 "anthropic-version": "2023-06-01"})
+    with urllib.request.urlopen(req, timeout=120) as resp:
+        return json.loads(resp.read())
+
+
+async def _chat_stream(message: str, deal: str | None = None):
+    def sse(data: dict) -> str:
+        return f"data: {json.dumps(data)}\n\n"
+
+    # ── Step 1: load vault context ──────────────────────────────────────
+    yield sse({"type": "agent_start", "agent": "brain", "label": "Loading vault..."})
+    try:
+        c = con()
+        n_deals = c.execute("SELECT COUNT(*) FROM nodes WHERE type='deal'").fetchone()[0]
+        n_q = c.execute("SELECT COUNT(*) FROM nodes WHERE type='question'").fetchone()[0]
+        n_c = c.execute("SELECT COUNT(*) FROM nodes WHERE type='claim'").fetchone()[0]
+        deal_list = [r[0] for r in c.execute("SELECT id FROM nodes WHERE type='deal' ORDER BY id").fetchall()]
+        n_qt = len(list((VAULT / "library" / "question-types").glob("qt-*.md")))
+        c.close()
+        context_line = (f"{n_deals} deals ({', '.join(deal_list)}) · "
+                        f"{n_q} questions · {n_c} claims · {n_qt} brain question types")
+        yield sse({"type": "agent_step", "agent": "brain", "content": context_line})
+    except Exception as exc:
+        context_line = "vault index unavailable — run make index"
+        yield sse({"type": "agent_step", "agent": "brain", "content": f"Index error: {exc}"})
+    yield sse({"type": "agent_done", "agent": "brain"})
+
+    # ── Step 2: agentic loop ─────────────────────────────────────────────
+    system = f"""You are the PE OS assistant — an AI operating system for private equity deal intelligence.
+
+The vault is a typed knowledge graph: deals, questions (open→resolved), claims (epistemic type: observed > attested > derived > asserted), events (lifecycle triggers), assumptions, decisions, and a brain library of {n_qt} cross-deal question types.
+
+Current vault: {context_line}.{f" Focus: {deal}" if deal else ""}
+
+Use the query tools to look up specific data before answering. When you call a tool, briefly say what you're looking for. Ground answers in vault evidence — cite claim IDs when relevant (e.g. c-keystone-041). Be concise.
+
+Key concepts:
+- Contradictions: same subject, irreconcilable values across claims — flagged by agents, never adjudicated
+- Lifecycle: S0 intake → S13 archive, 46 state machine transitions, some with guards (e.g. no IC while critical questions are open)
+- The brain library = cross-deal evidence archives that compound across deals"""
+
+    messages = [{"role": "user", "content": message}]
+    for _round in range(6):
+        try:
+            resp = await asyncio.to_thread(_chat_api_call, messages, system)
+        except Exception as exc:
+            yield sse({"type": "error", "content": str(exc)})
+            break
+
+        content_blocks = resp.get("content", [])
+        thinking_parts = [b["thinking"] for b in content_blocks if b.get("type") == "thinking" and b.get("thinking")]
+        text_parts = [b["text"] for b in content_blocks if b.get("type") == "text"]
+        tool_calls = [b for b in content_blocks if b.get("type") == "tool_use"]
+
+        if thinking_parts:
+            yield sse({"type": "thinking", "content": "\n\n".join(thinking_parts)})
+
+        if text_parts:
+            yield sse({"type": "text", "content": "".join(text_parts)})
+
+        if resp.get("stop_reason") == "end_turn" or not tool_calls:
+            break
+
+        messages.append({"role": "assistant", "content": content_blocks})
+        tool_results = []
+        for tc in tool_calls:
+            name, inputs, tc_id = tc["name"], tc["input"], tc["id"]
+            label = {
+                "query_brain": f"Query vault · {inputs.get('query_type', '')}" + (f" · {inputs['deal']}" if inputs.get("deal") else ""),
+                "run_contradiction_check": f"Contradiction check · {inputs.get('deal', '')}",
+                "run_lifecycle_state": f"Lifecycle replay · {inputs.get('deal', '')}",
+            }.get(name, name)
+            yield sse({"type": "agent_start", "agent": name, "label": label})
+            try:
+                result = await asyncio.to_thread(_chat_execute_tool, name, inputs)
+                for step in result["steps"]:
+                    yield sse({"type": "agent_step", "agent": name, "content": step})
+                yield sse({"type": "agent_result", "agent": name, "content": result["output"]})
+                yield sse({"type": "agent_done", "agent": name})
+                tool_results.append({"type": "tool_result", "tool_use_id": tc_id, "content": result["output"]})
+            except Exception as exc:
+                yield sse({"type": "agent_step", "agent": name, "content": f"Error: {exc}"})
+                yield sse({"type": "agent_done", "agent": name})
+                tool_results.append({"type": "tool_result", "tool_use_id": tc_id, "content": f"Error: {exc}"})
+        messages.append({"role": "user", "content": tool_results})
+
+    yield sse({"type": "done"})
+
+
+@app.get("/chat")
+def chat_page():
+    return FileResponse(ROOT / "app" / "static" / "chat.html")
+
+
+@app.post("/api/chat")
+async def chat_endpoint(msg: ChatMsg):
+    return StreamingResponse(
+        _chat_stream(msg.message, msg.deal),
+        media_type="text/event-stream",
+        headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
+    )
+
+
+# ---------------------------------------------------------------- audit
 
 @app.get("/api/audit")
 def audit_log(n: int = 20):

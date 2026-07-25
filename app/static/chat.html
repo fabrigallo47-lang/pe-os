@@ -1,0 +1,394 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"><meta name="viewport" content="width=device-width, initial-scale=1">
+<title>PE OS — Brain Chat</title>
+<style>
+:root{
+  --bg:#0c1016; --grid:#131a24; --surface:#151c26; --surface2:#1b2431;
+  --line:#26303f; --line-strong:#34404f;
+  --ink:#eef2f7; --muted:#98a6b8; --faint:#6b7889;
+  --accent:#c9a24b; --accent-ink:#0c1016;
+  --green:#53b98a; --red:#e07a72; --blue:#7fa8cf; --purple:#a08ecb;
+  --serif:"Iowan Old Style",Palatino,Georgia,serif;
+  --sans:-apple-system,BlinkMacSystemFont,"Segoe UI",Inter,Roboto,sans-serif;
+  --mono:"SF Mono",Menlo,monospace;
+  --r:12px;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{background:var(--bg);color:var(--ink);font-family:var(--sans);font-size:14px;
+  height:100vh;display:flex;flex-direction:column;-webkit-font-smoothing:antialiased}
+
+/* ── header ── */
+header{display:flex;align-items:center;gap:14px;padding:0 20px;height:52px;
+  border-bottom:1px solid var(--line);background:rgba(12,16,22,.92);
+  backdrop-filter:blur(8px);flex:0 0 auto;z-index:10}
+.wordmark{font-family:var(--serif);font-size:16px;letter-spacing:.02em}
+.wordmark b{color:var(--accent);font-weight:600}
+.sep{color:var(--faint);font-size:12px}
+nav{display:flex;gap:12px;margin-left:auto}
+nav a{font-size:12px;color:var(--faint);text-decoration:none;padding:4px 8px;
+  border-radius:6px;border:1px solid transparent}
+nav a:hover{color:var(--ink);border-color:var(--line)}
+nav a.active{color:var(--accent);border-color:var(--accent)30}
+
+/* ── messages area ── */
+#wrap{flex:1;overflow-y:auto;padding:28px 0 12px}
+#msgs{max-width:720px;margin:0 auto;padding:0 20px;display:flex;flex-direction:column;gap:14px}
+
+/* ── empty state ── */
+.empty{text-align:center;padding:64px 24px;color:var(--faint)}
+.empty h2{font-family:var(--serif);font-size:22px;color:var(--muted);margin-bottom:10px;font-weight:400}
+.empty p{font-size:13px;line-height:1.7}
+.empty .sub{margin-top:20px;font-size:11.5px;opacity:.6}
+
+/* ── suggestion chips ── */
+#chips{max-width:720px;margin:0 auto 4px;padding:0 20px;display:flex;gap:8px;flex-wrap:wrap}
+.chip{background:var(--surface);border:1px solid var(--line);border-radius:999px;
+  padding:6px 14px;font-size:11.5px;color:var(--muted);cursor:pointer;
+  transition:all .12s ease;font-family:var(--sans)}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+
+/* ── user message ── */
+.msg-user{align-self:flex-end;max-width:68%}
+.msg-user .bbl{background:var(--accent);color:var(--accent-ink);border-radius:18px 18px 4px 18px;
+  padding:11px 15px;font-size:13.5px;line-height:1.55}
+.msg-user .meta{font-size:10px;color:var(--faint);text-align:right;margin-top:4px}
+
+/* ── assistant text message ── */
+.msg-ai{align-self:flex-start;max-width:86%}
+.msg-ai .bbl{background:var(--surface);border:1px solid var(--line);
+  border-radius:4px 18px 18px 18px;padding:13px 16px;font-size:13.5px;line-height:1.7}
+.msg-ai .bbl p{margin-bottom:8px}.msg-ai .bbl p:last-child{margin-bottom:0}
+.msg-ai .bbl strong{color:var(--ink);font-weight:600}
+.msg-ai .bbl code{font-family:var(--mono);font-size:11.5px;background:rgba(0,0,0,.25);
+  padding:1px 5px;border-radius:4px;color:var(--blue)}
+.msg-ai .bbl ul,.msg-ai .bbl ol{padding-left:18px;margin:6px 0}
+.msg-ai .bbl li{margin-bottom:3px}
+.msg-ai .meta{font-size:10px;color:var(--faint);margin-top:4px}
+
+/* ── agent card ── */
+.acard{background:var(--surface);border:1px solid var(--line);border-radius:10px;
+  overflow:hidden;width:100%}
+.acard-hdr{display:flex;align-items:center;gap:9px;padding:9px 13px;cursor:pointer;
+  user-select:none;transition:background .1s}
+.acard-hdr:hover{background:var(--surface2)}
+.acard-icon{width:22px;height:22px;border-radius:6px;display:flex;align-items:center;
+  justify-content:center;font-size:11px;flex:0 0 auto}
+.acard-label{flex:1;font-size:12px;font-weight:500;color:var(--ink)}
+.acard-status{font-size:12px;flex:0 0 auto}
+.acard-chevron{font-size:9px;color:var(--faint);margin-left:4px}
+.acard-body{border-top:1px solid var(--line);display:none}
+.acard-body.open{display:block}
+.acard-steps{padding:9px 13px;display:flex;flex-direction:column;gap:4px}
+.step{font-size:11px;color:var(--muted);line-height:1.5;
+  padding-left:10px;border-left:2px solid var(--line)}
+.acard-result{padding:9px 13px;background:rgba(0,0,0,.18);border-top:1px solid var(--line);
+  font-size:11px;line-height:1.6;white-space:pre-wrap;color:var(--muted);
+  font-family:var(--mono);max-height:280px;overflow-y:auto}
+
+/* ── thinking card ── */
+.tcard{background:var(--surface);border:1px dashed var(--line);border-radius:10px;width:100%}
+.tcard-hdr{display:flex;align-items:center;gap:8px;padding:8px 13px;cursor:pointer;user-select:none}
+.tcard-hdr:hover{background:var(--surface2)}
+.tcard-body{display:none;padding:9px 13px;border-top:1px dashed var(--line);
+  font-size:11px;color:var(--faint);line-height:1.6;white-space:pre-wrap;
+  max-height:200px;overflow-y:auto;font-family:var(--mono)}
+.tcard-body.open{display:block}
+
+/* ── spinner ── */
+@keyframes spin{to{transform:rotate(360deg)}}
+.spin{display:inline-block;width:11px;height:11px;border:1.5px solid var(--faint);
+  border-top-color:var(--accent);border-radius:50%;animation:spin .65s linear infinite}
+
+/* ── input bar ── */
+#bar{flex:0 0 auto;border-top:1px solid var(--line);background:var(--surface);padding:12px 20px;
+  display:flex;flex-direction:column;gap:8px}
+#bar-inner{max-width:720px;margin:0 auto;width:100%;display:flex;gap:10px;align-items:flex-end}
+#inp{flex:1;background:var(--bg);border:1px solid var(--line);border-radius:10px;
+  color:var(--ink);font:inherit;font-size:13.5px;padding:10px 14px;resize:none;
+  min-height:44px;max-height:160px;line-height:1.55;transition:border-color .15s}
+#inp:focus{outline:none;border-color:var(--accent)80}
+#inp::placeholder{color:var(--faint)}
+#send{background:var(--accent);color:var(--accent-ink);border:none;border-radius:10px;
+  padding:0 18px;font:inherit;font-weight:600;font-size:13px;cursor:pointer;
+  height:44px;white-space:nowrap;transition:opacity .15s;flex:0 0 auto}
+#send:hover{opacity:.9}
+#send:disabled{opacity:.35;cursor:default}
+</style>
+</head>
+<body>
+
+<header>
+  <span class="wordmark"><b>◆</b> PE OS</span>
+  <span class="sep">›</span>
+  <span style="font-size:13px;color:var(--muted)">Brain Chat</span>
+  <nav>
+    <a href="/">Canvas</a>
+    <a href="/graph">Graph</a>
+    <a href="/pipeline">Pipeline</a>
+    <a href="/chat" class="active">Chat</a>
+  </nav>
+</header>
+
+<div id="wrap">
+  <div id="msgs">
+    <div class="empty" id="empty">
+      <h2>Brain Chat</h2>
+      <p>Ask about deals, questions, evidence, or contradictions.<br>
+      The system calls agents automatically and shows you their work.</p>
+      <p class="sub">Powered by the vault knowledge graph · agents run under policy-table constraints</p>
+    </div>
+  </div>
+</div>
+
+<div id="chips">
+  <button class="chip" onclick="send('What deals are in the system?')">What deals are in the system?</button>
+  <button class="chip" onclick="send('Show me the keystone deal — questions and lifecycle state')">Keystone: questions + lifecycle</button>
+  <button class="chip" onclick="send('Are there any contradictions in keystone?')">Contradictions in keystone?</button>
+  <button class="chip" onclick="send('What question types does the brain know?')">Brain question types</button>
+  <button class="chip" onclick="send('What is the EBITDA situation in keystone?')">EBITDA in keystone</button>
+</div>
+
+<div id="bar">
+  <div id="bar-inner">
+    <textarea id="inp" placeholder="Ask about deals, questions, claims, contradictions, lifecycle…" rows="1"></textarea>
+    <button id="send" onclick="go()">Send</button>
+  </div>
+</div>
+
+<script>
+const msgs = document.getElementById("msgs");
+const inp  = document.getElementById("inp");
+const btn  = document.getElementById("send");
+const wrap = document.getElementById("wrap");
+
+// auto-resize textarea
+inp.addEventListener("input", () => {
+  inp.style.height = "auto";
+  inp.style.height = Math.min(inp.scrollHeight, 160) + "px";
+});
+inp.addEventListener("keydown", e => {
+  if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); go(); }
+});
+
+function send(t) { inp.value = t; go(); }
+
+function scrollEnd() { wrap.scrollTop = wrap.scrollHeight; }
+
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+
+// basic markdown → html (for assistant responses)
+function md(text) {
+  return text
+    .replace(/&/g,"&amp;").replace(/</g,"&lt;").replace(/>/g,"&gt;")
+    .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+    .replace(/\*(.*?)\*/g, "<em>$1</em>")
+    .replace(/`([^`]+)`/g, "<code>$1</code>")
+    .replace(/\n\n+/g, "\n\n")
+    .split("\n\n").map(p => {
+      if (p.startsWith("• ") || p.startsWith("- ")) {
+        const items = p.split("\n").filter(l => l.trim());
+        return "<ul>" + items.map(l => `<li>${l.replace(/^[•\-]\s*/,"")}</li>`).join("") + "</ul>";
+      }
+      return `<p>${p.replace(/\n/g,"<br>")}</p>`;
+    }).join("");
+}
+
+// ── agent metadata ──
+const AMETA = {
+  brain:                    { icon:"🧠", color:"#7fa8cf", name:"Brain loader"         },
+  query_brain:              { icon:"🔍", color:"#c9a24b", name:"Query vault"           },
+  run_contradiction_check:  { icon:"⚡", color:"#e07a72", name:"Contradiction check"  },
+  run_lifecycle_state:      { icon:"📊", color:"#53b98a", name:"Lifecycle replay"      },
+};
+
+function agentMeta(agent) {
+  return AMETA[agent] || { icon:"→", color:"#98a6b8", name: agent };
+}
+
+// ── element builders ──
+function appendEl(html) {
+  const t = document.createElement("template");
+  t.innerHTML = html.trim();
+  const el = t.content.firstElementChild;
+  document.getElementById("empty")?.remove();
+  msgs.appendChild(el);
+  scrollEnd();
+  return el;
+}
+
+function addUserMsg(text) {
+  appendEl(`<div class="msg-user">
+    <div class="bbl">${esc(text)}</div>
+    <div class="meta">you</div>
+  </div>`);
+}
+
+let _aiEl = null;
+function ensureAiMsg() {
+  if (_aiEl) return _aiEl;
+  const el = appendEl(`<div class="msg-ai">
+    <div class="bbl"></div>
+    <div class="meta">PE OS Brain</div>
+  </div>`);
+  _aiEl = el.querySelector(".bbl");
+  return _aiEl;
+}
+
+function appendText(text) {
+  const bbl = ensureAiMsg();
+  bbl.innerHTML += md(text);
+  scrollEnd();
+}
+
+function createAgentCard(agent, label) {
+  const m = agentMeta(agent);
+  const card = appendEl(`<div class="acard" style="border-color:${m.color}35">
+    <div class="acard-hdr" onclick="toggleACard(this)">
+      <div class="acard-icon" style="background:${m.color}18;color:${m.color}">${m.icon}</div>
+      <span class="acard-label">${esc(label || m.name)}</span>
+      <span class="acard-status"><span class="spin"></span></span>
+      <span class="acard-chevron" style="color:${m.color}">▼</span>
+    </div>
+    <div class="acard-body open">
+      <div class="acard-steps"></div>
+    </div>
+  </div>`);
+  return card;
+}
+
+window.toggleACard = function(hdr) {
+  const body = hdr.nextElementSibling;
+  const open = body.classList.toggle("open");
+  hdr.querySelector(".acard-chevron").textContent = open ? "▼" : "▶";
+};
+
+function addStep(card, content) {
+  const steps = card.querySelector(".acard-steps");
+  const d = document.createElement("div");
+  d.className = "step"; d.textContent = content;
+  steps.appendChild(d); scrollEnd();
+}
+
+function addResult(card, content) {
+  const body = card.querySelector(".acard-body");
+  const d = document.createElement("div");
+  d.className = "acard-result"; d.textContent = content;
+  body.appendChild(d); scrollEnd();
+}
+
+function markDone(card, ok) {
+  const status = card.querySelector(".acard-status");
+  const m = agentMeta(card.dataset.agent || "");
+  status.innerHTML = ok
+    ? `<span style="color:var(--green)">✓</span>`
+    : `<span style="color:var(--red)">✗</span>`;
+  // auto-collapse after done
+  const body = card.querySelector(".acard-body");
+  const hdr  = card.querySelector(".acard-hdr");
+  body.classList.remove("open");
+  hdr.querySelector(".acard-chevron").textContent = "▶";
+}
+
+function createThinkingCard(content) {
+  const card = appendEl(`<div class="tcard">
+    <div class="tcard-hdr" onclick="toggleThinking(this)">
+      <span style="font-size:12px">💭</span>
+      <span style="font-size:11.5px;color:var(--faint);flex:1">Reasoning</span>
+      <span style="font-size:9px;color:var(--faint)">▶ expand</span>
+    </div>
+    <div class="tcard-body">${esc(content)}</div>
+  </div>`);
+  return card;
+}
+
+window.toggleThinking = function(hdr) {
+  const body = hdr.nextElementSibling;
+  const open = body.classList.toggle("open");
+  hdr.querySelector("span:last-child").textContent = open ? "▼ collapse" : "▶ expand";
+};
+
+// ── main send handler ──
+async function go() {
+  const text = inp.value.trim();
+  if (!text || btn.disabled) return;
+
+  btn.disabled = true;
+  inp.value = ""; inp.style.height = "auto";
+  _aiEl = null;
+
+  addUserMsg(text);
+
+  // hide suggestion chips after first message
+  document.getElementById("chips").style.display = "none";
+
+  let activeCard = null;
+
+  try {
+    const resp = await fetch("/api/chat", {
+      method: "POST",
+      headers: {"Content-Type":"application/json"},
+      body: JSON.stringify({message: text}),
+    });
+
+    if (!resp.ok) {
+      const err = await resp.json().catch(() => ({}));
+      appendEl(`<div class="msg-ai"><div class="bbl" style="color:var(--red)">Error ${resp.status}: ${esc(err.detail || resp.statusText)}</div></div>`);
+      return;
+    }
+
+    const reader = resp.body.getReader();
+    const dec    = new TextDecoder();
+    let buf = "";
+
+    while (true) {
+      const {done, value} = await reader.read();
+      if (done) break;
+      buf += dec.decode(value, {stream: true});
+      const lines = buf.split("\n");
+      buf = lines.pop();
+
+      for (const line of lines) {
+        if (!line.startsWith("data: ")) continue;
+        let ev;
+        try { ev = JSON.parse(line.slice(6)); } catch { continue; }
+
+        switch (ev.type) {
+          case "agent_start":
+            activeCard = createAgentCard(ev.agent, ev.label);
+            activeCard.dataset.agent = ev.agent;
+            break;
+          case "agent_step":
+            if (activeCard) addStep(activeCard, ev.content);
+            break;
+          case "agent_result":
+            if (activeCard) addResult(activeCard, ev.content);
+            break;
+          case "agent_done":
+            if (activeCard) { markDone(activeCard, true); activeCard = null; }
+            break;
+          case "thinking":
+            if (ev.content?.trim()) createThinkingCard(ev.content);
+            break;
+          case "text":
+            if (ev.content) { _aiEl = null; appendText(ev.content); }
+            break;
+          case "error":
+            appendEl(`<div class="msg-ai"><div class="bbl" style="color:var(--red)">Error: ${esc(ev.content)}</div></div>`);
+            break;
+          case "done":
+            break;
+        }
+      }
+    }
+  } catch (e) {
+    appendEl(`<div class="msg-ai"><div class="bbl" style="color:var(--red)">Connection error: ${esc(e.message)}</div></div>`);
+  } finally {
+    btn.disabled = false;
+    inp.focus();
+  }
+}
+</script>
+</body>
+</html>

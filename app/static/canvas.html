@@ -67,8 +67,9 @@ label{font-size:10.5px;color:var(--muted)}
   <span class="wordmark"><b>◆</b> PE OS</span><select id="dealsel" aria-label="deal" style="width:150px;height:34px;background:var(--surface);border:1px solid var(--line);color:var(--ink);border-radius:8px;padding:0 10px;font-size:12.5px"></select>
   <button class="pal" style="border-color:var(--accent);color:var(--accent)" onclick="showPanel(null)">Canvas</button>
   <button class="pal" onclick="location.href='/graph'">Graph</button>
-  <button class="pal" onclick="showPanel('brain')">Brain · recent changes</button>
-  <button class="pal" onclick="showPanel('coord')">Coordinator · reasonings</button>
+  <button class="pal" onclick="location.href='/chat'">Brain Chat</button>
+  <button class="pal" onclick="showPanel('brain')">Brain · archives</button>
+  <button class="pal" onclick="showPanel('coord')">Coordinator</button>
 
   <span style="flex:1"></span>
   <input type="file" id="feed" style="display:none" onchange="feedUp(this)">

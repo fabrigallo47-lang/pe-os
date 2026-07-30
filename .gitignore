@@ -31,3 +31,4 @@ AI_HARNESS.md
 # Secrets / keys
 .env
 *.key
+.env*

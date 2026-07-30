@@ -947,6 +947,7 @@ class AskIn(BaseModel):
 class ChatMsg(BaseModel):
     message: str
     deal: str | None = None
+    history: list[dict] = []  # [{role: "user"|"assistant", content: str}]
 
 
 def _vault_context(cap: int = 160_000) -> str:
@@ -1234,7 +1235,7 @@ def _chat_api_call(messages: list, system: str) -> dict:
         return json.loads(resp.read())
 
 
-async def _chat_stream(message: str, deal: str | None = None):
+async def _chat_stream(message: str, deal: str | None = None, history: list[dict] | None = None):
     def sse(data: dict) -> str:
         return f"data: {json.dumps(data)}\n\n"
 
@@ -1257,6 +1258,14 @@ async def _chat_stream(message: str, deal: str | None = None):
     yield sse({"type": "agent_done", "agent": "brain"})
 
     # ── Step 2: agentic loop ─────────────────────────────────────────────
+    # Build initial messages from prior turns then append current message
+    prior: list[dict] = []
+    for turn in (history or []):
+        role = turn.get("role", "")
+        content = turn.get("content", "")
+        if role in ("user", "assistant") and content:
+            prior.append({"role": role, "content": content})
+
     system = f"""You are the PE OS assistant — an AI operating system for private equity deal intelligence.
 
 The vault is a typed knowledge graph: deals, questions (open→resolved), claims (epistemic type: observed > attested > derived > asserted), events (lifecycle triggers), assumptions, decisions, and a brain library of {n_qt} cross-deal question types.
@@ -1270,7 +1279,7 @@ Key concepts:
 - Lifecycle: S0 intake → S13 archive, 46 state machine transitions, some with guards (e.g. no IC while critical questions are open)
 - The brain library = cross-deal evidence archives that compound across deals"""
 
-    messages = [{"role": "user", "content": message}]
+    messages = prior + [{"role": "user", "content": message}]
     for _round in range(6):
         try:
             resp = await asyncio.to_thread(_chat_api_call, messages, system)
@@ -1326,7 +1335,7 @@ def chat_page():
 @app.post("/api/chat")
 async def chat_endpoint(msg: ChatMsg):
     return StreamingResponse(
-        _chat_stream(msg.message, msg.deal),
+        _chat_stream(msg.message, msg.deal, msg.history),
         media_type="text/event-stream",
         headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
     )

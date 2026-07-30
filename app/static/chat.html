@@ -309,6 +309,9 @@ window.toggleThinking = function(hdr) {
   hdr.querySelector("span:last-child").textContent = open ? "▼ collapse" : "▶ expand";
 };
 
+// ── conversation history (persists across turns in this session) ──
+let history = [];  // [{role:"user"|"assistant", content:string}]
+
 // ── main send handler ──
 async function go() {
   const text = inp.value.trim();
@@ -324,12 +327,13 @@ async function go() {
   document.getElementById("chips").style.display = "none";
 
   let activeCard = null;
+  let assistantText = "";  // accumulate for history
 
   try {
     const resp = await fetch("/api/chat", {
       method: "POST",
       headers: {"Content-Type":"application/json"},
-      body: JSON.stringify({message: text}),
+      body: JSON.stringify({message: text, history}),
     });
 
     if (!resp.ok) {
@@ -372,7 +376,11 @@ async function go() {
             if (ev.content?.trim()) createThinkingCard(ev.content);
             break;
           case "text":
-            if (ev.content) { _aiEl = null; appendText(ev.content); }
+            if (ev.content) {
+              _aiEl = null;
+              appendText(ev.content);
+              assistantText += ev.content;
+            }
             break;
           case "error":
             appendEl(`<div class="msg-ai"><div class="bbl" style="color:var(--red)">Error: ${esc(ev.content)}</div></div>`);
@@ -382,6 +390,11 @@ async function go() {
         }
       }
     }
+
+    // commit this turn to history
+    history.push({role: "user", content: text});
+    if (assistantText) history.push({role: "assistant", content: assistantText});
+
   } catch (e) {
     appendEl(`<div class="msg-ai"><div class="bbl" style="color:var(--red)">Connection error: ${esc(e.message)}</div></div>`);
   } finally {

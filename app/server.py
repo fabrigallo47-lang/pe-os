@@ -996,6 +996,31 @@ def agent_ask(body: AskIn):
 
 # ---------------------------------------------------------------- brain chat (SSE, agentic loop)
 
+def _chat_brain_methodology(max_chars: int = 9000) -> str:
+    """Compact methodology excerpt from every brain QT — injected into the system prompt
+    so Claude always has the firm's epistemic standards without needing a tool call."""
+    qt_files = sorted((VAULT / "library" / "question-types").glob("qt-*.md"))
+    parts = []
+    for f in qt_files:
+        text = f.read_text(encoding="utf-8")
+        lines = text.splitlines()
+        heading = next((ln.lstrip("# ") for ln in lines if ln.startswith("# ")), f.stem)
+        body: list[str] = []
+        in_evidence = False
+        for ln in lines:
+            if ln.startswith("## Evidence archive"):
+                in_evidence = True
+            if in_evidence:
+                continue
+            if ln.startswith("---") or ln.startswith("type:") or ln.startswith("id:") \
+               or ln.startswith("domain:") or ln.startswith("decomposes") or ln.startswith("written-by:"):
+                continue
+            body.append(ln)
+        excerpt = "\n".join(body).strip()[:400]
+        parts.append(f"[{f.stem}]\n{heading}\n{excerpt}")
+    return ("\n\n---\n".join(parts))[:max_chars]
+
+
 _CHAT_TOOLS = [
     {
         "name": "query_brain",
@@ -1033,6 +1058,21 @@ _CHAT_TOOLS = [
             "type": "object",
             "properties": {"deal": {"type": "string", "description": "Deal ID."}},
             "required": ["deal"],
+        },
+    },
+    {
+        "name": "read_question_type",
+        "description": (
+            "Read the full content of a brain question type — methodology, epistemic standards, "
+            "and the cross-deal evidence archive the librarian maintains. Use this when you need "
+            "deep methodology or want to see what the firm has learned about a question type across deals."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "qt_id": {"type": "string", "description": "Question type ID e.g. 'qt-customer-concentration', 'qt-ebitda-quality'"},
+            },
+            "required": ["qt_id"],
         },
     },
 ]
@@ -1202,6 +1242,29 @@ def _chat_tool_lifecycle(inputs: dict) -> dict:
     return {"steps": steps, "output": output}
 
 
+def _chat_tool_read_qt(inputs: dict) -> dict:
+    qt_id = inputs.get("qt_id", "").strip()
+    f = VAULT / "library" / "question-types" / f"{qt_id}.md"
+    if not f.exists():
+        # fuzzy match
+        matches = [x for x in (VAULT / "library" / "question-types").glob("qt-*.md")
+                   if qt_id.lower().replace("qt-", "") in x.stem.lower()]
+        if matches:
+            f = matches[0]
+            qt_id = f.stem
+        else:
+            return {"steps": [f"No QT found for '{qt_id}'"],
+                    "output": f"Question type '{qt_id}' not found. Available: " +
+                              ", ".join(x.stem for x in sorted(
+                                  (VAULT / "library" / "question-types").glob("qt-*.md")))}
+    steps = [f"Reading brain QT: {qt_id}"]
+    content = f.read_text(encoding="utf-8")
+    # count evidence entries
+    n_evidence = content.count("\n- [[")
+    steps.append(f"Found methodology + {n_evidence} cross-deal evidence entries")
+    return {"steps": steps, "output": content[:6000]}
+
+
 def _chat_execute_tool(name: str, inputs: dict) -> dict:
     if name == "query_brain":
         return _chat_tool_query_brain(inputs)
@@ -1209,6 +1272,8 @@ def _chat_execute_tool(name: str, inputs: dict) -> dict:
         return _chat_tool_contradiction(inputs)
     if name == "run_lifecycle_state":
         return _chat_tool_lifecycle(inputs)
+    if name == "read_question_type":
+        return _chat_tool_read_qt(inputs)
     return {"steps": [], "output": f"unknown tool: {name}"}
 
 
@@ -1239,8 +1304,10 @@ async def _chat_stream(message: str, deal: str | None = None, history: list[dict
     def sse(data: dict) -> str:
         return f"data: {json.dumps(data)}\n\n"
 
-    # ── Step 1: load vault context ──────────────────────────────────────
-    yield sse({"type": "agent_start", "agent": "brain", "label": "Loading vault..."})
+    # ── Step 1: load vault context + brain methodology ──────────────────
+    yield sse({"type": "agent_start", "agent": "brain", "label": "Loading vault + brain..."})
+    brain_methodology = ""
+    n_qt = 0
     try:
         c = con()
         n_deals = c.execute("SELECT COUNT(*) FROM nodes WHERE type='deal'").fetchone()[0]
@@ -1252,6 +1319,9 @@ async def _chat_stream(message: str, deal: str | None = None, history: list[dict
         context_line = (f"{n_deals} deals ({', '.join(deal_list)}) · "
                         f"{n_q} questions · {n_c} claims · {n_qt} brain question types")
         yield sse({"type": "agent_step", "agent": "brain", "content": context_line})
+        brain_methodology = _chat_brain_methodology()
+        yield sse({"type": "agent_step", "agent": "brain",
+                   "content": f"Brain loaded: {n_qt} question-type methodologies"})
     except Exception as exc:
         context_line = "vault index unavailable — run make index"
         yield sse({"type": "agent_step", "agent": "brain", "content": f"Index error: {exc}"})
@@ -1272,12 +1342,15 @@ The vault is a typed knowledge graph: deals, questions (open→resolved), claims
 
 Current vault: {context_line}.{f" Focus: {deal}" if deal else ""}
 
-Use the query tools to look up specific data before answering. When you call a tool, briefly say what you're looking for. Ground answers in vault evidence — cite claim IDs when relevant (e.g. c-keystone-041). Be concise.
+Use the query tools to look up specific vault data before answering. When you call a tool, briefly say what you're looking for. Ground answers in vault evidence — cite claim IDs when relevant (e.g. c-keystone-041). Be concise.
 
 Key concepts:
 - Contradictions: same subject, irreconcilable values across claims — flagged by agents, never adjudicated
 - Lifecycle: S0 intake → S13 archive, 46 state machine transitions, some with guards (e.g. no IC while critical questions are open)
-- The brain library = cross-deal evidence archives that compound across deals"""
+- Brain library = cross-deal evidence archives; use read_question_type to get the full evidence archive for any QT
+
+BRAIN — FIRM METHODOLOGY ({n_qt} question types, methodology only; use read_question_type for the evidence archive):
+{brain_methodology}"""
 
     messages = prior + [{"role": "user", "content": message}]
     for _round in range(6):

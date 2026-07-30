@@ -1,9 +1,10 @@
 ---
 type: company
 id: keystone-project
-aliases: ["Keystone (Project)"]
+legal-name: "Alderstone Technical Services"
+aliases: ["Keystone (Project)", "Alderstone"]
 role: target
 written-by: human
 ---
 
-# Keystone (Project)
+# Alderstone Technical Services

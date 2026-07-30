@@ -167,6 +167,55 @@ def deal_view(deal: str):
     }
 
 
+@app.get("/api/deal/{deal}/state")
+def deal_b0(deal: str):
+    """B0 state object — the contract between backend and frontend renderer."""
+    sync()
+    reindex()
+    try:
+        from b0_assembler import assemble
+    except ImportError:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("b0_assembler", ROOT / "tools" / "b0_assembler.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        assemble = mod.assemble
+    try:
+        return JSONResponse(assemble(deal))
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+
+
+@app.post("/api/deal/{deal}/state/staleness")
+def deal_staleness(deal: str, payload: dict):
+    """Propagate staleness from a changed node and return the updated graph."""
+    sync()
+    reindex()
+    changed_node = payload.get("node")
+    if not changed_node:
+        raise HTTPException(400, "body must include 'node'")
+    try:
+        from b0_assembler import assemble, propagate_staleness
+    except ImportError:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("b0_assembler", ROOT / "tools" / "b0_assembler.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        assemble = mod.assemble
+        propagate_staleness = mod.propagate_staleness
+    try:
+        state = assemble(deal)
+    except ValueError as e:
+        raise HTTPException(404, str(e))
+    updated_graph = propagate_staleness(state["graph"], changed_node)
+    return JSONResponse({
+        "changedNode": changed_node,
+        "propagationOrder": updated_graph["propagationOrder"],
+        "staleNodes": [n["id"] for n in updated_graph["nodes"] if n["status"] == "stale"],
+        "graph": updated_graph,
+    })
+
+
 @app.get("/api/brain")
 def brain():
     sync()

@@ -56,6 +56,10 @@ LINK_FIELDS = {
     "decision": "decision",
     "company": "company",
     "owner": "owner",
+    # claim → artifact node (document provenance graph edge)
+    "artifact-id": "artifact-id",
+    # claim → entity node (who produced the claim)
+    "author-entity": "author-entity",
 }
 
 WIKILINK = re.compile(r"\[\[([^\]|#]+)")
@@ -99,11 +103,13 @@ def build() -> sqlite3.Connection:
         """
         CREATE TABLE nodes (id TEXT PRIMARY KEY, type TEXT, path TEXT, title TEXT,
                             state TEXT, epistemic TEXT, subject TEXT, value TEXT,
-                            deal TEXT, frontmatter TEXT);
+                            deal TEXT, frontmatter TEXT,
+                            metric_category TEXT, digital_source TEXT);
         CREATE TABLE edges (src TEXT, dst TEXT, rel TEXT);
         CREATE INDEX idx_edges_src ON edges(src, rel);
         CREATE INDEX idx_edges_dst ON edges(dst, rel);
         CREATE INDEX idx_nodes_subject ON nodes(deal, subject);
+        CREATE INDEX idx_nodes_metric ON nodes(deal, metric_category);
         """
     )
     skipped = 0
@@ -121,8 +127,9 @@ def build() -> sqlite3.Connection:
         if not deal and path.is_relative_to(VAULT / "deals"):
             deal = [path.relative_to(VAULT / "deals").parts[0]]
         source = fm.get("source") or {}
+        digital_src = fm.get("digital-source") or (source.get("url") if isinstance(source, dict) else None)
         con.execute(
-            "INSERT OR REPLACE INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?)",
+            "INSERT OR REPLACE INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 node_id,
                 fm.get("type"),
@@ -134,6 +141,8 @@ def build() -> sqlite3.Connection:
                 str(fm.get("value")) if fm.get("value") is not None else None,
                 deal[0] if deal else None,
                 json.dumps({**fm, "source": source}, default=str),
+                fm.get("metric-category"),
+                digital_src,
             ),
         )
         for field, rel in LINK_FIELDS.items():

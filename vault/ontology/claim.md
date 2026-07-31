@@ -1,6 +1,6 @@
 # Schema: Claim
 
-A statement extracted from an artifact, with an epistemic type and provenance. The unit of meaning — the artifact is just its container.
+A single atomic fact extracted from an artifact. One claim = one statement. If a sentence asserts two things, write two claims.
 
 ## Frontmatter
 
@@ -10,21 +10,36 @@ type: claim
 id: c-<deal>-<nnn>
 epistemic: asserted            # asserted | derived | observed | attested
 subject: "FY25 revenue growth" # normalized quantity/topic — contradiction detection groups on this
-value: "34%"                   # the content of the claim, atomic if possible
-bears-on: ["[[q-...]]"]        # questions this bears on. NEVER a deal. May be empty at extraction; binder fills it.
+value: "34%"                   # ONE fact. Never pack multiple metrics into one value.
+bears-on: ["[[q-...]]"]        # questions this bears on. May be empty at extraction; binder fills it.
 direction: supports            # supports | contradicts | context  (relative to first bears-on question)
+
+# ── provenance (where this came from) ─────────────────────────────
 source:
-  artifact: "path/or/url"      # artifact stays where it is
-  locator: "slide 14"          # slide, cell (Sheet1!D42), timestamp (00:31:12), page
-  author: "management"         # who asserted/produced it
-  date: 2026-05-01             # when the statement was made (not extracted)
-derivation: null               # REQUIRED if epistemic: derived — the inspectable chain
-                               # e.g. "D42 = D41/D40-1; D41 ← 'Bookings' pivot; inputs asserted by mgmt"
-rests-on: []                   # claims this derivation consumes — the composition chain.
-                               # derived-over-asserted = assertion with arithmetic on top; the system sees this.
-supersedes: null               # link to claim this replaces (never edit claims; supersede them)
+  artifact: "path/or/url"        # raw path/URL — kept for backward compat
+  locator: "slide 14, cell D42"  # slide, cell (Sheet1!D42), timestamp (00:31:12), page, line
+  author: "Big4 Advisory LLP"    # free-text who produced/asserted it
+  date: 2026-05-01               # when the statement was made (not when extracted)
+
+# ── graph links — these become edges in the index ─────────────────
+artifact-id: "[[art-<deal>-<slug>]]"  # link to artifact node (canonical source document)
+company: "[[company-id]]"             # entity node for the company being described
+author-entity: "[[entity-id]]"        # entity node for who wrote/said it (person or firm)
+digital-source: null                  # permanent external URL (VDR permalink, SEC filing URL, etc.)
+
+# ── metric tagging (for numeric claims) ───────────────────────────
+metric-category: null  # revenue | ebitda | debt | equity | irr | leverage | multiple |
+                       # headcount | margin | growth | cash | capex | working-capital |
+                       # customer-concentration | churn | price | volume | null
+
+# ── derivation (required for epistemic: derived) ──────────────────
+derivation: null       # inspectable formula chain in plain English
+rests-on: []           # wikilinks to claims this derivation consumes
+
+supersedes: null       # link to claim this replaces (never edit; supersede)
 extracted-by: <agent> | human
 extracted: 2026-07-10
+stale: false           # true when a rests-on input has changed and this needs review
 ---
 ```
 

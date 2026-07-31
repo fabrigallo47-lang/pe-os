@@ -394,6 +394,13 @@ Deal registered via app.
     return {"id": slug}
 
 
+METRIC_CATEGORIES = {
+    "revenue", "ebitda", "debt", "equity", "irr", "leverage", "multiple",
+    "headcount", "margin", "growth", "cash", "capex", "working-capital",
+    "customer-concentration", "churn", "price", "volume",
+}
+
+
 class ClaimIn(BaseModel):
     subject: str
     value: str
@@ -402,21 +409,26 @@ class ClaimIn(BaseModel):
     direction: str = "context"
     locator: str = ""
     author: str = ""
+    author_entity: str = ""      # entity ID e.g. "big4-advisory"
     source_date: str = ""
     artifact: str = ""
+    artifact_id: str = ""        # artifact node ID e.g. "art-keystone-qoe-2026"
+    company: str = ""            # company entity ID e.g. "keystone-project"
+    digital_source: str = ""     # permanent URL or VDR path
+    metric_category: str = ""    # one of METRIC_CATEGORIES
     statement: str = ""
     derivation: str | None = None
 
 
-@app.post("/api/deal/{deal}/claims")
-def add_claim(deal: str, c_in: ClaimIn):
-    require_writable()
-    if c_in.epistemic not in EPISTEMIC:
-        raise HTTPException(422, f"epistemic must be one of {EPISTEMIC}")
-    if c_in.epistemic == "derived" and not (c_in.derivation or "").strip():
-        raise HTTPException(422, "ontology rule 3: a derived claim requires an inspectable derivation")
+def _write_claim(deal: str, c_in: ClaimIn) -> str:
+    """Write one claim file to vault/deals/<deal>/claims/ and return its ID."""
     cid = next_id(deal, "c", "claims")
     bears = ", ".join(f'"[[{b}]]"' for b in c_in.bears_on)
+    artifact_id_line = f'artifact-id: "[[{c_in.artifact_id}]]"' if c_in.artifact_id else "artifact-id: null"
+    company_line = f'company: "[[{c_in.company}]]"' if c_in.company else "company: null"
+    author_entity_line = f'author-entity: "[[{c_in.author_entity}]]"' if c_in.author_entity else "author-entity: null"
+    metric_line = f"metric-category: {c_in.metric_category}" if c_in.metric_category in METRIC_CATEGORIES else "metric-category: null"
+    digital_line = f'digital-source: "{c_in.digital_source}"' if c_in.digital_source else "digital-source: null"
     body = f"""---
 type: claim
 id: {cid}
@@ -430,6 +442,11 @@ source:
   locator: "{c_in.locator}"
   author: "{c_in.author}"
   date: {c_in.source_date or datetime.now().date()}
+{artifact_id_line}
+{company_line}
+{author_entity_line}
+{digital_line}
+{metric_line}
 derivation: {json.dumps(c_in.derivation) if c_in.derivation else 'null'}
 rests-on: []
 supersedes: null
@@ -440,9 +457,233 @@ extracted: {datetime.now().date()}
 {c_in.statement or c_in.subject + ': ' + c_in.value}
 """
     (VAULT / "deals" / deal / "claims" / f"{cid}.md").write_text(body, encoding="utf-8")
+    return cid
+
+
+@app.post("/api/deal/{deal}/claims")
+def add_claim(deal: str, c_in: ClaimIn):
+    require_writable()
+    if c_in.epistemic not in EPISTEMIC:
+        raise HTTPException(422, f"epistemic must be one of {EPISTEMIC}")
+    if c_in.epistemic == "derived" and not (c_in.derivation or "").strip():
+        raise HTTPException(422, "ontology rule 3: a derived claim requires an inspectable derivation")
+    cid = _write_claim(deal, c_in)
     push()
     reindex()
     return {"id": cid}
+
+
+# ── artifact nodes ────────────────────────────────────────────────────────────
+
+class ArtifactIn(BaseModel):
+    title: str
+    kind: str = "document"         # deck | model | transcript | email | report | contract | vdr-document
+    digital_source: str = ""       # local path or external URL
+    url: str = ""                  # permanent external URL
+    received: str = ""
+    source_date: str = ""
+    author: str = ""
+    author_entity: str = ""
+    company: str = ""              # company entity ID
+
+
+@app.post("/api/deal/{deal}/artifacts")
+def add_artifact(deal: str, a_in: ArtifactIn):
+    """Register a source document as a first-class artifact node."""
+    require_writable()
+    slug = re.sub(r"[^a-z0-9]+", "-", a_in.title.lower()).strip("-")[:40]
+    art_id = f"art-{deal}-{slug}"
+    art_dir = VAULT / "deals" / deal / "artifacts"
+    art_dir.mkdir(exist_ok=True)
+    company_line = f'company: "[[{a_in.company}]]"' if a_in.company else "company: null"
+    author_entity_line = f'author-entity: "[[{a_in.author_entity}]]"' if a_in.author_entity else "author-entity: null"
+    body = f"""---
+type: artifact
+id: {art_id}
+deal: "[[{deal}]]"
+title: "{a_in.title}"
+kind: {a_in.kind}
+digital-source: "{a_in.digital_source or ''}"
+url: {json.dumps(a_in.url) if a_in.url else 'null'}
+received: {a_in.received or datetime.now().date()}
+source-date: {a_in.source_date or 'null'}
+author: "{a_in.author}"
+{author_entity_line}
+{company_line}
+written-by: extractor
+---
+
+# {a_in.title}
+
+### Claims extracted
+"""
+    (art_dir / f"{art_id}.md").write_text(body, encoding="utf-8")
+    push()
+    reindex()
+    return {"id": art_id}
+
+
+@app.get("/api/deal/{deal}/artifacts")
+def list_artifacts(deal: str):
+    """List all artifact nodes for a deal with claim counts."""
+    c = con()
+    try:
+        rows = c.execute(
+            "SELECT n.id, n.title, n.frontmatter, "
+            "COUNT(e.src) as claim_count "
+            "FROM nodes n "
+            "LEFT JOIN edges e ON e.dst=n.id AND e.rel='artifact-id' "
+            "WHERE n.type='artifact' AND n.deal=? "
+            "GROUP BY n.id ORDER BY n.id",
+            (deal,),
+        ).fetchall()
+    finally:
+        c.close()
+    result = []
+    for aid, title, fm_raw, claim_count in rows:
+        fm = json.loads(fm_raw or "{}")
+        result.append({
+            "id": aid, "title": title,
+            "kind": fm.get("kind"), "received": fm.get("received"),
+            "source_date": fm.get("source-date"), "author": fm.get("author"),
+            "digital_source": fm.get("digital-source"),
+            "claim_count": claim_count,
+        })
+    return result
+
+
+# ── batch extraction endpoint ─────────────────────────────────────────────────
+
+class ExtractIn(BaseModel):
+    text: str                      # raw document text
+    artifact_id: str = ""          # existing artifact node ID (if already registered)
+    artifact_title: str = ""       # used to auto-create artifact node if artifact_id is empty
+    kind: str = "document"
+    digital_source: str = ""
+    source_date: str = ""
+    author: str = ""
+    author_entity: str = ""
+    company: str = ""
+    max_claims: int = 40
+
+
+_EXTRACT_SYSTEM = """You are a claim extraction agent for a private equity knowledge vault.
+
+Extract ATOMIC claims from the document. One claim = one fact. Never pack multiple numbers or assertions into a single claim value.
+
+For each claim return a JSON object with:
+- subject: normalized topic string (same concept across documents must use the same subject)
+- value: the single fact (one number, one assertion, one observation)
+- epistemic: "asserted" (stated by someone) | "derived" (computed, show formula) | "observed" (recorded event) | "attested" (audited/contractual)
+- locator: exact location in document (page N, slide N, cell A1, timestamp HH:MM:SS)
+- metric_category: one of [revenue, ebitda, debt, equity, irr, leverage, multiple, headcount, margin, growth, cash, capex, working-capital, customer-concentration, churn, price, volume] or null
+- derivation: formula in plain English if epistemic=derived, else null
+- statement: one sentence in plain English restating the claim
+
+Return a JSON array of claim objects. No prose, no markdown — pure JSON array."""
+
+
+@app.post("/api/deal/{deal}/extract")
+def extract_claims(deal: str, body: ExtractIn):
+    """LLM-powered atomic claim extraction from raw document text.
+
+    Creates an artifact node if artifact_id is empty, then returns structured
+    claim objects for human review before committing to vault.
+
+    Policy row 3 applies: no real VDR content until ZDR endpoint is configured.
+    """
+    require_writable()
+    import os
+    key = os.environ.get("ANTHROPIC_API_KEY", "")
+    if not key:
+        raise HTTPException(503, "ANTHROPIC_API_KEY not set — cannot run extraction")
+
+    # Auto-register artifact node
+    art_id = body.artifact_id
+    if not art_id and body.artifact_title:
+        a_in = ArtifactIn(
+            title=body.artifact_title, kind=body.kind,
+            digital_source=body.digital_source, source_date=body.source_date,
+            author=body.author, author_entity=body.author_entity, company=body.company,
+        )
+        result = add_artifact(deal, a_in)
+        art_id = result["id"]
+
+    # Call LLM for extraction
+    import urllib.request as _req
+    model = os.environ.get("PEOS_MODEL", "claude-sonnet-5")
+    user_msg = (
+        f"Document metadata: author={body.author!r}, date={body.source_date!r}, "
+        f"kind={body.kind!r}, company={body.company!r}\n\n"
+        f"Extract up to {body.max_claims} atomic claims from this document:\n\n"
+        f"{body.text[:80_000]}"
+    )
+    payload = {
+        "model": model, "max_tokens": 8000,
+        "system": _EXTRACT_SYSTEM,
+        "messages": [{"role": "user", "content": user_msg}],
+    }
+    req = _req.Request(
+        "https://api.anthropic.com/v1/messages",
+        data=json.dumps(payload).encode(), method="POST",
+        headers={"Content-Type": "application/json", "x-api-key": key,
+                 "anthropic-version": "2023-06-01"},
+    )
+    with _req.urlopen(req, timeout=120) as resp:
+        raw = json.loads(resp.read())
+
+    text_out = next((b["text"] for b in raw.get("content", []) if b.get("type") == "text"), "[]")
+    # Strip markdown code fences if present
+    text_out = re.sub(r"^```[a-z]*\n?", "", text_out.strip())
+    text_out = re.sub(r"\n?```$", "", text_out.strip())
+    try:
+        extracted = json.loads(text_out)
+    except json.JSONDecodeError:
+        raise HTTPException(500, f"LLM returned non-JSON: {text_out[:300]}")
+
+    if not isinstance(extracted, list):
+        extracted = [extracted]
+
+    return {
+        "artifact_id": art_id,
+        "deal": deal,
+        "claim_count": len(extracted),
+        "claims": extracted,
+        "note": "Review claims then POST each to /api/deal/{deal}/claims to commit to vault.",
+    }
+
+
+@app.post("/api/deal/{deal}/extract/commit")
+def commit_extracted(deal: str, payload: dict):
+    """Commit a list of reviewed claim objects (from /extract) to the vault in one batch."""
+    require_writable()
+    claims_raw = payload.get("claims", [])
+    artifact_id = payload.get("artifact_id", "")
+    committed = []
+    for c in claims_raw:
+        c_in = ClaimIn(
+            subject=c.get("subject", ""),
+            value=str(c.get("value", "")),
+            epistemic=c.get("epistemic", "asserted"),
+            locator=c.get("locator", ""),
+            author=payload.get("author", ""),
+            author_entity=payload.get("author_entity", ""),
+            artifact=payload.get("digital_source", ""),
+            artifact_id=artifact_id,
+            company=payload.get("company", ""),
+            digital_source=payload.get("digital_source", ""),
+            source_date=payload.get("source_date", ""),
+            metric_category=c.get("metric_category") or "",
+            statement=c.get("statement", ""),
+            derivation=c.get("derivation"),
+        )
+        if c_in.epistemic not in EPISTEMIC:
+            c_in.epistemic = "asserted"
+        cid = _write_claim(deal, c_in)
+        committed.append(cid)
+    push()
+    reindex()
+    return {"committed": committed, "count": len(committed)}
 
 
 class QuestionIn(BaseModel):

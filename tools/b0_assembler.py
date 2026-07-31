@@ -162,14 +162,37 @@ def _deal_objects(con: sqlite3.Connection, deal: str, obj_type: str) -> list[dic
     return out
 
 
-def _best_value(claims: list[dict], subjects: list[str]) -> str | None:
-    """Pick the most epistemically strong value for any of the given subjects."""
+def _best_claim(claims: list[dict], subjects: list[str]) -> dict | None:
+    """Pick the most epistemically strong claim for any of the given subjects."""
     priority = {"attested": 0, "observed": 1, "derived": 2, "asserted": 3}
     candidates = [c for c in claims if c.get("subject") in subjects]
     if not candidates:
         return None
     candidates.sort(key=lambda c: priority.get(c.get("epistemic", "asserted"), 9))
-    return str(candidates[0].get("value", ""))
+    return candidates[0]
+
+
+def _best_value(claims: list[dict], subjects: list[str]) -> str | None:
+    """Pick the most epistemically strong value for any of the given subjects."""
+    c = _best_claim(claims, subjects)
+    return str(c.get("value", "")) if c else None
+
+
+def _claim_provenance(claim: dict) -> str:
+    """Return 'artifact · locator' string for a claim."""
+    src = claim.get("source") or {}
+    if isinstance(src, dict):
+        artifact = src.get("artifact") or claim.get("artifact") or ""
+        locator = src.get("locator") or claim.get("locator") or ""
+    else:
+        artifact = claim.get("artifact") or ""
+        locator = claim.get("locator") or ""
+    parts = []
+    if artifact:
+        parts.append(artifact.replace("vault/inbox/", "").replace(".md", ""))
+    if locator:
+        parts.append(locator)
+    return " · ".join(parts) if parts else "—"
 
 
 def _build_workstreams(questions: list[dict]) -> list[dict]:
@@ -227,14 +250,15 @@ def _build_graph(claims: list[dict], lifecycle_state: str) -> dict:
     """Build the causal dependency graph from vault claims."""
     nodes = []
     for topo in GRAPH_TOPOLOGY:
-        value = _best_value(claims, topo["subjects"]) or "—"
-        # Determine epistemic class from the winning claim
-        priority = {"attested": 0, "observed": 1, "derived": 2, "asserted": 3}
-        candidates = [c for c in claims if c.get("subject") in topo["subjects"]]
-        candidates.sort(key=lambda c: priority.get(c.get("epistemic", "asserted"), 9))
-        ep_class = candidates[0].get("epistemic", "derived") if candidates else "derived"
+        best = _best_claim(claims, topo["subjects"])
+        value = str(best.get("value", "—")) if best else "—"
+        ep_class = best.get("epistemic", "derived") if best else "derived"
+        provenance = _claim_provenance(best) if best else "—"
+        claim_id = best.get("id", "") if best else ""
+        derivation = best.get("derivation", "") if best else ""
 
         # Determine staleness: any upstream claim marked stale → this node stale
+        candidates = [c for c in claims if c.get("subject") in topo["subjects"]]
         any_stale = any(c.get("stale") for c in candidates)
 
         node = {
@@ -244,7 +268,9 @@ def _build_graph(claims: list[dict], lifecycle_state: str) -> dict:
             "value": value,
             "evidenceClass": ep_class,
             "status": "stale" if any_stale else "current",
-            "formula": topo["formula"],
+            "formula": derivation or topo["formula"],
+            "provenance": provenance,
+            "claimId": claim_id,
             "upstream": topo["upstream"],
             "downstream": topo["downstream"],
         }

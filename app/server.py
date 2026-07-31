@@ -216,6 +216,44 @@ def deal_staleness(deal: str, payload: dict):
     })
 
 
+@app.get("/api/deal/{deal}/claims")
+def deal_claims_as_of(deal: str, as_of: str | None = None):
+    """Return claims for a deal, optionally filtered to an as-of date (YYYY-MM-DD).
+
+    Each claim carries two timestamps:
+      - source.date / extracted-date: when the underlying fact was true
+      - extracted / ingested-at: when the firm knew it
+
+    as_of filters by source.date: only claims whose source date ≤ as_of are returned.
+    This lets you reconstruct "what did we know on <date>?".
+    """
+    sync()
+    reindex()
+    c = con()
+    rows = c.execute(
+        "SELECT id, frontmatter FROM nodes WHERE type='claim' AND deal=? ORDER BY id", (deal,)
+    ).fetchall()
+    out = []
+    for cid, fm_raw in rows:
+        fm = json.loads(fm_raw)
+        if as_of:
+            # Extract source date: source.date > extracted > ingested-at
+            src = fm.get("source") or {}
+            src_date = (src.get("date") if isinstance(src, dict) else None) or fm.get("extracted") or ""
+            src_date_str = str(src_date)[:10] if src_date else ""
+            if src_date_str and src_date_str > as_of:
+                continue  # claim was not known as of this date
+        out.append({
+            "id": cid,
+            "epistemic": fm.get("epistemic"),
+            "subject": fm.get("subject"),
+            "value": fm.get("value"),
+            "sourceDate": str((fm.get("source") or {}).get("date", "") if isinstance(fm.get("source"), dict) else fm.get("extracted", "")),
+            "provenance": f"{fm.get('artifact') or (fm.get('source') or {}).get('artifact', '')} · {fm.get('locator') or (fm.get('source') or {}).get('locator', '')}".strip(" ·"),
+        })
+    return JSONResponse({"deal": deal, "asOf": as_of, "count": len(out), "claims": out})
+
+
 @app.get("/api/deal/{deal}/stale")
 def deal_stale(deal: str):
     """Return all stale derived claims for a deal."""
@@ -1181,7 +1219,126 @@ _CHAT_TOOLS = [
             "required": ["qt_id"],
         },
     },
+    {
+        "name": "find_claims",
+        "description": (
+            "Search the vault for claims matching a free-text query. ALWAYS call this first when "
+            "the user asks a factual question about a deal (e.g. 'did X happen?', 'what is the EBITDA?', "
+            "'was the equity cure used?'). Returns claims ranked by epistemic precedence: attested (★) "
+            "first, then observed (◉), derived (◎), asserted (○). If an attested or observed claim "
+            "directly answers the question, cite it and let it override model reasoning."
+        ),
+        "input_schema": {
+            "type": "object",
+            "properties": {
+                "query": {"type": "string", "description": "Free-text question or keywords to search for in claim subjects and values."},
+                "deal": {"type": "string", "description": "Optional deal ID to restrict search (e.g. 'keystone')."},
+            },
+            "required": ["query"],
+        },
+    },
 ]
+
+
+_EPISTEMIC_RANK = {"attested": 0, "observed": 1, "derived": 2, "asserted": 3}
+_EPISTEMIC_BADGE = {"attested": "★", "observed": "◉", "derived": "◎", "asserted": "○"}
+_STOP_WORDS = {
+    "the", "a", "an", "is", "was", "did", "does", "what", "how", "why", "when",
+    "which", "that", "this", "it", "in", "on", "at", "to", "of", "for", "and",
+    "or", "do", "not", "has", "have", "been", "be", "are", "were", "with", "by",
+}
+
+
+def _chat_tool_find_claims(inputs: dict) -> dict:
+    """Vault-first claim lookup ranked by epistemic precedence + relevance score (F6)."""
+    query = str(inputs.get("query", ""))
+    deal = inputs.get("deal")
+
+    # Strip deal name from keywords when deal is scoped (it matches everything in that deal)
+    stop_extra = {deal.lower()} if deal else set()
+    keywords = [
+        w.lower().strip("?.,!;:'\"")
+        for w in query.split()
+        if w.lower().strip("?.,!;:'\"") not in (_STOP_WORDS | stop_extra) and len(w) > 2
+    ]
+
+    c = con()
+    try:
+        base_q = "SELECT id, epistemic, subject, frontmatter FROM nodes WHERE type='claim'"
+        params: list = []
+        if deal:
+            base_q += " AND deal=?"
+            params.append(deal)
+        if keywords:
+            # OR across keywords — we'll score in Python
+            conds = []
+            for kw in keywords[:6]:
+                conds.append(
+                    "(LOWER(COALESCE(subject,'')) LIKE ? OR LOWER(COALESCE(value,'')) LIKE ?"
+                    " OR LOWER(frontmatter) LIKE ?)"
+                )
+                params.extend([f"%{kw}%", f"%{kw}%", f"%{kw}%"])
+            base_q += " AND (" + " OR ".join(conds) + ")"
+        rows = c.execute(base_q, params).fetchall()
+    finally:
+        c.close()
+
+    results = []
+    for cid, ep_col, subj_col, fm_raw in rows:
+        fm = json.loads(fm_raw or "{}")
+        ep = ep_col or fm.get("epistemic", "asserted")
+        source = fm.get("source", {}) or {}
+        artifact = source.get("artifact", fm.get("artifact", ""))
+        locator = source.get("locator", fm.get("locator", ""))
+        art_short = str(artifact).split("/")[-1].replace(".md", "") if artifact else ""
+        provenance = " · ".join(filter(None, [art_short, locator]))
+        source_date = str(source.get("date", fm.get("extracted", "")))
+        value = fm.get("value", fm.get("statement", ""))
+        subject = fm.get("subject", subj_col or "")
+
+        # Relevance score: count how many keywords match in subject+value
+        haystack = (f"{subject} {value}").lower()
+        score = sum(1 for kw in keywords if kw in haystack)
+
+        results.append({
+            "id": cid,
+            "epistemic": ep,
+            "ep_rank": _EPISTEMIC_RANK.get(ep, 99),
+            "score": score,
+            "subject": subject,
+            "value": value,
+            "provenance": provenance,
+            "source_date": source_date,
+        })
+
+    # Sort: best relevance among attested/observed first, then fall back to all epistemic tiers
+    results.sort(key=lambda r: (r["ep_rank"], -r["score"], r["id"]))
+
+    if not results:
+        return {
+            "steps": [f"Searched vault for: {query!r} — keywords: {keywords}"],
+            "output": "No vault claims match this query.",
+        }
+
+    lines = []
+    for r in results[:8]:
+        badge = _EPISTEMIC_BADGE.get(r["epistemic"], "?")
+        prov = f"  [{r['provenance']}]" if r["provenance"] else ""
+        date = f"  ({r['source_date']})" if r["source_date"] else ""
+        val = str(r["value"])[:150]
+        lines.append(f"{badge} {r['id']} ({r['epistemic']}, score={r['score']})  {r['subject']}\n    → {val}{prov}{date}")
+
+    top = results[0]
+    steps = [
+        f"Searched vault for: {query!r} (keywords: {keywords})",
+        f"Found {len(results)} claim(s) — top: {top['id']} ({top['epistemic']}, score={top['score']})",
+    ]
+    if top["ep_rank"] <= 1:
+        steps.append(
+            f"VAULT-AUTHORITATIVE: {top['id']} ({top['epistemic']}) overrides model inference — cite this claim."
+        )
+
+    return {"steps": steps, "output": "\n".join(lines)}
 
 
 def _chat_tool_query_brain(inputs: dict) -> dict:
@@ -1372,6 +1529,8 @@ def _chat_tool_read_qt(inputs: dict) -> dict:
 
 
 def _chat_execute_tool(name: str, inputs: dict) -> dict:
+    if name == "find_claims":
+        return _chat_tool_find_claims(inputs)
     if name == "query_brain":
         return _chat_tool_query_brain(inputs)
     if name == "run_contradiction_check":
@@ -1444,11 +1603,18 @@ async def _chat_stream(message: str, deal: str | None = None, history: list[dict
 
     system = f"""You are the PE OS assistant — an AI operating system for private equity deal intelligence.
 
-The vault is a typed knowledge graph: deals, questions (open→resolved), claims (epistemic type: observed > attested > derived > asserted), events (lifecycle triggers), assumptions, decisions, and a brain library of {n_qt} cross-deal question types.
+The vault is a typed knowledge graph: deals, questions (open→resolved), claims (epistemic type: attested > observed > derived > asserted), events (lifecycle triggers), assumptions, decisions, and a brain library of {n_qt} cross-deal question types.
 
 Current vault: {context_line}.{f" Focus: {deal}" if deal else ""}
 
-Use the query tools to look up specific vault data before answering. When you call a tool, briefly say what you're looking for. Ground answers in vault evidence — cite claim IDs when relevant (e.g. c-keystone-041). Be concise.
+## Epistemic-first retrieval (MANDATORY)
+
+For ANY factual question about a deal — "did X happen?", "what is the EBITDA?", "was the equity cure used?", "what is the debt?" — you MUST call `find_claims` first with relevant keywords before answering. This is not optional.
+
+The vault uses epistemic precedence: attested (★) > observed (◉) > derived (◎) > asserted (○).
+- If `find_claims` returns a ★ attested or ◉ observed claim that answers the question, CITE IT and let it override your model reasoning. Do not contradict vault-authoritative claims.
+- Always cite the claim ID (e.g. c-keystone-041) when vault evidence exists.
+- Only use model inference when no vault claim covers the question.
 
 Key concepts:
 - Contradictions: same subject, irreconcilable values across claims — flagged by agents, never adjudicated

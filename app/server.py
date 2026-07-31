@@ -216,6 +216,63 @@ def deal_staleness(deal: str, payload: dict):
     })
 
 
+@app.get("/api/deal/{deal}/stale")
+def deal_stale(deal: str):
+    """Return all stale derived claims for a deal."""
+    sync()
+    reindex()
+    try:
+        from recalc import query_stale
+    except ImportError:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("recalc", ROOT / "tools" / "recalc.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        query_stale = mod.query_stale
+    c = con()
+    return JSONResponse({"deal": deal, "stale": query_stale(c, deal)})
+
+
+class RecalcIn(BaseModel):
+    claim_id: str
+    new_value: str
+    write_stale: bool = False
+
+
+@app.post("/api/deal/{deal}/recalc")
+def deal_recalc(deal: str, payload: RecalcIn):
+    """Deterministic recalculation from a changed claim value.
+
+    If write_stale=true, marks descendants stale in vault files.
+    """
+    sync()
+    reindex()
+    try:
+        from recalc import recalc, mark_stale, report
+    except ImportError:
+        import importlib.util
+        spec = importlib.util.spec_from_file_location("recalc", ROOT / "tools" / "recalc.py")
+        mod = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(mod)
+        recalc = mod.recalc
+        mark_stale = mod.mark_stale
+        report = mod.report
+    c = con()
+    result = recalc(c, deal, payload.claim_id, payload.new_value)
+    marked = []
+    if payload.write_stale:
+        require_writable()
+        marked = mark_stale(deal, payload.claim_id)
+        push()
+    return JSONResponse({
+        "changed": result.changed,
+        "order": result.order,
+        "recomputed": [{"id": cid, "value": val} for cid, val in result.recomputed],
+        "stale": [{"id": cid, "old": old, "new": new} for cid, old, new in result.stale],
+        "marked_stale_in_vault": marked,
+    })
+
+
 @app.get("/api/brain")
 def brain():
     sync()

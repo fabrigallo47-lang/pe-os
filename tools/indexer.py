@@ -107,13 +107,15 @@ def build() -> sqlite3.Connection:
                             state TEXT, epistemic TEXT, subject TEXT, value TEXT,
                             deal TEXT, frontmatter TEXT,
                             metric_category TEXT, digital_source TEXT,
-                            extracted TEXT, last_seen TEXT);
+                            extracted TEXT, last_seen TEXT,
+                            period TEXT, perimeter TEXT);
         CREATE TABLE edges (src TEXT, dst TEXT, rel TEXT);
         CREATE INDEX idx_edges_src ON edges(src, rel);
         CREATE INDEX idx_edges_dst ON edges(dst, rel);
         CREATE INDEX idx_nodes_subject ON nodes(deal, subject);
         CREATE INDEX idx_nodes_metric ON nodes(deal, metric_category);
         CREATE INDEX idx_nodes_last_seen ON nodes(deal, last_seen);
+        CREATE INDEX idx_nodes_period ON nodes(deal, period, perimeter);
         """
     )
     skipped = 0
@@ -135,7 +137,7 @@ def build() -> sqlite3.Connection:
         extracted = str(fm.get("extracted", "")) or None
         last_seen = str(fm.get("last-seen", "")) or extracted  # default last-seen to extracted
         con.execute(
-            "INSERT OR REPLACE INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT OR REPLACE INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 node_id,
                 fm.get("type"),
@@ -151,6 +153,8 @@ def build() -> sqlite3.Connection:
                 digital_src,
                 extracted,
                 last_seen,
+                fm.get("period"),
+                fm.get("perimeter"),
             ),
         )
         for field, rel in LINK_FIELDS.items():

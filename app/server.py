@@ -417,6 +417,9 @@ class ClaimIn(BaseModel):
     digital_source: str = ""     # permanent URL or VDR path
     metric_category: str = ""    # one of METRIC_CATEGORIES
     part_of: str = ""            # parent aggregate claim ID (micro-claim hierarchy)
+    period: str = ""             # e.g. "FY2025", "LTM", "Opening", "Q4 2025"
+    perimeter: str = ""          # e.g. "Firm View", "QoE View", "consolidated", "standalone"
+    perimeter_note: str = ""     # free-text scope clarification
     statement: str = ""
     derivation: str | None = None
     rests_on: list[str] = []     # explicit dependency chain (for derived claims)
@@ -434,6 +437,9 @@ def _write_claim(deal: str, c_in: ClaimIn, extracted_by: str = "human") -> str:
     metric_line = f"metric-category: {c_in.metric_category}" if c_in.metric_category in METRIC_CATEGORIES else "metric-category: null"
     digital_line = f'digital-source: "{c_in.digital_source}"' if c_in.digital_source else "digital-source: null"
     part_of_line = f'part-of: "[[{c_in.part_of}]]"' if c_in.part_of else "part-of: null"
+    period_line = f'period: "{c_in.period}"' if c_in.period else "period: null"
+    perimeter_line = f'perimeter: "{c_in.perimeter}"' if c_in.perimeter else "perimeter: null"
+    perimeter_note_line = f'perimeter-note: "{c_in.perimeter_note}"' if c_in.perimeter_note else "perimeter-note: null"
     body = f"""---
 type: claim
 id: {cid}
@@ -453,6 +459,9 @@ source:
 {digital_line}
 {metric_line}
 {part_of_line}
+{period_line}
+{perimeter_line}
+{perimeter_note_line}
 derivation: {json.dumps(c_in.derivation) if c_in.derivation else 'null'}
 rests-on: [{rests}]
 supersedes: null
@@ -581,24 +590,121 @@ def claims_unseen(deal: str, since: str):
 
 @app.get("/api/vault/manifest")
 def vault_manifest():
-    """Return the global graph intake timestamp from vault/manifest.md."""
+    """Return the global graph intake timestamp from vault/manifest.md (read from file — always fresh)."""
     mp = VAULT / "manifest.md"
     if not mp.exists():
         return {"last_intake": None, "node_count": None, "edge_count": None}
-    c = con()
     try:
-        row = c.execute("SELECT frontmatter FROM nodes WHERE id='vault-manifest'").fetchone()
-    finally:
-        c.close()
-    if row:
-        fm = json.loads(row[0])
+        import yaml as _yaml
+        text = mp.read_text(encoding="utf-8")
+        end = text.find("\n---", 3)
+        fm = _yaml.safe_load(text[3:end]) or {} if end != -1 else {}
         return {
-            "last_intake": fm.get("last-intake"),
-            "last_intake_date": fm.get("last-intake-date"),
+            "last_intake": str(fm.get("last-intake", "")),
+            "last_intake_date": str(fm.get("last-intake-date", "")),
             "node_count": fm.get("node-count"),
             "edge_count": fm.get("edge-count"),
         }
-    return {"last_intake": None}
+    except Exception:
+        return {"last_intake": None}
+
+
+# ── analysis endpoints: coverage · identity · binding ─────────────────────────
+
+def _load_tool(name: str):
+    """Lazy-load a tools/ module by filename without package import."""
+    import importlib.util
+    spec = importlib.util.spec_from_file_location(name, ROOT / "tools" / f"{name}.py")
+    mod = importlib.util.module_from_spec(spec)
+    spec.loader.exec_module(mod)
+    return mod
+
+
+@app.get("/api/deal/{deal}/coverage")
+def deal_coverage(deal: str):
+    """Coverage report: how many claims are bound, unbound, stale, period-tagged."""
+    c = con()
+    try:
+        mod = _load_tool("coverage_report")
+        return mod.coverage(c, deal)
+    finally:
+        c.close()
+
+
+@app.get("/api/deal/{deal}/identity")
+def deal_identity(deal: str, threshold: float = 0.60):
+    """Identity resolution: candidate pairs that may describe the same quantity."""
+    c = con()
+    try:
+        mod = _load_tool("identity_resolver")
+        results = mod.batch_resolve(c, deal, threshold)
+        return [
+            {
+                "claim_a": r.claim_a, "claim_b": r.claim_b,
+                "score": r.score, "verdict": r.verdict,
+                "period_match": r.period_match, "perimeter_match": r.perimeter_match,
+                "same_metric_category": r.same_metric_category,
+                "reasons": r.reasons,
+            }
+            for r in results
+        ]
+    finally:
+        c.close()
+
+
+@app.get("/api/deal/{deal}/binding")
+def deal_binding(deal: str, min_confidence: float = 0.35):
+    """Binding proposals: unbound claims ranked by best-match question."""
+    c = con()
+    try:
+        mod = _load_tool("binding_proposer")
+        proposals = mod.propose_bindings(c, deal)
+        return [
+            {
+                "claim_id": p.claim_id, "claim_subject": p.claim_subject,
+                "question_id": p.question_id, "question_title": p.question_title,
+                "confidence": p.confidence, "category": p.category,
+                "reasons": p.reasons,
+            }
+            for p in proposals if p.confidence >= min_confidence
+        ]
+    finally:
+        c.close()
+
+
+@app.post("/api/deal/{deal}/parse-model")
+def parse_model(deal: str, payload: dict):
+    """Parse markdown model files and write claims to vault.
+
+    payload: {files: ["vault/inbox/keystone-model-part1.md", ...], artifact_id: "..."}
+    """
+    require_writable()
+    mod = _load_tool("model_parser")
+    vault = VAULT
+
+    files = [Path(f) for f in payload.get("files", [])]
+    if not files:
+        # Auto-discover
+        files = sorted((vault / "inbox").glob(f"*{deal}*model*.md"))
+    if not files:
+        raise HTTPException(404, f"No model files found for deal '{deal}'")
+
+    artifact_id = payload.get("artifact_id", "")
+    all_cells = []
+    for f in files:
+        cells = mod.parse_file(f, deal)
+        all_cells.extend(cells)
+
+    all_cells = mod.resolve_dependencies(all_cells, deal)
+    written = mod.write_claims(all_cells, deal, artifact_id, vault)
+    reindex()
+    return {
+        "deal": deal,
+        "files_parsed": [str(f) for f in files],
+        "cells_found": len(all_cells),
+        "claims_written": len(written),
+        "claim_ids": written[:20],  # first 20 for inspection
+    }
 
 
 # ── artifact nodes ────────────────────────────────────────────────────────────
@@ -1629,6 +1735,7 @@ _CHAT_TOOLS = [
             "properties": {
                 "query": {"type": "string", "description": "Free-text question or keywords to search for in claim subjects and values."},
                 "deal": {"type": "string", "description": "Optional deal ID to restrict search (e.g. 'keystone')."},
+                "as_of": {"type": "string", "description": "Optional YYYY-MM-DD date. When set, only claims whose source date or extracted date is on or before this date are returned. Use this for point-in-time questions like 'what did we know as of the IC meeting?'"},
             },
             "required": ["query"],
         },
@@ -1649,6 +1756,7 @@ def _chat_tool_find_claims(inputs: dict) -> dict:
     """Vault-first claim lookup ranked by epistemic precedence + relevance score (F6)."""
     query = str(inputs.get("query", ""))
     deal = inputs.get("deal")
+    as_of = inputs.get("as_of")  # optional YYYY-MM-DD point-in-time filter
 
     # Strip deal name from keywords when deal is scoped (it matches everything in that deal)
     stop_extra = {deal.lower()} if deal else set()
@@ -1660,7 +1768,7 @@ def _chat_tool_find_claims(inputs: dict) -> dict:
 
     c = con()
     try:
-        base_q = "SELECT id, epistemic, subject, frontmatter FROM nodes WHERE type='claim'"
+        base_q = "SELECT id, epistemic, subject, frontmatter, extracted FROM nodes WHERE type='claim'"
         params: list = []
         if deal:
             base_q += " AND deal=?"
@@ -1680,7 +1788,7 @@ def _chat_tool_find_claims(inputs: dict) -> dict:
         c.close()
 
     results = []
-    for cid, ep_col, subj_col, fm_raw in rows:
+    for cid, ep_col, subj_col, fm_raw, extracted_col in rows:
         fm = json.loads(fm_raw or "{}")
         ep = ep_col or fm.get("epistemic", "asserted")
         source = fm.get("source", {}) or {}
@@ -1688,9 +1796,13 @@ def _chat_tool_find_claims(inputs: dict) -> dict:
         locator = source.get("locator", fm.get("locator", ""))
         art_short = str(artifact).split("/")[-1].replace(".md", "") if artifact else ""
         provenance = " · ".join(filter(None, [art_short, locator]))
-        source_date = str(source.get("date", fm.get("extracted", "")))
+        source_date = str(source.get("date") or fm.get("extracted") or extracted_col or "")
         value = fm.get("value", fm.get("statement", ""))
         subject = fm.get("subject", subj_col or "")
+
+        # as_of filter: skip claims whose source date is after the as_of cutoff
+        if as_of and source_date and source_date > as_of:
+            continue
 
         # Relevance score: count how many keywords match in subject+value
         haystack = (f"{subject} {value}").lower()
@@ -1711,9 +1823,10 @@ def _chat_tool_find_claims(inputs: dict) -> dict:
     results.sort(key=lambda r: (r["ep_rank"], -r["score"], r["id"]))
 
     if not results:
+        asof_note = f" as of {as_of}" if as_of else ""
         return {
-            "steps": [f"Searched vault for: {query!r} — keywords: {keywords}"],
-            "output": "No vault claims match this query.",
+            "steps": [f"Searched vault for: {query!r}{asof_note} — keywords: {keywords}"],
+            "output": f"No vault claims match this query{asof_note}.",
         }
 
     lines = []
@@ -1725,8 +1838,9 @@ def _chat_tool_find_claims(inputs: dict) -> dict:
         lines.append(f"{badge} {r['id']} ({r['epistemic']}, score={r['score']})  {r['subject']}\n    → {val}{prov}{date}")
 
     top = results[0]
+    asof_note = f" (as-of {as_of})" if as_of else ""
     steps = [
-        f"Searched vault for: {query!r} (keywords: {keywords})",
+        f"Searched vault for: {query!r}{asof_note} (keywords: {keywords})",
         f"Found {len(results)} claim(s) — top: {top['id']} ({top['epistemic']}, score={top['score']})",
     ]
     if top["ep_rank"] <= 1:

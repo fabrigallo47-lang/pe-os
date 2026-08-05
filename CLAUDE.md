@@ -39,7 +39,7 @@ tools/          indexer.py (vault → .index/vault.db, rebuilt on demand)
 
 - New deal → `/open-deal`. Artifact arrives → `/ingest`. Anytime → `/contradictions`. Decision moment → `/ic-record`.
 - After any vault write: `make index`. Health check: `make report`.
-- Build order status: **1 decision-record ✅ schema · 2 questions+evidence ✅ schema · 3 contradiction agent ✅ v1 · 4 policy table ✅ · 5 knowledge graph ✅ · 6 phase coordinator ✅ · 7 IC assembler ✅ · 8 origination/ownership/exit loops ⬜.** Runtime: 11 agents. **P1 Layer-1 grader ✅ 8/8 · P2 Living arc ✅ 15/15 · lifecycle S12_EXIT_REALIZATION ✅ · P3 process kernel ✅ v1 · P4 integrations ⬜.** Next: P4 integrations (Gmail/Outlook IMAP pull → inbox → pipeline) or deeper kernel guard wiring (LS-02 at ingestion time).
+- Build order status: **1 decision-record ✅ schema · 2 questions+evidence ✅ schema · 3 contradiction agent ✅ v1 · 4 policy table ✅ · 5 knowledge graph ✅ · 6 phase coordinator ✅ · 7 IC assembler ✅ · 8 origination/ownership/exit loops ⬜.** Runtime: 11 agents. **P1 Layer-1 grader ✅ 8/8 · P2 Living arc ✅ 15/15 · lifecycle S12_EXIT_REALIZATION ✅ · P3 process kernel ✅ v1 · P4 integrations ⬜.** Model graph: **model-parser ✅ · claim-extractor schema ✅ · identity-resolver ✅ · binding-proposer ✅ · coverage-report ✅.** F5 as_of filter ✅. Next: P4 integrations (Gmail/Outlook IMAP pull → inbox → pipeline, blocked by ZDR/F10) or origination/ownership loop agents (item 8).
 
 ## Conventions
 

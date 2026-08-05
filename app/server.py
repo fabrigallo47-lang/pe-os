@@ -416,19 +416,24 @@ class ClaimIn(BaseModel):
     company: str = ""            # company entity ID e.g. "keystone-project"
     digital_source: str = ""     # permanent URL or VDR path
     metric_category: str = ""    # one of METRIC_CATEGORIES
+    part_of: str = ""            # parent aggregate claim ID (micro-claim hierarchy)
     statement: str = ""
     derivation: str | None = None
+    rests_on: list[str] = []     # explicit dependency chain (for derived claims)
 
 
-def _write_claim(deal: str, c_in: ClaimIn) -> str:
+def _write_claim(deal: str, c_in: ClaimIn, extracted_by: str = "human") -> str:
     """Write one claim file to vault/deals/<deal>/claims/ and return its ID."""
     cid = next_id(deal, "c", "claims")
+    today = str(datetime.now().date())
     bears = ", ".join(f'"[[{b}]]"' for b in c_in.bears_on)
+    rests = ", ".join(f'"[[{r}]]"' for r in c_in.rests_on)
     artifact_id_line = f'artifact-id: "[[{c_in.artifact_id}]]"' if c_in.artifact_id else "artifact-id: null"
     company_line = f'company: "[[{c_in.company}]]"' if c_in.company else "company: null"
     author_entity_line = f'author-entity: "[[{c_in.author_entity}]]"' if c_in.author_entity else "author-entity: null"
     metric_line = f"metric-category: {c_in.metric_category}" if c_in.metric_category in METRIC_CATEGORIES else "metric-category: null"
     digital_line = f'digital-source: "{c_in.digital_source}"' if c_in.digital_source else "digital-source: null"
+    part_of_line = f'part-of: "[[{c_in.part_of}]]"' if c_in.part_of else "part-of: null"
     body = f"""---
 type: claim
 id: {cid}
@@ -441,23 +446,44 @@ source:
   artifact: "{c_in.artifact or 'entered via app'}"
   locator: "{c_in.locator}"
   author: "{c_in.author}"
-  date: {c_in.source_date or datetime.now().date()}
+  date: {c_in.source_date or today}
 {artifact_id_line}
 {company_line}
 {author_entity_line}
 {digital_line}
 {metric_line}
+{part_of_line}
 derivation: {json.dumps(c_in.derivation) if c_in.derivation else 'null'}
-rests-on: []
+rests-on: [{rests}]
 supersedes: null
-extracted-by: human
-extracted: {datetime.now().date()}
+extracted-by: {extracted_by}
+extracted: {today}
+last-seen: {today}
+stale: false
 ---
 
 {c_in.statement or c_in.subject + ': ' + c_in.value}
 """
     (VAULT / "deals" / deal / "claims" / f"{cid}.md").write_text(body, encoding="utf-8")
     return cid
+
+
+def _touch_last_seen(claim_path: Path) -> bool:
+    """Stamp last-seen: today on an existing claim file. Returns True if updated."""
+    today = str(datetime.now().date())
+    text = claim_path.read_text(encoding="utf-8")
+    if f"last-seen: {today}" in text:
+        return False  # already current
+    if "last-seen:" in text:
+        new_text = re.sub(r"last-seen:\s*\S+", f"last-seen: {today}", text)
+    else:
+        # Insert before extracted-by or at end of frontmatter
+        if "extracted-by:" in text:
+            new_text = text.replace("extracted-by:", f"last-seen: {today}\nextracted-by:", 1)
+        else:
+            new_text = text.replace("\n---\n\n", f"\nlast-seen: {today}\n---\n\n", 1)
+    claim_path.write_text(new_text, encoding="utf-8")
+    return True
 
 
 @app.post("/api/deal/{deal}/claims")
@@ -471,6 +497,108 @@ def add_claim(deal: str, c_in: ClaimIn):
     push()
     reindex()
     return {"id": cid}
+
+
+class ConfirmIn(BaseModel):
+    """A batch of (subject, value) pairs from a new ingestion pass.
+
+    For each pair: if an existing claim matches, stamp last-seen today.
+    If no match, return it as 'new' (caller decides whether to create).
+    """
+    pairs: list[dict]   # [{subject, value, locator?, source_date?}, ...]
+    artifact_id: str = ""
+
+
+@app.post("/api/deal/{deal}/claims/confirm")
+def confirm_claims(deal: str, body: ConfirmIn):
+    """Deduplication + last-seen update for an ingestion pass.
+
+    For each (subject, value) pair:
+    - If an existing claim with that subject+value exists → stamp last-seen: today
+    - If not → return as 'new' so the caller can create it
+    """
+    require_writable()
+    c = con()
+    try:
+        rows = c.execute(
+            "SELECT id, subject, value, path FROM nodes WHERE type='claim' AND deal=?", (deal,)
+        ).fetchall()
+    finally:
+        c.close()
+
+    existing: dict[tuple, str] = {}  # (subject_lower, value_lower) → claim_id
+    path_map: dict[str, str] = {}    # claim_id → vault-relative path
+    for cid, subj, val, path_str in rows:
+        if subj and val:
+            existing[(subj.strip().lower(), val.strip().lower())] = cid
+            path_map[cid] = path_str
+
+    confirmed, new_claims = [], []
+    for pair in body.pairs:
+        subj = str(pair.get("subject", "")).strip()
+        val = str(pair.get("value", "")).strip()
+        key = (subj.lower(), val.lower())
+        if key in existing:
+            cid = existing[key]
+            fpath = VAULT / path_map[cid]
+            updated = _touch_last_seen(fpath) if fpath.exists() else False
+            confirmed.append({"id": cid, "subject": subj, "last_seen_updated": updated})
+        else:
+            new_claims.append(pair)
+
+    reindex()
+    return {
+        "confirmed": confirmed,
+        "confirmed_count": len(confirmed),
+        "new": new_claims,
+        "new_count": len(new_claims),
+    }
+
+
+@app.get("/api/deal/{deal}/claims/unseen")
+def claims_unseen(deal: str, since: str):
+    """Claims not reconfirmed since `since` (YYYY-MM-DD).
+
+    These are facts the vault holds but no recent ingestion has confirmed.
+    """
+    c = con()
+    try:
+        rows = c.execute(
+            "SELECT id, subject, value, epistemic, last_seen, extracted "
+            "FROM nodes WHERE type='claim' AND deal=? "
+            "AND (last_seen IS NULL OR last_seen < ?) "
+            "ORDER BY last_seen ASC NULLS FIRST, id",
+            (deal, since),
+        ).fetchall()
+    finally:
+        c.close()
+    return [
+        {"id": cid, "subject": subj, "value": val, "epistemic": ep,
+         "last_seen": ls, "extracted": ext}
+        for cid, subj, val, ep, ls, ext in rows
+    ]
+
+
+@app.get("/api/vault/manifest")
+def vault_manifest():
+    """Return the global graph intake timestamp from vault/manifest.md."""
+    mp = VAULT / "manifest.md"
+    if not mp.exists():
+        return {"last_intake": None, "node_count": None, "edge_count": None}
+    c = con()
+    try:
+        row = c.execute("SELECT frontmatter FROM nodes WHERE id='vault-manifest'").fetchone()
+    finally:
+        c.close()
+    if row:
+        fm = json.loads(row[0])
+        return {
+            "last_intake": fm.get("last-intake"),
+            "last_intake_date": fm.get("last-intake-date"),
+            "node_count": fm.get("node-count"),
+            "edge_count": fm.get("edge-count"),
+        }
+    return {"last_intake": None}
 
 
 # ── artifact nodes ────────────────────────────────────────────────────────────
@@ -569,18 +697,32 @@ class ExtractIn(BaseModel):
 
 _EXTRACT_SYSTEM = """You are a claim extraction agent for a private equity knowledge vault.
 
-Extract ATOMIC claims from the document. One claim = one fact. Never pack multiple numbers or assertions into a single claim value.
+## Atomicity rule
+One claim = one fact. Never pack multiple numbers or assertions into a single claim value.
+If a table row has N numbers, extract N micro-claims plus one parent aggregate claim.
 
-For each claim return a JSON object with:
-- subject: normalized topic string (same concept across documents must use the same subject)
-- value: the single fact (one number, one assertion, one observation)
-- epistemic: "asserted" (stated by someone) | "derived" (computed, show formula) | "observed" (recorded event) | "attested" (audited/contractual)
-- locator: exact location in document (page N, slide N, cell A1, timestamp HH:MM:SS)
-- metric_category: one of [revenue, ebitda, debt, equity, irr, leverage, multiple, headcount, margin, growth, cash, capex, working-capital, customer-concentration, churn, price, volume] or null
-- derivation: formula in plain English if epistemic=derived, else null
-- statement: one sentence in plain English restating the claim
+## Hierarchy rule
+When a document shows a bridge or roll-forward (e.g. EBITDA bridge, revenue bridge, debt schedule):
+1. Extract one PARENT claim: the aggregate/total, epistemic=derived, with a derivation field.
+2. Extract one CHILD claim per line item: the atomic number, with part_of set to the parent's
+   position in the array (use a placeholder like "parent:0" referencing the parent's index).
+3. The parent's rests_on should list all child subjects.
 
-Return a JSON array of claim objects. No prose, no markdown — pure JSON array."""
+## Output format
+Return a JSON array of claim objects. Each object:
+{
+  "subject": "normalized topic string — same concept must use same subject across documents",
+  "value": "single fact (one number, one assertion)",
+  "epistemic": "asserted|derived|observed|attested",
+  "locator": "slide N / page N / cell Sheet1!D42 / timestamp HH:MM:SS",
+  "metric_category": "revenue|ebitda|debt|equity|irr|leverage|multiple|headcount|margin|growth|cash|capex|working-capital|customer-concentration|churn|price|volume|null",
+  "derivation": "formula in plain English if derived, else null",
+  "rests_on_subjects": ["subject of child claim 1", ...],  // for derived parent claims
+  "part_of_index": null,  // integer index of parent claim in this array, for child claims
+  "statement": "one sentence in plain English"
+}
+
+No prose, no markdown — pure JSON array."""
 
 
 @app.post("/api/deal/{deal}/extract")
@@ -655,12 +797,23 @@ def extract_claims(deal: str, body: ExtractIn):
 
 @app.post("/api/deal/{deal}/extract/commit")
 def commit_extracted(deal: str, payload: dict):
-    """Commit a list of reviewed claim objects (from /extract) to the vault in one batch."""
+    """Commit reviewed claim objects (from /extract) to vault in one batch.
+
+    Handles micro-claim hierarchy: claims with part_of_index get linked to the
+    parent claim at that index once the parent's ID is known.
+    """
     require_writable()
     claims_raw = payload.get("claims", [])
     artifact_id = payload.get("artifact_id", "")
-    committed = []
+    committed: list[str] = []  # list of claim IDs in order
+
     for c in claims_raw:
+        # Resolve part_of from index to actual claim ID
+        part_of_id = ""
+        poi = c.get("part_of_index")
+        if poi is not None and isinstance(poi, int) and 0 <= poi < len(committed):
+            part_of_id = committed[poi]
+
         c_in = ClaimIn(
             subject=c.get("subject", ""),
             value=str(c.get("value", "")),
@@ -674,13 +827,15 @@ def commit_extracted(deal: str, payload: dict):
             digital_source=payload.get("digital_source", ""),
             source_date=payload.get("source_date", ""),
             metric_category=c.get("metric_category") or "",
+            part_of=part_of_id,
             statement=c.get("statement", ""),
             derivation=c.get("derivation"),
         )
         if c_in.epistemic not in EPISTEMIC:
             c_in.epistemic = "asserted"
-        cid = _write_claim(deal, c_in)
+        cid = _write_claim(deal, c_in, extracted_by="extractor")
         committed.append(cid)
+
     push()
     reindex()
     return {"committed": committed, "count": len(committed)}

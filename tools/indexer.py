@@ -60,6 +60,8 @@ LINK_FIELDS = {
     "artifact-id": "artifact-id",
     # claim → entity node (who produced the claim)
     "author-entity": "author-entity",
+    # micro-claim → parent aggregate claim (display hierarchy, separate from rests-on)
+    "part-of": "part-of",
 }
 
 WIKILINK = re.compile(r"\[\[([^\]|#]+)")
@@ -104,12 +106,14 @@ def build() -> sqlite3.Connection:
         CREATE TABLE nodes (id TEXT PRIMARY KEY, type TEXT, path TEXT, title TEXT,
                             state TEXT, epistemic TEXT, subject TEXT, value TEXT,
                             deal TEXT, frontmatter TEXT,
-                            metric_category TEXT, digital_source TEXT);
+                            metric_category TEXT, digital_source TEXT,
+                            extracted TEXT, last_seen TEXT);
         CREATE TABLE edges (src TEXT, dst TEXT, rel TEXT);
         CREATE INDEX idx_edges_src ON edges(src, rel);
         CREATE INDEX idx_edges_dst ON edges(dst, rel);
         CREATE INDEX idx_nodes_subject ON nodes(deal, subject);
         CREATE INDEX idx_nodes_metric ON nodes(deal, metric_category);
+        CREATE INDEX idx_nodes_last_seen ON nodes(deal, last_seen);
         """
     )
     skipped = 0
@@ -128,8 +132,10 @@ def build() -> sqlite3.Connection:
             deal = [path.relative_to(VAULT / "deals").parts[0]]
         source = fm.get("source") or {}
         digital_src = fm.get("digital-source") or (source.get("url") if isinstance(source, dict) else None)
+        extracted = str(fm.get("extracted", "")) or None
+        last_seen = str(fm.get("last-seen", "")) or extracted  # default last-seen to extracted
         con.execute(
-            "INSERT OR REPLACE INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?,?)",
+            "INSERT OR REPLACE INTO nodes VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?)",
             (
                 node_id,
                 fm.get("type"),
@@ -143,6 +149,8 @@ def build() -> sqlite3.Connection:
                 json.dumps({**fm, "source": source}, default=str),
                 fm.get("metric-category"),
                 digital_src,
+                extracted,
+                last_seen,
             ),
         )
         for field, rel in LINK_FIELDS.items():
@@ -157,7 +165,33 @@ def build() -> sqlite3.Connection:
     loc = str(DB.relative_to(ROOT)) if DB.is_relative_to(ROOT) else str(DB)
     print(f"indexed {n_nodes} nodes, {n_edges} edges -> {loc}"
           + (f" ({skipped} files without frontmatter skipped)" if skipped else ""))
+    # Write global manifest — the "last general graph intake" timestamp
+    _write_manifest(VAULT, n_nodes, n_edges)
     return sqlite3.connect(DB)
+
+
+def _write_manifest(vault: Path, n_nodes: int, n_edges: int) -> None:
+    """Write vault/manifest.md — the authoritative 'last graph intake' timestamp."""
+    import datetime as _dt
+    now = _dt.datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    today = _dt.date.today().isoformat()
+    manifest_path = vault / "manifest.md"
+    body = f"""---
+type: manifest
+id: vault-manifest
+last-intake: {now}
+last-intake-date: {today}
+node-count: {n_nodes}
+edge-count: {n_edges}
+written-by: indexer
+---
+
+# Vault Manifest
+
+Last graph intake: {now}
+Nodes: {n_nodes} · Edges: {n_edges}
+"""
+    manifest_path.write_text(body, encoding="utf-8")
 
 
 def report(con: sqlite3.Connection) -> None:

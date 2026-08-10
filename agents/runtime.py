@@ -109,6 +109,25 @@ def deals() -> list[str]:
     return [d.name for d in (VAULT / "deals").iterdir() if d.is_dir()]
 
 
+def _deal_state(deal: str) -> str | None:
+    """Read the current deal state from deal.md frontmatter."""
+    deal_file = VAULT / "deals" / deal / "deal.md"
+    if not deal_file.exists():
+        return None
+    text = deal_file.read_text(encoding="utf-8")
+    if not text.startswith("---"):
+        return None
+    end = text.find("\n---", 3)
+    if end == -1:
+        return None
+    try:
+        import yaml as _yaml
+        fm = _yaml.safe_load(text[3:end]) or {}
+        return fm.get("state")
+    except Exception:
+        return None
+
+
 def deal_for(filename: str) -> str | None:
     """Route an inbox artifact to a deal: filename prefix wins (astrelia-x.pdf →
     astrelia); a single existing deal is the fallback; otherwise unroutable."""
@@ -279,7 +298,26 @@ class Extractor(Agent):
                 audit(self.id, self.activity_id, "pending",
                       f"{src.name}: no deal prefix and multiple deals — rename to <deal>-… to route", [])
                 continue
+            # LS-02 guard (EMP-01 ENFORCE gate): initial assessment must precede full extraction.
+            # Warn — do not block — when no IA-class claim or artifact exists for this deal yet.
             before = {f.name for f in (VAULT / "deals" / deal / "claims").glob("*.md")}
+            if not before:
+                # First-ever extraction for this deal — check if an initial assessment exists.
+                ia_artifacts = list((VAULT / "deals" / deal).rglob("*.md"))
+                ia_found = any("initial" in f.stem.lower() or "assessment" in f.stem.lower()
+                               for f in ia_artifacts)
+                try:
+                    gates = contracts.gates_for_state(
+                        _deal_state(deal) or "S0_DEAL_SOURCING")
+                    ls02_required = any(g.get("kernel_id") == "LS-02" for g in gates)
+                except Exception:
+                    ls02_required, ia_found = True, False
+                if ls02_required and not ia_found:
+                    audit(self.id, self.activity_id, "ls02-warn",
+                          f"[EMP-01 ENFORCE] Deal '{deal}' has no initial assessment on record. "
+                          f"LS-02 (opportunity-specific IA, risk map, quick model) is required before "
+                          f"full diligence extraction. Proceeding with extraction but flag this for review.",
+                          [])
             audit(self.id, self.activity_id, "extraction-started", src.name, [])
             prompt = f"""You are the PE OS extractor agent. Work autonomously; never ask questions.
 

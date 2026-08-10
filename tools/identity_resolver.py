@@ -211,19 +211,42 @@ def batch_resolve(con: sqlite3.Connection, deal: str, threshold: float = 0.60) -
         by_mc.setdefault(mc, []).append(c)
 
     results: list[IdentityScore] = []
+    seen_pairs: set[frozenset] = set()
+
+    def _add(a: dict, b: dict) -> None:
+        pair = frozenset([a["id"], b["id"]])
+        if pair in seen_pairs:
+            return
+        seen_pairs.add(pair)
+        # Skip mp-vs-mp (same Excel source, same origin) unless they have period/perimeter diff
+        if a["id"].startswith("mp-") and b["id"].startswith("mp-"):
+            if not (a.get("period") or a.get("perimeter")) and not (b.get("period") or b.get("perimeter")):
+                return
+        s = score_pair(a, b)
+        if s.score >= threshold:
+            results.append(s)
+
+    # Same metric-category grouping (efficient path)
     for mc, group in by_mc.items():
-        if len(group) < 2:
+        if mc == "other" or len(group) < 2:
             continue
         for i, a in enumerate(group):
             for b in group[i + 1:]:
-                if a["id"] == b["id"]:
-                    continue
-                # Skip pairs from the same source type (model-parser ↔ model-parser without period)
-                if a["id"].startswith("mp-") and b["id"].startswith("mp-"):
-                    continue
-                s = score_pair(a, b)
-                if s.score >= threshold:
-                    results.append(s)
+                _add(a, b)
+
+    # Cross-source matching: model-parser claims vs manual claims with no metric_category
+    mp_claims = [c for c in claims if c["id"].startswith("mp-") and c.get("metric_category")]
+    untagged = [c for c in claims if not c.get("metric_category") and not c["id"].startswith("mp-")]
+    high_threshold = max(threshold, 0.70)  # tighter threshold for broad scan
+    for mp_c in mp_claims:
+        for u in untagged:
+            pair = frozenset([mp_c["id"], u["id"]])
+            if pair in seen_pairs:
+                continue
+            seen_pairs.add(pair)
+            s = score_pair(mp_c, u)
+            if s.score >= high_threshold:
+                results.append(s)
 
     results.sort(key=lambda r: -r.score)
     return results

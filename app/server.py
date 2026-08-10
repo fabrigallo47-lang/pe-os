@@ -613,9 +613,12 @@ def vault_manifest():
 
 def _load_tool(name: str):
     """Lazy-load a tools/ module by filename without package import."""
-    import importlib.util
+    import importlib.util, sys as _sys
+    if name in _sys.modules:
+        return _sys.modules[name]
     spec = importlib.util.spec_from_file_location(name, ROOT / "tools" / f"{name}.py")
     mod = importlib.util.module_from_spec(spec)
+    _sys.modules[name] = mod  # register before exec so @dataclass finds its own module
     spec.loader.exec_module(mod)
     return mod
 

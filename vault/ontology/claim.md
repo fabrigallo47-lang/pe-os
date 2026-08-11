@@ -11,6 +11,8 @@ id: c-<deal>-<nnn>
 epistemic: asserted            # asserted | derived | observed | attested
 subject: "FY25 revenue growth" # normalized quantity/topic — contradiction detection groups on this
 value: "34%"                   # ONE fact. Never pack multiple metrics into one value.
+period: "FY2025A"              # time reference — when the claim was valid (e.g. "FY2025A", "As of 2025-10-27")
+perimeter: "Alderstone consolidated revenue"  # economic scope — WHAT entity/definition this covers
 bears-on: ["[[q-...]]"]        # questions this bears on. May be empty at extraction; binder fills it.
 direction: supports            # supports | contradicts | context  (relative to first bears-on question)
 
@@ -79,12 +81,22 @@ child claim 2 → part-of: [[parent]], metric-category: ebitda, locator: "Sheet1
 
 | Type | Meaning | Example |
 |---|---|---|
-| `asserted` | someone said it | growth rate on slide 14 of the deck |
-| `derived` | follows from something; derivation inspectable | growth rate computed in model cell D42 |
-| `observed` | it happened and was recorded | customer said "we'd churn if the founder left" on a recorded call |
-| `attested` | a third party stands behind it, with consequences if wrong | audited revenue figure |
+| `asserted` | the SELLER or MANAGEMENT claims it without external verification | seller CIM narrative, management forecast |
+| `derived` | follows from other stated values; derivation inspectable | concentration ratio computed from customer schedule |
+| `observed` | a qualified party directly measured or recorded it | QoE walkthrough of a workpaper; data room files |
+| `attested` | a qualified THIRD PARTY formally certifies, underwrites, or decides | QoE firm EBITDA; IC decision; Firm underwriting memo |
+
+**Common mistakes:** IC memo claims are `attested` (not `asserted`). QoE conclusions are `attested`. Seller CIM is `asserted`. Derived concentrations (computed from a schedule) are `derived`.
 
 Strip the type: two identical numbers. Keep it: a hierarchy of trust. It **composes** through `rests-on` — a conclusion is only as strong as the weakest epistemic type in its chain.
+
+## Period and perimeter — the economic scope
+
+`period` and `perimeter` together define **what** a claim measures and **when**. Without them, a 74.0 revenue figure is ambiguous. With them:
+- `period: "FY2025A / FY2025E seller presentation"` — the time reference, using the document's own language
+- `perimeter: "Alderstone consolidated revenue"` — the economic boundary (entity + definition basis)
+
+Perimeter is the most important disambiguation dimension. Two claims with the same value but different perimeters describe different facts (e.g. EBITDA on billing-account basis vs ultimate-parent basis).
 
 ## Body
 

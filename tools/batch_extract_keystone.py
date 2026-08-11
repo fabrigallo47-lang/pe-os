@@ -73,38 +73,8 @@ def next_claim_id(deal: str) -> str:
 
 
 def write_claim(deal: str, item: dict, artifact_name: str) -> str:
-    cid = next_claim_id(deal)
-    ep = item.get("epistemic", "asserted")
-    if ep not in EPISTEMIC:
-        ep = "asserted"
-    if ep == "derived" and not item.get("derivation"):
-        ep = "asserted"
-    bears_on = item.get("bears_on", []) or []
-    bears_on_yaml = "\n".join(f"  - {b}" for b in bears_on) if bears_on else "  []"
-    derivation_line = f'derivation: "{item.get("derivation", "")}"\n' if ep == "derived" else ""
-    content = f"""---
-type: claim
-id: {cid}
-epistemic: {ep}
-subject: "{item.get('subject', '?').replace('"', "'")}"
-value: "{str(item.get('value', '?')).replace('"', "'")}"
-direction: {item.get('direction', 'context')}
-bears-on:
-{bears_on_yaml}
-locator: "{item.get('locator', '')}"
-author: "{item.get('author', '')}"
-artifact: "vault/inbox/{artifact_name}"
-{derivation_line}written-by: extractor
----
-
-# {item.get('subject', '?')}
-
-{item.get('statement', '')}
-"""
-    cdir = VAULT / "deals" / deal / "claims"
-    cdir.mkdir(parents=True, exist_ok=True)
-    (cdir / f"{cid}.md").write_text(content, encoding="utf-8")
-    return cid
+    import tools.extract as _ext
+    return _ext.write_claim(deal, item, artifact_name)
 
 
 def extract_file(deal: str, artifact: pathlib.Path) -> list[str]:
@@ -129,26 +99,8 @@ def extract_file(deal: str, artifact: pathlib.Path) -> list[str]:
         print(f"  [truncating {artifact.name} from {len(text)} to 100000 chars]")
         text = text[:100_000]
 
-    system = (
-        "You are the PE OS extractor agent for a private equity firm. "
-        "Extract every discrete factual claim from the artifact that would be useful "
-        "for deal analysis. For numeric values (EBITDA, revenue, multiples, concentration %) "
-        "always extract distinct claims per basis/definition — never conflate seller-adjusted "
-        "with QoE-normalized or firm-underwritten. Each customer concentration figure "
-        "(billing-account level vs ultimate-parent level) is a SEPARATE claim. "
-        "Return ONLY a JSON array. Each element: "
-        "{subject (string — reuse an existing subject when the same quantity is meant, "
-        "but create a NEW subject for each distinct definition/basis), "
-        "value (the extracted value as string), "
-        "epistemic (asserted|derived|observed|attested — use 'observed' for meeting notes/calls, "
-        "'asserted' for document claims, 'derived' only when computed from other stated values), "
-        "bears_on (list of question ids by meaning, can be empty list), "
-        "direction (supports|contradicts|context), "
-        "locator (section or line reference), "
-        "author (document author/party), "
-        "statement (one complete sentence stating the claim), "
-        "derivation (string explaining computation if derived, else null)}"
-    )
+    import tools.extract as _ext
+    system = _ext.SYSTEM_PROMPT
     user = (
         f"DEAL QUESTIONS:\n{questions}\n\n"
         f"EXISTING SUBJECTS (reuse when same quantity): {existing_subjects}\n\n"

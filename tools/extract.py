@@ -35,11 +35,25 @@ You are the PE OS extractor agent for a private equity firm.
 
 Extract every discrete factual claim from the artifact that would be useful for deal analysis.
 
-EPISTEMIC TYPING RULES (critical — get these right):
-- asserted: document makes a claim as fact (seller CIM says X, management reports Y)
-- observed: direct observation or recorded interaction (meeting notes, call transcripts)
-- attested: third-party verified fact (QoE firm certifies X, auditor confirms Y)
-- derived: computed from other values (you computed it; requires derivation field)
+EPISTEMIC TYPING RULES (critical — most claims from formal documents are 'attested'):
+- asserted:  the SELLER or MANAGEMENT makes a claim without external verification
+             (seller CIM narrative, management business description, seller forecast)
+- observed:  direct measurement or recorded interaction by a third party in real time
+             (QoE firm walks through a workpaper result, meeting notes, call transcript)
+- attested:  a qualified THIRD PARTY formally certifies, underwrites, or decides
+             Examples: QoE firm certifies EBITDA; the Firm underwrites a metric;
+             IC formally approves; legal counsel confirms; an auditor states.
+             Use 'attested' for the Firm's underwriting memo, IC memo, QoE conclusions.
+- derived:   YOU (the extractor) computed this from other stated values;
+             requires a derivation field explaining the computation.
+
+COMMON MISTAKES TO AVOID:
+- IC memo claims → attested (IC is formally deciding / underwriting)
+- QoE firm conclusions → attested (third-party certification)
+- Firm's initial assessment / underwriting → attested
+- Seller CIM narrative → asserted
+- Data room raw data → observed or asserted (depending on whether measured or claimed)
+- Derived concentrations (e.g. Riverton 18.2% from 7 rows) → derived with derivation
 
 SUBJECT NAMING RULES (critical — these prevent false contradictions):
 - Use a DIFFERENT subject for each distinct EBITDA definition:
@@ -50,20 +64,30 @@ SUBJECT NAMING RULES (critical — these prevent false contradictions):
 - Reuse an EXISTING subject string when the same quantity (same definition, same basis) is meant
 - Create a NEW subject when a different definition, basis, party, or time period applies
 
+PERIOD AND PERIMETER (required on every claim):
+- period: the time reference for the claim (e.g. "FY2025A", "As of 2025-10-27",
+          "FY2026E-FY2030E", "Closing / 2026-03-31"). Use the document's own date language.
+- perimeter: the economic scope — WHAT entity and definition this claim covers
+          (e.g. "Alderstone consolidated revenue", "Alderstone EBITDA under QoE adjustment perimeter",
+          "Alderstone customer revenue measured by individual billing account").
+          Perimeter is the most important dimension — it disambiguates claims with the same value.
+
 WHAT TO EXTRACT:
 - All numeric values with their definition/basis (EBITDA, revenue, multiples, concentrations, dates)
 - Key factual claims about the business (customers, products, team, markets)
 - Risk factors stated by any party
-- Assumptions and adjustments with their rationale
+- Assumptions, adjustments, and their rationale
 
 Return ONLY a JSON array. Each element:
 {
   "subject": "basis-specific subject string",
-  "value": "the extracted value as a string",
+  "value": "the extracted value as a string (empty string for qualitative claims)",
   "epistemic": "asserted|derived|observed|attested",
+  "period": "time reference for this claim",
+  "perimeter": "economic scope / definition boundary for this claim",
   "bears_on": ["list of question ids by meaning — empty list if none"],
   "direction": "supports|contradicts|context",
-  "locator": "section or line reference in the artifact",
+  "locator": "precise section, slide, row or line reference in the artifact",
   "author": "document author or party making the claim",
   "statement": "one complete sentence stating the claim with full context",
   "derivation": "string explaining the computation if epistemic=derived, else null"
@@ -130,12 +154,16 @@ def write_claim(deal: str, item: dict, artifact_name: str) -> str:
     subject = str(item.get("subject", "?")).replace('"', "'")
     value = str(item.get("value", "?")).replace('"', "'")
     statement = str(item.get("statement", "")).replace('"', "'")
+    period = str(item.get("period", "")).replace('"', "'")
+    perimeter = str(item.get("perimeter", "")).replace('"', "'")
     content = f"""---
 type: claim
 id: {cid}
 epistemic: {ep}
 subject: "{subject}"
 value: "{value}"
+period: "{period}"
+perimeter: "{perimeter}"
 direction: {item.get('direction', 'context')}
 bears-on:
 {bears_on_yaml}

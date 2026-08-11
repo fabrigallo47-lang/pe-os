@@ -609,6 +609,29 @@ class PhaseCoordinator(Agent):
         # S8+ post-IC — human/external events only
         "S8": [{"kind": "external-event", "target": "legal-execution", "why": "Legal/documentation phase — requires external events"}],
         "S9": [{"kind": "external-event", "target": "closing", "why": "Closing — requires external confirmation"}],
+        # S10–S13 ownership and exit loops
+        "S10": [
+            {"kind": "agent",          "target": "extractor",    "why": "Extract claims from new monitoring artifacts"},
+            {"kind": "agent",          "target": "monitoring",   "why": "Flag performance divergence from IC underwriting"},
+            {"kind": "agent",          "target": "staleness",    "why": "Propagate staleness when monitored metrics move assumptions"},
+            {"kind": "agent",          "target": "contradiction","why": "Surface contradictions between IC underwriting and realized metrics"},
+        ],
+        "S11": [
+            {"kind": "agent",          "target": "extractor",    "why": "Extract claims from reunderwriting materials"},
+            {"kind": "agent",          "target": "monitoring",   "why": "Run monitoring analysis to calibrate reunderwriting"},
+            {"kind": "agent",          "target": "ic-assembler", "why": "Assemble reunderwriting IC package for decision"},
+            {"kind": "human",          "target": "reunderwriting-decision", "why": "Hold / exit / restructure decision — human only (policy row 7)"},
+        ],
+        "S12": [
+            {"kind": "agent",          "target": "exit-assembler","why": "Assemble exit IC package comparing entry thesis to realized outcome"},
+            {"kind": "human",          "target": "exit-decision", "why": "Exit decision — authority-only human action (policy row 8)"},
+            {"kind": "agent",          "target": "archive",       "why": "Write outcome record and propagate Teaching to brain archives"},
+        ],
+        "S13": [
+            {"kind": "agent",          "target": "archive",       "why": "Finalize outcome record if not yet written"},
+            {"kind": "agent",          "target": "librarian",     "why": "Propagate realized outcomes to cross-deal brain archives"},
+            {"kind": "agent",          "target": "pipeline",      "why": "Update portfolio pipeline brief to reflect closed position"},
+        ],
     }
 
     def snapshot(self):

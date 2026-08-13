@@ -66,6 +66,36 @@ SCENARIO_ROWS = {
     8: ("combined-risk",  "Combined Risk"),
 }
 
+# ── canonical ID remap (auto-generated → benchmark-canonical short ID) ────────
+# Keeps model_graph.json IDs compatible with position_model_bindings.csv grading.
+CANONICAL_ID_MAP: dict[str, str] = {
+    # Scalar inputs
+    "MN-ENTERPRISE-VALUE":                    "MN-EV",
+    "MN-FIRST-LIEN-OPENING-DEBT":             "MN-DEBT",
+    "MN-SPONSOR-INITIAL-CASH-EQUITY":         "MN-SPONSOR-EQUITY",
+    "MN-SELLER-ROLLOVER":                     "MN-ROLLOVER",
+    "MN-LARGEST-ULTIMATE-PARENT-CONCENTR":    "MN-CONCENTRATION",
+    "MN-NORMALIZED-NWC-TARGET":               "MN-NWC",
+    # Standalone Base assumption_series
+    "MN-STANDALONE-BASE-PLATFORM-GROWTH":     "MN-BASE-GROWTH",
+    "MN-STANDALONE-BASE-FIRM-EBITDA-MARGIN":  "MN-BASE-EBITDA-MARGIN",
+    "MN-STANDALONE-BASE-DSO":                 "MN-BASE-DSO",
+    "MN-STANDALONE-BASE-WIP-REVENUE":         "MN-BASE-WIP",
+    "MN-STANDALONE-BASE-CAPEX-REVENUE":       "MN-BASE-CAPEX",
+    "MN-STANDALONE-BASE-EXIT-MULTIPLE":       "MN-BASE-EXIT-MULT",
+    # Standalone Downside assumption_series
+    "MN-STANDALONE-DOWNSIDE-PLATFORM-GROWTH":     "MN-DOWN-GROWTH",
+    "MN-STANDALONE-DOWNSIDE-FIRM-EBITDA-MARGIN":  "MN-DOWN-EBITDA-MARGIN",
+    "MN-STANDALONE-DOWNSIDE-DSO":                 "MN-DOWN-DSO",
+    "MN-STANDALONE-DOWNSIDE-WIP-REVENUE":         "MN-DOWN-WIP",
+    "MN-STANDALONE-DOWNSIDE-CAPEX-REVENUE":       "MN-DOWN-CAPEX",
+    # Combined Risk assumption_series
+    "MN-COMBINED-RISK-PLATFORM-GROWTH":       "MN-COMBINED-RISK-GROWTH",
+    "MN-COMBINED-RISK-FIRM-EBITDA-MARGIN":    "MN-COMBINED-RISK-EBITDA-MARGIN",
+    "MN-COMBINED-RISK-WIP-REVENUE":           "MN-COMBINED-RISK-WIP",
+    "MN-COMBINED-RISK-EXIT-MULTIPLE":         "MN-COMBINED-RISK-EXIT-MULT",
+}
+
 
 @dataclass
 class ModelNode:
@@ -443,6 +473,9 @@ def parse_workbook(path: Path) -> list[ModelNode]:
         if key not in seen:
             seen.add(key)
             deduped.append(n)
+    # Remap auto-generated IDs to canonical benchmark IDs
+    for n in deduped:
+        n.node_id = CANONICAL_ID_MAP.get(n.node_id, n.node_id)
     return deduped
 
 

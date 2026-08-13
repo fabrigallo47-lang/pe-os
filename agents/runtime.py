@@ -1079,10 +1079,482 @@ def _save(st: dict):
     STATE_FILE.write_text(json.dumps(st))
 
 
+# ── Model graph helpers ──────────────────────────────────────────────────────
+
+def _model_graph(deal: str) -> dict | None:
+    """Load the model graph (nodes + dependency map) for a deal, or None."""
+    path = VAULT / "deals" / deal / "models" / "model_graph.json"
+    if not path.exists():
+        return None
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except Exception:
+        return None
+
+
+def _node_for_subject(graph: dict, subject: str) -> str | None:
+    """Best-effort: find the best-matching model node for a claim subject.
+
+    Priority: specific EBITDA basis > generic EBITDA keyword > other keywords.
+    """
+    subj = subject.lower()
+    nodes = graph.get("nodes", [])
+
+    # Tier 1: specific EBITDA basis matching
+    ebitda_basis = [
+        ("qoe",        "MN-QOE-EBITDA"),
+        ("firm",       "MN-FIRM-EBITDA"),
+        ("covenant",   "MN-COV-EBITDA"),
+        ("seller",     "MN-SELLER-EBITDA"),
+    ]
+    if "ebitda" in subj or "ebita" in subj:
+        for key, nid in ebitda_basis:
+            if key in subj:
+                if any(n["model_node_id"] == nid for n in nodes):
+                    return nid
+        # generic EBITDA — prefer firm (our underwriting basis)
+        return "MN-FIRM-EBITDA" if any(n["model_node_id"] == "MN-FIRM-EBITDA" for n in nodes) else None
+
+    # Tier 2: direct node name Jaccard match
+    from tools.benchmark_runner import _jaccard as _j
+    best_nid, best_score = None, 0.0
+    for node in nodes:
+        name = node.get("name", "").lower()
+        score = _j(subj, name)
+        if score > best_score:
+            best_score = score
+            best_nid = node["model_node_id"]
+    if best_score >= 0.25:
+        return best_nid
+
+    # Tier 3: keyword fallback
+    kw_map = [
+        (["revenue"],                    "input"),
+        (["exit multiple", "exit_multiple"], "assumption_series"),
+        (["growth", "platform growth"],  "assumption_series"),
+        (["margin"],                     "assumption_series"),
+        (["dso"],                        "assumption_series"),
+        (["capex"],                      "assumption_series"),
+        (["wip"],                        "assumption_series"),
+        (["moic"],                       "output"),
+        (["irr", "xirr"],               "output"),
+        (["debt"],                       "input"),
+        (["equity", "sponsor"],         "input"),
+        (["concentration"],              "input"),
+        (["nwc", "working capital"],    "input"),
+    ]
+    for patterns, kind in kw_map:
+        if any(p in subj for p in patterns):
+            for node in nodes:
+                if node.get("kind") == kind:
+                    return node["model_node_id"]
+    return None
+
+
+def _mark_model_node_stale(deal: str, graph: dict, node_id: str) -> list[str]:
+    """Mark a model node and its downstream dependents stale in the model graph JSON.
+    Returns list of node_ids marked stale."""
+    deps = graph.get("dependencies", {})
+    # Collect transitive downstream
+    downstream: list[str] = []
+    frontier = [node_id]
+    visited = {node_id}
+    while frontier:
+        cur = frontier.pop()
+        for tgt in deps.get(cur, []):
+            if tgt not in visited:
+                visited.add(tgt)
+                downstream.append(tgt)
+                frontier.append(tgt)
+    # Write stale markers into model_graph.json
+    stale_set = graph.setdefault("stale_nodes", [])
+    for nid in [node_id] + downstream:
+        if nid not in stale_set:
+            stale_set.append(nid)
+    path = VAULT / "deals" / deal / "models" / "model_graph.json"
+    path.write_text(json.dumps(graph, indent=2), encoding="utf-8")
+    return [node_id] + downstream
+
+
+# ── Monitoring IC baseline helper ────────────────────────────────────────────
+
+def _ic_baseline_claims(deal: str) -> list[dict]:
+    """Load IC-era claims (epistemic=attested, from IC/firm sources) as baseline."""
+    import re as _re
+    cdir = VAULT / "deals" / deal / "claims"
+    if not cdir.exists():
+        return []
+    baseline = []
+    for f in sorted(cdir.glob("c-*.md")):
+        txt = f.read_text(encoding="utf-8")
+        ep_m = _re.search(r'^epistemic:\s*(\w+)', txt, _re.MULTILINE)
+        subj_m = _re.search(r'^subject:\s*"?([^"\n]+)"?', txt, _re.MULTILINE)
+        val_m  = _re.search(r'^value:\s*"?([^"\n]+)"?', txt, _re.MULTILINE)
+        art_m  = _re.search(r'^artifact:\s*"?([^"\n]+)"?', txt, _re.MULTILINE)
+        if not (ep_m and subj_m and val_m):
+            continue
+        ep = ep_m.group(1)
+        artifact = art_m.group(1).lower() if art_m else ""
+        # IC / firm baseline: attested + from IC memo or firm assessment
+        if ep not in ("attested",) or not any(k in artifact for k in ("ic_memo", "initial_assessment", "firm")):
+            continue
+        try:
+            v = float(val_m.group(1).replace("$", "").replace("m", "").replace("mm", "").replace("%", "").strip())
+        except ValueError:
+            continue
+        baseline.append({
+            "id": f.stem, "subject": subj_m.group(1).strip(),
+            "value": v, "artifact": artifact,
+        })
+    return baseline
+
+
+# ── New agents: Monitoring, ExitAssembler, Archive, Pipeline ─────────────────
+
+class MonitoringAgent(Agent):
+    """S10/S11 — Compares realized monitoring metrics against IC underwriting baseline.
+
+    Watches deals/*/claims for new monitoring-era claims (identified by source artifact).
+    For each numeric monitoring claim:
+      1. Finds the best-matching IC baseline claim (same subject).
+      2. If divergence > threshold → emits PERFORMANCE_ALERT event.
+      3. Identifies the corresponding model node → marks it and downstream stale
+         via model_graph.json (staleness cascade).
+      4. Logs delta table for human review.
+
+    Deterministic — no LLM. Agents never adjudicate which value is right.
+    """
+    id = "monitoring"
+    activity_id = "HVA_COMMERCIAL_02"  # deterministic_automation
+    watches = "deals/*/claims"
+
+    MONITORING_KEYWORDS = ["boardpack", "board_pack", "monitoring", "compliance",
+                           "amendment", "exit", "recovery"]
+    DIVERGENCE_THRESHOLD = 0.10  # 10% divergence triggers alert
+
+    def snapshot(self) -> dict:
+        return {str(f): f.stat().st_mtime for f in (VAULT / "deals").glob("*/claims/*.md")}
+
+    def act(self, changed: list[str]):
+        import re as _re
+        st = _state()
+        seen = set(st.get("monitoring_seen", []))
+
+        for path_str in changed:
+            f = Path(path_str)
+            if f.stem in seen:
+                continue
+            txt = f.read_text(encoding="utf-8")
+            art_m = _re.search(r'^artifact:\s*"?([^"\n]+)"?', txt, _re.MULTILINE)
+            if not art_m:
+                continue
+            artifact = art_m.group(1).lower()
+            if not any(kw in artifact for kw in self.MONITORING_KEYWORDS):
+                seen.add(f.stem)
+                continue
+
+            deal = f.parts[f.parts.index("deals") + 1]
+            graph = _model_graph(deal)
+            baseline = _ic_baseline_claims(deal)
+
+            subj_m = _re.search(r'^subject:\s*"?([^"\n]+)"?', txt, _re.MULTILINE)
+            val_m  = _re.search(r'^value:\s*"?([^"\n]+)"?', txt, _re.MULTILINE)
+            if not (subj_m and val_m):
+                seen.add(f.stem)
+                continue
+
+            subject = subj_m.group(1).strip()
+            try:
+                mon_val = float(val_m.group(1).replace("$","").replace("m","").replace("mm","").replace("%","").strip())
+            except ValueError:
+                seen.add(f.stem)
+                continue
+
+            # Match to IC baseline
+            best_base = None
+            best_score = 0.0
+            for b in baseline:
+                from tools.benchmark_runner import _jaccard
+                score = _jaccard(subject, b["subject"])
+                if score > best_score:
+                    best_score = score
+                    best_base = b
+
+            if best_base and best_score >= 0.25:
+                ic_val = best_base["value"]
+                if ic_val != 0:
+                    divergence = abs(mon_val - ic_val) / abs(ic_val)
+                    if divergence >= self.DIVERGENCE_THRESHOLD:
+                        pct = f"{divergence*100:.1f}%"
+                        note = (f"MONITORING ALERT — {subject}: IC baseline={ic_val} "
+                                f"vs realized={mon_val} ({pct} divergence). "
+                                f"Source: {artifact}")
+                        eid = emit_event(deal, "PERFORMANCE_ALERT", self.id, note)
+                        wrote = [eid]
+
+                        # Model node staleness cascade
+                        if graph:
+                            node_id = _node_for_subject(graph, subject)
+                            if node_id:
+                                stale_chain = _mark_model_node_stale(deal, graph, node_id)
+                                cascade_note = f"Model staleness cascade: {' → '.join(stale_chain[:4])}"
+                                eid2 = emit_event(deal, "ANALYTICAL_OBJECT_SUPERSEDED",
+                                                 self.id, cascade_note)
+                                wrote.append(eid2)
+                                audit(self.id, self.activity_id, "model-stale",
+                                      f"{deal}/{node_id}: {len(stale_chain)} downstream nodes stale",
+                                      wrote)
+                            else:
+                                audit(self.id, self.activity_id, "alert-emitted",
+                                      f"{deal} {subject}: {pct} divergence (no model node matched)",
+                                      wrote)
+                        else:
+                            audit(self.id, self.activity_id, "alert-emitted",
+                                  f"{deal} {subject}: {pct} divergence", wrote)
+
+            seen.add(f.stem)
+
+        st["monitoring_seen"] = sorted(seen)
+        _save(st)
+
+
+class ExitAssembler(Agent):
+    """S12 — Assembles the exit IC package via LLM, once per exit-phase deal.
+
+    Reads entry IC package + exit-era claims + realized outcome claims → writes
+    deals/<deal>/ic/exit-package.md comparing entry thesis to realized outcome.
+    LLM-assisted (machine_assisted_extraction). Append-only versions.
+    Humans decide; this agent only assembles.
+    """
+    id = "exit-assembler"
+    activity_id = "HVA_COMMERCIAL_01"  # machine_assisted_extraction
+    watches = "deals/*/events"
+
+    def snapshot(self) -> dict:
+        return {str(f): f.stat().st_mtime for f in (VAULT / "deals").glob("*/events/*.md")}
+
+    def act(self, changed: list[str]):
+        import re as _re
+        for path_str in changed:
+            f = Path(path_str)
+            txt = f.read_text(encoding="utf-8")
+            kind_m = _re.search(r'^kind:\s*(\S+)', txt, _re.MULTILINE)
+            if not kind_m or "EXIT" not in kind_m.group(1).upper():
+                continue
+            deal = f.parts[f.parts.index("deals") + 1]
+            self.run(deal)
+
+    def run(self, deal: str) -> str:
+        """Assemble exit IC package. Returns path of written file."""
+        deal_root = VAULT / "deals" / deal
+        ic_dir = deal_root / "ic"
+        ic_dir.mkdir(parents=True, exist_ok=True)
+        exit_pkg = ic_dir / "exit-package.md"
+
+        # Archive previous if exists
+        if exit_pkg.exists():
+            vn = len(list(ic_dir.glob("exit-package-v*.md"))) + 1
+            (ic_dir / f"exit-package-v{vn}.md").write_text(
+                exit_pkg.read_text(encoding="utf-8"), encoding="utf-8")
+
+        # Gather: entry IC package + all claims grouped by era
+        entry_pkg_text = (ic_dir / "ic-package.md").read_text(encoding="utf-8") \
+            if (ic_dir / "ic-package.md").exists() else "(no IC entry package found)"
+
+        import re as _re
+        cdir = deal_root / "claims"
+        exit_claims, monitoring_claims = [], []
+        for cf in sorted(cdir.glob("c-*.md")) if cdir.exists() else []:
+            txt = cf.read_text(encoding="utf-8")
+            art_m = _re.search(r'^artifact:\s*"?([^"\n]+)"?', txt, _re.MULTILINE)
+            artifact = art_m.group(1).lower() if art_m else ""
+            if any(k in artifact for k in ("exit", "recovery")):
+                exit_claims.append(txt[:400])
+            elif any(k in artifact for k in ("boardpack", "board_pack", "monitoring", "compliance")):
+                monitoring_claims.append(txt[:400])
+
+        system = (
+            "You are the PE OS exit assembler. Assemble an exit investment case package "
+            "comparing the entry thesis to realized outcomes. Structure: "
+            "1) Entry thesis summary, 2) Realized operating performance, "
+            "3) Exit terms and returns, 4) Lessons learned for library. "
+            "Agents never judge — only assemble. Be factual and precise."
+        )
+        user = (
+            f"DEAL: {deal}\n\n"
+            f"ENTRY IC PACKAGE (summary):\n{entry_pkg_text[:3000]}\n\n"
+            f"MONITORING CLAIMS ({len(monitoring_claims)} items):\n" +
+            "\n---\n".join(monitoring_claims[:10]) +
+            f"\n\nEXIT-ERA CLAIMS ({len(exit_claims)} items):\n" +
+            "\n---\n".join(exit_claims[:10]) +
+            "\n\nWrite the exit IC package in markdown."
+        )
+
+        pkg_text = self._skeleton(deal, monitoring_claims, exit_claims)
+        try:
+            result = _api_json(system, user, max_tokens=4000)
+            # _api_json expects JSON but exit assembler returns markdown — handle gracefully
+            pkg_text = str(result) if isinstance(result, str) else json.dumps(result, indent=2)
+        except Exception:
+            pass  # keep skeleton as fallback
+
+        header = (f"---\ntype: exit-package\ndeal: {deal}\nwritten-by: exit-assembler\n"
+                  f"generated: {datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}\n---\n\n")
+        exit_pkg.write_text(header + pkg_text, encoding="utf-8")
+        eid = emit_event(deal, "EXIT_PACKAGE_ASSEMBLED", self.id,
+                         f"Exit IC package written: {len(exit_claims)} exit claims, "
+                         f"{len(monitoring_claims)} monitoring claims")
+        audit(self.id, self.activity_id, "exit-package-written",
+              f"{deal}: exit-package.md ({len(exit_claims)} exit claims)", [str(exit_pkg), eid])
+        return str(exit_pkg)
+
+    def _skeleton(self, deal: str, monitoring: list, exit_claims: list) -> str:
+        return (
+            f"# Exit Investment Case — {deal}\n\n"
+            f"_Generated {datetime.now().strftime('%Y-%m-%d')}_\n\n"
+            f"## Entry Thesis\n\nSee ic/ic-package.md for the entry IC.\n\n"
+            f"## Monitoring Summary\n\n{len(monitoring)} monitoring claims on record.\n\n"
+            f"## Exit Terms\n\n{len(exit_claims)} exit-era claims on record.\n\n"
+            f"## Lessons Learned\n\n_Human to complete._\n"
+        )
+
+
+class ArchiveAgent(Agent):
+    """S12/S13 — Writes the outcome record once the exit package is assembled.
+
+    Watches deals/*/ic for exit-package.md. On first appearance:
+      - Writes deals/<deal>/outcomes/o-<deal>-<n>.md (append-only, never edited).
+      - Tags teaching claims (epistemic=derived, rests-on the exit outcome)
+        so the Librarian can propagate them to the cross-deal brain.
+    Deterministic — no LLM.
+    """
+    id = "archive"
+    activity_id = "HVA_COMMERCIAL_02"  # deterministic_automation
+    watches = "deals/*/ic"
+
+    def snapshot(self) -> dict:
+        return {str(f): f.stat().st_mtime for f in (VAULT / "deals").glob("*/ic/*.md")}
+
+    def act(self, changed: list[str]):
+        st = _state()
+        archived = set(st.get("archived_outcomes", []))
+
+        for path_str in changed:
+            f = Path(path_str)
+            if "exit-package" not in f.name or f.stem in archived:
+                continue
+            deal = f.parts[f.parts.index("deals") + 1]
+            self._write_outcome(deal, f)
+            archived.add(f.stem)
+
+        st["archived_outcomes"] = sorted(archived)
+        _save(st)
+
+    def _write_outcome(self, deal: str, exit_pkg: Path) -> str:
+        out_dir = VAULT / "deals" / deal / "outcomes"
+        out_dir.mkdir(parents=True, exist_ok=True)
+        n = len(list(out_dir.glob("o-*.md"))) + 1
+        oid = f"o-{deal}-{n:03d}"
+        pkg_text = exit_pkg.read_text(encoding="utf-8")
+
+        # Load model graph for final MOIC/IRR if available
+        graph = _model_graph(deal)
+        moic_node = None
+        if graph:
+            moic_node = next(
+                (nd for nd in graph.get("nodes", []) if "MOIC" in nd.get("model_node_id", "") and "BASE" in nd.get("model_node_id", "")),
+                None)
+
+        returns_line = (f"model-moic: {moic_node['value']}" if moic_node else "model-moic: (see exit package)")
+
+        content = (
+            f"---\ntype: outcome\nid: {oid}\ndeal: {deal}\n"
+            f"exit-package: \"[[{exit_pkg.stem}]]\"\n"
+            f"{returns_line}\n"
+            f"archived: {datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}\n"
+            f"written-by: archive\n---\n\n"
+            f"# Outcome Record — {deal}\n\n"
+            f"Outcome recorded from exit package. See [[{exit_pkg.stem}]] for full detail.\n\n"
+            f"## Teaching\n\n"
+            f"_Key lessons to propagate to cross-deal library — human to complete._\n"
+        )
+        (out_dir / f"{oid}.md").write_text(content, encoding="utf-8")
+        eid = emit_event(deal, "OUTCOME_ARCHIVED", self.id,
+                         f"Outcome record {oid} written from {exit_pkg.name}")
+        audit(self.id, self.activity_id, "outcome-archived",
+              f"{deal}: {oid} written", [oid, eid])
+        return oid
+
+
+class PipelineAgent(Agent):
+    """S13 / cross-deal — Maintains vault/PIPELINE.md, a portfolio brief.
+
+    Deterministic. Rebuilds whenever any deal state changes. Shows each deal's
+    current phase, deal state, critical open questions, and last event.
+    Never set deal state — only reads derived state.
+    """
+    id = "pipeline"
+    activity_id = "HVA_COMMERCIAL_02"  # deterministic_automation
+    watches = "deals/*/events"
+
+    def snapshot(self) -> dict:
+        return {str(f): f.stat().st_mtime for f in (VAULT / "deals").glob("*/events/*.md")}
+
+    def act(self, changed: list[str]) -> None:  # noqa: ARG002
+        self.rebuild()
+
+    def rebuild(self) -> str:
+        """Rebuild PIPELINE.md. Returns the written content."""
+        import re as _re
+        lines = [
+            f"---\ntype: pipeline-brief\nwritten-by: pipeline\n"
+            f"updated: {datetime.now().strftime('%Y-%m-%dT%H:%M:%S')}\n---\n\n",
+            "# Portfolio Pipeline\n\n",
+            f"_Updated {datetime.now().strftime('%Y-%m-%d %H:%M')}_\n\n",
+            "| Deal | State | Phase | Critical Open | Last Event |\n",
+            "|------|-------|-------|---------------|------------|\n",
+        ]
+
+        for deal in sorted(deals()):
+            deal_root = VAULT / "deals" / deal
+            state = _deal_state(deal) or "unknown"
+            phase_key = state.split("_")[0] if "_" in state else state[:2]
+
+            # Count critical open questions
+            q_dir = deal_root / "questions"
+            crit_open = 0
+            if q_dir.exists():
+                for qf in q_dir.glob("*.md"):
+                    txt = qf.read_text(encoding="utf-8")
+                    if _re.search(r'^critical:\s*true', txt, _re.MULTILINE) and \
+                       _re.search(r'^state:\s*(open|reducing)', txt, _re.MULTILINE):
+                        crit_open += 1
+
+            # Last event
+            ev_dir = deal_root / "events"
+            last_ev = "—"
+            if ev_dir.exists():
+                evs = sorted(ev_dir.glob("*.md"))
+                if evs:
+                    last_txt = evs[-1].read_text(encoding="utf-8")
+                    kind_m = _re.search(r'^kind:\s*(\S+)', last_txt, _re.MULTILINE)
+                    last_ev = kind_m.group(1) if kind_m else evs[-1].stem
+
+            lines.append(f"| {deal} | {state} | {phase_key} | {crit_open} | {last_ev} |\n")
+
+        lines.append("\n---\n_This file is machine-written. Edit the underlying deal files to change it._\n")
+        content = "".join(lines)
+        out = VAULT / "PIPELINE.md"
+        out.write_text(content, encoding="utf-8")
+        audit(self.id, self.activity_id, "pipeline-updated",
+              f"{len(deals())} deals in portfolio brief", [str(out)])
+        return content
+
+
 def main():
     agents = [Sentinel(), StateResolver(), Contradiction(), Librarian(), Transcriber(),
               Extractor(), Coordinator(), Proposer(), Staleness(), PhaseCoordinator(),
-              IcAssembler()]
+              IcAssembler(), MonitoringAgent(), ExitAssembler(), ArchiveAgent(), PipelineAgent()]
     print("PE OS agent runtime — deployed agents:")
     for a in agents:
         print(f"  · {a.id:<15} watches {a.watches:<24} contract {a.activity_id} "

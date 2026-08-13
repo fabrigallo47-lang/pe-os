@@ -115,13 +115,14 @@ def _node_id(prefix: str, sheet: str, label: str = "") -> str:
 # ── openpyxl helpers ─────────────────────────────────────────────────────────
 
 def _load(path: Path):
-    """Load workbook twice: formula text + computed values."""
+    """Load workbook in data_only mode (computed values)."""
     try:
         import openpyxl
     except ModuleNotFoundError:
         sys.exit("openpyxl is required: run `make setup` or `.venv/bin/pip install openpyxl`")
-    wb_v = openpyxl.load_workbook(str(path), data_only=True)
-    return wb_v
+    return openpyxl.load_workbook(str(path), data_only=True)
+
+
 
 
 def _cell_val(ws, coord: str):
@@ -445,6 +446,50 @@ def parse_workbook(path: Path) -> list[ModelNode]:
     return deduped
 
 
+def build_dependency_graph(nodes: list[ModelNode]) -> dict[str, list[str]]:
+    """Return {node_id: [node_ids it directly feeds into]} (forward edges).
+
+    Uses structural model semantics — more reliable than formula tracing since
+    xlsx cached-value files don't preserve formula strings in all sheets.
+
+    LBO model dependency hierarchy (most → least upstream):
+      input → assumption_series → output
+      adjustment_input → output
+      model_control / model_control_series: depend on everything (downstream)
+
+    Result shape: deps[A] = [B, C] means changing A may affect B and C.
+    Used to drive the staleness cascade: changing an upstream node marks all
+    downstream claims as stale via the rests-on chain.
+    """
+    by_kind: dict[str, list[str]] = {}
+    for n in nodes:
+        by_kind.setdefault(n.kind, []).append(n.node_id)
+
+    inputs       = by_kind.get("input", [])
+    adj_inputs   = by_kind.get("adjustment_input", [])
+    assumptions  = by_kind.get("assumption_series", [])
+    outputs      = by_kind.get("output", [])
+    controls     = by_kind.get("model_control", []) + by_kind.get("model_control_series", [])
+
+    forward: dict[str, list[str]] = {n.node_id: [] for n in nodes}
+
+    for nid in inputs:
+        # scalar inputs feed into assumption series and outputs
+        forward[nid] = sorted(assumptions + outputs)
+
+    for nid in adj_inputs:
+        # EBITDA adjustment inputs feed into outputs
+        forward[nid] = sorted(outputs)
+
+    for nid in assumptions:
+        # assumption series feed into outputs
+        forward[nid] = sorted(outputs)
+
+    # outputs and controls are leaf nodes — nothing depends on them in this model
+
+    return forward
+
+
 def to_csv_rows(nodes: list[ModelNode]) -> list[dict]:
     return [n.to_dict() for n in nodes]
 
@@ -453,11 +498,14 @@ def to_csv_rows(nodes: list[ModelNode]) -> list[dict]:
 
 def main():
     import argparse
+    import json as _json
     ap = argparse.ArgumentParser(description="Parse LBO model xlsx → model nodes CSV")
     ap.add_argument("xlsx", help="Path to the xlsx file")
     ap.add_argument("--out", default="-", help="Output CSV path (default: stdout)")
     ap.add_argument("--score", metavar="TARGET_CSV",
                     help="Score against a target model_nodes.csv and print precision/recall")
+    ap.add_argument("--deps", metavar="OUT_JSON",
+                    help="Write dependency graph (node→downstream nodes) to JSON")
     args = ap.parse_args()
 
     path = Path(args.xlsx)
@@ -488,6 +536,14 @@ def main():
 
     if args.score:
         _score(nodes, Path(args.score))
+
+    if args.deps:
+        deps = build_dependency_graph(nodes)
+        deps_path = Path(args.deps)
+        deps_path.parent.mkdir(parents=True, exist_ok=True)
+        deps_path.write_text(_json.dumps(deps, indent=2), encoding="utf-8")
+        edge_count = sum(len(v) for v in deps.values())
+        print(f"Wrote dependency graph: {len(deps)} nodes, {edge_count} forward edges → {deps_path}")
 
 
 def _normalize_cell(c: str) -> str:

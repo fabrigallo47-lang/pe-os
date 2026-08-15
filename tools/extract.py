@@ -118,17 +118,71 @@ def llm_extract(system: str, user: str, max_tokens: int = 10000) -> str:
         return text
 
 
+def _repair_json_array(raw: str) -> list:
+    """Multi-pass repair for model-generated JSON arrays."""
+    # Pass 1: trailing commas
+    s = re.sub(r",\s*([}\]])", r"\1", raw)
+    try:
+        return json.loads(s)
+    except json.JSONDecodeError:
+        pass
+
+    # Pass 2: truncate at last complete object (handles truncated output or
+    # unescaped quotes deep in a string value)
+    last_close = s.rfind("}")
+    if last_close > 0:
+        candidate = s[:last_close + 1].rstrip().rstrip(",") + "\n]"
+        try:
+            result = json.loads(candidate)
+            print(f"  [parse_json] truncated to {len(result)} items (model output was malformed past last '}}'); some claims may be missing",
+                  file=__import__("sys").stderr)
+            return result
+        except json.JSONDecodeError:
+            pass
+
+    # Pass 3: scan objects one at a time, skip malformed ones
+    items, pos = [], s.find("[")
+    if pos < 0:
+        raise ValueError("no JSON array start found")
+    pos += 1
+    depth = 0
+    obj_start = None
+    for i, ch in enumerate(s[pos:], pos):
+        if ch == "{" and depth == 0:
+            obj_start = i
+            depth = 1
+        elif ch == "{":
+            depth += 1
+        elif ch == "}" and depth == 1:
+            depth = 0
+            try:
+                items.append(json.loads(s[obj_start:i + 1]))
+            except json.JSONDecodeError:
+                pass
+        elif ch == "}":
+            depth -= 1
+    if not items:
+        raise ValueError(f"could not parse any objects from JSON; first 300 chars: {raw[:300]}")
+    print(f"  [parse_json] recovered {len(items)} items via object-scan (skipped malformed entries)",
+          file=__import__("sys").stderr)
+    return items
+
+
 def parse_json(text: str) -> list:
     fence = re.search(r"```(?:json)?\s*(\[[\s\S]*?\])\s*```", text)
     m = fence or re.search(r"(\[[\s\S]*\])", text)
-    if not m:
-        raise ValueError(f"no JSON array found: {text[:300]}")
-    raw = m.group(1)
+    if m:
+        raw = m.group(1)
+    else:
+        # Truncated output: model was cut off before the closing ]
+        start = text.find("[")
+        if start < 0:
+            raise ValueError(f"no JSON array found: {text[:300]}")
+        raw = text[start:]  # pass to repair; truncation handler closes it
     try:
         return json.loads(raw)
     except json.JSONDecodeError:
-        cleaned = re.sub(r",\s*([}\]])", r"\1", raw)
-        return json.loads(cleaned)
+        return _repair_json_array(raw)
 
 
 def next_claim_id(deal: str) -> str:

@@ -64,33 +64,54 @@ SUBJECT NAMING RULES (critical — these prevent false contradictions):
 - Reuse an EXISTING subject string when the same quantity (same definition, same basis) is meant
 - Create a NEW subject when a different definition, basis, party, or time period applies
 
-PERIOD AND PERIMETER (required on every claim):
-- period: the time reference for the claim (e.g. "FY2025A", "As of 2025-10-27",
-          "FY2026E-FY2030E", "Closing / 2026-03-31"). Use the document's own date language.
-- perimeter: the economic scope — WHAT entity and definition this claim covers
-          (e.g. "Alderstone consolidated revenue", "Alderstone EBITDA under QoE adjustment perimeter",
-          "Alderstone customer revenue measured by individual billing account").
-          Perimeter is the most important dimension — it disambiguates claims with the same value.
+GRANULAR DIMENSIONS (every claim must have all of these):
+- metric:      the short KPI / concept label, e.g. "EBITDA", "Revenue", "Gross Margin",
+               "Customer Concentration", "DSO", "Exit Multiple", "IRR", "Team Tenure".
+               One word to five words max. This is the axis the claim lives on.
+- unit:        unit of measurement — "£m", "$m", "%", "x", "days", "headcount", ""
+               (empty string for purely qualitative claims).
+- as_of:       the precise vintage of the data point — the date or period the number
+               was measured/reported as of, e.g. "FY2025A", "LTM Sep-25",
+               "2025-10-27", "Q3 2025". Use the document's own language.
+- period:      the time horizon the claim refers to if different from as_of
+               (e.g. forecast range "FY2026E–FY2030E"); otherwise repeat as_of.
+- perimeter:   the economic scope — WHAT entity + definition + adjustments this claim
+               covers. This is the most critical disambiguator.
+               e.g. "Alderstone consolidated revenue",
+                    "Alderstone EBITDA under QoE adjustment perimeter",
+                    "Alderstone customer revenue at billing-account level".
+- topic:       thematic bucket — pick exactly one:
+               "Financial Performance" | "Earnings Quality" | "Customer Risk" |
+               "Team & Management" | "Market Position" | "Capital Structure" |
+               "Valuation & Returns" | "Operational" | "Legal & Compliance" | "Other"
+- source_doc:  document type, e.g. "QoE Report", "CIM", "IC Memo",
+               "Management Presentation", "Data Room", "Call Transcript", "LBO Model"
 
 WHAT TO EXTRACT:
-- All numeric values with their definition/basis (EBITDA, revenue, multiples, concentrations, dates)
+- All numeric values with their definition/basis (EBITDA, revenue, multiples,
+  concentrations, dates, headcount, DSO, capex, NWC …)
 - Key factual claims about the business (customers, products, team, markets)
 - Risk factors stated by any party
 - Assumptions, adjustments, and their rationale
 
 Return ONLY a JSON array. Each element:
 {
-  "subject": "basis-specific subject string",
-  "value": "the extracted value as a string (empty string for qualitative claims)",
-  "epistemic": "asserted|derived|observed|attested",
-  "period": "time reference for this claim",
-  "perimeter": "economic scope / definition boundary for this claim",
-  "bears_on": ["list of question ids by meaning — empty list if none"],
-  "direction": "supports|contradicts|context",
-  "locator": "precise section, slide, row or line reference in the artifact",
-  "author": "document author or party making the claim",
-  "statement": "one complete sentence stating the claim with full context",
-  "derivation": "string explaining the computation if epistemic=derived, else null"
+  "subject":    "full basis-specific subject string (entity + definition + basis)",
+  "metric":     "short KPI label — the axis this claim lives on",
+  "value":      "extracted value as string, empty for qualitative",
+  "unit":       "unit of measure or empty string",
+  "as_of":      "data vintage — period/date the value was measured/reported",
+  "period":     "time horizon if different from as_of, else repeat as_of",
+  "perimeter":  "entity + definition + adjustment scope",
+  "topic":      "one topic from the list above",
+  "source_doc": "document type / name",
+  "epistemic":  "asserted|derived|observed|attested",
+  "direction":  "supports|contradicts|context",
+  "bears_on":   ["question ids this claim bears on — empty list if none"],
+  "locator":    "precise section, slide, table row, or line reference",
+  "author":     "party making the claim (firm, person, or org)",
+  "statement":  "one complete sentence stating the claim with full context",
+  "derivation": "computation explanation if epistemic=derived, else null"
 }
 """
 

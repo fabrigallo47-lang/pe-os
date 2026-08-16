@@ -40,6 +40,11 @@ def claims_to_graph(claims: list[dict], source_name: str = "") -> dict:
         upsert(c_id,
                type="claim",
                label=label,
+               metric=c.get("metric", ""),
+               unit=c.get("unit", ""),
+               as_of=c.get("as_of", ""),
+               topic=c.get("topic", ""),
+               source_doc=c.get("source_doc", source_name),
                epistemic=c.get("epistemic", "asserted"),
                value=c.get("value", ""),
                period=c.get("period", ""),
@@ -48,8 +53,7 @@ def claims_to_graph(claims: list[dict], source_name: str = "") -> dict:
                locator=c.get("locator", ""),
                author=c.get("author", ""),
                statement=c.get("statement", ""),
-               derivation=c.get("derivation"),
-               source=source_name)
+               derivation=c.get("derivation"))
 
         edges.append({"source": s_id, "target": c_id, "rel": "HAS_CLAIM"})
 

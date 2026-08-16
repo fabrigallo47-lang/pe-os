@@ -300,6 +300,18 @@ HTML = r"""<!doctype html>
   .cg-val { color: var(--text); font-family: var(--mono); word-break: break-word; line-height: 1.5; }
   .cg-val.dim { color: var(--muted); font-style: italic; }
 
+  .claim-meta {
+    display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 12px;
+    border-bottom: 1px solid var(--border); background: var(--surface2);
+  }
+  .meta-chip {
+    font-family: var(--mono); font-size: 10px; padding: 2px 7px;
+    border-radius: 20px; border: 1px solid var(--border);
+    color: var(--muted); white-space: nowrap;
+  }
+  .meta-chip.topic { border-color: var(--accent-d); color: var(--accent); }
+  .meta-chip.src   { border-color: #30363d; }
+
   .claim-stmt {
     margin-top: 10px; padding: 8px 10px;
     background: var(--surface2); border-radius: 4px;
@@ -517,7 +529,9 @@ function switchTab(tab) {
   document.getElementById('results-wrap').style.display = tab === 'cards' ? 'flex'  : 'none';
   document.getElementById('raw-view').style.display    = tab === 'raw'   ? 'flex'  : 'none';
   document.getElementById('graph-view').style.display  = tab === 'graph' ? 'flex'  : 'none';
-  if (tab === 'graph' && lastGraph) initGraph(lastGraph);
+  // Defer one frame so the browser lays out the now-visible canvas container
+  // before we read clientWidth/clientHeight (would be 0 if read immediately).
+  if (tab === 'graph' && lastGraph) requestAnimationFrame(() => initGraph(lastGraph));
 }
 
 function epClass(ep) {
@@ -535,30 +549,47 @@ function val(s) {
 }
 
 function renderCard(item, idx) {
-  const ep = item.epistemic || 'unknown';
+  const ep      = item.epistemic || 'unknown';
+  const metric  = esc(item.metric  || item.subject || '—');
   const subject = esc(item.subject || '—');
-  const value   = esc(item.value   || '');
+  const value   = item.value ? esc(item.value) + (item.unit ? ' ' + esc(item.unit) : '') : '';
   const stmt    = esc(item.statement || '');
   const hasStmt = !!(item.statement || '').trim();
   const bears   = Array.isArray(item.bears_on) ? item.bears_on.join(', ') : (item.bears_on || '');
+
+  const topicChip = item.topic
+    ? `<span class="meta-chip topic">${esc(item.topic)}</span>` : '';
+  const srcChip = item.source_doc
+    ? `<span class="meta-chip src">${esc(item.source_doc)}</span>` : '';
+  const asOfChip = item.as_of
+    ? `<span class="meta-chip">${esc(item.as_of)}</span>` : '';
+  const authorChip = item.author
+    ? `<span class="meta-chip">${esc(item.author)}</span>` : '';
 
   return `
 <div class="claim" id="claim-${idx}">
   <div class="claim-head" onclick="toggleClaim(${idx})">
     <span class="claim-num">${String(idx).padStart(2,'0')}</span>
     <span class="ep-badge ${epClass(ep)}">${ep}</span>
-    <span class="claim-subject">${subject}</span>
+    <span class="claim-subject">${metric}</span>
     ${value ? `<span class="claim-value">${value}</span>` : ''}
     <span class="chevron">▶</span>
   </div>
+  <div class="claim-meta">
+    ${topicChip}${asOfChip}${srcChip}${authorChip}
+  </div>
   <div class="claim-body">
     <div class="claim-grid">
+      <span class="cg-key">subject</span>   ${val(item.subject)}
       <span class="cg-key">value</span>     ${val(item.value)}
+      <span class="cg-key">unit</span>      ${val(item.unit)}
+      <span class="cg-key">as_of</span>     ${val(item.as_of)}
       <span class="cg-key">period</span>    ${val(item.period)}
       <span class="cg-key">perimeter</span> ${val(item.perimeter)}
+      <span class="cg-key">source_doc</span>${val(item.source_doc)}
       <span class="cg-key">locator</span>   ${val(item.locator)}
-      <span class="cg-key">direction</span> ${val(item.direction)}
       <span class="cg-key">author</span>    ${val(item.author)}
+      <span class="cg-key">direction</span> ${val(item.direction)}
       <span class="cg-key">bears-on</span>  ${val(bears)}
       ${item.derivation ? `<span class="cg-key">derivation</span> ${val(item.derivation)}` : ''}
     </div>
@@ -693,16 +724,34 @@ function initGraph(graph) {
   cv.height = cv.parentElement.clientHeight;
   const W = cv.width, H = cv.height;
 
-  // Assign radii and random initial positions
+  // Assign radii and initial positions:
+  // subjects spread in a ring, claims near their subject, questions on periphery.
   const nodeById = {};
+  const subjects = graph.nodes.filter(n => n.type === 'subject');
+  const subjIdx  = Object.fromEntries(subjects.map((n,i) => [n.id, i]));
+  const SR = Math.min(W, H) * 0.28;  // subject ring radius
+
   simNodes = graph.nodes.map(n => {
-    const sn = {
-      ...n,
-      x: W/2 + (Math.random()-.5)*W*.5,
-      y: H/2 + (Math.random()-.5)*H*.5,
-      vx: 0, vy: 0,
-      r: n.type === 'subject' ? 13 : n.type === 'question' ? 7 : 9,
-    };
+    let x, y;
+    if (n.type === 'subject') {
+      const angle = (subjIdx[n.id] / Math.max(subjects.length, 1)) * Math.PI * 2;
+      x = W/2 + Math.cos(angle) * SR;
+      y = H/2 + Math.sin(angle) * SR;
+    } else {
+      // Find parent subject via HAS_CLAIM or place randomly
+      const parentEdge = graph.edges.find(e => e.rel === 'HAS_CLAIM' && e.target === n.id);
+      if (parentEdge && subjIdx[parentEdge.source] !== undefined) {
+        const angle = (subjIdx[parentEdge.source] / Math.max(subjects.length, 1)) * Math.PI * 2;
+        const r = SR * (n.type === 'question' ? 1.6 : 0.5);
+        x = W/2 + Math.cos(angle) * r + (Math.random()-.5)*40;
+        y = H/2 + Math.sin(angle) * r + (Math.random()-.5)*40;
+      } else {
+        x = W/2 + (Math.random()-.5)*W*.4;
+        y = H/2 + (Math.random()-.5)*H*.4;
+      }
+    }
+    const sn = { ...n, x, y, vx: 0, vy: 0,
+                  r: n.type === 'subject' ? 13 : n.type === 'question' ? 7 : 9 };
     nodeById[n.id] = sn;
     return sn;
   });
@@ -879,10 +928,12 @@ function showDetail(n) {
 
   if (n.type === 'claim') {
     const rows = [
-      ['epistemic', n.epistemic], ['value', n.value],
-      ['period', n.period],       ['perimeter', n.perimeter],
-      ['direction', n.direction], ['author', n.author],
-      ['locator', n.locator],
+      ['metric',     n.metric],    ['value',      n.value + (n.unit ? ' ' + n.unit : '')],
+      ['topic',      n.topic],     ['as_of',      n.as_of],
+      ['period',     n.period],    ['perimeter',  n.perimeter],
+      ['source_doc', n.source_doc],['epistemic',  n.epistemic],
+      ['direction',  n.direction], ['author',     n.author],
+      ['locator',    n.locator],
     ].filter(([,v]) => v);
     html += '<div class="gd-grid">';
     rows.forEach(([k,v]) => {

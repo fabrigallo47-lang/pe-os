@@ -118,8 +118,46 @@ def llm_extract(system: str, user: str, max_tokens: int = 10000) -> str:
         return text
 
 
+def _extract_top_level_objects(s: str) -> list[str]:
+    """Quote-aware extractor: yields each top-level {...} span from a JSON array string."""
+    objects: list[str] = []
+    n = len(s)
+    i = 0
+    while i < n:
+        if s[i] != "{":
+            i += 1
+            continue
+        start = i
+        depth = 0
+        in_str = False
+        escaped = False
+        j = i
+        while j < n:
+            c = s[j]
+            if escaped:
+                escaped = False
+            elif c == "\\" and in_str:
+                escaped = True
+            elif c == '"':
+                in_str = not in_str
+            elif not in_str:
+                if c == "{":
+                    depth += 1
+                elif c == "}":
+                    depth -= 1
+                    if depth == 0:
+                        objects.append(s[start : j + 1])
+                        i = j
+                        break
+            j += 1
+        i += 1
+    return objects
+
+
 def _repair_json_array(raw: str) -> list:
-    """Multi-pass repair for model-generated JSON arrays."""
+    """Quote-aware repair for model-generated JSON arrays."""
+    import sys as _sys
+
     # Pass 1: trailing commas
     s = re.sub(r",\s*([}\]])", r"\1", raw)
     try:
@@ -127,44 +165,22 @@ def _repair_json_array(raw: str) -> list:
     except json.JSONDecodeError:
         pass
 
-    # Pass 2: truncate at last complete object (handles truncated output or
-    # unescaped quotes deep in a string value)
-    last_close = s.rfind("}")
-    if last_close > 0:
-        candidate = s[:last_close + 1].rstrip().rstrip(",") + "\n]"
+    # Pass 2+: quote-aware object extraction — handles unterminated strings,
+    # unescaped quotes, truncated output, and braces embedded in string values.
+    spans = _extract_top_level_objects(s)
+    items: list = []
+    skipped = 0
+    for span in spans:
         try:
-            result = json.loads(candidate)
-            print(f"  [parse_json] truncated to {len(result)} items (model output was malformed past last '}}'); some claims may be missing",
-                  file=__import__("sys").stderr)
-            return result
+            items.append(json.loads(span))
         except json.JSONDecodeError:
-            pass
+            skipped += 1
 
-    # Pass 3: scan objects one at a time, skip malformed ones
-    items, pos = [], s.find("[")
-    if pos < 0:
-        raise ValueError("no JSON array start found")
-    pos += 1
-    depth = 0
-    obj_start = None
-    for i, ch in enumerate(s[pos:], pos):
-        if ch == "{" and depth == 0:
-            obj_start = i
-            depth = 1
-        elif ch == "{":
-            depth += 1
-        elif ch == "}" and depth == 1:
-            depth = 0
-            try:
-                items.append(json.loads(s[obj_start:i + 1]))
-            except json.JSONDecodeError:
-                pass
-        elif ch == "}":
-            depth -= 1
     if not items:
-        raise ValueError(f"could not parse any objects from JSON; first 300 chars: {raw[:300]}")
-    print(f"  [parse_json] recovered {len(items)} items via object-scan (skipped malformed entries)",
-          file=__import__("sys").stderr)
+        raise ValueError(f"could not parse any JSON objects; first 300 chars: {raw[:300]}")
+
+    note = f"skipped {skipped} malformed" if skipped else "array not properly closed"
+    print(f"  [parse_json] recovered {len(items)} items ({note})", file=_sys.stderr)
     return items
 
 

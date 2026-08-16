@@ -29,6 +29,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from tools.extract import SYSTEM_PROMPT, parse_json
+from tools.claim_graph import claims_to_graph
 
 API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 MODEL   = os.environ.get("PEOS_MODEL", "claude-sonnet-5")
@@ -327,6 +328,54 @@ HTML = r"""<!doctype html>
   .status-sep { color: var(--border); }
   .status-val { color: var(--text); }
 
+  /* ── Graph view ── */
+  .graph-view {
+    flex: 1; display: none; overflow: hidden;
+    flex-direction: row; min-height: 0;
+  }
+  .graph-canvas-wrap {
+    flex: 1; position: relative; overflow: hidden;
+  }
+  #graph-canvas {
+    width: 100%; height: 100%; display: block; cursor: grab;
+  }
+  #graph-canvas:active { cursor: grabbing; }
+  .graph-detail {
+    width: 260px; flex-shrink: 0; border-left: 1px solid var(--border);
+    overflow-y: auto; padding: 14px; font-size: 12px;
+    display: none;
+  }
+  .gd-type {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); margin-bottom: 6px;
+  }
+  .gd-label {
+    font-size: 13px; font-weight: 500; margin-bottom: 10px;
+    line-height: 1.4; word-break: break-word;
+  }
+  .gd-grid {
+    display: grid; grid-template-columns: 80px 1fr; gap: 3px 8px;
+    font-family: var(--mono); font-size: 11px; margin-bottom: 10px;
+  }
+  .gd-key { color: var(--muted); padding-top: 1px; }
+  .gd-val { word-break: break-word; line-height: 1.5; }
+  .gd-stmt {
+    padding: 8px; background: var(--surface2); border-radius: 4px;
+    font-size: 11px; line-height: 1.6; color: var(--muted);
+    border-left: 2px solid var(--border);
+  }
+  .graph-legend {
+    position: absolute; bottom: 10px; left: 12px;
+    display: flex; gap: 12px; flex-wrap: wrap;
+  }
+  .leg-item {
+    display: flex; align-items: center; gap: 5px;
+    font-size: 10px; color: var(--muted);
+  }
+  .leg-dot {
+    width: 8px; height: 8px; border-radius: 50%;
+  }
+
   /* ── Scrollbar ── */
   ::-webkit-scrollbar { width: 6px; }
   ::-webkit-scrollbar-track { background: transparent; }
@@ -404,7 +453,8 @@ The extractor will:
         <span class="count-badge" id="count-badge">0</span>
         <div class="tab-row">
           <button class="tab active" id="tab-cards" onclick="switchTab('cards')">Cards</button>
-          <button class="tab" id="tab-raw" onclick="switchTab('raw')">JSON</button>
+          <button class="tab" id="tab-raw"   onclick="switchTab('raw')">JSON</button>
+          <button class="tab" id="tab-graph" onclick="switchTab('graph')">Graph</button>
         </div>
       </div>
 
@@ -421,6 +471,21 @@ The extractor will:
         <pre id="raw-pre">—</pre>
       </div>
 
+      <div class="graph-view" id="graph-view">
+        <div class="graph-canvas-wrap">
+          <canvas id="graph-canvas"></canvas>
+          <div class="graph-legend">
+            <span class="leg-item"><span class="leg-dot" style="background:#58a6ff"></span>subject</span>
+            <span class="leg-item"><span class="leg-dot" style="background:#3fb950"></span>attested</span>
+            <span class="leg-item"><span class="leg-dot" style="background:#e3b341"></span>asserted</span>
+            <span class="leg-item"><span class="leg-dot" style="background:#d29922"></span>derived</span>
+            <span class="leg-item"><span class="leg-dot" style="background:#bc8cff"></span>question</span>
+            <span class="leg-item"><span class="leg-dot" style="background:#f85149; border-radius:0; width:14px; height:2px"></span>contradicts</span>
+          </div>
+        </div>
+        <div class="graph-detail" id="graph-detail"></div>
+      </div>
+
       <div class="statusbar">
         <div class="status-item">claims <span class="status-val" id="st-count">0</span></div>
         <span class="status-sep">·</span>
@@ -435,14 +500,24 @@ The extractor will:
 
 <script>
 let lastClaims = [];
+let lastGraph  = null;
 let currentTab = 'cards';
+
+// ── Graph sim state ──────────────────────────────────────────────────────────
+let simNodes = [], simEdges = [];
+let animId = null, selectedNode = null, draggingNode = null;
+let pan = {x:0, y:0}, zoomLevel = 1;
+let isPanning = false, lastMouse = null;
 
 function switchTab(tab) {
   currentTab = tab;
-  document.getElementById('tab-cards').classList.toggle('active', tab === 'cards');
-  document.getElementById('tab-raw').classList.toggle('active', tab === 'raw');
-  document.getElementById('results-wrap').style.display = tab === 'cards' ? 'flex' : 'none';
-  document.getElementById('raw-view').style.display    = tab === 'raw'   ? 'flex' : 'none';
+  ['cards','raw','graph'].forEach(t => {
+    document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+  });
+  document.getElementById('results-wrap').style.display = tab === 'cards' ? 'flex'  : 'none';
+  document.getElementById('raw-view').style.display    = tab === 'raw'   ? 'flex'  : 'none';
+  document.getElementById('graph-view').style.display  = tab === 'graph' ? 'flex'  : 'none';
+  if (tab === 'graph' && lastGraph) initGraph(lastGraph);
 }
 
 function epClass(ep) {
@@ -508,7 +583,12 @@ function clearAll() {
   document.getElementById('st-time').textContent = '—';
   document.getElementById('st-ep').textContent = '—';
   document.getElementById('error-banner').style.display = 'none';
-  lastClaims = [];
+  document.getElementById('graph-detail').style.display = 'none';
+  const cv = document.getElementById('graph-canvas');
+  const ctx = cv.getContext('2d');
+  ctx.clearRect(0, 0, cv.width, cv.height);
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  lastClaims = []; lastGraph = null; simNodes = []; simEdges = [];
 }
 
 async function runExtract() {
@@ -543,6 +623,7 @@ async function runExtract() {
     const data = await res.json();
     if (data.error) throw new Error(data.error);
     claims = data.claims || [];
+    lastGraph = data.graph || null;
   } catch (e) {
     err.textContent = e.message;
     err.style.display = 'block';
@@ -576,8 +657,247 @@ async function runExtract() {
   document.getElementById('st-time').textContent = elapsed;
   document.getElementById('st-ep').textContent = epStr || '—';
 
+  if (lastGraph && currentTab === 'graph') initGraph(lastGraph);
+
   btn.disabled = false; btn.textContent = 'Extract claims';
   dot.classList.remove('pulsing');
+}
+
+// ── Force-directed graph ─────────────────────────────────────────────────────
+
+const EP_COLOR = {
+  asserted: '#e3b341', attested: '#3fb950',
+  observed: '#58a6ff', derived:  '#d29922',
+};
+
+function nodeColor(n) {
+  if (n.type === 'subject')  return '#58a6ff';
+  if (n.type === 'question') return '#bc8cff';
+  return EP_COLOR[n.epistemic] || '#6e7681';
+}
+
+function edgeColor(rel) {
+  if (rel === 'CONTRADICTS') return '#f85149';
+  if (rel === 'BEARS_ON')    return '#6e7681';
+  return '#30363d';
+}
+
+function initGraph(graph) {
+  if (!graph || !graph.nodes.length) return;
+  if (animId) { cancelAnimationFrame(animId); animId = null; }
+  pan = {x:0, y:0}; zoomLevel = 1; selectedNode = null; draggingNode = null;
+
+  const cv = document.getElementById('graph-canvas');
+  // Size canvas to its CSS layout box
+  cv.width  = cv.parentElement.clientWidth;
+  cv.height = cv.parentElement.clientHeight;
+  const W = cv.width, H = cv.height;
+
+  // Assign radii and random initial positions
+  const nodeById = {};
+  simNodes = graph.nodes.map(n => {
+    const sn = {
+      ...n,
+      x: W/2 + (Math.random()-.5)*W*.5,
+      y: H/2 + (Math.random()-.5)*H*.5,
+      vx: 0, vy: 0,
+      r: n.type === 'subject' ? 13 : n.type === 'question' ? 7 : 9,
+    };
+    nodeById[n.id] = sn;
+    return sn;
+  });
+
+  simEdges = graph.edges
+    .map(e => ({...e, source: nodeById[e.source], target: nodeById[e.target]}))
+    .filter(e => e.source && e.target);
+
+  // Canvas event wiring (replace each time so no duplicate listeners)
+  cv.onmousedown = e => {
+    const n = hitTest(e.offsetX, e.offsetY);
+    if (n) {
+      draggingNode = n; selectedNode = n; showDetail(n);
+    } else {
+      isPanning = true; lastMouse = {x: e.offsetX, y: e.offsetY};
+    }
+  };
+  cv.onmousemove = e => {
+    if (draggingNode) {
+      draggingNode.x = (e.offsetX - pan.x) / zoomLevel;
+      draggingNode.y = (e.offsetY - pan.y) / zoomLevel;
+      draggingNode.vx = draggingNode.vy = 0;
+      if (!animId) { alpha = 0.3; animId = requestAnimationFrame(tick); }
+    } else if (isPanning && lastMouse) {
+      pan.x += e.offsetX - lastMouse.x;
+      pan.y += e.offsetY - lastMouse.y;
+      lastMouse = {x: e.offsetX, y: e.offsetY};
+      draw();
+    }
+    cv.style.cursor = hitTest(e.offsetX, e.offsetY) ? 'pointer' : (isPanning ? 'grabbing' : 'grab');
+  };
+  cv.onmouseup = () => { draggingNode = null; isPanning = false; lastMouse = null; };
+  cv.onmouseleave = () => { draggingNode = null; isPanning = false; lastMouse = null; };
+  cv.onwheel = e => {
+    e.preventDefault();
+    const f = e.deltaY < 0 ? 1.12 : 0.9;
+    // zoom toward cursor
+    const mx = e.offsetX, my = e.offsetY;
+    const newZ = Math.max(.15, Math.min(5, zoomLevel * f));
+    pan.x = mx - (mx - pan.x) * (newZ / zoomLevel);
+    pan.y = my - (my - pan.y) * (newZ / zoomLevel);
+    zoomLevel = newZ;
+    draw();
+  };
+
+  let alpha = 1;
+
+  function tick() {
+    const SPRING = 0.04, REST_SC = 90, REST_CQ = 110;
+    const REP    = 2200;
+    const GRAV   = 0.018;
+    const DAMP   = 0.82;
+
+    simNodes.forEach(n => { n.fx = 0; n.fy = 0; });
+
+    // Repulsion (O(n²) — fine for <300 nodes)
+    for (let i = 0; i < simNodes.length; i++) {
+      for (let j = i+1; j < simNodes.length; j++) {
+        const a = simNodes[i], b = simNodes[j];
+        let dx = b.x-a.x, dy = b.y-a.y;
+        const d2 = dx*dx+dy*dy || 1;
+        const d  = Math.sqrt(d2);
+        const f  = REP / d2;
+        a.fx -= f*dx/d; a.fy -= f*dy/d;
+        b.fx += f*dx/d; b.fy += f*dy/d;
+      }
+    }
+
+    // Spring per edge
+    simEdges.forEach(e => {
+      const dx = e.target.x-e.source.x, dy = e.target.y-e.source.y;
+      const d  = Math.sqrt(dx*dx+dy*dy) || 1;
+      const rest = e.rel === 'BEARS_ON' ? REST_CQ : REST_SC;
+      const f  = SPRING * (d - rest);
+      const fx = f*dx/d, fy = f*dy/d;
+      e.source.fx += fx; e.source.fy += fy;
+      e.target.fx -= fx; e.target.fy -= fy;
+    });
+
+    // Gravity toward canvas center
+    simNodes.forEach(n => {
+      n.fx += (W/2 - n.x) * GRAV;
+      n.fy += (H/2 - n.y) * GRAV;
+    });
+
+    // Integrate
+    simNodes.forEach(n => {
+      if (n === draggingNode) return;
+      n.vx = (n.vx + n.fx) * DAMP * alpha;
+      n.vy = (n.vy + n.fy) * DAMP * alpha;
+      n.x += n.vx; n.y += n.vy;
+    });
+
+    alpha = Math.max(0, alpha - 0.004);
+    draw();
+    if (alpha > 0.001) animId = requestAnimationFrame(tick);
+    else animId = null;
+  }
+
+  function draw() {
+    const ctx = cv.getContext('2d');
+    ctx.clearRect(0, 0, W, H);
+    ctx.save();
+    ctx.translate(pan.x, pan.y);
+    ctx.scale(zoomLevel, zoomLevel);
+
+    // Edges
+    simEdges.forEach(e => {
+      ctx.beginPath();
+      ctx.moveTo(e.source.x, e.source.y);
+      ctx.lineTo(e.target.x, e.target.y);
+      ctx.strokeStyle = edgeColor(e.rel);
+      ctx.lineWidth = e.rel === 'CONTRADICTS' ? 1.5 : 1;
+      ctx.globalAlpha = e.rel === 'CONTRADICTS' ? .7 : .35;
+      ctx.stroke();
+      ctx.globalAlpha = 1;
+    });
+
+    // Nodes
+    simNodes.forEach(n => {
+      const col = nodeColor(n);
+      const sel = n === selectedNode;
+      ctx.beginPath();
+      ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
+      ctx.fillStyle = col + (n.type === 'subject' ? '28' : '1a');
+      ctx.fill();
+      if (sel) { ctx.shadowColor = col; ctx.shadowBlur = 14; }
+      ctx.strokeStyle = col;
+      ctx.lineWidth = sel ? 2 : 1;
+      ctx.stroke();
+      ctx.shadowBlur = 0;
+
+      // Label: always on subjects; on selected claim/question
+      if (n.type === 'subject' || sel) {
+        const lbl = n.label.length > 28 ? n.label.slice(0,27)+'…' : n.label;
+        ctx.fillStyle = sel ? '#e6edf3' : '#8b949e';
+        ctx.font = `${sel ? 11 : 10}px -apple-system,system-ui,sans-serif`;
+        ctx.textAlign = 'center';
+        ctx.fillText(lbl, n.x, n.y + n.r + 12);
+      }
+    });
+
+    ctx.restore();
+  }
+
+  function hitTest(mx, my) {
+    const wx = (mx-pan.x)/zoomLevel, wy = (my-pan.y)/zoomLevel;
+    for (let i = simNodes.length-1; i >= 0; i--) {
+      const n = simNodes[i];
+      const dx = wx-n.x, dy = wy-n.y;
+      if (dx*dx+dy*dy < (n.r+5)*(n.r+5)) return n;
+    }
+    return null;
+  }
+
+  // Resize
+  const ro = new ResizeObserver(() => {
+    cv.width  = cv.parentElement.clientWidth;
+    cv.height = cv.parentElement.clientHeight;
+    draw();
+  });
+  ro.observe(cv.parentElement);
+
+  animId = requestAnimationFrame(tick);
+}
+
+function showDetail(n) {
+  const det = document.getElementById('graph-detail');
+  det.style.display = 'block';
+
+  const typeLabel = {'subject':'Entity','claim':'Claim','question':'Question'}[n.type] || n.type;
+  let html = `<div class="gd-type">${typeLabel}</div>`;
+  html += `<div class="gd-label">${esc(n.label || n.id)}</div>`;
+
+  if (n.type === 'claim') {
+    const rows = [
+      ['epistemic', n.epistemic], ['value', n.value],
+      ['period', n.period],       ['perimeter', n.perimeter],
+      ['direction', n.direction], ['author', n.author],
+      ['locator', n.locator],
+    ].filter(([,v]) => v);
+    html += '<div class="gd-grid">';
+    rows.forEach(([k,v]) => {
+      html += `<span class="gd-key">${k}</span><span class="gd-val">${esc(v)}</span>`;
+    });
+    html += '</div>';
+    if (n.derivation) {
+      html += `<div class="gd-grid"><span class="gd-key">derivation</span><span class="gd-val">${esc(n.derivation)}</span></div>`;
+    }
+    if (n.statement) {
+      html += `<div class="gd-stmt">${esc(n.statement)}</div>`;
+    }
+  }
+
+  det.innerHTML = html;
 }
 
 // ── File upload & drag-drop ──────────────────────────────────────────────────
@@ -732,9 +1052,10 @@ class Handler(BaseHTTPRequestHandler):
             t0 = time.time()
             raw = _call_api(SYSTEM_PROMPT, user_msg, key)
             claims = parse_json(raw)
+            graph  = claims_to_graph(claims)
             elapsed = round(time.time() - t0, 2)
-            print(f"  → {len(claims)} claims  ({elapsed}s)  deal={deal}")
-            resp = json.dumps({"claims": claims, "elapsed": elapsed})
+            print(f"  → {len(claims)} claims  {graph['stats']}  ({elapsed}s)  deal={deal}")
+            resp = json.dumps({"claims": claims, "graph": graph, "elapsed": elapsed})
         except Exception:
             err = traceback.format_exc()
             print(err, file=sys.stderr)

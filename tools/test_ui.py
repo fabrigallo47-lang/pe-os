@@ -260,65 +260,72 @@ HTML = r"""<!doctype html>
   .claim {
     background: var(--surface); border: 1px solid var(--border);
     border-radius: var(--radius); overflow: hidden;
-    animation: slide-in .22s ease both;
+    animation: slide-in .18s ease both;
   }
   @keyframes slide-in {
-    from { opacity: 0; transform: translateY(6px); }
+    from { opacity: 0; transform: translateY(5px); }
     to   { opacity: 1; transform: translateY(0); }
   }
 
+  /* Row 1: badge + metric + value */
   .claim-head {
-    display: flex; align-items: center; gap: 8px;
-    padding: 9px 12px; border-bottom: 1px solid var(--border);
-    cursor: pointer; user-select: none;
+    display: flex; align-items: center; gap: 10px;
+    padding: 11px 14px 0; cursor: pointer; user-select: none;
   }
-  .claim-num { font-family: var(--mono); font-size: 10px; color: var(--muted); width: 22px; }
-  .ep-badge {
-    font-size: 10px; font-weight: 600; padding: 2px 7px; border-radius: 20px;
-    text-transform: uppercase; letter-spacing: .06em; border: 1px solid;
-  }
-  .ep-asserted { color: var(--ep-asserted); border-color: var(--ep-asserted); background: rgba(227,179,65,.1); }
-  .ep-attested { color: var(--ep-attested); border-color: var(--ep-attested); background: rgba(63,185,80,.1); }
-  .ep-observed { color: var(--ep-observed); border-color: var(--ep-observed); background: rgba(88,166,255,.1); }
-  .ep-derived  { color: var(--ep-derived);  border-color: var(--ep-derived);  background: rgba(210,153,34,.1); }
-  .ep-unknown  { color: var(--ep-unknown);  border-color: var(--ep-unknown);  background: rgba(110,118,129,.1); }
+  .claim-num { font-family: var(--mono); font-size: 11px; color: var(--muted); min-width: 26px; }
 
-  .claim-subject { font-size: 13px; font-weight: 500; flex: 1; }
-  .claim-value {
-    font-family: var(--mono); font-size: 12px; color: var(--accent);
-    background: rgba(88,166,255,.08); padding: 2px 7px; border-radius: 4px;
-    max-width: 140px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap;
+  .ep-badge {
+    font-size: 10px; font-weight: 700; padding: 3px 8px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: .05em; flex-shrink: 0;
   }
-  .chevron { font-size: 10px; color: var(--muted); transition: transform .15s; }
+  .ep-asserted { color: var(--ep-asserted); background: rgba(227,179,65,.15); }
+  .ep-attested { color: var(--ep-attested); background: rgba(63,185,80,.15); }
+  .ep-observed { color: var(--ep-observed); background: rgba(88,166,255,.15); }
+  .ep-derived  { color: var(--ep-derived);  background: rgba(210,153,34,.15); }
+  .ep-unknown  { color: var(--ep-unknown);  background: rgba(110,118,129,.12); }
+
+  .claim-metric { font-size: 14px; font-weight: 600; flex: 1; line-height: 1.3; }
+  .claim-value  {
+    font-family: var(--mono); font-size: 15px; font-weight: 700;
+    color: var(--accent); white-space: nowrap; flex-shrink: 0;
+  }
+  .chevron { font-size: 11px; color: var(--muted); transition: transform .15s; flex-shrink: 0; }
   .claim.open .chevron { transform: rotate(90deg); }
 
-  .claim-body { padding: 10px 12px; display: none; border-top: 1px solid var(--border); }
+  /* Row 2: context line — always visible */
+  .claim-context {
+    padding: 4px 14px 10px 14px; font-size: 12px; color: var(--muted);
+    border-bottom: 1px solid var(--border); cursor: pointer;
+    display: flex; align-items: baseline; gap: 0; flex-wrap: wrap;
+  }
+  .ctx-topic  { color: var(--accent); font-weight: 500; margin-right: 6px; }
+  .ctx-sep    { color: var(--border); margin: 0 5px; }
+  .ctx-plain  { color: var(--muted); }
+
+  /* Expanded body */
+  .claim-body { display: none; border-top: 1px solid var(--border); }
   .claim.open .claim-body { display: block; }
 
-  .claim-grid { display: grid; grid-template-columns: 90px 1fr; gap: 3px 8px; font-size: 12px; }
-  .cg-key { color: var(--muted); font-family: var(--mono); padding-top: 1px; }
-  .cg-val { color: var(--text); font-family: var(--mono); word-break: break-word; line-height: 1.5; }
+  .claim-grid {
+    display: grid; grid-template-columns: 110px 1fr; gap: 0;
+    font-size: 12.5px; padding: 10px 14px;
+  }
+  .cg-row { display: contents; }
+  .cg-key {
+    color: var(--muted); font-family: var(--mono); font-size: 11px;
+    padding: 4px 10px 4px 0; align-self: start; white-space: nowrap;
+  }
+  .cg-val { color: var(--text); font-family: var(--mono); font-size: 12px;
+    word-break: break-word; line-height: 1.5; padding: 4px 0; }
   .cg-val.dim { color: var(--muted); font-style: italic; }
 
-  .claim-meta {
-    display: flex; flex-wrap: wrap; gap: 6px; padding: 6px 12px;
-    border-bottom: 1px solid var(--border); background: var(--surface2);
-  }
-  .meta-chip {
-    font-family: var(--mono); font-size: 10px; padding: 2px 7px;
-    border-radius: 20px; border: 1px solid var(--border);
-    color: var(--muted); white-space: nowrap;
-  }
-  .meta-chip.topic { border-color: var(--accent-d); color: var(--accent); }
-  .meta-chip.src   { border-color: #30363d; }
-
   .claim-stmt {
-    margin-top: 10px; padding: 8px 10px;
-    background: var(--surface2); border-radius: 4px;
-    font-size: 12px; color: var(--muted); line-height: 1.6;
-    border-left: 2px solid var(--border);
+    margin: 0 14px 12px; padding: 10px 12px;
+    background: var(--surface2); border-radius: var(--radius);
+    font-size: 12.5px; color: var(--text); line-height: 1.7;
+    border-left: 3px solid var(--accent-d); font-style: italic;
   }
-  .claim-stmt.has-text { color: var(--text); }
+  .claim-stmt.dim { color: var(--muted); font-style: normal; }
 
   /* ── Raw JSON view ── */
   .raw-view {
@@ -376,16 +383,28 @@ HTML = r"""<!doctype html>
     font-size: 11px; line-height: 1.6; color: var(--muted);
     border-left: 2px solid var(--border);
   }
+  .graph-overlay {
+    position: absolute; top: 10px; left: 12px;
+    display: flex; gap: 6px;
+  }
+  .graph-btn {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--muted); font-size: 11px;
+    padding: 4px 10px; cursor: pointer;
+    transition: border-color .12s, color .12s;
+  }
+  .graph-btn:hover { border-color: var(--accent-d); color: var(--text); }
   .graph-legend {
-    position: absolute; bottom: 10px; left: 12px;
-    display: flex; gap: 12px; flex-wrap: wrap;
+    position: absolute; bottom: 12px; left: 12px;
+    display: flex; gap: 14px; flex-wrap: wrap;
+    background: rgba(13,17,23,.7); padding: 6px 10px; border-radius: var(--radius);
   }
   .leg-item {
     display: flex; align-items: center; gap: 5px;
-    font-size: 10px; color: var(--muted);
+    font-size: 11px; color: var(--muted);
   }
   .leg-dot {
-    width: 8px; height: 8px; border-radius: 50%;
+    width: 10px; height: 10px; border-radius: 50%;
   }
 
   /* ── Scrollbar ── */
@@ -486,16 +505,21 @@ The extractor will:
       <div class="graph-view" id="graph-view">
         <div class="graph-canvas-wrap">
           <canvas id="graph-canvas"></canvas>
+          <div class="graph-overlay">
+            <button class="graph-btn" onclick="fitView()" title="Fit all nodes in view">⊡ Fit</button>
+            <button class="graph-btn" onclick="resetView()" title="Reset pan/zoom">↺ Reset</button>
+          </div>
           <div class="graph-legend">
-            <span class="leg-item"><span class="leg-dot" style="background:#58a6ff"></span>subject</span>
-            <span class="leg-item"><span class="leg-dot" style="background:#3fb950"></span>attested</span>
-            <span class="leg-item"><span class="leg-dot" style="background:#e3b341"></span>asserted</span>
-            <span class="leg-item"><span class="leg-dot" style="background:#d29922"></span>derived</span>
-            <span class="leg-item"><span class="leg-dot" style="background:#bc8cff"></span>question</span>
-            <span class="leg-item"><span class="leg-dot" style="background:#f85149; border-radius:0; width:14px; height:2px"></span>contradicts</span>
+            <span class="leg-item"><span class="leg-dot" style="background:#58a6ff;border:2px solid #58a6ff"></span>Subject</span>
+            <span class="leg-item"><span class="leg-dot" style="background:rgba(63,185,80,.2);border:2px solid #3fb950"></span>Attested</span>
+            <span class="leg-item"><span class="leg-dot" style="background:rgba(227,179,65,.2);border:2px solid #e3b341"></span>Asserted</span>
+            <span class="leg-item"><span class="leg-dot" style="background:rgba(88,166,255,.2);border:2px solid #58a6ff"></span>Observed</span>
+            <span class="leg-item"><span class="leg-dot" style="background:rgba(188,140,255,.2);border:2px solid #bc8cff"></span>Question</span>
           </div>
         </div>
-        <div class="graph-detail" id="graph-detail"></div>
+        <div class="graph-detail" id="graph-detail">
+          <div style="color:var(--muted);font-size:12px;padding-top:20px;text-align:center">Click a node<br>to see details</div>
+        </div>
       </div>
 
       <div class="statusbar">
@@ -549,51 +573,55 @@ function val(s) {
 }
 
 function renderCard(item, idx) {
-  const ep      = item.epistemic || 'unknown';
-  const metric  = esc(item.metric  || item.subject || '—');
-  const subject = esc(item.subject || '—');
-  const value   = item.value ? esc(item.value) + (item.unit ? ' ' + esc(item.unit) : '') : '';
-  const stmt    = esc(item.statement || '');
+  const ep     = item.epistemic || 'unknown';
+  const metric = esc(item.metric || item.subject || '—');
+  const value  = item.value
+    ? esc(item.value) + (item.unit ? ' ' + esc(item.unit) : '')
+    : '';
+  const stmt   = esc(item.statement || '');
   const hasStmt = !!(item.statement || '').trim();
-  const bears   = Array.isArray(item.bears_on) ? item.bears_on.join(', ') : (item.bears_on || '');
+  const bears  = Array.isArray(item.bears_on)
+    ? item.bears_on.join(', ') : (item.bears_on || '');
 
-  const topicChip = item.topic
-    ? `<span class="meta-chip topic">${esc(item.topic)}</span>` : '';
-  const srcChip = item.source_doc
-    ? `<span class="meta-chip src">${esc(item.source_doc)}</span>` : '';
-  const asOfChip = item.as_of
-    ? `<span class="meta-chip">${esc(item.as_of)}</span>` : '';
-  const authorChip = item.author
-    ? `<span class="meta-chip">${esc(item.author)}</span>` : '';
+  // Context line: topic · as_of · source_doc · author (readable, 12px)
+  const ctxParts = [
+    item.topic     ? `<span class="ctx-topic">${esc(item.topic)}</span>` : '',
+    item.as_of     ? `<span class="ctx-plain">${esc(item.as_of)}</span>` : '',
+    item.source_doc? `<span class="ctx-plain">${esc(item.source_doc)}</span>` : '',
+    item.author    ? `<span class="ctx-plain">${esc(item.author)}</span>` : '',
+  ].filter(Boolean).join('<span class="ctx-sep">·</span>');
+
+  const rows = [
+    ['subject',    item.subject],
+    ['value',      item.value ? item.value + (item.unit ? ' ' + item.unit : '') : ''],
+    ['period',     item.period],
+    ['as_of',      item.as_of],
+    ['perimeter',  item.perimeter],
+    ['source_doc', item.source_doc],
+    ['locator',    item.locator],
+    ['author',     item.author],
+    ['direction',  item.direction],
+    ['bears-on',   bears],
+  ].filter(([,v]) => v);
+  if (item.derivation) rows.push(['derivation', item.derivation]);
+
+  const gridHtml = rows.map(([k,v]) =>
+    `<span class="cg-key">${k}</span><span class="cg-val">${esc(v)}</span>`
+  ).join('');
 
   return `
 <div class="claim" id="claim-${idx}">
   <div class="claim-head" onclick="toggleClaim(${idx})">
     <span class="claim-num">${String(idx).padStart(2,'0')}</span>
     <span class="ep-badge ${epClass(ep)}">${ep}</span>
-    <span class="claim-subject">${metric}</span>
+    <span class="claim-metric">${metric}</span>
     ${value ? `<span class="claim-value">${value}</span>` : ''}
     <span class="chevron">▶</span>
   </div>
-  <div class="claim-meta">
-    ${topicChip}${asOfChip}${srcChip}${authorChip}
-  </div>
+  <div class="claim-context" onclick="toggleClaim(${idx})">${ctxParts || '<span class="ctx-plain">—</span>'}</div>
   <div class="claim-body">
-    <div class="claim-grid">
-      <span class="cg-key">subject</span>   ${val(item.subject)}
-      <span class="cg-key">value</span>     ${val(item.value)}
-      <span class="cg-key">unit</span>      ${val(item.unit)}
-      <span class="cg-key">as_of</span>     ${val(item.as_of)}
-      <span class="cg-key">period</span>    ${val(item.period)}
-      <span class="cg-key">perimeter</span> ${val(item.perimeter)}
-      <span class="cg-key">source_doc</span>${val(item.source_doc)}
-      <span class="cg-key">locator</span>   ${val(item.locator)}
-      <span class="cg-key">author</span>    ${val(item.author)}
-      <span class="cg-key">direction</span> ${val(item.direction)}
-      <span class="cg-key">bears-on</span>  ${val(bears)}
-      ${item.derivation ? `<span class="cg-key">derivation</span> ${val(item.derivation)}` : ''}
-    </div>
-    <div class="claim-stmt ${hasStmt ? 'has-text' : ''}">${hasStmt ? stmt : 'no statement'}</div>
+    <div class="claim-grid">${gridHtml}</div>
+    <div class="claim-stmt ${hasStmt ? '' : 'dim'}">${hasStmt ? stmt : 'no statement extracted'}</div>
   </div>
 </div>`;
 }
@@ -700,6 +728,7 @@ const EP_COLOR = {
   asserted: '#e3b341', attested: '#3fb950',
   observed: '#58a6ff', derived:  '#d29922',
 };
+let _graphDraw = null;  // exposed so fitView/resetView can call it
 
 function nodeColor(n) {
   if (n.type === 'subject')  return '#58a6ff';
@@ -711,6 +740,27 @@ function edgeColor(rel) {
   if (rel === 'CONTRADICTS') return '#f85149';
   if (rel === 'BEARS_ON')    return '#6e7681';
   return '#30363d';
+}
+
+function fitView() {
+  if (!simNodes.length || !_graphDraw) return;
+  const cv = document.getElementById('graph-canvas');
+  const W = cv.width, H = cv.height, PAD = 48;
+  let x0=Infinity,y0=Infinity,x1=-Infinity,y1=-Infinity;
+  simNodes.forEach(n => {
+    x0=Math.min(x0,n.x-n.r); y0=Math.min(y0,n.y-n.r);
+    x1=Math.max(x1,n.x+n.r); y1=Math.max(y1,n.y+n.r);
+  });
+  const z = Math.min((W-PAD*2)/(x1-x0||1), (H-PAD*2)/(y1-y0||1), 2.5);
+  zoomLevel = z;
+  pan.x = W/2 - ((x0+x1)/2)*z;
+  pan.y = H/2 - ((y0+y1)/2)*z;
+  _graphDraw();
+}
+
+function resetView() {
+  pan = {x:0, y:0}; zoomLevel = 1;
+  if (_graphDraw) _graphDraw();
 }
 
 function initGraph(graph) {
@@ -760,41 +810,41 @@ function initGraph(graph) {
     .map(e => ({...e, source: nodeById[e.source], target: nodeById[e.target]}))
     .filter(e => e.source && e.target);
 
-  // Canvas event wiring (replace each time so no duplicate listeners)
+  let hoverNode = null;
+
+  // Single unified mousemove: drag node OR pan OR track hover
   cv.onmousedown = e => {
-    const n = hitTest(e.offsetX, e.offsetY);
-    if (n) {
-      draggingNode = n; selectedNode = n; showDetail(n);
-    } else {
-      isPanning = true; lastMouse = {x: e.offsetX, y: e.offsetY};
-    }
+    const n = hitNode(e.offsetX, e.offsetY);
+    if (n) { draggingNode = n; selectedNode = n; showDetail(n); if (!animId) draw(); }
+    else   { isPanning = true; lastMouse = {x:e.offsetX, y:e.offsetY}; }
   };
   cv.onmousemove = e => {
     if (draggingNode) {
       draggingNode.x = (e.offsetX - pan.x) / zoomLevel;
       draggingNode.y = (e.offsetY - pan.y) / zoomLevel;
       draggingNode.vx = draggingNode.vy = 0;
-      if (!animId) { alpha = 0.3; animId = requestAnimationFrame(tick); }
+      if (!animId) { alpha = 0.2; animId = requestAnimationFrame(tick); }
     } else if (isPanning && lastMouse) {
       pan.x += e.offsetX - lastMouse.x;
       pan.y += e.offsetY - lastMouse.y;
-      lastMouse = {x: e.offsetX, y: e.offsetY};
-      draw();
+      lastMouse = {x:e.offsetX, y:e.offsetY};
+      if (!animId) draw();
     }
-    cv.style.cursor = hitTest(e.offsetX, e.offsetY) ? 'pointer' : (isPanning ? 'grabbing' : 'grab');
+    const h = hitNode(e.offsetX, e.offsetY);
+    if (h !== hoverNode) { hoverNode = h; if (!animId) draw(); }
+    cv.style.cursor = h ? 'pointer' : isPanning ? 'grabbing' : 'grab';
   };
-  cv.onmouseup = () => { draggingNode = null; isPanning = false; lastMouse = null; };
-  cv.onmouseleave = () => { draggingNode = null; isPanning = false; lastMouse = null; };
+  cv.onmouseup = cv.onmouseleave = () => {
+    draggingNode = null; isPanning = false; lastMouse = null;
+  };
   cv.onwheel = e => {
     e.preventDefault();
-    const f = e.deltaY < 0 ? 1.12 : 0.9;
-    // zoom toward cursor
-    const mx = e.offsetX, my = e.offsetY;
-    const newZ = Math.max(.15, Math.min(5, zoomLevel * f));
-    pan.x = mx - (mx - pan.x) * (newZ / zoomLevel);
-    pan.y = my - (my - pan.y) * (newZ / zoomLevel);
+    const f = e.deltaY < 0 ? 1.1 : 0.91;
+    const newZ = Math.max(.1, Math.min(6, zoomLevel * f));
+    pan.x = e.offsetX - (e.offsetX - pan.x) * newZ / zoomLevel;
+    pan.y = e.offsetY - (e.offsetY - pan.y) * newZ / zoomLevel;
     zoomLevel = newZ;
-    draw();
+    if (!animId) draw();
   };
 
   let alpha = 1;
@@ -853,22 +903,24 @@ function initGraph(graph) {
 
   function draw() {
     const ctx = cv.getContext('2d');
-    ctx.clearRect(0, 0, W, H);
+    const cW = cv.width, cH = cv.height;
+    ctx.clearRect(0, 0, cW, cH);
     ctx.save();
     ctx.translate(pan.x, pan.y);
     ctx.scale(zoomLevel, zoomLevel);
 
     // Edges
     simEdges.forEach(e => {
+      if (!e.source || !e.target) return;
       ctx.beginPath();
       ctx.moveTo(e.source.x, e.source.y);
       ctx.lineTo(e.target.x, e.target.y);
       ctx.strokeStyle = edgeColor(e.rel);
-      ctx.lineWidth = e.rel === 'CONTRADICTS' ? 1.5 : 1;
-      ctx.globalAlpha = e.rel === 'CONTRADICTS' ? .7 : .35;
+      ctx.lineWidth   = e.rel === 'CONTRADICTS' ? 2 : 1;
+      ctx.globalAlpha = e.rel === 'CONTRADICTS' ? .85 : .38;
       ctx.stroke();
-      ctx.globalAlpha = 1;
     });
+    ctx.globalAlpha = 1;
 
     // Nodes
     simNodes.forEach(n => {
@@ -876,33 +928,78 @@ function initGraph(graph) {
       const sel = n === selectedNode;
       ctx.beginPath();
       ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
-      ctx.fillStyle = col + (n.type === 'subject' ? '28' : '1a');
+      ctx.fillStyle = col + (n.type === 'subject' ? '30' : '20');
       ctx.fill();
-      if (sel) { ctx.shadowColor = col; ctx.shadowBlur = 14; }
+      if (sel) { ctx.shadowColor = col; ctx.shadowBlur = 18; }
       ctx.strokeStyle = col;
-      ctx.lineWidth = sel ? 2 : 1;
+      ctx.lineWidth = sel ? 2.5 : n.type === 'subject' ? 2 : 1.5;
       ctx.stroke();
       ctx.shadowBlur = 0;
 
-      // Label: always on subjects; on selected claim/question
-      if (n.type === 'subject' || sel) {
-        const lbl = n.label.length > 28 ? n.label.slice(0,27)+'…' : n.label;
-        ctx.fillStyle = sel ? '#e6edf3' : '#8b949e';
-        ctx.font = `${sel ? 11 : 10}px -apple-system,system-ui,sans-serif`;
-        ctx.textAlign = 'center';
-        ctx.fillText(lbl, n.x, n.y + n.r + 12);
+      // Labels
+      ctx.textAlign = 'center';
+      if (n.type === 'subject') {
+        const words = n.label.split(' ');
+        let line = '', lines = [];
+        words.forEach(w => {
+          const t = line ? line+' '+w : w;
+          if (t.length > 18 && line) { lines.push(line); line = w; }
+          else line = t;
+        });
+        if (line) lines.push(line);
+        lines = lines.slice(0,3);
+        ctx.font      = 'bold 12px -apple-system,system-ui,sans-serif';
+        ctx.fillStyle = '#c9d1d9';
+        lines.forEach((l,i) => ctx.fillText(l, n.x, n.y + n.r + 14 + i*14));
+      } else if (sel) {
+        const lbl = (n.metric || n.label || '').slice(0, 26);
+        const vl  = n.value ? n.value + (n.unit ? ' '+n.unit : '') : '';
+        ctx.font      = '11px -apple-system,system-ui,sans-serif';
+        ctx.fillStyle = '#e6edf3';
+        ctx.fillText(lbl, n.x, n.y + n.r + 14);
+        if (vl) {
+          ctx.font = 'bold 11px ui-monospace,monospace';
+          ctx.fillStyle = col;
+          ctx.fillText(vl, n.x, n.y + n.r + 27);
+        }
       }
     });
-
     ctx.restore();
-  }
 
-  function hitTest(mx, my) {
+    // Hover tooltip — screen-space, outside transform
+    if (hoverNode && hoverNode !== selectedNode) {
+      const tx = hoverNode.x * zoomLevel + pan.x;
+      const ty = hoverNode.y * zoomLevel + pan.y;
+      const tip = (hoverNode.metric || hoverNode.label || '').slice(0, 36);
+      const val = hoverNode.value ? hoverNode.value + (hoverNode.unit ? ' '+hoverNode.unit : '') : '';
+      ctx.font = '11px -apple-system,system-ui,sans-serif';
+      const tw = Math.max(ctx.measureText(tip).width, ctx.measureText(val).width) + 18;
+      const th = val ? 38 : 24;
+      const bx = Math.max(4, Math.min(tx - tw/2, cW - tw - 4));
+      const by = ty - hoverNode.r * zoomLevel - th - 6;
+      ctx.fillStyle = 'rgba(13,17,23,.93)';
+      ctx.strokeStyle = '#30363d';
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.rect(bx, by, tw, th);
+      ctx.fill(); ctx.stroke();
+      ctx.fillStyle = '#e6edf3'; ctx.textAlign = 'left';
+      ctx.fillText(tip, bx + 8, by + 15);
+      if (val) {
+        ctx.font = 'bold 11px ui-monospace,monospace';
+        ctx.fillStyle = nodeColor(hoverNode);
+        ctx.fillText(val, bx + 8, by + 30);
+      }
+    }
+  }
+  _graphDraw = draw;  // expose for fitView / resetView
+
+  function hitNode(mx, my) {
     const wx = (mx-pan.x)/zoomLevel, wy = (my-pan.y)/zoomLevel;
     for (let i = simNodes.length-1; i >= 0; i--) {
       const n = simNodes[i];
       const dx = wx-n.x, dy = wy-n.y;
-      if (dx*dx+dy*dy < (n.r+5)*(n.r+5)) return n;
+      if (dx*dx+dy*dy < (n.r+6)*(n.r+6)) return n;
     }
     return null;
   }
@@ -911,7 +1008,7 @@ function initGraph(graph) {
   const ro = new ResizeObserver(() => {
     cv.width  = cv.parentElement.clientWidth;
     cv.height = cv.parentElement.clientHeight;
-    draw();
+    if (!animId) draw();
   });
   ro.observe(cv.parentElement);
 

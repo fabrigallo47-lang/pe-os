@@ -94,6 +94,13 @@ WHAT TO EXTRACT:
 - Risk factors stated by any party
 - Assumptions, adjustments, and their rationale
 
+CRITICAL JSON FORMATTING RULES:
+- Return ONLY a valid JSON array — no prose before or after.
+- NEVER use unescaped double-quote characters inside a string value.
+  Wrong: "statement": "Management said "growth is strong" in the call"
+  Right: "statement": "Management said \"growth is strong\" in the call"
+- Keep string values concise; do not write multi-paragraph statements.
+
 Return ONLY a JSON array. Each element:
 {
   "subject":    "full basis-specific subject string (entity + definition + basis)",
@@ -116,7 +123,7 @@ Return ONLY a JSON array. Each element:
 """
 
 
-def llm_extract(system: str, user: str, max_tokens: int = 10000) -> str:
+def llm_extract(system: str, user: str, max_tokens: int = 16000) -> str:
     import urllib.request, urllib.error
     payload = {
         "model": MODEL,
@@ -175,8 +182,30 @@ def _extract_top_level_objects(s: str) -> list[str]:
     return objects
 
 
+def _split_fallback(s: str) -> list:
+    """Last resort: split on object separators, reconstruct braces, try each."""
+    items: list = []
+    for pat in (r"\},\s*\n\s*\{", r"\},\s*\{"):
+        parts = re.split(pat, s)
+        if len(parts) < 2:
+            continue
+        for i, part in enumerate(parts):
+            chunk = part.strip().lstrip("[").rstrip("],").strip()
+            if not chunk.startswith("{"):
+                chunk = "{" + chunk
+            if not chunk.endswith("}"):
+                chunk = chunk + "}"
+            try:
+                items.append(json.loads(chunk))
+            except json.JSONDecodeError:
+                pass
+        if items:
+            return items
+    return items
+
+
 def _repair_json_array(raw: str) -> list:
-    """Quote-aware repair for model-generated JSON arrays."""
+    """Multi-pass repair for model-generated JSON arrays."""
     import sys as _sys
 
     # Pass 1: trailing commas
@@ -186,8 +215,10 @@ def _repair_json_array(raw: str) -> list:
     except json.JSONDecodeError:
         pass
 
-    # Pass 2+: quote-aware object extraction — handles unterminated strings,
-    # unescaped quotes, truncated output, and braces embedded in string values.
+    # Pass 2: quote-aware object extraction.
+    # Handles unescaped quotes and braces inside strings.
+    # Limitation: if the FIRST object is malformed its span may swallow later
+    # objects — handled by pass 3.
     spans = _extract_top_level_objects(s)
     items: list = []
     skipped = 0
@@ -197,12 +228,23 @@ def _repair_json_array(raw: str) -> list:
         except json.JSONDecodeError:
             skipped += 1
 
-    if not items:
-        raise ValueError(f"could not parse any JSON objects; first 300 chars: {raw[:300]}")
+    if items:
+        if skipped:
+            print(f"  [parse_json] recovered {len(items)} items, skipped {skipped} malformed",
+                  file=_sys.stderr)
+        return items
 
-    note = f"skipped {skipped} malformed" if skipped else "array not properly closed"
-    print(f"  [parse_json] recovered {len(items)} items ({note})", file=_sys.stderr)
-    return items
+    # Pass 3: split-based fallback — works when a bad first object caused the
+    # brace-counter to wrap the entire array into one unparseble span.
+    items = _split_fallback(s)
+    if items:
+        print(f"  [parse_json] split fallback recovered {len(items)} items", file=_sys.stderr)
+        return items
+
+    # Give up — return empty list rather than raising so the caller gets
+    # partial results (0 claims) instead of a 500 error.
+    print("  [parse_json] all repair passes failed; returning []", file=_sys.stderr)
+    return []
 
 
 def parse_json(text: str) -> list:

@@ -78,7 +78,7 @@ def _call_api(system: str, user: str, key: str) -> str:
     import json as _json
     import urllib.request
     payload = {
-        "model": MODEL, "max_tokens": 10000,
+        "model": MODEL, "max_tokens": 16000,
         "thinking": {"type": "adaptive"}, "output_config": {"effort": "low"},
         "system": system,
         "messages": [{"role": "user", "content": user}],

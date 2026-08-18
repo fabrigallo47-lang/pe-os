@@ -55,14 +55,18 @@ COMMON MISTAKES TO AVOID:
 - Data room raw data → observed or asserted (depending on whether measured or claimed)
 - Derived concentrations (e.g. Riverton 18.2% from 7 rows) → derived with derivation
 
-SUBJECT NAMING RULES (critical — these prevent false contradictions):
-- Use a DIFFERENT subject for each distinct EBITDA definition:
-    "reported EBITDA", "seller-adjusted EBITDA", "QoE-normalized EBITDA",
-    "firm-underwritten EBITDA", "covenant EBITDA" — never conflate under "EBITDA"
-- Use a DIFFERENT subject for billing-account vs ultimate-parent concentration:
-    "largest billing-account customer concentration" vs "largest ultimate-parent customer concentration"
-- Reuse an EXISTING subject string when the same quantity (same definition, same basis) is meant
-- Create a NEW subject when a different definition, basis, party, or time period applies
+SUBJECT NAMING RULES (critical — determines graph clustering and contradiction detection):
+- subject = the COMPANY or ENTITY being described (e.g. "Alderstone", "Riverton", the target company)
+  NOT the metric, NOT the data source, NOT the party making the claim.
+- For a single-company deal, almost every claim shares the SAME subject (the target company name).
+- When a subsidiary or customer is the subject, use their name (e.g. "Riverton Group").
+- The METRIC field names what is being measured; the PERIMETER field captures definitional nuance:
+    metric="EBITDA", perimeter="QoE-normalized, post-adjustments" vs perimeter="management-reported"
+    metric="Customer Concentration", perimeter="billing-account level" vs perimeter="ultimate-parent basis"
+- NEVER use the metric name, adjustment type, or data source as the subject.
+  Wrong: subject="reported EBITDA", subject="seller-adjusted EBITDA", subject="QoE CAGR"
+  Right: subject="Alderstone", metric="EBITDA", perimeter="management-reported"
+  Right: subject="Alderstone", metric="EBITDA", perimeter="QoE-normalized"
 
 GRANULAR DIMENSIONS (every claim must have all of these):
 - metric:      the short KPI / concept label, e.g. "EBITDA", "Revenue", "Gross Margin",
@@ -94,6 +98,39 @@ WHAT TO EXTRACT:
 - Risk factors stated by any party
 - Assumptions, adjustments, and their rationale
 
+PAIRED CONTRADICTIONS — ADVERSARIAL STRUCTURE (critical):
+When the text contains "X is ACTUALLY Y rather than Z", "Y vs [seller's] Z",
+or any comparison between what was CLAIMED and what was FOUND:
+- Extract BOTH values as separate claims — never drop the "advertised" figure.
+- Use the SAME metric label and the SAME subject for both (the thing being measured
+  is the same; only the party and trust level differ — do not append "seller" or
+  "buyer" to the subject or metric).
+- For the SELLER/ADVERTISED value: epistemic=asserted, direction=supports,
+  author=seller/management, statement must name the figure explicitly.
+- For the BUYER/ACTUAL value: epistemic=attested or observed, direction=contradicts,
+  author=buyer/QoE/IC, statement must reference the seller figure so the contradiction
+  is explicit (e.g. "Buyer found X at Y vs seller-advertised Z").
+- Because they share the same metric + subject, the graph engine will automatically
+  draw a CHALLENGES edge between them — this is the desired outcome.
+
+NARRATIVE CLAIMS — THESIS NODES:
+When the text contains a HIGH-LEVEL FINDING that is a thesis grouping several specific
+facts (e.g. "earnings are lower-quality than advertised", "business is operationally
+fragmented"), extract it as an ADDITIONAL separate claim:
+- value: "" (empty — this is qualitative; it is a thesis, not a data point)
+- unit: ""
+- metric: a 2-5 word KPI label that names the thesis ("Earnings Quality Risk",
+  "Integration Execution Risk")
+- epistemic: attested (buyer/IC finding) or asserted (seller/management claim)
+- direction: contradicts (if it contradicts a rosy picture) or supports
+- statement: the full sentence stating the thesis
+- derivation: "Supported by: [comma-separated list of constituent metrics]"
+  e.g. "Supported by: Customer Concentration 18.2%, Acquisition Integration"
+- bears_on: same question IDs as the constituent quantitative claims (so the graph
+  shows ALL evidence clustering under the same question)
+The graph engine uses derivation text to draw DERIVES_FROM / SUPPORTS edges from
+the constituent quantitative claims to this thesis node automatically.
+
 CRITICAL JSON FORMATTING RULES:
 - Return ONLY a valid JSON array — no prose before or after.
 - NEVER use unescaped double-quote characters inside a string value.
@@ -103,7 +140,7 @@ CRITICAL JSON FORMATTING RULES:
 
 Return ONLY a JSON array. Each element:
 {
-  "subject":    "full basis-specific subject string (entity + definition + basis)",
+  "subject":    "the company or entity being measured (e.g. 'Alderstone', 'Riverton Group')",
   "metric":     "short KPI label — the axis this claim lives on",
   "value":      "extracted value as string, empty for qualitative",
   "unit":       "unit of measure or empty string",

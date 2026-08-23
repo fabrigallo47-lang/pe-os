@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Convert extracted claims to a typed semantic knowledge graph — V3.
+"""Convert extracted claims to a typed semantic knowledge graph — V5.
 
 V1 node types
 -------------
@@ -32,8 +32,8 @@ REQUIRES_SOLVER       model_node → solver_config
 HAS_CONTROL           model_node → model_control
 GOVERNED_BY           case_position → policy
 ASSIGNED_TO           case_position → role
-SUPPORTS_POSITION     claim → case_position  (direct; canonical=True)
-CHALLENGES_POSITION   claim → case_position  (blocked claim; canonical=True)
+SUPPORTS              claim → case_position  (direct; canonical=True — shared with Pass 2c quant→qual)
+CONTRADICTS           claim → case_position  (blocked claim; canonical=True — shared with Pass 2a value conflict)
 BEARS_ON              claim → question
 ANSWERS_TO            question → model_node
 CHALLENGES_QUESTION   claim → question  (counterevidence)
@@ -174,8 +174,6 @@ ET_REQUIRES_SOLVER     = "REQUIRES_SOLVER"
 ET_HAS_CONTROL         = "HAS_CONTROL"
 ET_GOVERNED_BY         = "GOVERNED_BY"
 ET_ASSIGNED_TO         = "ASSIGNED_TO"
-ET_SUPPORTS_POSITION   = "SUPPORTS_POSITION"    # claim → case_position (direct)
-ET_CHALLENGES_POSITION = "CHALLENGES_POSITION"  # blocked claim → case_position
 ET_BEARS_ON            = "BEARS_ON"             # claim → question
 ET_ANSWERS_TO          = "ANSWERS_TO"           # question → model_node
 ET_CHALLENGES_QUESTION = "CHALLENGES_QUESTION"  # counterevidence → question
@@ -220,9 +218,6 @@ _V2_MODEL_NODES: list[tuple[str, str, str, list[str], str]] = [
      ["moic"],                                                      "MODEL_DERIVES_POSITION"),
     ("MN-IRR",             "IRR",                 "%",
      ["irr"],                                                       "MODEL_DERIVES_POSITION"),
-    ("MN-SUPPORTED-PRICE", "Supported Price",     "$m",
-     ["supported price", "maximum ev", "supported ev", "bid price", "enterprise value"],
-     "MODEL_DERIVES_POSITION"),
 ]
 
 # ── V2: Hygiene noise patterns (non-PE content filter) ───────────────────────
@@ -270,9 +265,6 @@ _STRUCTURAL_STUBS: list[tuple[str, str, str, str]] = [
     ("stub:cyc-solver", "Cyclic Numerical Solver",
      NT_SOLVER,
      "Needs: variables, equations, method, init, limits, tolerance, max_iter, uniqueness"),
-    ("stub:inv-solver", "Inverse Supported-Price Solver",
-     NT_SOLVER,
-     "Needs: objective, decision_variable, constraints, bounds, method, uniqueness"),
     ("stub:controls",   "Model Controls & Invariants",
      NT_CONTROL,
      "Needs: S&U balance, cash/revolver coherence, debt/interest, covenant, unit/perimeter"),
@@ -316,6 +308,102 @@ _MONITORING_SOURCES: tuple[str, ...] = (
     "quarterly update", "monthly update",
 )
 
+# ── V5: Semantic identity — definition markers ────────────────────────────────
+# Used in Pass 1 to tag each claim with a definition dimension.
+# "firm" = the fund's underwriting view; "covenant" = credit-agreement EBITDA;
+# "qoe" = Quality-of-Earnings adjusted figure; "seller" = management / seller view.
+_DEFINITION_MARKERS: dict[str, list[str]] = {
+    "firm":     ["firm ebitda", "firm's view", "firm-underwritten", "firm underwritten",
+                 "firm initial assessment", "firm model", "firm model summary",
+                 "opening ebitda", "entry ebitda", "ic memo", "underwriting"],
+    "covenant": ["covenant ebitda", "covenant", "credit agreement", "lender",
+                 "maintenance covenant", "springing covenant"],
+    "qoe":      ["qoe", "quality of earnings", "quality-of-earnings", "qoe report",
+                 "qoe ebitda", "adjusted ebitda"],
+    "seller":   ["seller", "management", "mgmt", "company provided", "cim",
+                 "seller view", "management view"],
+}
+
+
+def _extract_definition(metric: str, stmt: str, source: str) -> str:
+    combined = (metric + " " + stmt + " " + source).lower()
+    for defn, markers in _DEFINITION_MARKERS.items():
+        if any(m in combined for m in markers):
+            return defn
+    return ""
+
+
+# ── V5: Semantic identity — scenario markers ──────────────────────────────────
+_SCENARIO_MARKERS: dict[str, list[str]] = {
+    "standalone_base":     ["standalone base", "base case", "base scenario",
+                            "standalone base case"],
+    "standalone_downside": ["standalone downside", "downside case", "downside scenario",
+                            "stress", "stressed"],
+    "standalone_upside":   ["standalone upside", "upside case", "upside scenario"],
+    "acquisition_base":    ["acquisition base", "acquisition case", "with acquisition",
+                            "with m&a", "m&a case"],
+}
+
+
+def _extract_scenario(metric: str, stmt: str) -> str:
+    combined = (metric + " " + stmt).lower()
+    for scen, markers in _SCENARIO_MARKERS.items():
+        if any(m in combined for m in markers):
+            return scen
+    return ""
+
+
+# ── V5: Computational forms per model node ────────────────────────────────────
+# Replaces binding_direction as the computational characterization in execution_mapping.
+_COMPUTATIONAL_FORMS: dict[str, str] = {
+    "MN-EBITDA":       "DIRECT_INPUT",
+    "MN-REVENUE":      "DIRECT_INPUT",
+    "MN-LEVERAGE":     "DIRECT_FORMULA",
+    "MN-DEBT-CAP":     "DIRECT_FORMULA",
+    "MN-SOURCES-USES": "MODEL_CONTROL",
+    "MN-EQUITY":       "DIRECT_FORMULA",
+    "MN-CASHFLOW":     "NUMERICAL_CYCLE",
+    "MN-INTEREST":     "NUMERICAL_CYCLE",
+    "MN-MOIC":         "DIRECT_FORMULA",
+    "MN-IRR":          "DIRECT_FORMULA",
+}
+
+# ── V5: Qualitative case positions (not model-node-bound) ─────────────────────
+# Each entry: (id_suffix, label, trigger_area, keywords)
+# These represent fund beliefs that are often qualitative and do not map 1:1 to
+# a model node. Support routes are logic-level, not per-period.
+_QUALITATIVE_POSITIONS: list[tuple[str, str, str, list[str]]] = [
+    (
+        "QL-CUSTOMER-CONCENTRATION",
+        "Customer Concentration Risk",
+        "Customer",
+        ["customer concentration", "customer durability", "customer retention",
+         "customer run-rate", "customer durability", "customer mix"],
+    ),
+    (
+        "QL-INTEGRATION-RISK",
+        "Integration & Operational Risk",
+        "Operations",
+        ["integration risk", "operational risk", "integration execution",
+         "process integration", "operational fragmentation",
+         "integration and operational", "integration program"],
+    ),
+    (
+        "QL-NWC",
+        "Net Working Capital",
+        "Operations",
+        ["net working capital", "working capital", "nwc", "working capital gap",
+         "working capital risk", "nwc target"],
+    ),
+    (
+        "QL-MANAGEMENT-QUALITY",
+        "Management Capability",
+        "Governance",
+        ["management capability", "management quality", "management execution",
+         "management capability risk", "management capable"],
+    ),
+]
+
 # ── Question formation: one question per model node ──────────────────────────
 # Each entry: mn_id → (question_text, question_type_slug)
 _MN_QUESTION_TEMPLATES: dict[str, tuple[str, str]] = {
@@ -358,10 +446,6 @@ _MN_QUESTION_TEMPLATES: dict[str, tuple[str, str]] = {
     "MN-IRR": (
         "What is the projected gross IRR, and how does it hold under downside assumptions?",
         "qt-irr-sensitivity",
-    ),
-    "MN-SUPPORTED-PRICE": (
-        "What is the maximum price the model can support while meeting return hurdles?",
-        "qt-supported-price",
     ),
 }
 
@@ -477,6 +561,10 @@ def claims_to_graph(
         raw_unit = c.get("unit", "")
         unit     = _normalize_unit(raw_unit, deal_currency)
 
+        stmt_raw = c.get("statement", "")
+        definition = _extract_definition(metric, stmt_raw, src_doc_raw)
+        scenario   = _extract_scenario(metric, stmt_raw)
+
         _upsert(
             c_id,
             type="claim", label=label,
@@ -490,9 +578,11 @@ def claims_to_graph(
             direction=c.get("direction", "context"),
             locator=c.get("locator", ""),
             author=c.get("author", ""),
-            statement=c.get("statement", ""),
+            statement=stmt_raw,
             derivation=c.get("derivation"),
             temporal_class=temporal_class,
+            definition=definition,
+            scenario=scenario,
             coverage_status="mapped",
         )
 
@@ -765,7 +855,8 @@ def claims_to_graph(
     # ── Pass 4: V2 — case_position nodes ─────────────────────────────────────
     cp_to_claims: dict[str, list[str]] = {}
 
-    def _claim_score(cid: str, binding_dir: str = "", mn_unit: str = "") -> int:
+    def _claim_score(cid: str, binding_dir: str = "", mn_unit: str = "",
+                     mn_id: str = "") -> int:
         node = nodes.get(cid, {})
         metric_lower = (node.get("metric") or "").lower()
         stmt_lower   = (node.get("statement") or "").lower()
@@ -780,6 +871,16 @@ def claims_to_graph(
         claim_unit = (node.get("unit") or "").strip().lower()
         if mn_unit == "$m" and claim_unit in ("%", "percent", "pct", "% of ebitda"):
             return -700
+        # V5: definition-aware penalty — non-primary definitions don't compete for
+        # the primary position. Firm EBITDA slot is for "firm" definition only;
+        # covenant/qoe/seller EBITDA are secondary views.
+        defn = node.get("definition", "")
+        if mn_id == "MN-EBITDA" and defn and defn != "firm":
+            return -600
+        # V5: scenario penalty — MOIC/IRR primary position is standalone_base.
+        scen = node.get("scenario", "")
+        if mn_id in ("MN-MOIC", "MN-IRR") and scen and scen != "standalone_base":
+            return -400
         trust       = _TRUST.get(node.get("epistemic", "asserted"), 1)
         has_val     = 20 if node.get("value") else 0
         has_per     = 1 if node.get("period") else 0
@@ -798,13 +899,19 @@ def claims_to_graph(
         )
         return trust * 10 + has_val + has_per + value_bonus + source_bonus + base_bonus
 
+    def _same_context(cid1: str, cid2: str) -> bool:
+        """V5: CONTESTED only when runner-up shares same definition AND same scenario."""
+        n1, n2 = nodes.get(cid1, {}), nodes.get(cid2, {})
+        return (n1.get("definition", "") == n2.get("definition", "")
+                and n1.get("scenario", "") == n2.get("scenario", ""))
+
     for mn_id, mn_label, mn_unit, keywords, binding_dir in _V2_MODEL_NODES:
         matching = mn_claim_map[mn_id]
         if not matching:
             continue
 
         scored: list[tuple[str, int]] = sorted(
-            ((c, _claim_score(c, binding_dir, mn_unit)) for c in matching),
+            ((c, _claim_score(c, binding_dir, mn_unit, mn_id)) for c in matching),
             key=lambda x: -x[1],
         )
         best_cid, best_score = scored[0]
@@ -818,6 +925,7 @@ def claims_to_graph(
             len(scored) >= 2
             and scored[1][1] > -500
             and (best_score - scored[1][1]) <= 3
+            and _same_context(scored[0][0], scored[1][0])
         )
 
         candidates_info = [
@@ -870,26 +978,76 @@ def claims_to_graph(
             _edge(cp_id, mn_nid, ET_BINDS_TO, binding_direction=binding_dir)
 
     # ── Pass 4.5: Direct claim → case_position edges ─────────────────────────
-    # SUPPORTS_POSITION: from each claim that is not blocked to its case_position.
-    # CHALLENGES_POSITION: from each claim that is blocked (score ≤ -500) but still bound.
-    # This gives the runtime a direct claim→position edge (no route traversal needed).
+    # SUPPORTS: claim supports the case position (not blocked).
+    # CONTRADICTS: claim is blocked from the position (score ≤ -500) but still bound.
+    # Edge type names are shared with Pass 2c (SUPPORTS) and Pass 2a (CONTRADICTS);
+    # the runtime distinguishes by target node type (case_position vs claim).
     for cp_id, supporting_cids in cp_to_claims.items():
-        cp_node      = nodes[cp_id]
-        bd           = cp_node.get("binding_direction", "")
-        mn_id_local  = cp_node.get("mn_id", "")
+        cp_node       = nodes[cp_id]
+        bd            = cp_node.get("binding_direction", "")
+        mn_id_local   = cp_node.get("mn_id", "")
         mn_unit_local = nodes.get(f"mn:{mn_id_local}", {}).get("unit", "")
-        winner_id    = (
+        winner_id     = (
             cp_node.get("candidates", [{}])[0].get("claim_id")
             if cp_node.get("candidates") else None
         )
         for cid in supporting_cids:
-            sc = _claim_score(cid, bd, mn_unit_local)
+            sc = _claim_score(cid, bd, mn_unit_local, mn_id_local)
             if sc <= -500:
-                _edge(cid, cp_id, ET_CHALLENGES_POSITION,
-                      score=sc, canonical=True)
+                _edge(cid, cp_id, "CONTRADICTS", score=sc, canonical=True)
             else:
-                _edge(cid, cp_id, ET_SUPPORTS_POSITION,
+                _edge(cid, cp_id, "SUPPORTS",
                       score=sc, is_selected=(cid == winner_id), canonical=True)
+
+    # ── Pass 4.8: Qualitative case positions (not model-node-bound) ─────────────
+    # Fund beliefs that are inherently qualitative — customer concentration,
+    # integration risk, NWC, management quality. Not every position comes from a
+    # model node; support routes represent the logic, not a per-period quantity.
+    for ql_suffix, ql_label, ql_area, ql_keywords in _QUALITATIVE_POSITIONS:
+        ql_matching: list[str] = []
+        for qi, qc in enumerate(claims):
+            qc_id = claim_ids[qi]
+            if not qc_id:
+                continue
+            combined_ql = (
+                (qc.get("metric") or "") + " " +
+                (qc.get("statement") or "") + " " +
+                (qc.get("subject") or "")
+            ).lower()
+            if any(kw in combined_ql for kw in ql_keywords):
+                ql_matching.append(qc_id)
+        if not ql_matching:
+            continue
+
+        ql_cp_id = f"cp:{ql_suffix.lower()}"
+        _upsert(
+            ql_cp_id,
+            type=NT_CASE_POSITION,
+            label=ql_label,
+            mn_id=None,
+            is_qualitative=True,
+            area=ql_area,
+            binding_direction="QUALITATIVE",
+            statement=(
+                f"Fund position on {ql_label.lower()} — "
+                "requires human articulation of thesis"
+            ),
+            value=None, unit=None, period=None, perimeter=None,
+            decision_status="OPEN",
+            coverage_status="partial",
+            candidates=[],
+            note=(
+                f"Qualitative position: {len(ql_matching)} supporting claim(s). "
+                "No model node binding. Requires human articulation."
+            ),
+        )
+        cp_to_claims[ql_cp_id] = ql_matching
+
+        # Direct claim → qualitative position edges
+        for cid in ql_matching:
+            sc = _claim_score(cid)
+            if sc > -500:
+                _edge(cid, ql_cp_id, "SUPPORTS", score=sc, canonical=True)
 
     # ── Pass 5: V2 — support_routes (per-period grouping) ────────────────────
     for cp_id, supporting_cids in cp_to_claims.items():
@@ -1044,15 +1202,19 @@ def claims_to_graph(
             coverage_status="missing",
             note="Decision record must be written via /ic-record; append-only")
 
-    mn_model_id = "mn:MN-SUPPORTED-PRICE"
-    if mn_model_id in nodes:
-        _edge(mn_model_id, "art:model",   ET_PRODUCES)
-        _edge(mn_model_id, "art:memo",    ET_PRODUCES)
-        _edge(mn_model_id, dec_id,        ET_PRODUCES)
+    # V5: MOIC and IRR produce the IC artifacts; EBITDA produces lender pack and gate.
+    mn_moic_id = "mn:MN-MOIC"
+    mn_irr_id  = "mn:MN-IRR"
+    if mn_moic_id in nodes:
+        _edge(mn_moic_id, "art:model", ET_PRODUCES)
+        _edge(mn_moic_id, "art:memo",  ET_PRODUCES)
+        _edge(mn_moic_id, dec_id,      ET_PRODUCES)
+    if mn_irr_id in nodes:
+        _edge(mn_irr_id,  dec_id,      ET_PRODUCES)
     mn_ebitda_id = "mn:MN-EBITDA"
     if mn_ebitda_id in nodes:
         _edge(mn_ebitda_id, "art:lender-pack", ET_PRODUCES)
-        _edge(mn_ebitda_id, "art:gate",         ET_PRODUCES)
+        _edge(mn_ebitda_id, "art:gate",        ET_PRODUCES)
 
     # ── Pass 7: V2 — structural stubs (ui_hidden — runtime contract only) ─────
     # These stubs are required by the execution_mapping schema and the runtime,
@@ -1065,8 +1227,6 @@ def claims_to_graph(
     for nid in cyclic_nodes:
         if nid in nodes:
             _edge(nid, "stub:cyc-solver", ET_REQUIRES_SOLVER)
-    if mn_model_id in nodes:
-        _edge(mn_model_id, "stub:inv-solver", ET_REQUIRES_SOLVER)
 
     for mn_id, _, _, _, _ in _V2_MODEL_NODES:
         nid = f"mn:{mn_id}"
@@ -1143,163 +1303,58 @@ def claims_to_graph(
     ).encode()
     canonical_graph_hash = "sha256:" + _hashlib.sha256(_digest_payload).hexdigest()
 
-    # ── Execution mapping — V3, schema-compliant ──────────────────────────────
+    # ── Execution mapping — V5, schema-compliant ──────────────────────────────
+    # Verified section: claim-derived, ready for runtime consumption.
+    # lbo_grammar_scaffold: proposed LBO structure — PENDING workbook formula derivation.
+    # These are strictly separated so the runtime never treats scaffold as executable.
+
     _em_model_nodes = []
-    for mn_id, mn_label, _em_unit, _em_kw, binding_dir in _V2_MODEL_NODES:
-        nid       = f"mn:{mn_id}"
-        cp_id_key = f"cp:{mn_id.lower()}"
-        cp_node   = nodes.get(cp_id_key, {})
+    for _mn_id, _mn_label, _mn_unit_v, _x1, _x2 in _V2_MODEL_NODES:
+        _nid_v    = f"mn:{_mn_id}"
+        _cp_key_v = f"cp:{_mn_id.lower()}"
+        _cp_v     = nodes.get(_cp_key_v, {})
         _em_model_nodes.append({
-            "model_node_id":      mn_id,
-            "label":              mn_label,
-            "unit":               nodes.get(nid, {}).get("unit", "$m"),
-            "period":             cp_node.get("period", ""),
-            "perimeter":          cp_node.get("perimeter", ""),
-            "computational_form": binding_dir,
-            "coverage_status":    nodes.get(nid, {}).get("coverage_status", "missing"),
-            "bound_claim_count":  len(mn_claim_map.get(mn_id, [])),
-            "formula_id":         None,
+            "id":                f"mn:{_mn_id}",
+            "label":             _mn_label,
+            "unit":              nodes.get(_nid_v, {}).get("unit", _mn_unit_v),
+            "period":            _cp_v.get("period", ""),
+            "perimeter":         _cp_v.get("perimeter", ""),
+            "computational_form": _COMPUTATIONAL_FORMS.get(_mn_id, "DIRECT_INPUT"),
+            "coverage_status":   nodes.get(_nid_v, {}).get("coverage_status", "missing"),
+            "bound_claim_count": len(mn_claim_map.get(_mn_id, [])),
+            "formula_id":        None,
         })
 
     _em_positions = []
-    for idx, cp_id in enumerate(cp_to_claims):
-        mn_id_local = nodes[cp_id]["mn_id"]
+    for _em_idx, _em_cp_id in enumerate(cp_to_claims):
+        _em_cp_node    = nodes[_em_cp_id]
+        _em_mn_id_loc  = _em_cp_node.get("mn_id")
+        _em_is_qual    = _em_cp_node.get("is_qualitative", False)
         _em_positions.append({
-            "binding_id":    f"PMB-{idx + 1:03d}",
-            "position_id":   cp_id,
-            "model_node_id": mn_id_local,
-            "direction":     nodes[cp_id]["binding_direction"],
+            "binding_id":     f"PMB-{_em_idx + 1:03d}",
+            "case_position_id": _em_cp_id,
+            "model_node_id":  f"mn:{_em_mn_id_loc}" if _em_mn_id_loc else None,
+            "direction":      _em_cp_node.get("binding_direction", "QUALITATIVE"),
+            "is_qualitative": _em_is_qual,
         })
-
-    _directed_model_edges = [
-        {"edge_id": "DME-001", "from_model_node_id": "MN-REVENUE",
-         "to_model_node_id": "MN-EBITDA",
-         "formula_or_function_ref": "ebitda = revenue * ebitda_margin_pct — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-002", "from_model_node_id": "MN-EBITDA",
-         "to_model_node_id": "MN-LEVERAGE",
-         "formula_or_function_ref": "leverage = net_debt / ebitda — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-003", "from_model_node_id": "MN-LEVERAGE",
-         "to_model_node_id": "MN-DEBT-CAP",
-         "formula_or_function_ref": "debt_capacity = leverage_target * ebitda — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-004", "from_model_node_id": "MN-DEBT-CAP",
-         "to_model_node_id": "MN-SOURCES-USES",
-         "formula_or_function_ref": "sources: debt + equity + rollover; uses: ev + fees + cash — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-005", "from_model_node_id": "MN-SOURCES-USES",
-         "to_model_node_id": "MN-EQUITY",
-         "formula_or_function_ref": "equity = uses - debt - rollover_equity — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-006", "from_model_node_id": "MN-EBITDA",
-         "to_model_node_id": "MN-CASHFLOW",
-         "formula_or_function_ref": "fcf = ebitda - interest - tax - capex - delta_nwc — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-007", "from_model_node_id": "MN-CASHFLOW",
-         "to_model_node_id": "MN-INTEREST",
-         "formula_or_function_ref": "CYCLIC: cash_available = fcf + revolver_draw — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-008", "from_model_node_id": "MN-INTEREST",
-         "to_model_node_id": "MN-CASHFLOW",
-         "formula_or_function_ref": "CYCLIC: interest = avg_debt * (max(sofr_floor, sofr) + spread) — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-009", "from_model_node_id": "MN-CASHFLOW",
-         "to_model_node_id": "MN-MOIC",
-         "formula_or_function_ref": "exit_equity = exit_ev - exit_net_debt; moic = exit_equity / invested_equity — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-010", "from_model_node_id": "MN-CASHFLOW",
-         "to_model_node_id": "MN-IRR",
-         "formula_or_function_ref": "xirr(cashflows=[equity_in, fcf_y1..y5, exit_equity], dates) — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-011", "from_model_node_id": "MN-EQUITY",
-         "to_model_node_id": "MN-MOIC",
-         "formula_or_function_ref": "moic_denominator = sponsor_equity_invested — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-012", "from_model_node_id": "MN-EQUITY",
-         "to_model_node_id": "MN-IRR",
-         "formula_or_function_ref": "irr_denominator = sponsor_equity_invested (day-0 outflow) — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-013", "from_model_node_id": "MN-MOIC",
-         "to_model_node_id": "MN-SUPPORTED-PRICE",
-         "formula_or_function_ref": "INVERSE: find ev s.t. gross_moic >= 2.0x — PENDING_WORKBOOK_FORMULA"},
-        {"edge_id": "DME-014", "from_model_node_id": "MN-IRR",
-         "to_model_node_id": "MN-SUPPORTED-PRICE",
-         "formula_or_function_ref": "INVERSE: find ev s.t. gross_xirr >= 14.0% — PENDING_WORKBOOK_FORMULA"},
-    ]
-
-    _formulas = [
-        {
-            "formula_id": "FORM-EBITDA-FIRM-V0",
-            "input_ids":  [],
-            "output_id":  "MN-EBITDA",
-            "expression_or_function_ref": (
-                "reported_ebitda + accepted_historical_adjustments"
-                " - revenue_wip_quality_reserve - customer_run_rate_reserve"
-                " - integration_cost - finance_reporting_cost = firm_ebitda"
-                " ($10.2m + $1.7m - $0.2m - $0.15m - $0.10m - $0.05m = $11.4m)"
-            ),
-            "workbook_ref": "PENDING_WORKBOOK_CELL_REF",
-        },
-    ]
-
-    _rule_switches = [
-        {
-            "rule_switch_id":     "RSW-SCENARIO-001",
-            "label":              "Deal Scenario Selection",
-            "selector_input_ids": ["MN-REVENUE", "MN-EBITDA"],
-            "branches": [
-                {"branch_id": "RSW-001-B1", "condition": "scenario == STANDALONE_BASE"},
-                {"branch_id": "RSW-001-B2", "condition": "scenario == STANDALONE_DOWNSIDE"},
-                {"branch_id": "RSW-001-B3", "condition": "scenario == STANDALONE_UPSIDE"},
-                {"branch_id": "RSW-001-B4", "condition": "scenario == ACQUISITION_BASE"},
-            ],
-            "source_ref": "keystone_materiality_policy_v0.json#scenarios",
-        },
-    ]
-
-    _cyclic_solver_configs = [
-        {
-            "solver_id":          "CYC-SCC-001",
-            "component_ids":      ["MN-CASHFLOW", "MN-INTEREST"],
-            "method":             "iterative_fixed_point",
-            "initialization":     {"MN-INTEREST": 0.0, "MN-CASHFLOW": 0.0},
-            "absolute_tolerance": 0.001,
-            "relative_tolerance": 0.001,
-            "max_iterations":     100,
-            "uniqueness_condition": (
-                "convergence to single fixed point required; "
-                "divergence = infeasible deal structure"
-            ),
-        },
-    ]
-
-    _inverse_solver_configs = [
-        {
-            "solver_id":         "INV-PRICE-001",
-            "objective":         "maximize_supported_price",
-            "decision_variable": "MN-SUPPORTED-PRICE",
-            "target_constraints": [
-                {"model_node_id": "MN-MOIC", "operator": ">=", "threshold": 2.0,
-                 "unit": "x",  "label": "Minimum gross MOIC (Standalone Base)"},
-                {"model_node_id": "MN-IRR",  "operator": ">=", "threshold": 14.0,
-                 "unit": "%", "label": "Minimum gross XIRR (Standalone Base)"},
-            ],
-            "method":             "bisection",
-            "bounds":             {"lower_dollar_m": 50.0, "upper_dollar_m": 300.0},
-            "absolute_tolerance": 0.01,
-            "uniqueness_condition": (
-                "monotone: higher entry price → lower returns; "
-                "unique threshold guaranteed if deal structure is feasible"
-            ),
-        },
-    ]
 
     _model_controls = [
         {
             "control_id":     "CTL-001",
             "label":          "Sources & Uses Balance",
-            "scope_ids":      ["MN-SOURCES-USES", "MN-EQUITY", "MN-DEBT-CAP"],
+            "scope_ids":      ["mn:MN-SOURCES-USES", "mn:MN-EQUITY", "mn:MN-DEBT-CAP"],
             "pass_condition": "sum(sources) == sum(uses) within $0.01m",
         },
         {
             "control_id":     "CTL-002",
             "label":          "Cash / Revolver Coherence",
-            "scope_ids":      ["MN-CASHFLOW", "MN-DEBT-CAP"],
+            "scope_ids":      ["mn:MN-CASHFLOW", "mn:MN-DEBT-CAP"],
             "pass_condition": "revolver_drawn_period_end <= revolver_commitment ($7.5m)",
         },
         {
             "control_id":     "CTL-003",
             "label":          "Debt / Interest Coherence",
-            "scope_ids":      ["MN-DEBT-CAP", "MN-INTEREST"],
+            "scope_ids":      ["mn:MN-DEBT-CAP", "mn:MN-INTEREST"],
             "pass_condition": (
                 "interest_expense == avg_period_debt * effective_rate; "
                 "effective_rate = max(SOFR_floor, SOFR_actual) + applicable_spread"
@@ -1308,7 +1363,7 @@ def claims_to_graph(
         {
             "control_id":     "CTL-004",
             "label":          "Leverage Covenant Compliance",
-            "scope_ids":      ["MN-LEVERAGE", "MN-EBITDA", "MN-DEBT-CAP"],
+            "scope_ids":      ["mn:MN-LEVERAGE", "mn:MN-EBITDA", "mn:MN-DEBT-CAP"],
             "pass_condition": (
                 "net_debt / covenant_ebitda <= max_leverage_covenant "
                 "(threshold from credit agreement)"
@@ -1325,7 +1380,7 @@ def claims_to_graph(
             _coverage_limits.append({
                 "limit_id":    f"CLT-{_clt_idx:03d}",
                 "reason_code": "MISSING_WORKBOOK_DEPENDENCY",
-                "scope_ids":   [_mn_id],
+                "scope_ids":   [f"mn:{_mn_id}"],
             })
             _clt_idx += 1
 
@@ -1389,7 +1444,7 @@ def claims_to_graph(
     # ── Contested positions ───────────────────────────────────────────────────
     _contested_positions = [
         {
-            "model_node_id":         nodes[cp_id]["mn_id"],
+            "model_node_id":         f"mn:{nodes[cp_id]['mn_id']}" if nodes[cp_id].get("mn_id") else None,
             "position_id":           cp_id,
             "requires_human_review": True,
             "candidates":            nodes[cp_id].get("candidates", []),
@@ -1398,29 +1453,135 @@ def claims_to_graph(
                 if nodes[cp_id].get("candidates") else None
             ),
             "reason": (
-                "Multiple candidate claims within 3-point scoring threshold. "
-                "Human must confirm which figure to adopt as the institutional position."
+                "Multiple candidate claims within 3-point scoring threshold "
+                "and same semantic context (definition + scenario). "
+                "Human must confirm which figure to adopt."
             ),
         }
         for cp_id in cp_to_claims
         if nodes.get(cp_id, {}).get("decision_status") == "CONTESTED"
     ]
 
+    # ── LBO grammar scaffold ──────────────────────────────────────────────────
+    # PROPOSED structure — NOT verified executable mapping.
+    # All items are PENDING workbook formula derivation.
+    # The runtime must never treat this section as executable until each item
+    # is promoted to the verified section with a real workbook_ref.
+    _lbo_grammar_scaffold = {
+        "scaffold_note": (
+            "This section contains the proposed LBO computational structure. "
+            "No item here is verified against the actual workbook. "
+            "Each PENDING_WORKBOOK_FORMULA must be resolved by Anto's runtime team "
+            "before promotion to the verified execution mapping."
+        ),
+        "directed_model_edges": [
+            {"edge_id": "DME-001",
+             "from": "mn:MN-REVENUE", "to": "mn:MN-EBITDA",
+             "formula_or_function_ref": "ebitda = revenue * ebitda_margin_pct",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-002",
+             "from": "mn:MN-EBITDA", "to": "mn:MN-LEVERAGE",
+             "formula_or_function_ref": "leverage = net_debt / ebitda",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-003",
+             "from": "mn:MN-LEVERAGE", "to": "mn:MN-DEBT-CAP",
+             "formula_or_function_ref": "debt_capacity = leverage_target * ebitda",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-004",
+             "from": "mn:MN-DEBT-CAP", "to": "mn:MN-SOURCES-USES",
+             "formula_or_function_ref": "sources: debt + equity + rollover; uses: ev + fees + cash",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-005",
+             "from": "mn:MN-SOURCES-USES", "to": "mn:MN-EQUITY",
+             "formula_or_function_ref": "equity = uses - debt - rollover_equity",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-006",
+             "from": "mn:MN-EBITDA", "to": "mn:MN-CASHFLOW",
+             "formula_or_function_ref": "fcf = ebitda - interest - tax - capex - delta_nwc",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-007",
+             "from": "mn:MN-CASHFLOW", "to": "mn:MN-INTEREST",
+             "formula_or_function_ref": "CYCLIC: cash_available = fcf + revolver_draw",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-008",
+             "from": "mn:MN-INTEREST", "to": "mn:MN-CASHFLOW",
+             "formula_or_function_ref": "CYCLIC: interest = avg_debt * (max(sofr_floor, sofr) + spread)",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-009",
+             "from": "mn:MN-CASHFLOW", "to": "mn:MN-MOIC",
+             "formula_or_function_ref": "exit_equity = exit_ev - exit_net_debt; moic = exit_equity / invested_equity",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-010",
+             "from": "mn:MN-CASHFLOW", "to": "mn:MN-IRR",
+             "formula_or_function_ref": "xirr(cashflows=[equity_in, fcf_y1..y5, exit_equity], dates)",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-011",
+             "from": "mn:MN-EQUITY", "to": "mn:MN-MOIC",
+             "formula_or_function_ref": "moic_denominator = sponsor_equity_invested",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {"edge_id": "DME-012",
+             "from": "mn:MN-EQUITY", "to": "mn:MN-IRR",
+             "formula_or_function_ref": "irr_denominator = sponsor_equity_invested (day-0 outflow)",
+             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+        ],
+        "formulas": [
+            {
+                "formula_id":   "FORM-EBITDA-FIRM-V0",
+                "input_ids":    [],
+                "output_id":    "mn:MN-EBITDA",
+                "expression_or_function_ref": (
+                    "reported_ebitda + accepted_historical_adjustments"
+                    " - revenue_wip_quality_reserve - customer_run_rate_reserve"
+                    " - integration_cost - finance_reporting_cost = firm_ebitda"
+                    " ($10.2m + $1.7m - $0.2m - $0.15m - $0.10m - $0.05m = $11.4m)"
+                ),
+                "workbook_status": "PENDING_WORKBOOK_CELL_REF",
+            },
+        ],
+        "rule_switches": [
+            {
+                "rule_switch_id":     "RSW-SCENARIO-001",
+                "label":              "Deal Scenario Selection",
+                "selector_input_ids": ["mn:MN-REVENUE", "mn:MN-EBITDA"],
+                "branches": [
+                    {"branch_id": "RSW-001-B1", "condition": "scenario == STANDALONE_BASE"},
+                    {"branch_id": "RSW-001-B2", "condition": "scenario == STANDALONE_DOWNSIDE"},
+                    {"branch_id": "RSW-001-B3", "condition": "scenario == STANDALONE_UPSIDE"},
+                    {"branch_id": "RSW-001-B4", "condition": "scenario == ACQUISITION_BASE"},
+                ],
+                "source_ref": "keystone_materiality_policy_v0.json#scenarios",
+                "workbook_status": "PENDING_WORKBOOK_FORMULA",
+            },
+        ],
+        "cyclic_component_solver_configs": [
+            {
+                "solver_id":                     "CYC-SCC-001",
+                "component_type":                "NUMERICAL_SCC",
+                "member_ids":                    ["mn:MN-CASHFLOW", "mn:MN-INTEREST"],
+                "admissible_bounds": {
+                    "mn:MN-CASHFLOW": [-100.0, 100.0],
+                    "mn:MN-INTEREST": [0.0, 50.0],
+                },
+                "absolute_residual_tolerance":   0.001,
+                "relative_residual_tolerance":   0.001,
+                "maximum_iterations":            100,
+                "invariant_control_ids":         ["CTL-002", "CTL-003"],
+                "workbook_status":               "PENDING_WORKBOOK_FORMULA",
+            },
+        ],
+    }
+
     execution_mapping = {
-        "mapping_version":                 "0.2.0",
-        "canonical_graph_hash":            canonical_graph_hash,
-        "model_nodes":                     _em_model_nodes,
-        "directed_model_edges":            _directed_model_edges,
-        "position_model_directions":       _em_positions,
-        "formulas":                        _formulas,
-        "rule_switches":                   _rule_switches,
-        "cyclic_component_solver_configs": _cyclic_solver_configs,
-        "inverse_solver_configs":          _inverse_solver_configs,
-        "model_controls":                  _model_controls,
-        "coverage_limits":                 _coverage_limits,
-        "temporal_partition":              _temporal_partition,
-        "contested_positions":             _contested_positions,
-        "formed_questions":                formed_question_ids,
+        "mapping_version":           "0.3.0",
+        "canonical_graph_hash":      canonical_graph_hash,
+        "model_nodes":               _em_model_nodes,
+        "position_model_directions": _em_positions,
+        "model_controls":            _model_controls,
+        "coverage_limits":           _coverage_limits,
+        "temporal_partition":        _temporal_partition,
+        "contested_positions":       _contested_positions,
+        "formed_questions":          formed_question_ids,
+        "lbo_grammar_scaffold":      _lbo_grammar_scaffold,
     }
 
     return {

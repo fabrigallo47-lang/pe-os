@@ -282,9 +282,11 @@ _ADJUSTMENT_MARKERS: tuple[str, ...] = (
 
 _EXIT_PROJECTION_MARKERS: tuple[str, ...] = (
     "exit ltm", "exit ebitda", "exit revenue", "exit lm",
+    "exit net debt", "exit economic net debt", "exit equity",
     "standalone base case", "standalone downside", "standalone upside",
     "acquisition case",
     "projected at", "is projected", "projected to be",
+    "projects alderstone exit", "projects exit",
     "hold period", "investment hold",
     "at march 31, 203", "fy203",
 )
@@ -335,13 +337,14 @@ def _extract_definition(metric: str, stmt: str, source: str) -> str:
 
 # ── V5: Semantic identity — scenario markers ──────────────────────────────────
 _SCENARIO_MARKERS: dict[str, list[str]] = {
-    "standalone_base":     ["standalone base", "base case", "base scenario",
-                            "standalone base case"],
+    # acquisition_base must be checked BEFORE standalone_base:
+    # "Acquisition Base case" contains "base case" — if standalone_base fires first it wins.
+    "acquisition_base":    ["acquisition base", "acquisition case", "with acquisition",
+                            "with m&a", "m&a case"],
+    "standalone_base":     ["standalone base", "standalone base case", "base scenario"],
     "standalone_downside": ["standalone downside", "downside case", "downside scenario",
                             "stress", "stressed"],
     "standalone_upside":   ["standalone upside", "upside case", "upside scenario"],
-    "acquisition_base":    ["acquisition base", "acquisition case", "with acquisition",
-                            "with m&a", "m&a case"],
 }
 
 
@@ -871,15 +874,27 @@ def claims_to_graph(
         claim_unit = (node.get("unit") or "").strip().lower()
         if mn_unit == "$m" and claim_unit in ("%", "percent", "pct", "% of ebitda"):
             return -700
+        # V5: exit projection penalty for entry-quantity nodes.
+        # Debt capacity, equity, leverage, and S&U positions represent entry values.
+        # Exit projections (standalone base case, projected at, exit net debt, …)
+        # must not displace entry figures for these nodes.
+        _ENTRY_QUANTITY_NODES = frozenset(
+            {"MN-DEBT-CAP", "MN-EQUITY", "MN-LEVERAGE", "MN-SOURCES-USES"}
+        )
+        if mn_id in _ENTRY_QUANTITY_NODES:
+            combined_ep = metric_lower + " " + stmt_lower
+            if any(w in combined_ep for w in _EXIT_PROJECTION_MARKERS):
+                return -800
         # V5: definition-aware penalty — non-primary definitions don't compete for
         # the primary position. Firm EBITDA slot is for "firm" definition only;
         # covenant/qoe/seller EBITDA are secondary views.
         defn = node.get("definition", "")
         if mn_id == "MN-EBITDA" and defn and defn != "firm":
             return -600
-        # V5: scenario penalty — MOIC/IRR primary position is standalone_base.
+        # V5: scenario penalty — primary positions are standalone_base.
+        # Equity entry position must not be the acquisition-case figure.
         scen = node.get("scenario", "")
-        if mn_id in ("MN-MOIC", "MN-IRR") and scen and scen != "standalone_base":
+        if mn_id in ("MN-MOIC", "MN-IRR", "MN-EQUITY") and scen and scen != "standalone_base":
             return -400
         trust       = _TRUST.get(node.get("epistemic", "asserted"), 1)
         has_val     = 20 if node.get("value") else 0

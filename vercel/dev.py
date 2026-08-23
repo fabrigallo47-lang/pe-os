@@ -11,7 +11,7 @@ Usage:
 """
 from __future__ import annotations
 
-import csv, json, os, sys, traceback
+import base64, csv, io, json, os, sys, traceback
 from http.server import HTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, urlparse
@@ -89,6 +89,22 @@ def _handle_model_propagate(body: dict):
         return {"error": traceback.format_exc()[-600:]}
 
 
+def _handle_parse_pdf(body: dict) -> dict:
+    data = body.get("data", "")
+    if not data:
+        return {"error": "no PDF data"}
+    try:
+        from pypdf import PdfReader
+        pdf_bytes = base64.b64decode(data)
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        text = "\n\n".join(
+            page.extract_text() or "" for page in reader.pages
+        ).strip()
+        return {"text": text, "chars": len(text)}
+    except Exception as e:
+        return {"error": str(e)}
+
+
 def _handle_extract(body: dict) -> dict:
     if not _EXTRACT_READY:
         return {"error": f"Extraction module not loaded: {_EXTRACT_ERR}"}
@@ -144,6 +160,7 @@ API_GET_ROUTES = {
 
 API_POST_ROUTES = {
     "/api/extract":         _handle_extract,
+    "/api/parse-pdf":       _handle_parse_pdf,
     "/api/chat":            _handle_chat,
     "/api/model/propagate": _handle_model_propagate,
 }

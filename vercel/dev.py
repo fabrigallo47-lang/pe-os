@@ -25,6 +25,15 @@ sys.path.insert(0, str(HERE / "api"))
 sys.path.insert(0, str(TOOLS))
 
 try:
+    from _core import SYSTEM_PROMPT, CHAT_SYSTEM, call_api, parse_json, API_KEY
+    from _claim_graph import claims_to_graph
+    from _graph_store import DealGraph, build_from_extraction
+    _EXTRACT_READY = True
+except Exception as e:
+    _EXTRACT_READY = False
+    _EXTRACT_ERR   = str(e)
+
+try:
     from keystone_model import propagate_claim, run_lbo, PERIODS
     _MODEL_READY = True
 except Exception as e:
@@ -80,12 +89,62 @@ def _handle_model_propagate(body: dict):
         return {"error": traceback.format_exc()[-600:]}
 
 
+def _handle_extract(body: dict) -> dict:
+    if not _EXTRACT_READY:
+        return {"error": f"Extraction module not loaded: {_EXTRACT_ERR}"}
+    text    = (body.get("text") or "").strip()
+    deal    = (body.get("deal") or "test").strip()
+    req_key = (body.get("api_key") or "").strip()
+    key     = req_key or API_KEY
+    if not text:
+        return {"error": "empty text"}
+    if not key:
+        return {"error": "No API key — paste your Anthropic key in the key field"}
+    deal_ctx = (f"Deal: {deal}. Extract all factual claims relevant to investment analysis. "
+                "Apply epistemic typing: asserted=seller/mgmt; observed=directly measured; "
+                "attested=third-party cert; derived=computed. Include period and perimeter.")
+    import time
+    t0     = time.time()
+    raw    = call_api(SYSTEM_PROMPT, f"DEAL CONTEXT:\n{deal_ctx}\n\nARTIFACT:\n{text[:80_000]}", key)
+    claims = parse_json(raw)
+    graph  = claims_to_graph(claims)
+    elapsed = round(time.time() - t0, 2)
+    dg      = build_from_extraction(claims, graph, deal)
+    an_stats = {"nodes": len(graph["nodes"]), "edges": len(graph["edges"])}
+    return {"claims": claims, "graph": graph, "analytics": an_stats, "elapsed": elapsed}
+
+
+def _handle_chat(body: dict) -> dict:
+    if not _EXTRACT_READY:
+        return {"error": f"Chat module not loaded: {_EXTRACT_ERR}"}
+    msg     = (body.get("message") or "").strip()
+    graph   = body.get("graph", {"nodes": [], "edges": []})
+    req_key = (body.get("api_key") or "").strip()
+    key     = req_key or API_KEY
+    if not key:
+        return {"error": "No API key"}
+    if not msg:
+        return {"error": "empty message"}
+    ctx = f"Current graph: {json.dumps(graph)[:12000]}"
+    raw = call_api(CHAT_SYSTEM, f"{ctx}\n\nUser: {msg}", key)
+    try:
+        return json.loads(raw)
+    except Exception:
+        return {"message": raw[:500], "commands": []}
+
+
+def _handle_session_get(sid: str) -> dict:
+    return {"error": "session storage not available in dev mode", "session_id": sid}
+
+
 API_GET_ROUTES = {
     "/api/model/nodes":    _handle_model_nodes,
     "/api/model/snapshot": _handle_model_snapshot,
 }
 
 API_POST_ROUTES = {
+    "/api/extract":         _handle_extract,
+    "/api/chat":            _handle_chat,
     "/api/model/propagate": _handle_model_propagate,
 }
 
@@ -111,9 +170,18 @@ class DevHandler(SimpleHTTPRequestHandler):
         self.end_headers()
 
     def do_GET(self):
-        path = self.path.split("?")[0].rstrip("/") or "/"
+        from urllib.parse import urlparse, parse_qs
+        parsed = urlparse(self.path)
+        path   = parsed.path.rstrip("/") or "/"
+        qs     = parse_qs(parsed.query)
         if path in API_GET_ROUTES:
             self._json_response(API_GET_ROUTES[path]())
+        elif path == "/api/session":
+            sid = qs.get("id", [""])[0]
+            self._json_response(_handle_session_get(sid))
+        elif path == "/api/debug":
+            self._json_response({"model_ready": _MODEL_READY, "extract_ready": _EXTRACT_READY,
+                                  "model": "claude-sonnet-5"})
         else:
             super().do_GET()
 

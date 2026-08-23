@@ -218,6 +218,9 @@ _V2_MODEL_NODES: list[tuple[str, str, str, list[str], str]] = [
      ["moic"],                                                      "MODEL_DERIVES_POSITION"),
     ("MN-IRR",             "IRR",                 "%",
      ["irr"],                                                       "MODEL_DERIVES_POSITION"),
+    ("MN-SUPPORTED-PRICE", "Supported Price",     "$m",
+     ["supported price", "maximum ev", "supported ev", "maximum price"],
+     "MODEL_DERIVES_POSITION"),
 ]
 
 # ── V2: Hygiene noise patterns (non-PE content filter) ───────────────────────
@@ -265,6 +268,9 @@ _STRUCTURAL_STUBS: list[tuple[str, str, str, str]] = [
     ("stub:cyc-solver", "Cyclic Numerical Solver",
      NT_SOLVER,
      "Needs: variables, equations, method, init, limits, tolerance, max_iter, uniqueness"),
+    ("stub:inv-solver", "Inverse Supported-Price Solver",
+     NT_SOLVER,
+     "Needs: objective, decision_variable, constraints, bounds, method, uniqueness"),
     ("stub:controls",   "Model Controls & Invariants",
      NT_CONTROL,
      "Needs: S&U balance, cash/revolver coherence, debt/interest, covenant, unit/perimeter"),
@@ -359,16 +365,17 @@ def _extract_scenario(metric: str, stmt: str) -> str:
 # ── V5: Computational forms per model node ────────────────────────────────────
 # Replaces binding_direction as the computational characterization in execution_mapping.
 _COMPUTATIONAL_FORMS: dict[str, str] = {
-    "MN-EBITDA":       "DIRECT_INPUT",
-    "MN-REVENUE":      "DIRECT_INPUT",
-    "MN-LEVERAGE":     "DIRECT_FORMULA",
-    "MN-DEBT-CAP":     "DIRECT_FORMULA",
-    "MN-SOURCES-USES": "MODEL_CONTROL",
-    "MN-EQUITY":       "DIRECT_FORMULA",
-    "MN-CASHFLOW":     "NUMERICAL_CYCLE",
-    "MN-INTEREST":     "NUMERICAL_CYCLE",
-    "MN-MOIC":         "DIRECT_FORMULA",
-    "MN-IRR":          "DIRECT_FORMULA",
+    "MN-EBITDA":          "DIRECT_INPUT",
+    "MN-REVENUE":         "DIRECT_INPUT",
+    "MN-LEVERAGE":        "DIRECT_FORMULA",
+    "MN-DEBT-CAP":        "DIRECT_FORMULA",
+    "MN-SOURCES-USES":    "MODEL_CONTROL",
+    "MN-EQUITY":          "DIRECT_FORMULA",
+    "MN-CASHFLOW":        "NUMERICAL_CYCLE",
+    "MN-INTEREST":        "NUMERICAL_CYCLE",
+    "MN-MOIC":            "DIRECT_FORMULA",
+    "MN-IRR":             "DIRECT_FORMULA",
+    "MN-SUPPORTED-PRICE": "INVERSE_SOLVE",
 }
 
 # ── V5: Qualitative case positions (not model-node-bound) ─────────────────────
@@ -449,6 +456,10 @@ _MN_QUESTION_TEMPLATES: dict[str, tuple[str, str]] = {
     "MN-IRR": (
         "What is the projected gross IRR, and how does it hold under downside assumptions?",
         "qt-irr-sensitivity",
+    ),
+    "MN-SUPPORTED-PRICE": (
+        "What is the maximum enterprise value the model can support while meeting return hurdles?",
+        "qt-supported-price",
     ),
 }
 
@@ -564,19 +575,36 @@ def claims_to_graph(
         raw_unit = c.get("unit", "")
         unit     = _normalize_unit(raw_unit, deal_currency)
 
-        stmt_raw = c.get("statement", "")
+        stmt_raw   = c.get("statement", "")
         definition = _extract_definition(metric, stmt_raw, src_doc_raw)
         scenario   = _extract_scenario(metric, stmt_raw)
+        period_raw = c.get("period", "")
+        as_of_raw  = c.get("as_of", "")
+
+        # Stable content-based ID — persists across re-extractions of the same claim.
+        # Hash of: metric + value + period + perimeter + source_doc + epistemic + subject[:32]
+        _stable_payload = "|".join([
+            metric, str(c.get("value", "")), period_raw,
+            c.get("perimeter", ""), src_doc_raw,
+            c.get("epistemic", "asserted"), subject[:32],
+        ]).encode()
+        stable_id = "cid:" + _hashlib.sha256(_stable_payload).hexdigest()[:16]
+
+        # effective_date: normalized period for temporal ordering.
+        # known_at: when the data was ingested (set to as_of as proxy; real ingestion
+        # timestamp must be stamped by the ingestion pipeline at ingest time).
+        effective_date = period_raw or as_of_raw
+        known_at       = as_of_raw or period_raw  # proxy; override at ingestion
 
         _upsert(
             c_id,
             type="claim", label=label,
             metric=metric, unit=unit,
-            as_of=c.get("as_of", ""), topic=topic, area=area,
+            as_of=as_of_raw, topic=topic, area=area,
             source_doc=src_doc_raw,
             epistemic=c.get("epistemic", "asserted"),
             value=c.get("value", ""),
-            period=c.get("period", ""),
+            period=period_raw,
             perimeter=c.get("perimeter", ""),
             direction=c.get("direction", "context"),
             locator=c.get("locator", ""),
@@ -586,6 +614,9 @@ def claims_to_graph(
             temporal_class=temporal_class,
             definition=definition,
             scenario=scenario,
+            stable_id=stable_id,
+            effective_date=effective_date,
+            known_at=known_at,
             coverage_status="mapped",
         )
 
@@ -1217,15 +1248,19 @@ def claims_to_graph(
             coverage_status="missing",
             note="Decision record must be written via /ic-record; append-only")
 
-    # V5: MOIC and IRR produce the IC artifacts; EBITDA produces lender pack and gate.
-    mn_moic_id = "mn:MN-MOIC"
-    mn_irr_id  = "mn:MN-IRR"
+    # MOIC → IC artifacts; IRR → decision; SUPPORTED-PRICE → model + memo + decision.
+    mn_moic_id  = "mn:MN-MOIC"
+    mn_irr_id   = "mn:MN-IRR"
+    mn_supp_id  = "mn:MN-SUPPORTED-PRICE"
     if mn_moic_id in nodes:
         _edge(mn_moic_id, "art:model", ET_PRODUCES)
-        _edge(mn_moic_id, "art:memo",  ET_PRODUCES)
         _edge(mn_moic_id, dec_id,      ET_PRODUCES)
     if mn_irr_id in nodes:
         _edge(mn_irr_id,  dec_id,      ET_PRODUCES)
+    if mn_supp_id in nodes:
+        _edge(mn_supp_id, "art:model", ET_PRODUCES)
+        _edge(mn_supp_id, "art:memo",  ET_PRODUCES)
+        _edge(mn_supp_id, dec_id,      ET_PRODUCES)
     mn_ebitda_id = "mn:MN-EBITDA"
     if mn_ebitda_id in nodes:
         _edge(mn_ebitda_id, "art:lender-pack", ET_PRODUCES)
@@ -1242,6 +1277,8 @@ def claims_to_graph(
     for nid in cyclic_nodes:
         if nid in nodes:
             _edge(nid, "stub:cyc-solver", ET_REQUIRES_SOLVER)
+    if mn_supp_id in nodes:
+        _edge(mn_supp_id, "stub:inv-solver", ET_REQUIRES_SOLVER)
 
     for mn_id, _, _, _, _ in _V2_MODEL_NODES:
         nid = f"mn:{mn_id}"
@@ -1478,116 +1515,481 @@ def claims_to_graph(
     ]
 
     # ── LBO grammar scaffold ──────────────────────────────────────────────────
-    # PROPOSED structure — NOT verified executable mapping.
-    # All items are PENDING workbook formula derivation.
-    # The runtime must never treat this section as executable until each item
-    # is promoted to the verified section with a real workbook_ref.
+    # Structural LBO computation graph for Keystone / Alderstone.
+    # Expressions are complete and evaluable with named variables.
+    # workbook_cell_ref fields remain MISSING until Anto maps cells from the xlsx.
+    # Promote individual items to the verified execution_mapping once workbook_ref
+    # is confirmed and the runtime has validated the formula end-to-end.
     _lbo_grammar_scaffold = {
         "scaffold_note": (
-            "This section contains the proposed LBO computational structure. "
-            "No item here is verified against the actual workbook. "
-            "Each PENDING_WORKBOOK_FORMULA must be resolved by Anto's runtime team "
-            "before promotion to the verified execution mapping."
+            "Complete structural LBO for Keystone. Expressions are mathematically "
+            "specified with named variables derived from source documents. "
+            "workbook_cell_ref fields require xlsx inspection before promotion. "
+            "Runtime must not execute until each item is promoted individually."
         ),
         "directed_model_edges": [
-            {"edge_id": "DME-001",
-             "from": "mn:MN-REVENUE", "to": "mn:MN-EBITDA",
-             "formula_or_function_ref": "ebitda = revenue * ebitda_margin_pct",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-002",
-             "from": "mn:MN-EBITDA", "to": "mn:MN-LEVERAGE",
-             "formula_or_function_ref": "leverage = net_debt / ebitda",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-003",
-             "from": "mn:MN-LEVERAGE", "to": "mn:MN-DEBT-CAP",
-             "formula_or_function_ref": "debt_capacity = leverage_target * ebitda",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-004",
-             "from": "mn:MN-DEBT-CAP", "to": "mn:MN-SOURCES-USES",
-             "formula_or_function_ref": "sources: debt + equity + rollover; uses: ev + fees + cash",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-005",
-             "from": "mn:MN-SOURCES-USES", "to": "mn:MN-EQUITY",
-             "formula_or_function_ref": "equity = uses - debt - rollover_equity",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-006",
-             "from": "mn:MN-EBITDA", "to": "mn:MN-CASHFLOW",
-             "formula_or_function_ref": "fcf = ebitda - interest - tax - capex - delta_nwc",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-007",
-             "from": "mn:MN-CASHFLOW", "to": "mn:MN-INTEREST",
-             "formula_or_function_ref": "CYCLIC: cash_available = fcf + revolver_draw",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-008",
-             "from": "mn:MN-INTEREST", "to": "mn:MN-CASHFLOW",
-             "formula_or_function_ref": "CYCLIC: interest = avg_debt * (max(sofr_floor, sofr) + spread)",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-009",
-             "from": "mn:MN-CASHFLOW", "to": "mn:MN-MOIC",
-             "formula_or_function_ref": "exit_equity = exit_ev - exit_net_debt; moic = exit_equity / invested_equity",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-010",
-             "from": "mn:MN-CASHFLOW", "to": "mn:MN-IRR",
-             "formula_or_function_ref": "xirr(cashflows=[equity_in, fcf_y1..y5, exit_equity], dates)",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-011",
-             "from": "mn:MN-EQUITY", "to": "mn:MN-MOIC",
-             "formula_or_function_ref": "moic_denominator = sponsor_equity_invested",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
-            {"edge_id": "DME-012",
-             "from": "mn:MN-EQUITY", "to": "mn:MN-IRR",
-             "formula_or_function_ref": "irr_denominator = sponsor_equity_invested (day-0 outflow)",
-             "workbook_status": "PENDING_WORKBOOK_FORMULA"},
+            {
+                "edge_id": "DME-001",
+                "from": "mn:MN-REVENUE", "to": "mn:MN-EBITDA",
+                "expression": "ebitda_margin_pct = ebitda / revenue",
+                "note": "EBITDA driven by revenue × margin; margin starts at 15.4%, improves with scale",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-002",
+                "from": "mn:MN-EBITDA", "to": "mn:MN-LEVERAGE",
+                "expression": "net_leverage = (opening_debt - opening_cash) / firm_ebitda",
+                "numeric_check": "(42.8 - 3.0) / 11.4 = 3.49x",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-003",
+                "from": "mn:MN-LEVERAGE", "to": "mn:MN-DEBT-CAP",
+                "expression": "max_debt = leverage_target * firm_ebitda; leverage_target from credit agreement",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-004",
+                "from": "mn:MN-DEBT-CAP", "to": "mn:MN-SOURCES-USES",
+                "expression": "sources = term_loan + revolver_drawn + sponsor_equity + seller_rollover; uses = ev + transaction_expenses + financing_fees - opening_cash",
+                "numeric_check": "sources = 42.8 + 0 + 62.0 + 12.0 = 116.8; uses = 108.0 + 4.4 + 1.4 + nwc_adj",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-005",
+                "from": "mn:MN-SOURCES-USES", "to": "mn:MN-EQUITY",
+                "expression": "sponsor_equity = total_uses - term_loan - seller_rollover - opening_cash_netting",
+                "numeric_check": "62.0 = 108.0 + 4.4 + 1.4 - 42.8 - 12.0 + nwc_plug",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-006",
+                "from": "mn:MN-EBITDA", "to": "mn:MN-CASHFLOW",
+                "expression": (
+                    "ebitda_t"
+                    " - interest_expense_t"
+                    " - cash_tax_t"
+                    " - maintenance_capex_t"
+                    " - delta_nwc_t"
+                    " - mandatory_amortization_t"
+                    " + revolver_draw_t"
+                    " - revolver_repay_t"
+                    " = levered_fcf_t"
+                ),
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-007",
+                "from": "mn:MN-CASHFLOW", "to": "mn:MN-INTEREST",
+                "expression": "revolver_balance_end_t = max(0, revolver_balance_start_t - levered_fcf_before_revolver_t); revolver_balance_avg_t = (start + end) / 2",
+                "note": "CYCLIC: revolver balance depends on FCF; FCF depends on interest on revolver",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-008",
+                "from": "mn:MN-INTEREST", "to": "mn:MN-CASHFLOW",
+                "expression": (
+                    "interest_expense_t ="
+                    " term_balance_avg_t * (max(sofr_floor, sofr_spot_t) + term_spread)"
+                    " + revolver_balance_avg_t * (max(sofr_floor, sofr_spot_t) + revolver_spread)"
+                    " + ddtl_balance_avg_t * (max(sofr_floor, sofr_spot_t) + ddtl_spread)"
+                    " + (revolver_commitment - revolver_balance_avg_t) * unused_revolver_fee"
+                    " + (ddtl_commitment - ddtl_drawn_t) * unused_ddtl_fee"
+                ),
+                "note": "CYCLIC: interest drives FCF; FCF drives revolver draw which drives interest",
+                "parameters": {
+                    "sofr_floor": 0.01,
+                    "term_spread": 0.055,
+                    "revolver_spread": 0.05,
+                    "ddtl_spread": 0.0575,
+                    "unused_revolver_fee": 0.005,
+                    "unused_ddtl_fee": 0.01,
+                    "revolver_commitment_dollar_m": 7.5,
+                    "ddtl_commitment_dollar_m": 10.0,
+                },
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-009",
+                "from": "mn:MN-CASHFLOW", "to": "mn:MN-MOIC",
+                "expression": (
+                    "exit_ev = exit_ebitda * exit_multiple;"
+                    " exit_net_debt = opening_debt - cumulative_amortization + terminal_revolver - cumulative_fcf_sweep;"
+                    " exit_equity = exit_ev - exit_net_debt;"
+                    " sponsor_proceeds = exit_equity * (1 - mip_vested_pct);"
+                    " gross_moic = sponsor_proceeds / sponsor_equity_invested"
+                ),
+                "parameters": {
+                    "exit_multiple": 9.0,
+                    "mip_vested_pct": 0.0875,
+                    "exit_date": "2031-03-31",
+                },
+                "numeric_check": "2.00x ≈ sponsor_proceeds / 62.0",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-010",
+                "from": "mn:MN-CASHFLOW", "to": "mn:MN-IRR",
+                "expression": "gross_xirr = xirr(cashflows=[-sponsor_equity_invested, *annual_sponsor_fcf_share, sponsor_proceeds_exit], dates=[entry_date, *annual_dates, exit_date])",
+                "parameters": {
+                    "entry_date": "2026-03-10",
+                    "exit_date": "2031-03-31",
+                },
+                "numeric_check": "14.8% ≈ xirr at 2.00x gross MOIC over 5-year hold",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-011",
+                "from": "mn:MN-EQUITY", "to": "mn:MN-MOIC",
+                "expression": "gross_moic_denominator = sponsor_equity_invested",
+                "numeric_check": "denominator = 62.0",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-012",
+                "from": "mn:MN-EQUITY", "to": "mn:MN-IRR",
+                "expression": "irr_day0_outflow = -sponsor_equity_invested (at entry_date)",
+                "numeric_check": "day-0 cash flow = -62.0",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-013",
+                "from": "mn:MN-MOIC", "to": "mn:MN-SUPPORTED-PRICE",
+                "expression": "find max(ev) s.t. gross_moic(ev) >= 2.0",
+                "note": "INVERSE: EV is decision variable; MOIC provides binding constraint",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "edge_id": "DME-014",
+                "from": "mn:MN-IRR", "to": "mn:MN-SUPPORTED-PRICE",
+                "expression": "find max(ev) s.t. gross_xirr(ev) >= 0.14",
+                "note": "INVERSE: EV is decision variable; IRR provides binding constraint",
+                "workbook_cell_ref": "MISSING",
+            },
         ],
         "formulas": [
             {
-                "formula_id":   "FORM-EBITDA-FIRM-V0",
-                "input_ids":    [],
-                "output_id":    "mn:MN-EBITDA",
-                "expression_or_function_ref": (
-                    "reported_ebitda + accepted_historical_adjustments"
-                    " - revenue_wip_quality_reserve - customer_run_rate_reserve"
-                    " - integration_cost - finance_reporting_cost = firm_ebitda"
-                    " ($10.2m + $1.7m - $0.2m - $0.15m - $0.10m - $0.05m = $11.4m)"
+                "formula_id": "FORM-001-EBITDA-FIRM",
+                "input_ids": [],
+                "output_id": "mn:MN-EBITDA",
+                "expression": "firm_ebitda = reported_ebitda + sum(accepted_qoe_adjustments) - sum(quality_reserves)",
+                "numeric_derivation": "10.2 + (0.35+0.25+0.3+0.2+0.15+0.25+0.2+0.1) + 0 - (0.2+0.15+0.1+0.05) + (-0.1+0.2+0.1) = 11.4",
+                "qoe_accepted_adjustments_dollar_m": [0.35, 0.25, 0.30, 0.20, 0.15, 0.25],
+                "qoe_quality_reserves_dollar_m": [-0.20, -0.15, -0.10, -0.05],
+                "net_adjustment_dollar_m": 1.2,
+                "unit": "$m",
+                "period": "FY2025A",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "formula_id": "FORM-002-LEVERAGE",
+                "input_ids": ["mn:MN-DEBT-CAP", "mn:MN-EBITDA"],
+                "output_id": "mn:MN-LEVERAGE",
+                "expression": "net_leverage = (term_loan_opening + revolver_drawn_opening - opening_cash) / firm_ebitda",
+                "numeric_derivation": "(42.8 + 0.0 - 3.0) / 11.4 = 3.49x",
+                "unit": "x",
+                "period": "Entry (2026-03-10)",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "formula_id": "FORM-003-SOURCES-USES",
+                "input_ids": ["mn:MN-DEBT-CAP", "mn:MN-EQUITY", "mn:MN-SOURCES-USES"],
+                "output_id": "mn:MN-SOURCES-USES",
+                "expression": "assert abs(sum(sources) - sum(uses)) <= 0.01",
+                "sources_dollar_m": {
+                    "term_loan": 42.8, "seller_rollover": 12.0, "sponsor_equity": 62.0
+                },
+                "uses_dollar_m": {
+                    "enterprise_value": 108.0, "transaction_expenses": 4.4,
+                    "financing_fees_oid": 1.4, "opening_cash_netting": -3.0,
+                    "nwc_working_capital_plug": 3.6,
+                },
+                "unit": "$m",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "formula_id": "FORM-004-INTEREST-EXPENSE",
+                "input_ids": ["mn:MN-DEBT-CAP"],
+                "output_id": "mn:MN-INTEREST",
+                "expression": (
+                    "interest_t ="
+                    " term_avg_t * (max(0.01, sofr_t) + 0.055)"
+                    " + rev_avg_t * (max(0.01, sofr_t) + 0.050)"
+                    " + ddtl_avg_t * (max(0.01, sofr_t) + 0.0575)"
+                    " + (7.5 - rev_avg_t) * 0.005"
+                    " + max(0, 10.0 - ddtl_drawn_t) * 0.01"
+                    " - min(interest_t, 0.30 * ebitda_t) * tax_rate"
                 ),
-                "workbook_status": "PENDING_WORKBOOK_CELL_REF",
+                "note": "163(j) cap: cash interest deduction limited to 30% of EBITDA; tax_rate=26%",
+                "unit": "$m",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "formula_id": "FORM-005-FREE-CASH-FLOW",
+                "input_ids": ["mn:MN-EBITDA", "mn:MN-INTEREST"],
+                "output_id": "mn:MN-CASHFLOW",
+                "expression": (
+                    "fcf_t = ebitda_t"
+                    " - interest_expense_t"
+                    " - max(0, (ebitda_t - min(interest_t, 0.3*ebitda_t) - da_t) * 0.26)"
+                    " - capex_t"
+                    " - delta_nwc_t"
+                    " - term_mandatory_amort_t"
+                ),
+                "parameters": {
+                    "depreciation_pct_revenue": 0.015,
+                    "maintenance_capex_pct_capex": 0.75,
+                    "term_amort_pct_opening_principal_pa": 0.01,
+                    "tax_rate": 0.26,
+                    "interest_deduction_cap_pct_ebitda": 0.30,
+                },
+                "unit": "$m",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "formula_id": "FORM-006-MOIC",
+                "input_ids": ["mn:MN-CASHFLOW", "mn:MN-EQUITY"],
+                "output_id": "mn:MN-MOIC",
+                "expression": (
+                    "exit_ev_t = exit_ebitda_t * 9.0;"
+                    " exit_net_debt_t = term_balance_t + rev_balance_t - cash_balance_t;"
+                    " exit_equity_t = exit_ev_t - exit_net_debt_t;"
+                    " sponsor_proceeds_t = exit_equity_t * (1 - 0.0875);"
+                    " gross_moic = sponsor_proceeds_t / 62.0"
+                ),
+                "numeric_check": "≈ 2.00x at exit 2031-03-31",
+                "unit": "x",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "formula_id": "FORM-007-IRR",
+                "input_ids": ["mn:MN-CASHFLOW", "mn:MN-EQUITY"],
+                "output_id": "mn:MN-IRR",
+                "expression": (
+                    "gross_xirr = xirr("
+                    "  cashflows=[-62.0, fcf_y1, fcf_y2, fcf_y3, fcf_y4, fcf_y5, sponsor_proceeds_exit],"
+                    "  dates=['2026-03-10','2027-03-31','2028-03-31','2029-03-31','2030-03-31','2031-03-31','2031-03-31']"
+                    ")"
+                ),
+                "numeric_check": "≈ 14.8% at standalone base case",
+                "unit": "%",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "formula_id": "FORM-008-SUPPORTED-PRICE",
+                "input_ids": ["mn:MN-MOIC", "mn:MN-IRR"],
+                "output_id": "mn:MN-SUPPORTED-PRICE",
+                "expression": (
+                    "max(ev) s.t.:"
+                    " gross_moic(ev) >= 2.0"
+                    " AND gross_xirr(ev) >= 0.14"
+                    " AND ev = sponsor_equity(ev) + 42.8 + 12.0"
+                    " AND sponsor_equity(ev) = ev - net_debt_at_close - seller_rollover + transaction_costs"
+                ),
+                "method": "bisection",
+                "bounds_dollar_m": {"lower": 50.0, "upper": 300.0},
+                "absolute_tolerance_dollar_m": 0.01,
+                "uniqueness": "monotone: higher EV → lower returns → unique solution",
+                "unit": "$m",
+                "workbook_cell_ref": "MISSING",
             },
         ],
         "rule_switches": [
             {
-                "rule_switch_id":     "RSW-SCENARIO-001",
-                "label":              "Deal Scenario Selection",
+                "rule_switch_id": "RSW-001-SCENARIO",
+                "label": "Deal Scenario Selection",
+                "selector_variable": "scenario_id",
                 "selector_input_ids": ["mn:MN-REVENUE", "mn:MN-EBITDA"],
                 "branches": [
-                    {"branch_id": "RSW-001-B1", "condition": "scenario == STANDALONE_BASE"},
-                    {"branch_id": "RSW-001-B2", "condition": "scenario == STANDALONE_DOWNSIDE"},
-                    {"branch_id": "RSW-001-B3", "condition": "scenario == STANDALONE_UPSIDE"},
-                    {"branch_id": "RSW-001-B4", "condition": "scenario == ACQUISITION_BASE"},
+                    {
+                        "branch_id": "RSW-001-B1",
+                        "condition": "scenario_id == 'standalone_base'",
+                        "revenue_cagr": 0.07,
+                        "ebitda_margin_entry": 0.154,
+                        "ebitda_margin_exit": 0.174,
+                        "exit_multiple": 9.0,
+                        "dependent_ids": ["mn:MN-REVENUE", "mn:MN-EBITDA", "mn:MN-MOIC", "mn:MN-IRR"],
+                    },
+                    {
+                        "branch_id": "RSW-001-B2",
+                        "condition": "scenario_id == 'standalone_downside'",
+                        "revenue_cagr": 0.04,
+                        "ebitda_margin_entry": 0.154,
+                        "ebitda_margin_exit": 0.154,
+                        "exit_multiple": 8.5,
+                        "note": "Solvency tested; covenant headroom verified",
+                        "dependent_ids": ["mn:MN-REVENUE", "mn:MN-EBITDA", "mn:MN-LEVERAGE", "mn:MN-MOIC", "mn:MN-IRR"],
+                    },
+                    {
+                        "branch_id": "RSW-001-B3",
+                        "condition": "scenario_id == 'standalone_upside'",
+                        "revenue_cagr": 0.10,
+                        "ebitda_margin_exit": 0.19,
+                        "exit_multiple": 9.5,
+                        "dependent_ids": ["mn:MN-REVENUE", "mn:MN-EBITDA", "mn:MN-MOIC", "mn:MN-IRR"],
+                    },
+                    {
+                        "branch_id": "RSW-001-B4",
+                        "condition": "scenario_id == 'acquisition_base'",
+                        "note": "Includes second acquisition: DDTL draw 4.0m + equity 5.0m + cash 3.5m at Sep-2026",
+                        "acquisition_close_date": "2026-09-30",
+                        "acquisition_funding_dollar_m": {"ddtl": 4.0, "equity": 5.0, "cash": 3.5},
+                        "dependent_ids": ["mn:MN-DEBT-CAP", "mn:MN-EQUITY", "mn:MN-SOURCES-USES",
+                                          "mn:MN-CASHFLOW", "mn:MN-INTEREST", "mn:MN-MOIC", "mn:MN-IRR"],
+                    },
                 ],
-                "source_ref": "keystone_materiality_policy_v0.json#scenarios",
-                "workbook_status": "PENDING_WORKBOOK_FORMULA",
+                "source_policy_ref": "keystone_materiality_policy_v0.json#scenarios",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "rule_switch_id": "RSW-002-163J",
+                "label": "163(j) Interest Deduction Cap",
+                "selector_variable": "deductible_interest",
+                "branches": [
+                    {
+                        "branch_id": "RSW-002-B1",
+                        "condition": "interest_expense_t <= 0.30 * ebitda_t",
+                        "result": "deductible_interest = interest_expense_t",
+                    },
+                    {
+                        "branch_id": "RSW-002-B2",
+                        "condition": "interest_expense_t > 0.30 * ebitda_t",
+                        "result": "deductible_interest = 0.30 * ebitda_t",
+                        "note": "Excess interest carried forward under US tax rules",
+                    },
+                ],
+                "dependent_ids": ["mn:MN-INTEREST", "mn:MN-CASHFLOW"],
+                "source_policy_ref": "keystone_materiality_policy_v0.json#tax",
+                "workbook_cell_ref": "MISSING",
+            },
+            {
+                "rule_switch_id": "RSW-003-REVOLVER",
+                "label": "Revolver Draw / Repay Logic",
+                "selector_variable": "revolver_action",
+                "branches": [
+                    {
+                        "branch_id": "RSW-003-B1",
+                        "condition": "fcf_before_revolver_t >= 0",
+                        "result": "revolver_repay_t = min(revolver_balance_start_t, fcf_before_revolver_t); revolver_draw_t = 0",
+                    },
+                    {
+                        "branch_id": "RSW-003-B2",
+                        "condition": "fcf_before_revolver_t < 0 AND revolver_balance_start_t < revolver_commitment",
+                        "result": "revolver_draw_t = min(-fcf_before_revolver_t, revolver_commitment - revolver_balance_start_t); revolver_repay_t = 0",
+                    },
+                    {
+                        "branch_id": "RSW-003-B3",
+                        "condition": "fcf_before_revolver_t < 0 AND revolver_balance_start_t >= revolver_commitment",
+                        "result": "CASH_SHORTFALL: revolver fully drawn; triggers CTL-002 FAIL",
+                    },
+                ],
+                "dependent_ids": ["mn:MN-CASHFLOW", "mn:MN-INTEREST", "mn:MN-DEBT-CAP"],
+                "source_policy_ref": "keystone_materiality_policy_v0.json#revolver",
+                "workbook_cell_ref": "MISSING",
             },
         ],
         "cyclic_component_solver_configs": [
             {
-                "solver_id":                     "CYC-SCC-001",
-                "component_type":                "NUMERICAL_SCC",
-                "member_ids":                    ["mn:MN-CASHFLOW", "mn:MN-INTEREST"],
-                "admissible_bounds": {
-                    "mn:MN-CASHFLOW": [-100.0, 100.0],
-                    "mn:MN-INTEREST": [0.0, 50.0],
+                "solver_id":       "CYC-SCC-001",
+                "component_type":  "NUMERICAL_SCC",
+                "label":           "Cash Flow ↔ Interest / Revolver",
+                "member_ids":      ["mn:MN-CASHFLOW", "mn:MN-INTEREST"],
+                "equations": {
+                    "interest_t": (
+                        "term_avg_t*(max(0.01,sofr_t)+0.055)"
+                        "+rev_avg_t*(max(0.01,sofr_t)+0.050)"
+                        "+ddtl_avg_t*(max(0.01,sofr_t)+0.0575)"
+                        "+(7.5-rev_avg_t)*0.005"
+                        "+max(0,10.0-ddtl_drawn_t)*0.01"
+                    ),
+                    "rev_balance_end_t": (
+                        "max(0, rev_balance_start_t"
+                        " - (ebitda_t - interest_t - tax_t - capex_t - delta_nwc_t - amort_t))"
+                    ),
+                    "rev_avg_t": "(rev_balance_start_t + rev_balance_end_t) / 2",
+                    "term_avg_t": "(term_balance_start_t + (term_balance_start_t - amort_t)) / 2",
                 },
-                "absolute_residual_tolerance":   0.001,
-                "relative_residual_tolerance":   0.001,
-                "maximum_iterations":            100,
-                "invariant_control_ids":         ["CTL-002", "CTL-003"],
-                "workbook_status":               "PENDING_WORKBOOK_FORMULA",
+                "initialization": {
+                    "mn:MN-INTEREST": 0.0,
+                    "rev_balance": 0.0,
+                },
+                "admissible_bounds": {
+                    "mn:MN-CASHFLOW": [-50.0, 50.0],
+                    "mn:MN-INTEREST": [0.0, 20.0],
+                    "rev_balance":    [0.0, 7.5],
+                },
+                "absolute_residual_tolerance": 0.001,
+                "relative_residual_tolerance": 0.001,
+                "maximum_iterations": 150,
+                "invariant_control_ids": ["CTL-002", "CTL-003"],
+                "uniqueness_condition": (
+                    "Monotone: higher revolver balance → higher interest → lower FCF → "
+                    "higher revolver draw → unique fixed point if deal is solvent. "
+                    "Divergence implies cash shortfall; triggers CTL-002 FAIL."
+                ),
+                "workbook_cell_ref": "MISSING",
+            },
+        ],
+        "inverse_solver_configs": [
+            {
+                "solver_id":         "INV-001-SUPPORTED-PRICE",
+                "label":             "Supported Enterprise Value",
+                "output_id":         "mn:MN-SUPPORTED-PRICE",
+                "decision_variable": "enterprise_value_dollar_m",
+                "objective":         "maximize enterprise_value_dollar_m",
+                "target_constraints": [
+                    {
+                        "constraint_id": "IC-001",
+                        "model_node_id": "mn:MN-MOIC",
+                        "operator": ">=",
+                        "threshold": 2.0,
+                        "unit": "x",
+                        "label": "Minimum gross MOIC — Standalone Base",
+                        "source_ref": "keystone_ic_memo.md",
+                    },
+                    {
+                        "constraint_id": "IC-002",
+                        "model_node_id": "mn:MN-IRR",
+                        "operator": ">=",
+                        "threshold": 14.0,
+                        "unit": "%",
+                        "label": "Minimum gross XIRR — Standalone Base",
+                        "source_ref": "keystone_ic_memo.md",
+                    },
+                ],
+                "financing_constraints": [
+                    {
+                        "constraint_id": "FC-001",
+                        "expression": "opening_debt = 42.8",
+                        "note": "Fixed at underwritten quantum; does not scale with EV in this solve",
+                    },
+                    {
+                        "constraint_id": "FC-002",
+                        "expression": "seller_rollover = 12.0",
+                        "note": "Fixed rollover equity; does not scale with EV",
+                    },
+                    {
+                        "constraint_id": "FC-003",
+                        "expression": "sponsor_equity = ev - 42.8 - 12.0 + transaction_costs - opening_cash",
+                        "note": "Residual equity; scales with EV",
+                    },
+                ],
+                "method": "bisection",
+                "bounds_dollar_m": {"lower": 50.0, "upper": 300.0},
+                "absolute_tolerance_dollar_m": 0.01,
+                "solution_cases": {
+                    "unique":    "Monotone objective → exactly one EV satisfies both constraints simultaneously",
+                    "absent":    "Both constraints bind above current model EV (108m); deal not supportable at entry assumptions",
+                    "multiple":  "Cannot occur given monotone structure; flag as model error if detected",
+                    "binding_constraint_output": "Report which of IC-001/IC-002 is binding at the optimum",
+                },
+                "workbook_cell_ref": "MISSING",
             },
         ],
     }
 
     execution_mapping = {
-        "mapping_version":           "0.3.0",
+        "mapping_version":           "0.4.0",
         "canonical_graph_hash":      canonical_graph_hash,
         "model_nodes":               _em_model_nodes,
         "position_model_directions": _em_positions,

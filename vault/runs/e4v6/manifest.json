@@ -1,0 +1,22 @@
+{
+  "run_id": "E4/V6",
+  "produced_at": "2026-08-23",
+  "compiler": "tools/xlsx_parser.py",
+  "compiler_mode": "zero-LLM",
+  "inputs": {
+    "xlsx": "sources/keystone-fixture/layer1-ingest/keystone_lbo_model_working.xlsx",
+    "xlsx_sha256": "856d6deb512cd6e40ea4db17d9e2e8c3eac456a6f371e498e7b439ff48e55bd1"
+  },
+  "outputs": {
+    "model_nodes_csv": "vault/runs/e4v6/model_nodes.csv",
+    "model_nodes_sha256": "ce22c02e1d43536d76a93e65d394606e5d8d271307e37ccf63149a5d0585498e",
+    "deps_json": "vault/runs/e4v6/deps.json",
+    "deps_sha256": "9e57a9c734c61c2c0aa949f894c5748ce6ec0e059525ae74a0ace890b7c64132"
+  },
+  "stats": {
+    "nodes": 59,
+    "dependency_edges": 732
+  },
+  "blind": true,
+  "note": "Compiler run completed before any gold/answer-key comparison. Do not read ANSWER-KEY-DO-NOT-INGEST before scoring this run."
+}

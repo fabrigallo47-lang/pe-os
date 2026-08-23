@@ -1,0 +1,60 @@
+model_node_id,name,kind,sheet,cell,value,unit,definition,period,perimeter
+MN-EV,Enterprise value,input,Inputs,B3,108.0,$mm,,Opening / 2026-03-31,Project Keystone enterprise value
+MN-SELLER-NET-DEBT-AND-DEBT-LIKE-IT,Seller net debt and debt-like items,input,Inputs,B4,10.2,$mm,,Opening / 2026-03-31,
+MN-ROLLOVER,Seller rollover,input,Inputs,B7,12.0,$mm,,Opening / 2026-03-31,
+MN-SPONSOR-EQUITY,Sponsor initial cash equity,input,Inputs,B8,62.0,$mm,,Opening / 2026-03-31,
+MN-DEBT,First-lien opening debt,input,Inputs,B9,42.8,$mm,,Opening / 2026-03-31,
+MN-OPENING-CASH,Opening cash,input,Inputs,B10,3.0,$mm,,Opening / 2026-03-31,
+MN-CONCENTRATION,Largest ultimate-parent concentration,input,Inputs,B13,0.182,%,,FY2025A,
+MN-NWC,Normalized NWC target,input,Inputs,B14,8.4,$mm,,Closing reference,
+MN-SELLER-EBITDA,Seller-adjusted EBITDA,input,QoE_Bridge,C19,12.7,$mm,DEF-EBITDA-SELLER,FY2025A / seller adjustment bridge,Alderstone consolidated seller-adjusted EBITDA
+MN-QOE-EBITDA,Qoe-adjusted EBITDA,input,QoE_Bridge,D19,11.9,$mm,DEF-EBITDA-QOE,FY2025A,Alderstone consolidated QoE-normalized EBITDA
+MN-FIRM-EBITDA,Firm-adjusted EBITDA,input,QoE_Bridge,E19,11.4,$mm,DEF-EBITDA-FIRM,FY2025A,Alderstone consolidated Firm-underwritten EBITDA
+MN-COV-EBITDA,Cov-adjusted EBITDA,input,QoE_Bridge,F19,12.2,$mm,DEF-EBITDA-COV,FY2025A,Alderstone consolidated Covenant EBITDA
+MN-INTEGRATION-COST-ADJ,Integration and systems costs,adjustment_input,QoE_Bridge,E7,0.2,$mm,DEF-ADJ-INTEGRATION,FY2025A,Alderstone consolidated Firm-underwritten EBITDA
+MN-RELATED-PARTY-RENT-NORM,Related-party rent normalization,adjustment_input,QoE_Bridge,E14,0.1,$mm,DEF-ADJ-RENT,FY2025A,Alderstone consolidated Firm-underwritten EBITDA
+MN-BASE-GROWTH,Standalone Base - Platform growth,assumption_series,Inputs,C40:H40,"[0.07, 0.07, 0.07, 0.07, 0.07, 0.07]",%,,FY2026E-FY2031E,Standalone Base scenario
+MN-BASE-EBITDA-MARGIN,Standalone Base - Firm EBITDA margin,assumption_series,Inputs,C42:H42,"[0.156, 0.161, 0.165, 0.169, 0.173, 0.177]",%,,FY2026E-FY2031E,Standalone Base scenario
+MN-BASE-DSO,Standalone Base - DSO,assumption_series,Inputs,C43:H43,"[64, 63, 62, 61, 60, 60]",days,,FY2026E-FY2031E,Standalone Base scenario
+MN-BASE-WIP,Standalone Base - WIP / revenue,assumption_series,Inputs,C44:H44,"[0.067, 0.065, 0.063, 0.061, 0.06, 0.06]",%,,FY2026E-FY2031E,Standalone Base scenario
+MN-BASE-CAPEX,Standalone Base - Capex / revenue,assumption_series,Inputs,C45:H45,"[0.016, 0.016, 0.016, 0.016, 0.016, 0.016]",%,,FY2026E-FY2031E,Standalone Base scenario
+MN-BASE-EXIT-MULT,Standalone Base - Exit multiple,assumption_series,Inputs,C46:H46,"[9, 9, 9, 9, 9, 9]",x,,FY2026E-FY2031E,Standalone Base scenario
+MN-DOWN-GROWTH,Standalone Downside - Platform growth,assumption_series,Inputs,C47:H47,"[0.04, 0.02, 0.04, 0.05, 0.05, 0.05]",%,,FY2026E-FY2031E,Standalone Downside scenario
+MN-DOWN-EBITDA-MARGIN,Standalone Downside - Firm EBITDA margin,assumption_series,Inputs,C49:H49,"[0.145, 0.135, 0.145, 0.153, 0.158, 0.162]",%,,FY2026E-FY2031E,Standalone Downside scenario
+MN-DOWN-DSO,Standalone Downside - DSO,assumption_series,Inputs,C50:H50,"[67, 75, 72, 69, 67, 66]",days,,FY2026E-FY2031E,Standalone Downside scenario
+MN-DOWN-WIP,Standalone Downside - WIP / revenue,assumption_series,Inputs,C51:H51,"[0.07, 0.08, 0.075, 0.07, 0.068, 0.066]",%,,FY2026E-FY2031E,Standalone Downside scenario
+MN-DOWN-CAPEX,Standalone Downside - Capex / revenue,assumption_series,Inputs,C52:H52,"[0.016, 0.016, 0.016, 0.016, 0.016, 0.016]",%,,FY2026E-FY2031E,Standalone Downside scenario
+MN-STANDALONE-DOWNSIDE-EXIT-MULTIPLE,Standalone Downside - Exit multiple,assumption_series,Inputs,C53:H53,"[8, 8, 8, 8, 8, 8]",x,,FY2026E-FY2031E,Standalone Downside scenario
+MN-STANDALONE-UPSIDE-PLATFORM-GROWTH,Standalone Upside - Platform growth,assumption_series,Inputs,C54:H54,"[0.085, 0.085, 0.085, 0.085, 0.085, 0.085]",%,,FY2026E-FY2031E,Standalone Upside scenario
+MN-STANDALONE-UPSIDE-FIRM-EBITDA-MARGIN,Standalone Upside - Firm EBITDA margin,assumption_series,Inputs,C56:H56,"[0.16, 0.168, 0.174, 0.18, 0.183, 0.185]",%,,FY2026E-FY2031E,Standalone Upside scenario
+MN-STANDALONE-UPSIDE-DSO,Standalone Upside - DSO,assumption_series,Inputs,C57:H57,"[62, 60, 59, 58, 58, 58]",days,,FY2026E-FY2031E,Standalone Upside scenario
+MN-STANDALONE-UPSIDE-WIP-REVENUE,Standalone Upside - WIP / revenue,assumption_series,Inputs,C58:H58,"[0.065, 0.062, 0.06, 0.058, 0.057, 0.056]",%,,FY2026E-FY2031E,Standalone Upside scenario
+MN-STANDALONE-UPSIDE-CAPEX-REVENUE,Standalone Upside - Capex / revenue,assumption_series,Inputs,C59:H59,"[0.016, 0.016, 0.016, 0.016, 0.016, 0.016]",%,,FY2026E-FY2031E,Standalone Upside scenario
+MN-STANDALONE-UPSIDE-EXIT-MULTIPLE,Standalone Upside - Exit multiple,assumption_series,Inputs,C60:H60,"[9.5, 9.5, 9.5, 9.5, 9.5, 9.5]",x,,FY2026E-FY2031E,Standalone Upside scenario
+MN-ACQUISITION-BASE-PLATFORM-GROWTH,Acquisition Base - Platform growth,assumption_series,Inputs,C61:H61,"[0.07, 0.07, 0.07, 0.07, 0.07, 0.07]",%,,FY2026E-FY2031E,Acquisition Base scenario
+MN-ACQUISITION-BASE-FIRM-EBITDA-MARGIN,Acquisition Base - Firm EBITDA margin,assumption_series,Inputs,C63:H63,"[0.156, 0.161, 0.165, 0.169, 0.173, 0.177]",%,,FY2026E-FY2031E,Acquisition Base scenario
+MN-ACQUISITION-BASE-DSO,Acquisition Base - DSO,assumption_series,Inputs,C64:H64,"[64, 63, 62, 61, 60, 60]",days,,FY2026E-FY2031E,Acquisition Base scenario
+MN-ACQUISITION-BASE-WIP-REVENUE,Acquisition Base - WIP / revenue,assumption_series,Inputs,C65:H65,"[0.067, 0.065, 0.063, 0.061, 0.06, 0.06]",%,,FY2026E-FY2031E,Acquisition Base scenario
+MN-ACQUISITION-BASE-CAPEX-REVENUE,Acquisition Base - Capex / revenue,assumption_series,Inputs,C66:H66,"[0.016, 0.016, 0.016, 0.016, 0.016, 0.016]",%,,FY2026E-FY2031E,Acquisition Base scenario
+MN-ACQUISITION-BASE-EXIT-MULTIPLE,Acquisition Base - Exit multiple,assumption_series,Inputs,C67:H67,"[9, 9, 9, 9, 9, 9]",x,,FY2026E-FY2031E,Acquisition Base scenario
+MN-COMBINED-RISK-GROWTH,Combined Risk - Platform growth,assumption_series,Inputs,C68:H68,"[0.07, -0.01, 0.095, 0.11, 0.11, 0.07]",%,,FY2026E-FY2031E,Combined Risk scenario
+MN-COMBINED-RISK-EBITDA-MARGIN,Combined Risk - Firm EBITDA margin,assumption_series,Inputs,C70:H70,"[0.145, 0.105, 0.135, 0.145, 0.155, 0.165]",%,,FY2026E-FY2031E,Combined Risk scenario
+MN-COMBINED-RISK-DSO,Combined Risk - DSO,assumption_series,Inputs,C71:H71,"[68, 82, 74, 68, 64, 62]",days,,FY2026E-FY2031E,Combined Risk scenario
+MN-COMBINED-RISK-WIP,Combined Risk - WIP / revenue,assumption_series,Inputs,C72:H72,"[0.078, 0.105, 0.085, 0.072, 0.065, 0.062]",%,,FY2026E-FY2031E,Combined Risk scenario
+MN-COMBINED-RISK-CAPEX-REVENUE,Combined Risk - Capex / revenue,assumption_series,Inputs,C73:H73,"[0.016, 0.016, 0.016, 0.016, 0.016, 0.016]",%,,FY2026E-FY2031E,Combined Risk scenario
+MN-COMBINED-RISK-EXIT-MULT,Combined Risk - Exit multiple,assumption_series,Inputs,C74:H74,"[8.5, 8.5, 8.5, 8.5, 8.5, 8.5]",x,,FY2026E-FY2031E,Combined Risk scenario
+MN-COMBINED-RISK-INTEGRATION-SPEND,Capitalized integration spend,assumption_series,Scenario_Drivers,C163:V163,"[0, 0, 0.7, 0.8, 0.5, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]",$mm,,Quarterly 2026-06-30 to 2031-03-31,Combined Risk scenario
+MN-BASE-MOIC,Standalone Base — Gross MOIC,output,Ownership_Returns,K4,1.995993308,x,,Closing 2026-03-31 to exit 2031-03-31,Standalone Base scenario
+MN-BASE-IRR,Standalone Base — Gross IRR,output,Ownership_Returns,L4,0.148150819,%,,Closing 2026-03-31 to exit 2031-03-31,Standalone Base scenario
+MN-DOWN-MOIC,Standalone Downside — Gross MOIC,output,Ownership_Returns,K5,1.282805658,x,,Closing 2026-03-31 to exit 2031-03-31,Standalone Downside scenario
+MN-DOWN-IRR,Standalone Downside — Gross IRR,output,Ownership_Returns,L5,0.051042619,%,,Closing 2026-03-31 to exit 2031-03-31,Standalone Downside scenario
+MN-ACQ-MOIC,Acquisition Base — Gross MOIC,output,Ownership_Returns,K7,2.078161924,x,,Closing 2026-03-31 to exit 2031-03-31,Acquisition Base scenario
+MN-ACQ-IRR,Acquisition Base — Gross IRR,output,Ownership_Returns,L7,0.160397705,%,,Closing 2026-03-31 to exit 2031-03-31,Acquisition Base scenario
+MN-COMBINED-RISK-MOIC,Combined Risk — Gross MOIC,output,Ownership_Returns,K8,1.502009933,x,,Closing 2026-03-31 to exit 2031-03-31,Combined Risk scenario
+MN-COMBINED-RISK-IRR,Combined Risk — Gross IRR,output,Ownership_Returns,L8,0.08727552,%,,Closing 2026-03-31 to exit 2031-03-31,Combined Risk scenario
+MN-CHECK-SOURCES-USES,Sources equals uses check,model_control,S&U_Opening,F11,0.0,,,Opening / 2026-03-31,
+MN-CHECK-OPENING-BS,Opening balance sheet check,model_control,S&U_Opening,B27,0.0,,,Opening / 2026-03-31,
+MN-CHECK-SB-BASE-BS,Standalone Base balance sheet check,model_control_series,SB_Base,C87:V87,"[None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]",,,Quarterly 2026-06-30 to 2031-03-31,
+MN-CHECK-SB-DOWN-BS,Standalone Downside balance sheet check,model_control_series,SB_Down,C87:V87,"[None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]",,,Quarterly 2026-06-30 to 2031-03-31,
+MN-CHECK-ACQ-BASE-BS,Acquisition Base balance sheet check,model_control_series,Acq_Base,C87:V87,"[None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]",,,Quarterly 2026-06-30 to 2031-03-31,
+MN-CHECK-COMBINED-BS,Combined Risk balance sheet check,model_control_series,Combined_Risk,C87:V87,"[None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None, None]",,,Quarterly 2026-06-30 to 2031-03-31,

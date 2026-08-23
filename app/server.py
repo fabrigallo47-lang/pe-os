@@ -2302,3 +2302,66 @@ def inbox():
 @app.exception_handler(Exception)
 async def unhandled(request, exc):
     return JSONResponse(status_code=500, content={"detail": str(exc)})
+
+
+# ── Keystone model routes ─────────────────────────────────────────────────────
+
+_MODEL_NODES_CSV = ROOT / "vault" / "runs" / "e4v6" / "model_nodes.csv"
+_MODEL_DEPS_JSON  = ROOT / "vault" / "runs" / "e4v6" / "deps.json"
+
+try:
+    import csv as _csv_mod, json as _json_mod
+    from keystone_model import (
+        propagate_claim as _propagate_claim,
+        run_lbo         as _run_lbo,
+        PERIODS         as _MODEL_PERIODS,
+    )
+    _MODEL_READY = True
+except Exception as _me:
+    _MODEL_READY = False
+    _MODEL_IMPORT_ERR = str(_me)
+
+
+@app.get("/api/model/nodes")
+def model_nodes():
+    if not _MODEL_NODES_CSV.exists():
+        raise HTTPException(404, f"model_nodes.csv not found: {_MODEL_NODES_CSV}")
+    nodes = list(_csv_mod.DictReader(open(_MODEL_NODES_CSV, encoding="utf-8-sig")))
+    deps: dict = _json_mod.loads(_MODEL_DEPS_JSON.read_text()) if _MODEL_DEPS_JSON.exists() else {}
+    periods = [str(p) for p in _MODEL_PERIODS] if _MODEL_READY else []
+    return {"nodes": nodes, "deps": deps, "periods": periods, "ready": _MODEL_READY}
+
+
+@app.get("/api/model/snapshot")
+def model_snapshot():
+    if not _MODEL_READY:
+        raise HTTPException(503, f"Model not loaded: {_MODEL_IMPORT_ERR}")
+    result = _run_lbo()
+    q = result.quarters
+    return {
+        "scenario":       "standalone_base",
+        "exit_revenue":   round(result.exit_ltm_revenue, 3),
+        "exit_ebitda":    round(result.exit_ltm_ebitda,  3),
+        "exit_ev":        round(result.exit_ev,           3),
+        "exit_net_debt":  round(result.exit_net_debt,     3),
+        "exit_equity":    round(result.exit_equity,       3),
+        "gross_moic":     round(result.gross_moic,        4),
+        "gross_irr_pct":  round(result.gross_xirr * 100, 2),
+        "periods":        [str(r.period)                  for r in q],
+        "revenue":        [round(r.revenue,     3)        for r in q],
+        "ebitda":         [round(r.firm_ebitda, 3)        for r in q],
+        "net_leverage":   [round(r.net_leverage_covenant, 3) for r in q],
+        "end_cash":       [round(r.end_cash,    3)        for r in q],
+        "term_loan":      [round(r.term_loan,   3)        for r in q],
+    }
+
+
+@app.post("/api/model/propagate")
+def model_propagate(payload: dict):
+    if not _MODEL_READY:
+        raise HTTPException(503, f"Model not loaded: {_MODEL_IMPORT_ERR}")
+    claim    = payload.get("claim", {})
+    scenario = payload.get("scenario", "standalone_base")
+    if not claim or not claim.get("metric") or claim.get("value") is None:
+        raise HTTPException(400, "claim requires {metric, value, period}")
+    return _propagate_claim(claim, scenario=scenario)

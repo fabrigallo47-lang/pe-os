@@ -273,6 +273,30 @@ _EXIT_PROJECTION_MARKERS: tuple[str, ...] = (
     "at march 31, 203", "fy203",   # future fiscal year sentinel
 )
 
+# Source priority bonus for case position scoring.
+# Higher = more authoritative as an adopted underwriting position.
+# Applied additively inside _claim_score; keeps the scoring unit-consistent.
+_SOURCE_PRIORITY: dict[str, int] = {
+    "firm model summary":    4,   # THE firm's adopted model — highest authority
+    "firm initial assessment": 3, # firm pre-IC view
+    "ic memo":               2,   # investment committee position
+    "qoe report":            1,   # third-party QoE — reference, not adopted by firm
+    "data room":             0,
+    "cim":                  -5,   # seller document; asserted only
+}
+
+# Sources that are post-close monitoring events.
+# Claims from these sources must NEVER become entry case positions.
+_MONITORING_SOURCES: tuple[str, ...] = (
+    "board pack", "board update",
+    "monitoring report", "monitoring",
+    "compliance report", "compliance certificate",
+    "waiver notice", "waiver",
+    "lender report", "lender certificate",
+    "management accounts", "management report",
+    "quarterly update", "monthly update",
+)
+
 
 # ── V1 core builder ──────────────────────────────────────────────────────────
 
@@ -336,12 +360,20 @@ def claims_to_graph(claims: list[dict], source_name: str = "", deal: str = "") -
         area   = _topic_to_area(topic)
         label  = f"{metric or subject} = {c['value']}" if c.get("value") else (metric or subject)
 
+        src_doc_raw   = c.get("source_doc", source_name)
+        src_doc_lower = (src_doc_raw or "").lower()
+        temporal_class = (
+            "monitoring"
+            if any(w in src_doc_lower for w in _MONITORING_SOURCES)
+            else "entry"
+        )
+
         _upsert(
             c_id,
             type="claim", label=label,
             metric=metric, unit=c.get("unit", ""),
             as_of=c.get("as_of", ""), topic=topic, area=area,
-            source_doc=c.get("source_doc", source_name),
+            source_doc=src_doc_raw,
             epistemic=c.get("epistemic", "asserted"),
             value=c.get("value", ""),
             period=c.get("period", ""),
@@ -351,6 +383,7 @@ def claims_to_graph(claims: list[dict], source_name: str = "", deal: str = "") -
             author=c.get("author", ""),
             statement=c.get("statement", ""),
             derivation=c.get("derivation"),
+            temporal_class=temporal_class,
             coverage_status="mapped",
         )
 
@@ -563,20 +596,27 @@ def claims_to_graph(claims: list[dict], source_name: str = "", deal: str = "") -
     cp_to_claims: dict[str, list[str]] = {}  # cp_id → list of supporting claim IDs
 
     # Scoring function: defined once, closed over `nodes` (built in passes 1-3).
-    # binding_dir controls the direction-aware penalty:
-    #   - POSITION_DRIVES_MODEL: penalise exit/projected metrics (they are model
-    #     outputs, not entry underwriting positions)
-    #   - All directions: block adjustment/correction/growth-rate/tax-rule metrics
-    def _claim_score(cid: str, binding_dir: str = "") -> int:
+    # binding_dir — direction-aware penalty (POSITION_DRIVES_MODEL blocks exit projections)
+    # mn_unit     — expected unit of the model node; blocks unit-mismatched claims
+    def _claim_score(cid: str, binding_dir: str = "", mn_unit: str = "") -> int:
         node = nodes.get(cid, {})
         metric_lower = (node.get("metric") or "").lower()
         stmt_lower   = (node.get("statement") or "").lower()
+        # Monitoring events must never become entry underwriting positions
+        if node.get("temporal_class") == "monitoring":
+            return -9999
         if any(w in metric_lower for w in _ADJUSTMENT_MARKERS):
             return -999
         if binding_dir == "POSITION_DRIVES_MODEL":
             combined = metric_lower + " " + stmt_lower
             if any(w in combined for w in _EXIT_PROJECTION_MARKERS):
                 return -800
+        # Unit mismatch: a percentage claim cannot be the primary position for a
+        # dollar-amount model node ("Recurring Revenue = 72%" must not beat
+        # "Revenue = $74m" as the MN-REVENUE case position).
+        claim_unit = (node.get("unit") or "").strip().lower()
+        if mn_unit == "$m" and claim_unit in ("%", "percent", "pct", "% of ebitda"):
+            return -700
         trust       = _TRUST.get(node.get("epistemic", "asserted"), 1)
         # A case position MUST carry a real value; weight it high enough that
         # any valued claim beats any qualitative one regardless of trust level.
@@ -584,22 +624,70 @@ def claims_to_graph(claims: list[dict], source_name: str = "", deal: str = "") -
         has_per     = 1 if node.get("period") else 0
         val         = _parse_num(node.get("value"))
         value_bonus = 2 if (val is not None and abs(val) > 0.5) else 0
-        return trust * 10 + has_val + has_per + value_bonus
+        # Source preference: firm-authored docs outrank third-party or seller docs
+        source_lower = (node.get("source_doc") or "").lower()
+        source_bonus = max(
+            (v for k, v in _SOURCE_PRIORITY.items() if k in source_lower),
+            default=0,
+        )
+        # Base-case preference: when multiple scenarios tie, prefer the base case
+        # so the primary institutional position is selected, not a stress scenario.
+        base_bonus = (
+            3 if ("base case" in stmt_lower
+                  and "downside" not in stmt_lower
+                  and "upside" not in stmt_lower)
+            else 0
+        )
+        return trust * 10 + has_val + has_per + value_bonus + source_bonus + base_bonus
 
     for mn_id, mn_label, mn_unit, keywords, binding_dir in _V2_MODEL_NODES:
         matching = mn_claim_map[mn_id]
         if not matching:
             continue
 
-        best_cid  = max(matching, key=lambda c: _claim_score(c, binding_dir))
+        # Score every candidate; sort descending so best is first
+        scored: list[tuple[str, int]] = sorted(
+            ((c, _claim_score(c, binding_dir, mn_unit)) for c in matching),
+            key=lambda x: -x[1],
+        )
+        best_cid, best_score = scored[0]
+
+        # If the top score is still in blocked territory, skip — no valid position
+        if best_score <= -500:
+            continue
+
         best_node = nodes[best_cid]
+
+        # Contested: runner-up is within 3 points of winner AND is not blocked.
+        # This signals that a human should confirm which figure to adopt.
+        is_contested = (
+            len(scored) >= 2
+            and scored[1][1] > -500
+            and (best_score - scored[1][1]) <= 3
+        )
+
+        # Build candidate list for the execution_mapping surface
+        # (top-4, non-blocked; monitoring events are included so humans see the full picture)
+        candidates_info = [
+            {
+                "claim_id":  cid,
+                "score":     sc,
+                "value":     nodes[cid].get("value", ""),
+                "unit":      nodes[cid].get("unit", ""),
+                "source_doc": nodes[cid].get("source_doc", ""),
+                "epistemic": nodes[cid].get("epistemic", ""),
+                "temporal_class": nodes[cid].get("temporal_class", "entry"),
+                "statement": nodes[cid].get("statement", "")[:120],
+            }
+            for cid, sc in scored[:4]
+            if sc > -9999   # exclude monitoring events from candidate list
+        ]
 
         cp_id     = f"cp:{mn_id.lower()}"
         stmt      = best_node.get("statement", f"Case position on {mn_label}")
         value     = best_node.get("value", "")
         period    = best_node.get("period", best_node.get("as_of", ""))
         perimeter = best_node.get("perimeter", "")
-        # Use claim-driven unit; fall back to registry default
         unit_actual = best_node.get("unit") or mn_unit
 
         _upsert(
@@ -608,10 +696,15 @@ def claims_to_graph(claims: list[dict], source_name: str = "", deal: str = "") -
             mn_id=mn_id, binding_direction=binding_dir,
             statement=stmt, value=value, unit=unit_actual,
             period=period, perimeter=perimeter,
-            decision_status="PENDING",
+            decision_status="CONTESTED" if is_contested else "PENDING",
             coverage_status="partial",
-            note=f"Inferred from {len(matching)} claim(s); "
-                 f"requires human adoption to become ACCEPTED",
+            candidates=candidates_info,
+            note=(
+                "HUMAN REVIEW REQUIRED — multiple candidates within 3-point scoring threshold"
+                if is_contested else
+                f"Inferred from {len(matching)} claim(s); "
+                f"requires human adoption to become ACCEPTED"
+            ),
         )
         cp_to_claims[cp_id] = matching
 
@@ -1008,6 +1101,56 @@ def claims_to_graph(claims: list[dict], source_name: str = "", deal: str = "") -
         },
     ])
 
+    # ── Temporal partition summary ───────────────────────────────────────────────
+    _entry_count = sum(
+        1 for n in nodes.values()
+        if n.get("type") == "claim" and n.get("temporal_class") == "entry"
+    )
+    _mon_count = sum(
+        1 for n in nodes.values()
+        if n.get("type") == "claim" and n.get("temporal_class") == "monitoring"
+    )
+    _mon_sources = sorted(set(
+        n.get("source_doc", "")
+        for n in nodes.values()
+        if n.get("type") == "claim" and n.get("temporal_class") == "monitoring"
+        and n.get("source_doc")
+    ))
+    _temporal_partition = {
+        "entry_claim_count":          _entry_count,
+        "monitoring_claim_count":     _mon_count,
+        "monitoring_sources_detected": _mon_sources,
+        "segregation_status": (
+            "MONITORING_EVENTS_PRESENT_EXCLUDED_FROM_POSITIONS"
+            if _mon_count > 0 else "clean"
+        ),
+        "note": (
+            "Monitoring claims excluded from case position scoring. "
+            "CLT-010 (MISSING_TEMPORAL_SEGREGATION) remains open until "
+            "bitemporal known_at ordering is enforced at ingestion time."
+        ),
+    }
+
+    # ── Contested positions — require human review ────────────────────────────
+    _contested_positions = [
+        {
+            "model_node_id":          nodes[cp_id]["mn_id"],
+            "position_id":            cp_id,
+            "requires_human_review":  True,
+            "candidates":             nodes[cp_id].get("candidates", []),
+            "auto_selected_claim_id": (
+                nodes[cp_id].get("candidates", [{}])[0].get("claim_id")
+                if nodes[cp_id].get("candidates") else None
+            ),
+            "reason": (
+                "Multiple candidate claims within 3-point scoring threshold. "
+                "Human must confirm which figure to adopt as the institutional position."
+            ),
+        }
+        for cp_id in cp_to_claims
+        if nodes.get(cp_id, {}).get("decision_status") == "CONTESTED"
+    ]
+
     execution_mapping = {
         "mapping_version":               "0.1.0",
         "canonical_graph_hash":          canonical_graph_hash,
@@ -1020,6 +1163,8 @@ def claims_to_graph(claims: list[dict], source_name: str = "", deal: str = "") -
         "inverse_solver_configs":        _inverse_solver_configs,
         "model_controls":                _model_controls,
         "coverage_limits":               _coverage_limits,
+        "temporal_partition":            _temporal_partition,
+        "contested_positions":           _contested_positions,
     }
 
     return {

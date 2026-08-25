@@ -166,7 +166,12 @@ def test_retrieval(deal: str, reset: bool = False) -> None:
         print("  ERROR: model_graph.json not found — run xlsx_parser first")
         return
 
-    print(f"  Graph: {graph['node_count']} nodes, {graph['edge_count']} edges")
+    # model_graph.json is an adjacency list: node_id -> [dependent node ids]
+    adjacency = {k: v for k, v in graph.items()
+                 if k not in rt._GRAPH_RESERVED_KEYS and isinstance(v, list)}
+    node_count = len(adjacency)
+    edge_count = sum(len(v) for v in adjacency.values())
+    print(f"  Graph: {node_count} nodes, {edge_count} edges")
 
     # Find which model node the monitoring EBITDA claim relates to
     node_id = rt._node_for_subject(graph, MONITORING_CLAIM["subject"])
@@ -174,7 +179,9 @@ def test_retrieval(deal: str, reset: bool = False) -> None:
 
     # Show dependency chain
     if node_id:
-        deps = graph.get("dependencies", {})
+        deps = graph.get("dependencies")
+        if not isinstance(deps, dict):
+            deps = graph  # flat adjacency map shape
         downstream = deps.get(node_id, [])
         print(f"  Downstream from {node_id} ({len(downstream)} direct):")
         for d in downstream[:6]:
@@ -195,7 +202,11 @@ def test_retrieval(deal: str, reset: bool = False) -> None:
         stale_chain = rt._mark_model_node_stale(deal, graph, node_id)
         print(f"  Marked stale: {len(stale_chain)} nodes")
         for nid in stale_chain:
-            node_info = next((n for n in graph["nodes"] if n["model_node_id"] == nid), {})
+            nodes_list = graph.get("nodes")
+            node_info = (
+                next((n for n in nodes_list if n.get("model_node_id") == nid), {})
+                if isinstance(nodes_list, list) else {}
+            )
             print(f"    ⚠ {nid:<45} [{node_info.get('kind', '?')}]")
     elif not node_id:
         print("  No model node matched — staleness cascade skipped")

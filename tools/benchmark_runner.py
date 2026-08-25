@@ -474,8 +474,10 @@ def stage_claims_from_file(cic_dir: pathlib.Path, claims_json: pathlib.Path) -> 
     for item in raw:
         vc = VaultClaim(
             id=f"bm-{len(vault_claims)}",
-            epistemic=item.get("epistemic", ""),
-            subject=item.get("subject", ""),
+            # extract_v2 emits `epistemic_class`; older/vault shapes use `epistemic`.
+            # Accept both so the scorer measures extraction quality, not key naming.
+            epistemic=item.get("epistemic_class") or item.get("epistemic", ""),
+            subject=item.get("subject") or item.get("metric", ""),
             value=str(item.get("value", "")),
             locator=item.get("locator", ""),
             period=str(item.get("period", "")),

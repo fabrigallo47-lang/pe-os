@@ -1092,13 +1092,26 @@ def _model_graph(deal: str) -> dict | None:
         return None
 
 
+# Keys that live alongside the node adjacency map in model_graph.json but are
+# not themselves model nodes.
+_GRAPH_RESERVED_KEYS = {"stale_nodes", "dependencies", "nodes", "edges", "metadata"}
+
+
 def _node_for_subject(graph: dict, subject: str) -> str | None:
     """Best-effort: find the best-matching model node for a claim subject.
 
     Priority: specific EBITDA basis > generic EBITDA keyword > other keywords.
     """
     subj = subject.lower()
-    nodes = graph.get("nodes", [])
+    # model_graph.json is a flat adjacency map (node_id -> [dependent ids]).
+    # Older/richer shapes carry a "nodes" list of dicts. Normalise both to a
+    # list of {model_node_id, name} so lookup works regardless of shape.
+    raw_nodes = graph.get("nodes")
+    if isinstance(raw_nodes, list):
+        nodes = raw_nodes
+    else:
+        nodes = [{"model_node_id": nid, "name": nid}
+                 for nid in graph if nid not in _GRAPH_RESERVED_KEYS]
 
     # Tier 1: specific EBITDA basis matching
     ebitda_basis = [
@@ -1110,10 +1123,10 @@ def _node_for_subject(graph: dict, subject: str) -> str | None:
     if "ebitda" in subj or "ebita" in subj:
         for key, nid in ebitda_basis:
             if key in subj:
-                if any(n["model_node_id"] == nid for n in nodes):
+                if any(n.get("model_node_id") == nid for n in nodes):
                     return nid
         # generic EBITDA — prefer firm (our underwriting basis)
-        return "MN-FIRM-EBITDA" if any(n["model_node_id"] == "MN-FIRM-EBITDA" for n in nodes) else None
+        return "MN-FIRM-EBITDA" if any(n.get("model_node_id") == "MN-FIRM-EBITDA" for n in nodes) else None
 
     # Tier 2: direct node name Jaccard match
     from tools.benchmark_runner import _jaccard as _j
@@ -1123,7 +1136,7 @@ def _node_for_subject(graph: dict, subject: str) -> str | None:
         score = _j(subj, name)
         if score > best_score:
             best_score = score
-            best_nid = node["model_node_id"]
+            best_nid = node.get("model_node_id")
     if best_score >= 0.25:
         return best_nid
 
@@ -1154,7 +1167,13 @@ def _node_for_subject(graph: dict, subject: str) -> str | None:
 def _mark_model_node_stale(deal: str, graph: dict, node_id: str) -> list[str]:
     """Mark a model node and its downstream dependents stale in the model graph JSON.
     Returns list of node_ids marked stale."""
-    deps = graph.get("dependencies", {})
+    # model_graph.json stores the dependency map at the top level
+    # (node_id -> [dependent ids]); richer shapes nest it under "dependencies".
+    # "stale_nodes" is a marker list we write back, never a node.
+    deps = graph.get("dependencies")
+    if not isinstance(deps, dict):
+        deps = {k: v for k, v in graph.items()
+                if k not in _GRAPH_RESERVED_KEYS and isinstance(v, list)}
     # Collect transitive downstream
     downstream: list[str] = []
     frontier = [node_id]

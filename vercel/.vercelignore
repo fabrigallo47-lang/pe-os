@@ -1,0 +1,10 @@
+# Never upload local credentials or the local virtualenv.
+# .env.local holds ANTHROPIC_API_KEY and BLOB_READ_WRITE_TOKEN — those belong in
+# the Vercel project's environment variables, never in the deployment payload.
+.env
+.env.*
+.venv/
+__pycache__/
+*.pyc
+.vercel/
+.DS_Store

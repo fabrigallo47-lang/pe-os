@@ -13,3 +13,15 @@ vault/inbox/*.wav
 vault/inbox/*.m4a
 Makefile
 tools/extract_dealroom.js
+
+# ── Nothing that carries deal content or private material leaves the machine ──
+# Added after a deploy from the repo root uploaded all of these. The Vercel app
+# lives in vercel/ and needs none of them.
+vault/
+pipeline_out/
+sources/
+tools/
+agents/
+docs/
+.claude/
+*.zip

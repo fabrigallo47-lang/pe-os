@@ -153,9 +153,11 @@ def t04_scc_declared(g: dict) -> None:
     _assert("T04b SCC has Cash Flow member", has_cf, f"members={members}")
     _assert("T04c SCC has Interest member", has_int, f"members={members}")
     _assert("T04d SCC has Revolver member", has_rev, f"members={members}")
-    _assert("T04e SCC has abs_tolerance", "abs_tolerance" in scc,
+    _assert("T04e SCC has absolute_residual_tolerance",
+            "absolute_residual_tolerance" in scc or "abs_tolerance" in scc,
             f"keys={list(scc.keys())}")
-    _assert("T04f SCC has max_iterations", "max_iterations" in scc,
+    _assert("T04f SCC has maximum_iterations",
+            "maximum_iterations" in scc or "max_iterations" in scc,
             f"keys={list(scc.keys())}")
     _assert("T04g SCC has convergence_condition", "convergence_condition" in scc)
     _assert("T04h SCC has no_solution_behavior", "no_solution_behavior" in scc)
@@ -181,7 +183,8 @@ def t05_supported_price_solver(g: dict) -> None:
     _assert("T05d MOIC constraint present", "moic" in constraints_str,
             f"constraints={sp.get('constraints')}")
     _assert("T05e decision_variable declared",
-            bool(sp.get("decision_variable_id")), f"sp.decision_variable_id missing")
+            bool(sp.get("decision_variable_ids") or sp.get("decision_variable_id")),
+            "decision_variable_ids (or legacy decision_variable_id) missing")
     _assert("T05f binding_constraint_output declared",
             "binding_constraint_output" in sp)
     _assert("T05g no_solution_behavior declared",

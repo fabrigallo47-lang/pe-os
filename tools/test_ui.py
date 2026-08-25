@@ -30,6 +30,7 @@ sys.path.insert(0, str(ROOT))
 
 from tools.extract import SYSTEM_PROMPT, parse_json
 from tools.claim_graph import claims_to_graph
+from tools.graph_store import build_from_extraction, graph_path, DealGraph
 
 CHAT_SYSTEM = """\
 You are a knowledge graph co-pilot for a PE OS private equity deal analysis tool.
@@ -88,8 +89,9 @@ def _load_dotenv() -> None:
                 os.environ[k.strip()] = v
 
 _load_dotenv()
-API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-MODEL   = os.environ.get("PEOS_MODEL", "claude-sonnet-5")
+API_KEY   = os.environ.get("ANTHROPIC_API_KEY", "")
+MODEL     = os.environ.get("PEOS_MODEL", "claude-sonnet-5")
+_last_dg: DealGraph | None = None
 
 
 def _pdf_to_text(pdf_bytes: bytes) -> str:
@@ -523,6 +525,66 @@ HTML = r"""<!doctype html>
     .left { border-right: none; border-bottom: 1px solid var(--border); max-height: 45vh; }
     .doc-area textarea { min-height: 120px; }
   }
+
+  /* ── Analytics view ── */
+  .analytics-view {
+    flex: 1; overflow-y: auto; padding: 16px 20px; display: none;
+    flex-direction: column; gap: 16px;
+  }
+  .an-section { display: flex; flex-direction: column; gap: 8px; }
+  .an-label {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--muted); font-weight: 600;
+  }
+  .an-stats-row { display: flex; gap: 10px; flex-wrap: wrap; }
+  .an-stat {
+    background: var(--surface); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 8px 14px; text-align: center;
+    min-width: 80px;
+  }
+  .an-stat-num { font-family: var(--mono); font-size: 20px; font-weight: 700; color: var(--accent); }
+  .an-stat-lbl { font-size: 10px; color: var(--muted); margin-top: 2px; text-transform: uppercase; letter-spacing: .04em; }
+  .an-list { display: flex; flex-direction: column; gap: 3px; }
+  .an-row {
+    display: flex; align-items: center; gap: 8px;
+    padding: 5px 8px; border-radius: 4px;
+    background: var(--surface); border: 1px solid var(--border);
+    font-size: 11.5px;
+  }
+  .an-row:hover { border-color: var(--accent-d); }
+  .an-type-pill {
+    font-size: 9px; padding: 2px 6px; border-radius: 3px;
+    font-weight: 700; text-transform: uppercase; letter-spacing: .04em;
+    flex-shrink: 0; min-width: 52px; text-align: center;
+  }
+  .an-score { font-family: var(--mono); font-size: 11px; color: var(--muted); margin-left: auto; flex-shrink: 0; }
+  .an-lbl { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; color: var(--text); }
+  .an-stmt { font-size: 10.5px; color: var(--muted); margin-top: 1px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .an-contradiction {
+    background: rgba(248,81,73,.06); border: 1px solid rgba(248,81,73,.2);
+    border-radius: 4px; padding: 8px 10px; display: flex; flex-direction: column; gap: 3px;
+  }
+  .an-contra-line { font-size: 11px; display: flex; align-items: center; gap: 6px; }
+  .an-contra-arrow { color: #f85149; font-size: 13px; }
+  .an-contra-val { font-family: var(--mono); font-size: 12px; font-weight: 700; }
+  .an-decomp-btn {
+    align-self: flex-start; background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); color: var(--muted); font-size: 11px;
+    padding: 5px 12px; cursor: pointer; transition: all .12s;
+  }
+  .an-decomp-btn:hover { border-color: var(--accent-d); color: var(--text); }
+  .an-decomp-btn.active { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.08); }
+  .an-empty { color: var(--muted); font-size: 12px; padding: 12px 0; text-align: center; }
+  .an-type-claim     { background: rgba(88,166,255,.12); color: #58a6ff; }
+  .an-type-entity    { background: rgba(88,166,255,.12); color: #58a6ff; }
+  .an-type-metric    { background: rgba(227,179,65,.12); color: #e3b341; }
+  .an-type-period    { background: rgba(188,140,255,.12); color: #bc8cff; }
+  .an-type-source    { background: rgba(110,118,129,.12); color: #8b949e; }
+  .an-type-area      { background: rgba(63,185,80,.12); color: #3fb950; }
+  .an-type-question  { background: rgba(188,140,255,.12); color: #bc8cff; }
+  .an-type-perimeter { background: rgba(121,192,255,.12); color: #79c0ff; }
+  .an-type-author    { background: rgba(110,118,129,.10); color: #6e7681; }
+
   /* ── Schema view ── */
   .schema-view {
     flex: 1; overflow-y: auto; padding: 16px 20px; display: none;
@@ -797,11 +859,12 @@ The extractor will:
         <span class="right-head-label">Claims</span>
         <span class="count-badge" id="count-badge">0</span>
         <div class="tab-row">
-          <button class="tab active" id="tab-cards"  onclick="switchTab('cards')">Cards</button>
-          <button class="tab" id="tab-raw"    onclick="switchTab('raw')">JSON</button>
-          <button class="tab" id="tab-graph"  onclick="switchTab('graph')">Graph</button>
-          <button class="tab" id="tab-schema" onclick="switchTab('schema')">Schema</button>
-          <button class="tab" id="tab-build"  onclick="switchTab('build')">Build</button>
+          <button class="tab active" id="tab-cards"     onclick="switchTab('cards')">Cards</button>
+          <button class="tab" id="tab-raw"         onclick="switchTab('raw')">JSON</button>
+          <button class="tab" id="tab-graph"       onclick="switchTab('graph')">Graph</button>
+          <button class="tab" id="tab-analytics"   onclick="switchTab('analytics')">Analytics</button>
+          <button class="tab" id="tab-schema"      onclick="switchTab('schema')">Schema</button>
+          <button class="tab" id="tab-build"       onclick="switchTab('build')">Build</button>
         </div>
       </div>
 
@@ -826,6 +889,7 @@ The extractor will:
           <div class="graph-overlay">
             <button class="graph-btn" onclick="fitView()" title="Fit all nodes in view">⊡ Fit</button>
             <button class="graph-btn" onclick="resetView()" title="Reset pan/zoom">↺ Reset</button>
+            <button class="graph-btn" id="btn-decomposed" onclick="toggleDecomposed()" title="Show decomposed property graph (metric/period/source as nodes)">⬡ Decomposed</button>
           </div>
           <div class="graph-legend">
             <div class="leg-section">
@@ -1103,6 +1167,34 @@ The extractor will:
         </div>
       </div>
 
+      <!-- Analytics view -->
+      <div class="analytics-view" id="analytics-view">
+        <div class="an-section" id="an-stats-section">
+          <div class="an-label">Graph stats</div>
+          <div class="an-stats-row" id="an-stats-row">
+            <div class="an-empty">Extract a document to see graph analytics.</div>
+          </div>
+        </div>
+        <div class="an-section">
+          <div class="an-label">PageRank — most central nodes</div>
+          <div class="an-list" id="an-pr-list"><div class="an-empty">—</div></div>
+        </div>
+        <div class="an-section">
+          <div class="an-label">Betweenness — bridge nodes</div>
+          <div class="an-list" id="an-btwn-list"><div class="an-empty">—</div></div>
+        </div>
+        <div class="an-section">
+          <div class="an-label">Contradictions</div>
+          <div id="an-contra-list"><div class="an-empty">—</div></div>
+        </div>
+        <div class="an-section">
+          <div class="an-label">Decomposed graph view</div>
+          <button class="an-decomp-btn" id="an-decomp-btn" onclick="switchTab('graph'); requestAnimationFrame(toggleDecomposed)">
+            Open in Graph tab &rarr;
+          </button>
+        </div>
+      </div>
+
       <div class="statusbar">
         <div class="status-item">claims <span class="status-val" id="st-count">0</span></div>
         <span class="status-sep">·</span>
@@ -1119,6 +1211,8 @@ The extractor will:
 let lastClaims = [];
 let lastGraph  = null;
 let currentTab = 'cards';
+let decomposedMode = false;
+let lastDecomposedGraph = null;
 
 // ── Graph sim state ──────────────────────────────────────────────────────────
 let simNodes = [], simEdges = [];
@@ -1128,15 +1222,20 @@ let isPanning = false, lastMouse = null;
 
 function switchTab(tab) {
   currentTab = tab;
-  ['cards','raw','graph','schema','build'].forEach(t => {
+  ['cards','raw','graph','analytics','schema','build'].forEach(t => {
     document.getElementById('tab-' + t).classList.toggle('active', t === tab);
   });
-  document.getElementById('results-wrap').style.display  = tab === 'cards'  ? 'flex' : 'none';
-  document.getElementById('raw-view').style.display      = tab === 'raw'    ? 'flex' : 'none';
-  document.getElementById('graph-view').style.display    = tab === 'graph'  ? 'flex' : 'none';
-  document.getElementById('schema-view').style.display   = tab === 'schema' ? 'flex' : 'none';
-  document.getElementById('build-view').style.display    = tab === 'build'  ? 'flex' : 'none';
-  if (tab === 'graph' && lastGraph) requestAnimationFrame(() => initGraph(lastGraph));
+  document.getElementById('results-wrap').style.display    = tab === 'cards'     ? 'flex' : 'none';
+  document.getElementById('raw-view').style.display        = tab === 'raw'       ? 'flex' : 'none';
+  document.getElementById('graph-view').style.display      = tab === 'graph'     ? 'flex' : 'none';
+  document.getElementById('analytics-view').style.display  = tab === 'analytics' ? 'flex' : 'none';
+  document.getElementById('schema-view').style.display     = tab === 'schema'    ? 'flex' : 'none';
+  document.getElementById('build-view').style.display      = tab === 'build'     ? 'flex' : 'none';
+  if (tab === 'graph' && lastGraph) requestAnimationFrame(() => {
+    if (decomposedMode && lastDecomposedGraph) initGraph(lastDecomposedGraph);
+    else initGraph(lastGraph);
+  });
+  if (tab === 'analytics') requestAnimationFrame(() => loadAnalytics());
   if (tab === 'build') requestAnimationFrame(() => buildInit());
 }
 
@@ -1237,7 +1336,11 @@ function clearAll() {
   const ctx = cv.getContext('2d');
   ctx.clearRect(0, 0, cv.width, cv.height);
   if (animId) { cancelAnimationFrame(animId); animId = null; }
-  lastClaims = []; lastGraph = null; simNodes = []; simEdges = [];
+  lastClaims = []; lastGraph = null; lastDecomposedGraph = null;
+  decomposedMode = false;
+  const dbtn = document.getElementById('btn-decomposed');
+  if (dbtn) { dbtn.classList.remove('active'); dbtn.textContent = '⬡ Decomposed'; }
+  simNodes = []; simEdges = [];
 }
 
 async function runExtract() {
@@ -1341,9 +1444,17 @@ const EP_COLOR = {
 
 // Semantic edge colors
 const EDGE_META = {
+  // Structural (claim → dimension, faint)
   HAS_CLAIM:   { color: '#1e2d3a', width: 1,   alpha: .25, dash: []       },
+  ABOUT:       { color: '#30363d', width: 1,   alpha: .2,  dash: []       },
+  MEASURES:    { color: '#e3b341', width: 1,   alpha: .28, dash: [3,2]    },
+  IN_PERIOD:   { color: '#bc8cff', width: 1,   alpha: .22, dash: [3,2]    },
+  SCOPED_TO:   { color: '#79c0ff', width: 1,   alpha: .18, dash: [2,3]    },
+  FROM_SOURCE: { color: '#6e7681', width: 1,   alpha: .22, dash: [3,2]    },
+  BY_AUTHOR:   { color: '#4d5561', width: 1,   alpha: .16, dash: [2,3]    },
   IN_AREA:     { color: null,      width: 0,   alpha: 0,   dash: []       }, // rendered as bg cluster
   BEARS_ON:    { color: '#6e7681', width: 1,   alpha: .35, dash: [4,3]    },
+  // Semantic (claim → claim, vivid)
   CONTRADICTS: { color: '#f85149', width: 2,   alpha: .85, dash: []       },
   CHALLENGES:  { color: '#e3b341', width: 1.5, alpha: .8,  dash: []       },
   TRACKS:      { color: '#bc8cff', width: 1.5, alpha: .65, dash: [6,3]    },
@@ -1357,11 +1468,125 @@ const EDGE_META = {
 let _graphDraw = null;  // exposed for fitView/resetView
 
 function nodeColor(n) {
-  if (n.type === 'subject')  return '#58a6ff';
-  if (n.type === 'question') return '#bc8cff';
-  if (n.type === 'topic')    return '#6e7681';
+  if (n.type === 'subject'  || n.type === 'entity')    return '#58a6ff';
+  if (n.type === 'question')                           return '#bc8cff';
+  if (n.type === 'topic')                              return '#6e7681';
+  if (n.type === 'metric')                             return '#e3b341';
+  if (n.type === 'period')                             return '#bc8cff';
+  if (n.type === 'source')                             return '#8b949e';
+  if (n.type === 'author')                             return '#6e7681';
+  if (n.type === 'area')                               return '#3fb950';
+  if (n.type === 'perimeter')                          return '#79c0ff';
   return EP_COLOR[n.epistemic] || '#6e7681';
 }
+async function toggleDecomposed() {
+  const btn = document.getElementById('btn-decomposed');
+  if (!lastGraph) return;
+  if (decomposedMode) {
+    decomposedMode = false;
+    lastDecomposedGraph = null;
+    btn.classList.remove('active');
+    btn.textContent = '⬡ Decomposed';
+    if (currentTab === 'graph') requestAnimationFrame(() => initGraph(lastGraph));
+    return;
+  }
+  btn.textContent = '⬡ Loading…';
+  try {
+    const res = await fetch('/analytics');
+    const data = await res.json();
+    if (!data.ready || !data.graph || !data.graph.nodes.length) {
+      btn.textContent = '⬡ Decomposed';
+      return;
+    }
+    lastDecomposedGraph = data.graph;
+    decomposedMode = true;
+    btn.classList.add('active');
+    btn.textContent = '⬡ Claim view';
+    if (currentTab === 'graph') requestAnimationFrame(() => initGraph(lastDecomposedGraph));
+  } catch(e) {
+    btn.textContent = '⬡ Decomposed';
+    console.error('decomposed fetch error', e);
+  }
+}
+
+function _anTypePill(type, text) {
+  return `<span class="an-type-pill an-type-${type}">${text || type}</span>`;
+}
+
+async function loadAnalytics() {
+  const prEl    = document.getElementById('an-pr-list');
+  const btwnEl  = document.getElementById('an-btwn-list');
+  const contraEl= document.getElementById('an-contra-list');
+  const statsEl = document.getElementById('an-stats-row');
+  try {
+    const res  = await fetch('/analytics');
+    const data = await res.json();
+    if (!data.ready) {
+      prEl.innerHTML    = '<div class="an-empty">Extract a document first.</div>';
+      btwnEl.innerHTML  = '<div class="an-empty">—</div>';
+      contraEl.innerHTML= '<div class="an-empty">—</div>';
+      statsEl.innerHTML = '<div class="an-empty">No graph yet. Run an extraction to build the property graph.</div>';
+      return;
+    }
+    // Stats chips
+    const s = data.stats;
+    const nt = s.node_types || {};
+    const et = s.edge_types || {};
+    const nodeTotal = s.nodes || 0;
+    const edgeTotal = s.edges || 0;
+    statsEl.innerHTML = `
+      <div class="an-stat"><div class="an-stat-num">${nodeTotal}</div><div class="an-stat-lbl">Nodes</div></div>
+      <div class="an-stat"><div class="an-stat-num">${edgeTotal}</div><div class="an-stat-lbl">Edges</div></div>
+      ${Object.entries(nt).map(([t,c])=>`<div class="an-stat"><div class="an-stat-num" style="font-size:16px">${c}</div><div class="an-stat-lbl">${t}</div></div>`).join('')}
+    `;
+    // PageRank list
+    function prRow(n) {
+      const lbl = n.label || n.statement || n.id;
+      const stmt = n.statement ? `<div class="an-stmt">${esc(n.statement.slice(0,80))}…</div>` : '';
+      return `<div class="an-row">
+        ${_anTypePill(n.type)}
+        <div style="flex:1;overflow:hidden">
+          <div class="an-lbl">${esc(lbl.slice(0,60))}</div>
+          ${stmt}
+        </div>
+        <span class="an-score">${n.score.toFixed(4)}</span>
+      </div>`;
+    }
+    prEl.innerHTML = data.top_pagerank.length
+      ? data.top_pagerank.map(prRow).join('')
+      : '<div class="an-empty">—</div>';
+    btwnEl.innerHTML = data.top_betweenness.length
+      ? data.top_betweenness.filter(n=>n.score>0).map(prRow).join('') || '<div class="an-empty">All scores 0 (star graph)</div>'
+      : '<div class="an-empty">—</div>';
+    // Contradictions
+    if (data.contradictions.length) {
+      contraEl.innerHTML = data.contradictions.map(c => {
+        const sv = c.source.value ? `${c.source.value}${c.source.unit?' '+c.source.unit:''}` : '';
+        const tv = c.target.value ? `${c.target.value}${c.target.unit?' '+c.target.unit:''}` : '';
+        const sm = c.source.statement || c.source.id;
+        const tm = c.target.statement || c.target.id;
+        return `<div class="an-contradiction">
+          <div class="an-contra-line">
+            <span class="ep-badge ep-${c.source.epistemic||'unknown'}">${c.source.epistemic||'?'}</span>
+            <span class="an-lbl">${esc(sm.slice(0,60))}</span>
+            ${sv ? `<span class="an-contra-val">${esc(sv)}</span>` : ''}
+          </div>
+          <div class="an-contra-line">
+            <span class="an-contra-arrow">⚡</span>
+            <span class="ep-badge ep-${c.target.epistemic||'unknown'}">${c.target.epistemic||'?'}</span>
+            <span class="an-lbl">${esc(tm.slice(0,60))}</span>
+            ${tv ? `<span class="an-contra-val">${esc(tv)}</span>` : ''}
+          </div>
+        </div>`;
+      }).join('');
+    } else {
+      contraEl.innerHTML = '<div class="an-empty">No contradictions detected.</div>';
+    }
+  } catch(e) {
+    prEl.innerHTML = `<div class="an-empty" style="color:#f85149">Error: ${esc(String(e))}</div>`;
+  }
+}
+
 function fitView() {
   if (!simNodes.length || !_graphDraw) return;
   const cv = document.getElementById('graph-canvas');
@@ -1399,7 +1624,7 @@ function initGraph(graph) {
   const CLAIM_W = 90, CLAIM_H = 40;
   const CLAIM_R = Math.ceil(Math.sqrt((CLAIM_W/2)**2 + (CLAIM_H/2)**2));
 
-  const subjects = graph.nodes.filter(n => n.type === 'subject');
+  const subjects = graph.nodes.filter(n => n.type === 'subject' || n.type === 'entity');
   const subjIdx  = Object.fromEntries(subjects.map((n,i) => [n.id, i]));
   const SR = Math.min(cv.width, cv.height) * 0.3;
 
@@ -1410,7 +1635,7 @@ function initGraph(graph) {
       nodeById[n.id] = sn; return sn;
     }
     let x, y, r;
-    if (n.type === 'subject') {
+    if (n.type === 'subject' || n.type === 'entity') {
       r = 18;
       const angle = (subjIdx[n.id] / Math.max(subjects.length, 1)) * Math.PI * 2;
       x = cv.width/2  + Math.cos(angle) * SR;
@@ -1419,9 +1644,26 @@ function initGraph(graph) {
       r = 8;
       x = cv.width/2  + (Math.random()-.5)*cv.width*.5;
       y = cv.height/2 + (Math.random()-.5)*cv.height*.5;
+    } else if (n.type === 'metric') {
+      r = 14;
+      x = cv.width/2  + (Math.random()-.5)*cv.width*.5;
+      y = cv.height/2 + (Math.random()-.5)*cv.height*.5;
+    } else if (n.type === 'period' || n.type === 'perimeter') {
+      r = 8;
+      x = cv.width/2  + (Math.random()-.5)*cv.width*.6;
+      y = cv.height/2 + (Math.random()-.5)*cv.height*.6;
+    } else if (n.type === 'source' || n.type === 'author') {
+      r = 10;
+      x = cv.width/2  + (Math.random()-.5)*cv.width*.65;
+      y = cv.height/2 + (Math.random()-.5)*cv.height*.65;
+    } else if (n.type === 'area') {
+      r = 16;
+      x = cv.width/2  + (Math.random()-.5)*cv.width*.4;
+      y = cv.height/2 + (Math.random()-.5)*cv.height*.4;
     } else {
       r = CLAIM_R;
-      const parentEdge = graph.edges.find(e => e.rel === 'HAS_CLAIM' && e.target === n.id);
+      const parentEdge = graph.edges.find(e =>
+        (e.rel === 'HAS_CLAIM' || e.rel === 'ABOUT') && e.target === n.id);
       if (parentEdge && subjIdx[parentEdge.source] !== undefined) {
         const angle = (subjIdx[parentEdge.source] / Math.max(subjects.length, 1)) * Math.PI * 2;
         const dist  = SR * 1.1 + Math.random()*SR*0.6;
@@ -1438,7 +1680,7 @@ function initGraph(graph) {
 
   // Exclude IN_AREA from simulation edges (topic cluster drawn as background)
   simEdges = graph.edges
-    .filter(e => e.rel !== 'IN_AREA')
+    .filter(e => e.rel !== 'IN_AREA' && e.rel !== 'IN_AREA_E')
     .map(e => ({...e, source: nodeById[e.source], target: nodeById[e.target]}))
     .filter(e => e.source && e.target && !e.source.hidden && !e.target.hidden);
 
@@ -1627,6 +1869,65 @@ function initGraph(graph) {
     ctx.textAlign = 'center';
   }
 
+  function drawDiamondNode(ctx, n, col, sel) {
+    const r = n.r;
+    ctx.beginPath();
+    ctx.moveTo(n.x,     n.y - r);
+    ctx.lineTo(n.x + r, n.y);
+    ctx.lineTo(n.x,     n.y + r);
+    ctx.lineTo(n.x - r, n.y);
+    ctx.closePath();
+    ctx.fillStyle = col + '22';
+    ctx.fill();
+    if (sel) { ctx.shadowColor = col; ctx.shadowBlur = 12; }
+    ctx.strokeStyle = sel ? col : col + 'cc';
+    ctx.lineWidth = sel ? 2 : 1.5;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.font = '8px ui-monospace,monospace';
+    ctx.fillStyle = col;
+    ctx.textAlign = 'center';
+    ctx.fillText((n.label || '').slice(0, 14), n.x, n.y + r + 11);
+  }
+
+  function drawPillNode(ctx, n, col, sel) {
+    const lbl = (n.label || '').slice(0, 16);
+    ctx.font = '8px ui-monospace,monospace';
+    const tw = ctx.measureText(lbl).width;
+    const pw = Math.max(32, tw + 14), ph = 15, hr = ph/2;
+    ctx.beginPath();
+    ctx.roundRect(n.x - pw/2, n.y - hr, pw, ph, hr);
+    ctx.fillStyle = col + '1a';
+    ctx.fill();
+    if (sel) { ctx.shadowColor = col; ctx.shadowBlur = 10; }
+    ctx.strokeStyle = sel ? col : col + 'aa';
+    ctx.lineWidth = sel ? 1.5 : 1;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.fillStyle = col;
+    ctx.textAlign = 'center';
+    ctx.fillText(lbl, n.x, n.y + 4);
+    // update hitbox radius for pills
+    n.r = Math.max(pw/2, hr);
+  }
+
+  function drawSquareNode(ctx, n, col, sel) {
+    const s = n.r * 1.7;
+    ctx.beginPath();
+    ctx.roundRect(n.x - s/2, n.y - s/2, s, s, 3);
+    ctx.fillStyle = col + '18';
+    ctx.fill();
+    if (sel) { ctx.shadowColor = col; ctx.shadowBlur = 10; }
+    ctx.strokeStyle = sel ? col : col + 'aa';
+    ctx.lineWidth = sel ? 1.5 : 1;
+    ctx.stroke();
+    ctx.shadowBlur = 0;
+    ctx.font = '8px ui-monospace,monospace';
+    ctx.fillStyle = col;
+    ctx.textAlign = 'center';
+    ctx.fillText((n.label || '').slice(0, 14), n.x, n.y + n.r + 11);
+  }
+
   function draw() {
     const ctx = cv.getContext('2d');
     ctx.clearRect(0, 0, cv.width, cv.height);
@@ -1661,18 +1962,24 @@ function initGraph(graph) {
       const sel = n === selectedNode;
       if (n.type === 'claim') {
         drawClaimCard(ctx, n, col, sel);
+      } else if (n.type === 'metric') {
+        drawDiamondNode(ctx, n, col, sel);
+      } else if (n.type === 'period' || n.type === 'perimeter') {
+        drawPillNode(ctx, n, col, sel);
+      } else if (n.type === 'source' || n.type === 'author') {
+        drawSquareNode(ctx, n, col, sel);
       } else {
         ctx.beginPath();
         ctx.arc(n.x, n.y, n.r, 0, Math.PI*2);
-        ctx.fillStyle = col + (n.type === 'subject' ? '30' : '20');
+        ctx.fillStyle = col + (n.type === 'subject' || n.type === 'entity' ? '30' : '20');
         ctx.fill();
         if (sel) { ctx.shadowColor = col; ctx.shadowBlur = 18; }
         ctx.strokeStyle = col;
-        ctx.lineWidth = sel ? 2.5 : n.type === 'subject' ? 2 : 1.5;
+        ctx.lineWidth = sel ? 2.5 : (n.type === 'subject' || n.type === 'entity') ? 2 : 1.5;
         ctx.stroke();
         ctx.shadowBlur = 0;
-        if (n.type === 'subject') {
-          const words = n.label.split(' ');
+        if (n.type === 'subject' || n.type === 'entity') {
+          const words = (n.label || n.id.split(':')[1] || '').split(' ');
           let line = '', lines = [];
           words.forEach(w => {
             const t = line ? line+' '+w : w;
@@ -1684,6 +1991,11 @@ function initGraph(graph) {
           ctx.font = 'bold 11px -apple-system,system-ui,sans-serif';
           ctx.fillStyle = '#c9d1d9';
           lines.forEach((l,i) => ctx.fillText(l, n.x, n.y+n.r+13+i*13));
+        } else if (n.type === 'area') {
+          ctx.textAlign = 'center';
+          ctx.font = 'bold 9px -apple-system,system-ui,sans-serif';
+          ctx.fillStyle = col + 'cc';
+          ctx.fillText((n.label || '').slice(0, 12), n.x, n.y + 3);
         }
       }
     });
@@ -1726,6 +2038,9 @@ function initGraph(graph) {
         const H = n.value ? CLAIM_H : CLAIM_H+10;
         if (wx >= n.x-W/2 && wx <= n.x+W/2 &&
             wy >= n.y-H/2 && wy <= n.y+H/2) return n;
+      } else if (n.type === 'source' || n.type === 'author') {
+        const s = n.r * 1.7 / 2;
+        if (wx >= n.x-s && wx <= n.x+s && wy >= n.y-s && wy <= n.y+s) return n;
       } else {
         if ((wx-n.x)**2 + (wy-n.y)**2 < (n.r+4)**2) return n;
       }
@@ -2592,6 +2907,34 @@ class Handler(BaseHTTPRequestHandler):
                     .replace("MODEL_PLACEHOLDER", MODEL)
                     .replace("KEY_PLACEHOLDER", key_placeholder))
             self._send(200, "text/html; charset=utf-8", page.encode())
+        elif self.path == "/analytics":
+            if _last_dg is None:
+                resp = json.dumps({"ready": False, "stats": {},
+                                   "top_pagerank": [], "top_betweenness": [],
+                                   "contradictions": [], "graph": {"nodes": [], "edges": []}})
+            else:
+                try:
+                    pr   = _last_dg.pagerank()
+                    btwn = _last_dg.betweenness()
+                    top_pr = sorted(
+                        [{"id": nid, "score": round(s, 5), **dict(_last_dg.G.nodes[nid])}
+                         for nid, s in pr.items()],
+                        key=lambda x: -x["score"])[:12]
+                    top_btwn = sorted(
+                        [{"id": nid, "score": round(s, 5), **dict(_last_dg.G.nodes[nid])}
+                         for nid, s in btwn.items()],
+                        key=lambda x: -x["score"])[:8]
+                    resp = json.dumps({
+                        "ready": True,
+                        "stats": _last_dg.stats(),
+                        "top_pagerank":    top_pr,
+                        "top_betweenness": top_btwn,
+                        "contradictions":  _last_dg.contradictions(),
+                        "graph":           _last_dg.to_vis_json(),
+                    })
+                except Exception:
+                    resp = json.dumps({"ready": False, "error": traceback.format_exc()[-400:]})
+            self._send(200, "application/json; charset=utf-8", resp.encode())
         else:
             self._send(404, "text/plain", b"not found")
 
@@ -2702,12 +3045,22 @@ class Handler(BaseHTTPRequestHandler):
         user_msg = f"DEAL CONTEXT:\n{deal_context}\n\nARTIFACT:\n{text[:80_000]}"
 
         try:
+            global _last_dg
             t0 = time.time()
             raw = _call_api(SYSTEM_PROMPT, user_msg, key)
             claims = parse_json(raw)
             graph  = claims_to_graph(claims)
             elapsed = round(time.time() - t0, 2)
-            print(f"  → {len(claims)} claims  {graph['stats']}  ({elapsed}s)  deal={deal}")
+            # Build and persist decomposed property graph
+            try:
+                _last_dg = build_from_extraction(claims, graph, deal)
+                _last_dg.save(graph_path(deal))
+                gs = _last_dg.stats()
+                print(f"  → {len(claims)} claims  {graph['stats']}  graph={gs['nodes']}n/{gs['edges']}e  ({elapsed}s)  deal={deal}")
+            except Exception as gs_err:
+                _last_dg = None
+                print(f"  [graph_store] {gs_err}", file=sys.stderr)
+                print(f"  → {len(claims)} claims  {graph['stats']}  ({elapsed}s)  deal={deal}")
             resp = json.dumps({"claims": claims, "graph": graph, "elapsed": elapsed})
         except Exception:
             err = traceback.format_exc()

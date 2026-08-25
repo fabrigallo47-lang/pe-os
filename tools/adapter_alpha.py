@@ -143,6 +143,8 @@ def main() -> None:
     ap.add_argument("--status",    default="ALPHA", help="Bundle status tag")
     ap.add_argument("--deal",      default="keystone",
                     help="Deal slug — selects vault/deals/<slug>/deal_profile.json")
+    ap.add_argument("--event",     default=None,
+                    help="Correction event JSON (default: event_ebitda_correction.json)")
     args = ap.parse_args()
 
     e3_path   = Path(args.e3)
@@ -209,6 +211,18 @@ def main() -> None:
     em_size   = _write(out_dir / "execution_mapping.json",   bundle["execution_mapping"])
     ar_size   = _write(out_dir / "adapter_report.json",      bundle["adapter_report"])
     mf_size   = _write(out_dir / "admission_manifest.json",  bundle["manifest"])
+
+    # Step 3b — assemble the remaining 12 bundle files from THIS run.
+    # Previously only the 4 above were written and the rest were carried over by
+    # hand, so graph.json described a different extraction than claims.json.
+    print("[adapter_alpha] Step 3b: assembling full V7 bundle ...")
+    from tools.bundle_assemble import assemble
+    bundle["_deal"] = args.deal
+    event_src = Path(args.event) if getattr(args, "event", None) else ROOT / "event_ebitda_correction.json"
+    try:
+        assemble(out_dir, bundle, event_src, kit=None)
+    except Exception as exc:
+        sys.exit(f"[adapter_alpha] Bundle assembly error: {exc}")
 
     cg = bundle["current_graph"]
     mf = bundle["manifest"]

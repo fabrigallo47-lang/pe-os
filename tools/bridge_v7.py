@@ -1161,8 +1161,17 @@ def compile_v7_bundle(
     # 4. Enrich claims with stable IDs + temporal class
     all_claims = _enrich_claims(extraction)
 
-    # 5. Admit: underwriting only
-    admitted = [c for c in all_claims if c["temporal_class"] == "underwriting"]
+    # 5. Admit: underwriting only, and never the answer key.
+    #    ground_truth_flag / validation_only mark benchmark claims. They exist to
+    #    score the extractor and must not enter the Live Case — admitting them
+    #    leaks the answer key into the graph the firm reasons over, and PANTA's
+    #    validator reports ANSWER_KEY_OR_VALIDATION_LEAKAGE.
+    admitted = [
+        c for c in all_claims
+        if c["temporal_class"] == "underwriting"
+        and c.get("ground_truth_flag") is not True
+        and c.get("validation_only") is not True
+    ]
 
     # 6. Case Positions
     case_positions = _build_case_positions(admitted)

@@ -1753,21 +1753,30 @@ def _build_rule_switches() -> list[dict]:
                     "branch_id": "RS-FG-STANDARD",
                     "condition": "single_parent_exposure <= 0.15",
                     "output_expression": "financing_terms = standard_grid",
+                    "priority": 1,
+                    "exclusive": True,
+                },
+                {
+                    "branch_id": "RS-FG-STEP-DOWN-PLACEHOLDER",
+                    "condition": "single_parent_exposure > 0.15",
+                    "output_expression": "COVERAGE_LIMIT: step-down terms not policy-specified; block MN-DEBT-CAPACITY until policy_owner confirms",
+                    "priority": 2,
+                    "exclusive": True,
+                    "fixture_only": True,
+                    "coverage_limit_id": "KS-V7-CL-001",
                 },
             ],
             "dependent_ids": ["MN-DEBT-CAPACITY"],
-            "source_ref": "COVERAGE_LIMIT",
-            "workbook_ref": "COVERAGE_LIMIT",
-            "no_branch_behavior": (
-                "EMIT_COVERAGE_LIMIT: financing grid step-down rule (>15% "
-                "single-parent exposure) not available; "
-                "policy_owner must confirm before this node can be resolved"
-            ),
+            "source_ref": f"{WB}:Financing_Grid (step-down rule)",
+            "no_branch_behavior": "EMIT_COVERAGE_LIMIT",
             "multi_branch_behavior": "RAISE_AMBIGUOUS",
             "coverage_limits": [
-                "COVERAGE_LIMIT: step-down rule beyond 15% single-parent "
-                "exposure not in current policy file; "
-                "RS-FG-STANDARD is the only declared branch"
+                {
+                    "limit_id": "KS-V7-CL-001",
+                    "reason_code": "MISSING_POLICY_SPECIFICATION",
+                    "scope_ids": ["MN-DEBT-CAPACITY", "RS-FG-STEP-DOWN-PLACEHOLDER"],
+                    "effect": "Step-down branch is a fixture placeholder. Policy owner must confirm the exact step-down rule before RS-FG-STEP-DOWN-PLACEHOLDER can be evaluated.",
+                }
             ],
         },
     ]
@@ -1819,26 +1828,28 @@ def _build_scc_configs() -> list[dict]:
                     "output": "MN-QUARTERLY-REVOLVER",
                 },
             ],
+            "component_type": "NUMERICAL_SCC",
+            "method": "FIXED_POINT_ITERATION",
             "initialization": {
                 "MN-QUARTERLY-REVOLVER": "prior_period_revolver_balance",
                 "MN-QUARTERLY-INTEREST": 0.0,
             },
-            "bounds": {
-                "MN-QUARTERLY-REVOLVER": [0.0, 7.5],
-                "MN-QUARTERLY-INTEREST": [-50.0, 0.0],
+            "admissible_bounds": {
+                "MN-QUARTERLY-REVOLVER": {"lower": 0.0, "upper": 7.5, "unit": "$mm"},
+                "MN-QUARTERLY-INTEREST": {"lower": -50.0, "upper": 0.0, "unit": "$mm"},
             },
-            "abs_tolerance": 1e-4,
-            "rel_tolerance": 1e-8,
-            "max_iterations": 150,
+            "absolute_residual_tolerance": "1e-4",
+            "relative_residual_tolerance": "1e-8",
+            "maximum_iterations": 150,
             "convergence_condition": (
-                "max(|revolver[k+1] - revolver[k]|) < abs_tolerance"
+                "max(|revolver[k+1] - revolver[k]|) < absolute_residual_tolerance"
             ),
             "uniqueness_condition": (
                 "Interest is monotonically increasing in revolver balance "
                 "(higher revolver → more interest → lower CFO → more revolver need). "
                 "Fixed point exists and is unique given bounded revolver commitment."
             ),
-            "invariant_control": "MN-CHECK-SB-BASE-BS",
+            "invariant_control_ids": ["MN-CHECK-SB-BASE-BS"],
             "no_solution_behavior": (
                 "EMIT_PARTIAL_SETTLEMENT: report convergence_delta and "
                 "last-iteration values; flag node as UNRESOLVED"
@@ -1860,43 +1871,49 @@ def _build_inverse_solvers() -> list[dict]:
                 "achieves at least 14% gross IRR AND at least 2.0× gross MOIC "
                 "in the Standalone Base scenario. Reports binding constraint."
             ),
-            "decision_variable_id": "MN-EV",
-            "decision_variable_unit": "MM_USD",
-            "objective": "maximize MN-EV",
+            "decision_variable_ids": ["MN-EV"],
+            "objective": {
+                "sense": "MAXIMIZE",
+                "variable_id": "MN-EV",
+                "unit": "MM_USD",
+            },
             "constraints": [
                 {
                     "constraint_id": "IRR_FLOOR",
-                    "expression": "MN-BASE-IRR >= 0.14",
-                    "unit": "decimal",
-                    "source_ref": (
-                        "fund_lens_keystone: minimum gross IRR = 14%; "
-                        "confirmed in investment committee mandate"
-                    ),
+                    "expression_or_function_ref": "MN-BASE-IRR >= 0.14",
+                    "unit": "decimal_rate",
+                    "display_equivalent": "14% gross IRR floor",
+                    "source_ref": "fund_lens_keystone: minimum gross IRR 14%; IC mandate",
                 },
                 {
                     "constraint_id": "MOIC_FLOOR",
-                    "expression": "MN-BASE-MOIC >= 2.0",
-                    "unit": "RATIO",
-                    "source_ref": (
-                        "fund_lens_keystone: minimum gross MOIC = 2.0×; "
-                        "confirmed in investment committee mandate"
-                    ),
+                    "expression_or_function_ref": "MN-BASE-MOIC >= 2.0",
+                    "unit": "x",
+                    "display_equivalent": "2.0× gross MOIC floor",
+                    "source_ref": "fund_lens_keystone: minimum gross MOIC 2.0×; IC mandate",
                 },
                 {
                     "constraint_id": "FINANCING_FEASIBLE",
-                    "expression": "MN-DEBT-CAPACITY >= MN-DEBT",
+                    "expression_or_function_ref": "MN-DEBT-CAPACITY >= MN-DEBT",
                     "unit": "MM_USD",
                     "source_ref": "credit agreement leverage covenant at close",
                 },
             ],
-            "bounds": {
-                "lower": 0.0,
-                "upper": 300.0,
-                "unit": "MM_USD",
-                "note": "Upper bound set at 3× current underwritten EV (108 × ~2.8)",
+            "initialization": {"MN-EV": 108.0},
+            "admissible_bounds": {
+                "lower": {"value": 0.0, "unit": "MM_USD"},
+                "upper": {"value": 300.0, "unit": "MM_USD",
+                          "note": "3× current underwritten EV 108"},
             },
-            "tolerance": 0.01,
-            "method": "bisection over run_lbo(ev_override)",
+            "absolute_residual_tolerance": "0.01",
+            "relative_residual_tolerance": "1e-6",
+            "maximum_iterations": 50,
+            "method": "bisection over run_lbo(ev_override=MN-EV)",
+            "uniqueness_condition": (
+                "IRR and MOIC are strictly decreasing in EV; "
+                "feasible set is a closed interval [0, max_ev]; solution unique at max_ev"
+            ),
+            "invariant_control_ids": ["CTRL-SOURCES-USES-BALANCE"],
             "financing_branch_ids": ["RS-REVOLVER-DRAW", "RS-ECF-SWEEP"],
             "binding_constraint_output": True,
             "no_solution_behavior": (
@@ -1905,7 +1922,6 @@ def _build_inverse_solvers() -> list[dict]:
             ),
             "multiple_solution_behavior": (
                 "NOT_POSSIBLE: both IRR and MOIC are strictly decreasing in EV; "
-                "the feasible set is a closed interval [0, max_ev]; "
                 "solution is unique at max_ev"
             ),
             "source_ref": "keystone_model.py:run_lbo() + _compute_returns()",

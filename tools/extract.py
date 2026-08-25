@@ -21,10 +21,17 @@ ROOT = pathlib.Path(__file__).parent.parent
 sys.path.insert(0, str(ROOT))
 sys.path.insert(0, str(ROOT / "agents"))
 
-import tools.indexer as indexer
-import runtime as rt
+# Vault-specific modules — imported lazily so this file works standalone
+# (pipeline.py only needs SYSTEM_PROMPT, llm_extract, parse_json)
+try:
+    import tools.indexer as indexer
+    import runtime as rt
+    VAULT = indexer.VAULT
+except ImportError:
+    indexer = None  # type: ignore[assignment]
+    rt = None       # type: ignore[assignment]
+    VAULT = pathlib.Path("vault")
 
-VAULT = indexer.VAULT
 API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
 MODEL = os.environ.get("PEOS_MODEL", "claude-sonnet-5")
 
@@ -165,8 +172,6 @@ def llm_extract(system: str, user: str, max_tokens: int = 16000) -> str:
     payload = {
         "model": MODEL,
         "max_tokens": max_tokens,
-        "thinking": {"type": "adaptive"},
-        "output_config": {"effort": "low"},
         "system": system,
         "messages": [{"role": "user", "content": user}],
     }
@@ -415,6 +420,28 @@ def run_derivations(deal: str, artifact: pathlib.Path):
     print(f"  Derivation pass wrote {len(written)} claims: {written}")
 
 
+# ── Input hygiene — files that must never be ingested as deal claims ─────────
+_INBOX_BLOCKLIST: set[str] = {
+    "summary-2.json",   # Fashion-MNIST ML eval results — not PE content
+}
+
+_INBOX_NOISE_PATTERNS: list[str] = [
+    "mnist", "fashion-mnist", "neural network", "training accuracy",
+    "machine learning", "image classification", "deep learning",
+]
+
+
+def _is_blocked(artifact: pathlib.Path) -> str | None:
+    """Return a reason string if the artifact should be skipped, else None."""
+    if artifact.name in _INBOX_BLOCKLIST:
+        return f"Blocklisted filename: {artifact.name}"
+    head = artifact.read_text(encoding="utf-8", errors="replace")[:2_000].lower()
+    for pat in _INBOX_NOISE_PATTERNS:
+        if pat in head:
+            return f"Non-PE content pattern {pat!r} in first 2k chars"
+    return None
+
+
 def get_targets(deal_filter: str | None, file_filter: str | None,
                 skip_done: bool = True) -> list[tuple[str, pathlib.Path]]:
     state = rt._state()
@@ -483,6 +510,11 @@ def main():
 
     for deal, artifact in targets:
         print(f"\n--- [{deal}] {artifact.name} ---")
+        block_reason = _is_blocked(artifact)
+        if block_reason:
+            print(f"  SKIPPED (hygiene guard): {block_reason}")
+            mark_done(artifact.name)
+            continue
         try:
             ids = extract_file(deal, artifact)
             rt.audit("extractor", "HVA_COMMERCIAL_01", "claims-extracted",

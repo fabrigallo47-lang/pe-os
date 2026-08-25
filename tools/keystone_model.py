@@ -763,8 +763,17 @@ def _run_quarter(
     net_change = cfo + cfi + cff
     end_cash   = beg_cash + net_change
 
-    # LTM covenant EBITDA (last 4 quarters)
-    ltm_cov_ebitda = sum(r.covenant_ebitda for r in ltm_window[-3:]) + cov_ebitda if len(ltm_window) >= 3 else cov_ebitda
+    # LTM covenant EBITDA (last 4 quarters, inclusive of current).
+    # Before we have 4 quarters of owned history, pad missing slots with pre-close
+    # quarterly stub (opening_annual / 4) so Q1-Q3 don't produce artificially high leverage.
+    n_prior = min(3, len(ltm_window))
+    n_missing = 3 - n_prior
+    pre_close_stub_q = inp.covenant_ebitda_opening / 4
+    ltm_cov_ebitda = (
+        sum(r.covenant_ebitda for r in ltm_window[-n_prior:])
+        + cov_ebitda
+        + n_missing * pre_close_stub_q
+    )
     # Net leverage (covenant) = (term + ddtl + rev - min(cash, netting_cap)) / LTM_cov_EBITDA
     net_debt_cov = end_term + end_ddtl2 + end_rev - min(end_cash, inp.eligible_cash_netting)
     net_lev = net_debt_cov / ltm_cov_ebitda if ltm_cov_ebitda > 0 else float("inf")
@@ -1021,16 +1030,24 @@ def propagate_claim(claim: dict[str, Any],
       run_scenario:   str
       claim_applied:  bool
     """
-    metric = str(claim.get("metric", "")).lower().strip()
-    value  = claim.get("value")
-    period = str(claim.get("period", ""))
+    metric     = str(claim.get("metric", "")).lower().strip()
+    value      = claim.get("value")
+    period     = str(claim.get("period", ""))
+    from_value = claim.get("from_value")  # optional: used for annual ratio
+
+    # Annual-period events (period is a full-year date or pre-model opening) apply
+    # their ratio from q=0. "2025-12-31" is the FY2025 opening period.
+    _ANNUAL_PERIODS = {"2025-12-31", "fy2025", "fy2025a", "opening"}
 
     # Find the quarter index
     q_idx = None
-    for p, i in _PERIOD_TO_QUARTER.items():
-        if period in p or p in period:
-            q_idx = i
-            break
+    if period.lower() in _ANNUAL_PERIODS or (period and period <= "2026-03-31" and len(period) == 10):
+        q_idx = 0  # apply from first model quarter
+    else:
+        for p, i in _PERIOD_TO_QUARTER.items():
+            if period in p or p in period:
+                q_idx = i
+                break
 
     # Run baseline
     base = run_lbo(scenario, inp)
@@ -1048,14 +1065,27 @@ def propagate_claim(claim: dict[str, Any],
     except (TypeError, ValueError):
         return {"claim_applied": False, "reason": "Non-numeric value"}
 
+    # For annual events, compute ratio from from_value (annual old value) rather than
+    # the quarterly SB table entry, since the table holds quarterly figures.
+    if from_value is not None:
+        try:
+            from_value = float(from_value)
+        except (TypeError, ValueError):
+            from_value = None
+
     # Build driver override
     driver_field = _CLAIM_TO_DRIVER.get(metric)
     overrides: dict[str, list[float]] = {}
 
     if driver_field == "ebitda" or metric in ("ebitda", "firm ebitda"):
-        # Replace the specific quarter's EBITDA; scale subsequent quarters by ratio
-        old_val = SB_EBITDA[q_idx]
-        ratio   = value / old_val if old_val != 0 else 1.0
+        if from_value is not None and from_value != 0:
+            # Annual event: ratio comes from the annual from/to values directly.
+            # This avoids comparing an annual claim ($11.4m) against a quarterly
+            # SB entry ($2.85m) and producing a nonsensical ×4 ratio.
+            ratio = value / from_value
+        else:
+            old_val = SB_EBITDA[q_idx]
+            ratio   = value / old_val if old_val != 0 else 1.0
         new_ebitda = list(SB_EBITDA)
         for i in range(q_idx, 20):
             new_ebitda[i] = SB_EBITDA[i] * ratio

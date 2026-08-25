@@ -1,0 +1,104 @@
+{
+  "schema_version": "pm-bindings-1.0",
+  "deal": "keystone",
+  "manifest_id": "K-IC",
+  "binding_count": 16,
+  "bindings": [
+    {
+      "cp_id": "CP-REVENUE",
+      "mn_id": "MN-REVENUE",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-DEBT",
+      "mn_id": "MN-DEBT",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-CONCENTRATION",
+      "mn_id": "MN-CONCENTRATION",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-DSO",
+      "mn_id": "MN-BASE-DSO",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-EV",
+      "mn_id": "MN-EV",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-ROLLOVER",
+      "mn_id": "MN-ROLLOVER",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-NWC",
+      "mn_id": "MN-NWC",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-NWC-TARGET",
+      "mn_id": "MN-NWC",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-EBITDA-FIRM",
+      "mn_id": "MN-FIRM-EBITDA",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-EBITDA-FIRM",
+      "mn_id": "MN-QUARTERLY-FIRM-EBITDA",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-SPONSOR-EQUITY",
+      "mn_id": "MN-SPONSOR-EQUITY",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-STANDALONE-BASE-MOIC",
+      "mn_id": "MN-BASE-MOIC",
+      "direction": "MODEL_DERIVES_POSITION",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-STANDALONE-BASE-IRR",
+      "mn_id": "MN-BASE-IRR",
+      "direction": "MODEL_DERIVES_POSITION",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-OPENING-CASH",
+      "mn_id": "MN-OPENING-CASH",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-COV-EBITDA",
+      "mn_id": "MN-COV-EBITDA",
+      "direction": "POSITION_DRIVES_MODEL",
+      "source": "e3_k_ic_current_graph"
+    },
+    {
+      "cp_id": "CP-STANDALONE-DOWNSIDE-MOIC",
+      "mn_id": "MN-DOWN-MOIC",
+      "direction": "MODEL_DERIVES_POSITION",
+      "source": "e3_k_ic_current_graph"
+    }
+  ]
+}

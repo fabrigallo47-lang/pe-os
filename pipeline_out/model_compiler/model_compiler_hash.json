@@ -1,0 +1,9 @@
+{
+  "deal": "keystone",
+  "blind_hashes": {
+    "model_nodes_compiler": "72920b14a6b6a3db1582cfac2e45bcc212b51402ffc61ce897ebd0c7c86075e4",
+    "formula_dag": "02f6b40bf2eb4f0166cd5fb1388ff017e33f4bb221123e32b5f987096dcebb96",
+    "position_model_bindings": "e59162afe4005f7ec5f1106dcba44b9524953b80e23493132aad402faf976f5f",
+    "xlsx": "856d6deb512cd6e40ea4db17d9e2e8c3eac456a6f371e498e7b439ff48e55bd1"
+  }
+}

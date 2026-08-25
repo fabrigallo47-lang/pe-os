@@ -1,0 +1,20 @@
+{
+  "schema_version": "formula-dag-1.0",
+  "deal": "keystone",
+  "node_count": 59,
+  "edge_count": 0,
+  "dag": {},
+  "formula_network_summary": {
+    "total_formula_cells": 10317,
+    "total_cells": 29476,
+    "root_cells": 18695,
+    "tip_cells": 19159,
+    "sheet_formula_density": {
+      "SB_BASE": 2064,
+      "SB_DOWN": 2064,
+      "SB_UP": 2064,
+      "ACQ_BASE": 2064,
+      "COMBINED_RISK": 2061
+    }
+  }
+}

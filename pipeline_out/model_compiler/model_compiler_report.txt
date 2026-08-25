@@ -1,0 +1,61 @@
+Financial Model Compiler Report
+=======================================================
+  Deal         : keystone
+  XLSX         : keystone_lbo_model_working.xlsx
+  Node count   : 59
+  DAG edges    : 0 (MN→MN)
+  PM bindings  : 16
+
+Node kinds:
+   31  assumption_series
+   12  input
+    8  output
+    4  model_control_series
+    2  adjustment_input
+    2  model_control
+
+Formula complexity distribution:
+    4  deep
+   55  scalar
+
+Formula provenance (depth > 0):
+  MN-CHECK-SB-BASE-BS                 depth=9  ancestors= 76  complexity=deep
+  MN-CHECK-SB-DOWN-BS                 depth=9  ancestors= 76  complexity=deep
+  MN-CHECK-ACQ-BASE-BS                depth=9  ancestors= 76  complexity=deep
+  MN-CHECK-COMBINED-BS                depth=9  ancestors= 76  complexity=deep
+
+Formula network (workbook-wide):
+  Total cells      : 29476
+  Formula cells    : 10317 (cells with ≥1 input)
+  Root cells       : 18695 (no predecessors)
+  Tip cells        : 19159 (no successors)
+  Formula density by sheet:
+     2064  SB_BASE
+     2064  SB_DOWN
+     2064  SB_UP
+     2064  ACQ_BASE
+     2061  COMBINED_RISK
+
+  NOTE: Key model nodes (MOIC, EV, EBITDA) are LOCKED constants
+        in the Inputs/Ownership_Returns sheets — formula-derived
+        intermediate cells live in the scenario sheets (SB_Base etc).
+        Balance-check nodes (depth=9) trace 77 ancestors back to
+        8 financing model parameters (tax, spreads, SOFR, revolver).
+
+Position-model binding sample:
+  CP-REVENUE                          → MN-REVENUE                [POSITION_DRIVES_MODEL]
+  CP-DEBT                             → MN-DEBT                   [POSITION_DRIVES_MODEL]
+  CP-CONCENTRATION                    → MN-CONCENTRATION          [POSITION_DRIVES_MODEL]
+  CP-DSO                              → MN-BASE-DSO               [POSITION_DRIVES_MODEL]
+  CP-EV                               → MN-EV                     [POSITION_DRIVES_MODEL]
+  CP-ROLLOVER                         → MN-ROLLOVER               [POSITION_DRIVES_MODEL]
+  CP-NWC                              → MN-NWC                    [POSITION_DRIVES_MODEL]
+  CP-NWC-TARGET                       → MN-NWC                    [POSITION_DRIVES_MODEL]
+  CP-EBITDA-FIRM                      → MN-FIRM-EBITDA            [POSITION_DRIVES_MODEL]
+  CP-EBITDA-FIRM                      → MN-QUARTERLY-FIRM-EBITDA  [POSITION_DRIVES_MODEL]
+
+Blind hashes (pre-gold):
+  model_nodes_compiler: 72920b14a6b6a3db1582cfac...
+  formula_dag: 02f6b40bf2eb4f0166cd5fb1...
+  position_model_bindings: e59162afe4005f7ec5f1106d...
+  xlsx: 856d6deb512cd6e40ea4db17...

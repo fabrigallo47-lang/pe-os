@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>PE OS — Repository Guide</title>
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  :root {
+    --bg:       #0d1117;
+    --surface:  #161b22;
+    --surface2: #21262d;
+    --border:   #30363d;
+    --text:     #e6edf3;
+    --muted:    #8b949e;
+    --accent:   #58a6ff;
+    --green:    #3fb950;
+    --yellow:   #e3b341;
+    --purple:   #bc8cff;
+    --red:      #f85149;
+    --orange:   #d29922;
+    --mono: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+    --ui:  -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    --radius: 6px;
+  }
+
+  html { scroll-behavior: smooth; }
+  body {
+    background: var(--bg); color: var(--text); font-family: var(--ui);
+    font-size: 14px; line-height: 1.7;
+  }
+
+  /* ── Layout ── */
+  .shell {
+    display: grid;
+    grid-template-columns: 180px 1fr;
+    grid-template-areas: "nav main";
+    max-width: 1060px; margin: 0 auto; padding: 0 24px;
+    gap: 0 40px;
+  }
+
+  /* ── Top bar ── */
+  .topbar {
+    background: var(--surface); border-bottom: 1px solid var(--border);
+    padding: 0 32px; height: 44px;
+    display: flex; align-items: center; gap: 16px;
+    position: sticky; top: 0; z-index: 100;
+  }
+  .tb-logo  { font-family: var(--mono); font-size: 12px; color: var(--accent); letter-spacing: .05em; }
+  .tb-sep   { color: var(--border); }
+  .tb-title { font-size: 12px; color: var(--muted); }
+  .tb-badge {
+    margin-left: auto; font-family: var(--mono); font-size: 10px;
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: 4px; padding: 2px 8px; color: var(--muted);
+  }
+
+  /* ── Sticky nav ── */
+  nav {
+    grid-area: nav;
+    position: sticky; top: 44px; height: calc(100vh - 44px);
+    overflow-y: auto; padding: 28px 0; font-size: 12px;
+    display: flex; flex-direction: column; gap: 2px;
+  }
+  nav a {
+    display: block; color: var(--muted); text-decoration: none;
+    padding: 4px 0; border-left: 2px solid transparent;
+    padding-left: 10px; margin-left: -2px;
+    transition: color .12s, border-color .12s;
+    line-height: 1.4;
+  }
+  nav a:hover { color: var(--text); }
+  nav a.active { color: var(--accent); border-color: var(--accent); }
+  nav .nav-section {
+    font-size: 10px; text-transform: uppercase; letter-spacing: .08em;
+    color: var(--border); font-weight: 700;
+    padding: 12px 0 4px 10px; margin-left: -2px;
+  }
+
+  /* ── Main content ── */
+  main { grid-area: main; padding: 32px 0 80px; min-width: 0; }
+
+  /* ── Headings ── */
+  h1 { font-size: 22px; font-weight: 700; color: var(--text); margin-bottom: 6px; letter-spacing: -.01em; }
+  h2 {
+    font-size: 16px; font-weight: 600; color: var(--text);
+    margin: 40px 0 12px; padding-bottom: 8px;
+    border-bottom: 1px solid var(--border);
+    scroll-margin-top: 60px;
+  }
+  h3 { font-size: 13px; font-weight: 600; color: var(--text); margin: 22px 0 8px; scroll-margin-top: 60px; }
+  p  { margin-bottom: 12px; color: var(--text); line-height: 1.75; }
+  p:last-child { margin-bottom: 0; }
+
+  .lead { font-size: 14px; color: var(--muted); line-height: 1.8; margin-bottom: 24px; max-width: 620px; }
+
+  /* ── Inline code ── */
+  code {
+    font-family: var(--mono); font-size: 11.5px; background: var(--surface2);
+    border: 1px solid var(--border); border-radius: 3px;
+    padding: 1px 5px; color: #79c0ff;
+  }
+
+  /* ── Code blocks ── */
+  pre {
+    background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius);
+    padding: 14px 16px; font-family: var(--mono); font-size: 11.5px; color: var(--text);
+    overflow-x: auto; line-height: 1.65; margin: 12px 0 16px; tab-size: 2;
+  }
+  pre .cm { color: var(--muted); }
+  pre .kw { color: #ff7b72; }
+  pre .st { color: #a5d6ff; }
+  pre .nu { color: var(--accent); }
+
+  /* ── Tables ── */
+  .table-wrap { overflow-x: auto; margin: 12px 0 20px; }
+  table { width: 100%; border-collapse: collapse; font-size: 12px; }
+  th {
+    text-align: left; font-size: 10px; text-transform: uppercase;
+    letter-spacing: .07em; color: var(--muted);
+    padding: 6px 10px; border-bottom: 2px solid var(--border);
+    white-space: nowrap; font-weight: 600;
+  }
+  td { padding: 7px 10px; border-bottom: 1px solid var(--border); vertical-align: top; line-height: 1.5; }
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: rgba(255,255,255,.02); }
+  td code { border: none; background: transparent; padding: 0; font-size: 11px; }
+
+  /* ── Callouts ── */
+  .callout {
+    border-radius: var(--radius); padding: 12px 14px; margin: 14px 0;
+    font-size: 12.5px; line-height: 1.7;
+    display: flex; gap: 10px; align-items: flex-start;
+  }
+  .callout-icon { font-size: 14px; flex-shrink: 0; margin-top: 1px; }
+  .callout-body { flex: 1; }
+  .callout-info { background: rgba(88,166,255,.07); border: 1px solid rgba(88,166,255,.2); }
+  .callout-good { background: rgba(63,185,80,.07);  border: 1px solid rgba(63,185,80,.2); }
+
+  /* ── Badges ── */
+  .badge {
+    display: inline-block; font-family: var(--mono); font-size: 10px;
+    font-weight: 700; padding: 2px 7px; border-radius: 4px;
+    text-transform: uppercase; letter-spacing: .04em; vertical-align: middle;
+  }
+  .b-att { background: rgba(63,185,80,.15);  color: var(--green); }
+  .b-ass { background: rgba(227,179,65,.15); color: var(--yellow); }
+  .b-obs { background: rgba(88,166,255,.15); color: var(--accent); }
+  .b-der { background: rgba(210,153,34,.15); color: var(--orange); }
+  .b-ok  { background: rgba(63,185,80,.1);   color: var(--green);  border: 1px solid rgba(63,185,80,.2); }
+  .b-ip  { background: rgba(227,179,65,.1);  color: var(--yellow); border: 1px solid rgba(227,179,65,.2); }
+  .b-q   { background: rgba(110,118,129,.1); color: var(--muted);  border: 1px solid var(--border); }
+
+  /* ── Flow diagram ── */
+  .flow { display: flex; align-items: center; flex-wrap: wrap; gap: 4px; margin: 16px 0; }
+  .flow-node {
+    background: var(--surface2); border: 1px solid var(--border);
+    border-radius: var(--radius); padding: 7px 14px;
+    font-family: var(--mono); font-size: 11px; color: var(--text); white-space: nowrap;
+  }
+  .flow-node.hl { border-color: var(--accent); color: var(--accent); background: rgba(88,166,255,.07); }
+  .flow-arrow { color: var(--muted); font-size: 14px; padding: 0 4px; }
+
+  /* ── Node type grid ── */
+  .node-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 8px; margin: 12px 0; }
+  .node-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 10px 12px; }
+  .node-card-type { font-family: var(--mono); font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: .05em; margin-bottom: 4px; }
+  .node-card-desc { font-size: 11px; color: var(--muted); line-height: 1.5; }
+  .nc-claim     { border-left: 3px solid var(--accent); }
+  .nc-entity    { border-left: 3px solid #58a6ff; }
+  .nc-metric    { border-left: 3px solid var(--yellow); }
+  .nc-period    { border-left: 3px solid var(--purple); }
+  .nc-source    { border-left: 3px solid var(--muted); }
+  .nc-area      { border-left: 3px solid var(--green); }
+  .nc-question  { border-left: 3px solid var(--purple); }
+  .nc-perimeter { border-left: 3px solid #79c0ff; }
+
+  /* ── File list ── */
+  .file-list { display: flex; flex-direction: column; gap: 3px; margin: 10px 0; }
+  .file-row { display: flex; align-items: baseline; gap: 8px; padding: 5px 8px; border-radius: 4px; font-size: 12px; }
+  .file-row:hover { background: var(--surface); }
+  .file-name { font-family: var(--mono); font-size: 11px; color: #79c0ff; min-width: 220px; flex-shrink: 0; }
+  .file-desc { color: var(--muted); line-height: 1.5; }
+
+  /* ── Claim card example ── */
+  .claim-card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); overflow: hidden; margin: 4px 0; }
+  .cc-head { display: flex; align-items: center; gap: 8px; padding: 7px 12px; border-bottom: 1px solid var(--border); background: var(--surface2); }
+  .cc-metric { font-family: var(--mono); font-size: 11px; font-weight: 600; flex: 1; }
+  .cc-value  { font-family: var(--mono); font-size: 13px; font-weight: 700; }
+  .cc-period { font-family: var(--mono); font-size: 10px; color: var(--muted); }
+  .cc-body   { padding: 7px 12px; font-size: 11px; color: var(--muted); line-height: 1.6; }
+  .cc-row    { display: flex; gap: 6px; margin-bottom: 2px; }
+  .cc-key    { color: var(--border); min-width: 80px; font-family: var(--mono); font-size: 10px; }
+
+  /* ── Stats bar ── */
+  .stats-bar { display: flex; gap: 10px; flex-wrap: wrap; margin: 12px 0; }
+  .stat-chip { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 6px 14px; text-align: center; }
+  .stat-num { font-family: var(--mono); font-size: 18px; font-weight: 700; color: var(--accent); display: block; }
+  .stat-lbl { font-size: 10px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; display: block; margin-top: 1px; }
+
+  hr { border: none; border-top: 1px solid var(--border); margin: 36px 0; }
+
+  ::-webkit-scrollbar { width: 5px; height: 5px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+
+  @media (max-width: 680px) {
+    .shell { grid-template-columns: 1fr; grid-template-areas: "main"; }
+    nav { display: none; }
+    .topbar { padding: 0 16px; }
+    main { padding: 20px 0 60px; }
+  }
+</style>
+</head>
+<body>
+
+<div class="topbar">
+  <span class="tb-logo">PE OS</span>
+  <span class="tb-sep">/</span>
+  <span class="tb-title">Repository Guide</span>
+  <span class="tb-badge">internal · 2026-08</span>
+</div>
+
+<div class="shell">
+
+<nav id="toc">
+  <div class="nav-section">Overview</div>
+  <a href="#what">What this is</a>
+  <a href="#architecture">Architecture</a>
+
+  <div class="nav-section">Pipeline</div>
+  <a href="#running">Running it</a>
+  <a href="#panta">PANTA example</a>
+  <a href="#schema">Claim schema</a>
+
+  <div class="nav-section">Graph</div>
+  <a href="#nodes">Node types</a>
+  <a href="#edges">Edge types</a>
+  <a href="#algorithms">Algorithms</a>
+
+  <div class="nav-section">Repo</div>
+  <a href="#files">File map</a>
+  <a href="#vault">Vault structure</a>
+  <a href="#areas">8 macro areas</a>
+</nav>
+
+<main>
+
+  <h1>PE OS — Repository Guide</h1>
+  <p class="lead">
+    A typed knowledge graph for private equity deal analysis.
+    Documents go in; a structured, epistemically-typed property graph comes out.
+    Every claim carries its source, its type, and its relationship to every other claim.
+  </p>
+
+  <h2 id="what">What this is</h2>
+  <p>PE OS is a locally-run intelligence layer over deal documents. It extracts factual claims from any document (CIM, QoE report, model, email), labels each claim by epistemic type, links claims to diligence questions, and builds a property graph where contradictions, time-series evolutions, and cross-source challenges surface automatically.</p>
+
+  <p>Three non-negotiable design principles:</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Principle</th><th>What it means in practice</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Everything is typed</strong></td><td>Every claim is <span class="badge b-att">attested</span> / <span class="badge b-ass">asserted</span> / <span class="badge b-obs">observed</span> / <span class="badge b-der">derived</span>. The system never conflates a seller claim with a QoE finding.</td></tr>
+      <tr><td><strong>State is derived, never set</strong></td><td>Deal stage, contradiction count, staleness — all computed from the event log, not from a human-updated field.</td></tr>
+      <tr><td><strong>Nothing leaves the machine</strong></td><td>All computation is local. Model API calls are the only outbound channel and are explicitly listed in the policy table.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2 id="architecture">Architecture</h2>
+
+  <div class="flow">
+    <span class="flow-node">Document<br><span style="font-size:9px;color:var(--muted)">PDF / text / xlsx</span></span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node">Extractor<br><span style="font-size:9px;color:var(--muted)">LLM-based</span></span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node">Claims JSON<br><span style="font-size:9px;color:var(--muted)">typed + sourced</span></span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node hl">Claim Graph<br><span style="font-size:9px">semantic edges</span></span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node hl">Property Graph<br><span style="font-size:9px">NetworkX + algorithms</span></span>
+  </div>
+
+  <div class="flow" style="margin-top:4px;">
+    <span class="flow-node" style="opacity:.4">…</span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node">Vault<br><span style="font-size:9px;color:var(--muted)">typed markdown, git-backed</span></span>
+    <span class="flow-arrow">→</span>
+    <span class="flow-node">SQLite index<br><span style="font-size:9px;color:var(--muted)">.index/vault.db (disposable)</span></span>
+  </div>
+
+  <h3>Four layers</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>#</th><th>Layer</th><th>What lives here</th><th>Status</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><strong>Data layer</strong></td><td>Extraction, epistemic typing, derivation engine, grader (8/8 ✓)</td><td><span class="badge b-ok">✅ done</span></td></tr>
+      <tr><td>2</td><td><strong>Reasoning layer</strong></td><td>Longitudinal tracking, staleness cascade, lifecycle state machine (15/15 ✓)</td><td><span class="badge b-ok">✅ done</span></td></tr>
+      <tr><td>3</td><td><strong>Process kernel</strong></td><td>Coordination layer, enforcement classes, mandatory gates</td><td><span class="badge b-ip">in progress</span></td></tr>
+      <tr><td>4</td><td><strong>Integrations</strong></td><td>Email, document repo, web connectors</td><td><span class="badge b-q">queued</span></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2 id="running">Running the pipeline</h2>
+
+  <h3>Requirements</h3>
+  <pre>python 3.11+
+.venv with: anthropic  pyyaml  networkx  scipy  numpy  pypdf
+
+pip install -r requirements.txt</pre>
+
+  <h3>Test UI — the main entry point</h3>
+  <p>The extraction workbench runs as a local HTTP server.</p>
+  <pre>export ANTHROPIC_API_KEY=sk-ant-...
+
+<span class="cm"># Start the server (opens browser automatically)</span>
+.venv/bin/python3 tools/test_ui.py
+
+<span class="cm"># Custom port</span>
+.venv/bin/python3 tools/test_ui.py --port 9000
+
+<span class="cm"># → http://localhost:8765</span></pre>
+
+  <h3>What you can do in the UI</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Tab</th><th>What it shows</th></tr></thead>
+    <tbody>
+      <tr><td><code>Cards</code></td><td>Each extracted claim as a row — metric, value, epistemic type, period, source. Expand to see full statement and derivation.</td></tr>
+      <tr><td><code>JSON</code></td><td>Raw claims array as returned by the extractor.</td></tr>
+      <tr><td><code>Graph</code></td><td>Force-directed canvas. Claims cluster by macro area. Semantic edges (CONTRADICTS, CHALLENGES, TRACKS, SUPPORTS…) are colour-coded. Toggle ⬡ Decomposed to see metric/period/source as explicit nodes.</td></tr>
+      <tr><td><code>Analytics</code></td><td>PageRank and betweenness centrality over the full property graph. Contradiction pairs with epistemic badges. Node-type breakdown.</td></tr>
+      <tr><td><code>Schema</code></td><td>Visual reference for the ontology — node types, edge types, epistemic hierarchy, 8 macro areas.</td></tr>
+      <tr><td><code>Build</code></td><td>Playground: extract from a snippet, add nodes manually, chat with Claude to reshape the graph.</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>REST API (same server)</h3>
+  <pre><span class="cm"># Extract claims from text</span>
+<span class="kw">POST</span> /extract
+{
+  <span class="st">"text"</span>: <span class="st">"…document text…"</span>,
+  <span class="st">"deal"</span>: <span class="st">"panta"</span>,
+  <span class="st">"api_key"</span>: <span class="st">"sk-ant-…"</span>   <span class="cm">// optional if env var is set</span>
+}
+→ { <span class="st">"claims"</span>: […], <span class="st">"graph"</span>: {…}, <span class="st">"elapsed"</span>: 4.2 }
+
+<span class="cm"># Graph algorithms over last extraction</span>
+<span class="kw">GET</span> /analytics
+→ { <span class="st">"ready"</span>: true, <span class="st">"stats"</span>: {…}, <span class="st">"top_pagerank"</span>: […],
+    <span class="st">"top_betweenness"</span>: […], <span class="st">"contradictions"</span>: […], <span class="st">"graph"</span>: {…} }
+
+<span class="cm"># PDF → text (pdftotext / pypdf fallback)</span>
+<span class="kw">POST</span> /parse-pdf    body: { <span class="st">"data"</span>: <span class="st">"&lt;base64&gt;"</span> }</pre>
+
+  <h2 id="panta">PANTA — input / output example</h2>
+
+  <h3>Input</h3>
+  <pre><span class="cm">QoE firm (Big4 Advisory) confirmed FY2025A EBITDA of $11.9m versus PANTA
+management's seller claim of $12.7m. The delta of $0.8m relates to normalisation
+of founder salary and one-off project costs. PANTA revenue was $47.2m in FY2025A
+as confirmed by QoE. Management assert FY2026E revenue of $52m based on pipeline.
+Top customer Riverton Group represents 18.2% of revenue (ultimate-parent level)
+versus 7.6% at direct-customer level.</span></pre>
+
+  <h3>Output — 10 claims extracted</h3>
+
+  <div class="claim-card">
+    <div class="cc-head">
+      <span class="badge b-att">attested</span>
+      <span class="cc-metric">EBITDA</span>
+      <span class="cc-value" style="color:var(--green)">$11.9m</span>
+      <span class="cc-period">FY2025A</span>
+    </div>
+    <div class="cc-body">
+      <div class="cc-row"><span class="cc-key">direction</span><span>contradicts</span></div>
+      <div class="cc-row"><span class="cc-key">source</span><span>QoE Report · Big4 Advisory</span></div>
+      <div class="cc-row"><span class="cc-key">perimeter</span><span>QoE-normalised</span></div>
+    </div>
+  </div>
+
+  <div class="claim-card">
+    <div class="cc-head">
+      <span class="badge b-ass">asserted</span>
+      <span class="cc-metric">EBITDA</span>
+      <span class="cc-value" style="color:var(--yellow)">$12.7m</span>
+      <span class="cc-period">FY2025A</span>
+    </div>
+    <div class="cc-body">
+      <div class="cc-row"><span class="cc-key">direction</span><span>supports</span></div>
+      <div class="cc-row"><span class="cc-key">source</span><span>CIM · management</span></div>
+      <div class="cc-row"><span class="cc-key">perimeter</span><span>management-reported</span></div>
+    </div>
+  </div>
+
+  <div class="claim-card">
+    <div class="cc-head">
+      <span class="badge b-der">derived</span>
+      <span class="cc-metric">EBITDA adjustment</span>
+      <span class="cc-value" style="color:var(--orange)">$0.8m</span>
+      <span class="cc-period">FY2025A</span>
+    </div>
+    <div class="cc-body">
+      <div class="cc-row"><span class="cc-key">derivation</span><span>$12.7m − $11.9m</span></div>
+      <div class="cc-row"><span class="cc-key">note</span><span>founder salary + one-off project costs</span></div>
+    </div>
+  </div>
+
+  <div class="claim-card">
+    <div class="cc-head">
+      <span class="badge b-att">attested</span>
+      <span class="cc-metric">Customer concentration</span>
+      <span class="cc-value" style="color:var(--red)">18.2%</span>
+      <span class="cc-period">FY2025A</span>
+    </div>
+    <div class="cc-body">
+      <div class="cc-row"><span class="cc-key">perimeter</span><span>ultimate-parent level</span></div>
+      <div class="cc-row"><span class="cc-key">note</span><span>Riverton Group</span></div>
+    </div>
+  </div>
+
+  <p style="color:var(--muted);font-size:12px;margin-top:8px">+ 6 more claims (revenue FY2025A attested, revenue FY2026E asserted, earnings quality risk thesis, concentration risk thesis, customer concentration 7.6% direct level, EBITDA normalisation rationale)</p>
+
+  <h3>Graph output</h3>
+
+  <div class="stats-bar">
+    <div class="stat-chip"><span class="stat-num">38</span><span class="stat-lbl">Nodes</span></div>
+    <div class="stat-chip"><span class="stat-num">82</span><span class="stat-lbl">Edges</span></div>
+    <div class="stat-chip"><span class="stat-num">3</span><span class="stat-lbl">Contradictions</span></div>
+    <div class="stat-chip"><span class="stat-num">10</span><span class="stat-lbl">Claims</span></div>
+    <div class="stat-chip"><span class="stat-num">6</span><span class="stat-lbl">Metrics</span></div>
+    <div class="stat-chip"><span class="stat-num">3</span><span class="stat-lbl">Sources</span></div>
+  </div>
+
+  <p>Top nodes by PageRank — most structurally central across the whole graph:</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Rank</th><th>Node type</th><th>Label</th><th>PageRank</th><th>Why</th></tr></thead>
+    <tbody>
+      <tr><td>1</td><td><code style="color:var(--purple)">period</code></td><td>FY2025A</td><td>0.04340</td><td>Shared by 7 of 10 claims</td></tr>
+      <tr><td>2</td><td><code style="color:var(--accent)">entity</code></td><td>PANTA</td><td>0.04169</td><td>Subject of every claim</td></tr>
+      <tr><td>3</td><td><code style="color:var(--muted)">source</code></td><td>QoE Report</td><td>0.04148</td><td>Source for 4 attested claims</td></tr>
+      <tr><td>4</td><td><code style="color:var(--yellow)">metric</code></td><td>EBITDA</td><td>0.02675</td><td>2 claims + CONTRADICTS edge</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p>Top node by betweenness centrality: the <strong>EBITDA delta claim</strong> ("$0.8m adjustment…") — it bridges the management assertion and the QoE contradiction, making it the structural linchpin of the EBITDA dispute.</p>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">ℹ</span>
+    <div class="callout-body">
+      The graph is saved to <code>.index/graphs/panta.json</code> after every extraction. The <code>/analytics</code> endpoint returns live PageRank and betweenness without re-running extraction.
+    </div>
+  </div>
+
+  <h2 id="schema">Claim schema</h2>
+  <p>Every extracted claim is a JSON object with these fields:</p>
+
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Field</th><th>Type</th><th>Description</th></tr></thead>
+    <tbody>
+      <tr><td><code>subject</code></td><td>string</td><td>The company or entity being measured (e.g. <code>"PANTA"</code>). NOT the metric.</td></tr>
+      <tr><td><code>metric</code></td><td>string</td><td>What is being measured — <code>"EBITDA"</code>, <code>"Revenue"</code>, etc.</td></tr>
+      <tr><td><code>value</code></td><td>string</td><td>Numeric value, or empty for narrative/thesis claims</td></tr>
+      <tr><td><code>unit</code></td><td>string</td><td><code>"$m"</code>, <code>"%"</code>, <code>"x"</code>, etc.</td></tr>
+      <tr><td><code>period</code></td><td>string</td><td>Time reference: <code>"FY2025A"</code>, <code>"LTM"</code>, <code>"Q3 2025"</code></td></tr>
+      <tr><td><code>perimeter</code></td><td>string</td><td>Economic boundary: <code>"QoE-normalised"</code>, <code>"management-reported"</code>, <code>"consolidated"</code></td></tr>
+      <tr><td><code>epistemic</code></td><td>enum</td><td>See epistemic types below</td></tr>
+      <tr><td><code>direction</code></td><td>enum</td><td><code>supports</code> / <code>contradicts</code> / <code>context</code></td></tr>
+      <tr><td><code>source_doc</code></td><td>string</td><td>Document the claim comes from</td></tr>
+      <tr><td><code>author</code></td><td>string</td><td>Party making the claim — <code>"management"</code>, <code>"Big4 Advisory"</code></td></tr>
+      <tr><td><code>statement</code></td><td>string</td><td>Full natural-language statement of the claim</td></tr>
+      <tr><td><code>derivation</code></td><td>string</td><td>Formula / reasoning (derived claims only)</td></tr>
+      <tr><td><code>bears_on</code></td><td>string[]</td><td>Diligence question IDs this claim is evidence for</td></tr>
+      <tr><td><code>topic</code></td><td>string</td><td>Free-text topic; maps to one of the 8 macro areas</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Epistemic types</h3>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Type</th><th>Meaning</th><th>Trust</th><th>Example</th></tr></thead>
+    <tbody>
+      <tr><td><span class="badge b-att">attested</span></td><td>Qualified third party formally certifies</td><td>Highest (3)</td><td>QoE-confirmed EBITDA</td></tr>
+      <tr><td><span class="badge b-obs">observed</span></td><td>Directly recorded by a third party</td><td>High (2)</td><td>Audited revenue from filing</td></tr>
+      <tr><td><span class="badge b-der">derived</span></td><td>Computed from other stated values</td><td>High (2)</td><td>EBITDA margin = EBITDA / Revenue</td></tr>
+      <tr><td><span class="badge b-ass">asserted</span></td><td>Seller or management claim, unverified</td><td>Lowest (1)</td><td>Management's CIM EBITDA figure</td></tr>
+    </tbody>
+  </table>
+  </div>
+  <p>The trust hierarchy feeds into automatic edge detection: an attested claim on the same metric as an asserted claim produces both a <code>CONTRADICTS</code> edge and a <code>SUPERSEDES</code> edge (the higher-trust claim displaces the lower).</p>
+
+  <h2 id="nodes">Graph — node types</h2>
+  <p>Every claim expands into up to 9 nodes. Shared dimensions (same metric across multiple claims, same period, same source) become the <em>same node</em> — this is what enables graph algorithms to find structural patterns across the document set.</p>
+
+  <div class="node-grid">
+    <div class="node-card nc-claim">
+      <div class="node-card-type" style="color:var(--accent)">claim</div>
+      <div class="node-card-desc">The fact itself. Carries value, unit, epistemic type, direction, statement. ID: <code>claim:0001</code></div>
+    </div>
+    <div class="node-card nc-entity">
+      <div class="node-card-type" style="color:#58a6ff">entity</div>
+      <div class="node-card-desc">The company being measured. One node per unique subject. E.g. <code>entity:panta</code></div>
+    </div>
+    <div class="node-card nc-metric">
+      <div class="node-card-type" style="color:var(--yellow)">metric</div>
+      <div class="node-card-desc">The KPI axis. Shared across claims. E.g. <code>metric:ebitda</code></div>
+    </div>
+    <div class="node-card nc-period">
+      <div class="node-card-type" style="color:var(--purple)">period</div>
+      <div class="node-card-desc">Time reference. <code>period:fy2025a</code>, <code>period:ltm</code></div>
+    </div>
+    <div class="node-card nc-source">
+      <div class="node-card-type" style="color:var(--muted)">source</div>
+      <div class="node-card-desc">Document origin. <code>source:qoe_report</code>, <code>source:cim</code></div>
+    </div>
+    <div class="node-card nc-perimeter">
+      <div class="node-card-type" style="color:#79c0ff">perimeter</div>
+      <div class="node-card-desc">Economic boundary / definitional scope. Captures what "EBITDA" actually means in context.</div>
+    </div>
+    <div class="node-card nc-area">
+      <div class="node-card-type" style="color:var(--green)">area</div>
+      <div class="node-card-desc">Macro diligence area. Rendered as background cluster in Graph view.</div>
+    </div>
+    <div class="node-card nc-question">
+      <div class="node-card-type" style="color:var(--purple)">question</div>
+      <div class="node-card-desc">Diligence question node. Claims attach here via BEARS_ON edges.</div>
+    </div>
+  </div>
+
+  <h2 id="edges">Graph — edge types</h2>
+
+  <h3>Structural edges (claim → dimension)</h3>
+  <p>Created for every claim. Wire each claim to its dimension nodes.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Edge</th><th>From → To</th><th>Colour in UI</th></tr></thead>
+    <tbody>
+      <tr><td><code>ABOUT</code></td><td>claim → entity</td><td>faint grey</td></tr>
+      <tr><td><code>MEASURES</code></td><td>claim → metric</td><td>faint gold</td></tr>
+      <tr><td><code>IN_PERIOD</code></td><td>claim → period</td><td>faint purple</td></tr>
+      <tr><td><code>SCOPED_TO</code></td><td>claim → perimeter</td><td>faint blue</td></tr>
+      <tr><td><code>FROM_SOURCE</code></td><td>claim → source</td><td>faint grey</td></tr>
+      <tr><td><code>BY_AUTHOR</code></td><td>claim → author</td><td>faint grey</td></tr>
+      <tr><td><code>IN_AREA</code></td><td>claim → area</td><td>rendered as background cluster</td></tr>
+      <tr><td><code>BEARS_ON</code></td><td>claim → question</td><td>dashed grey</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h3>Semantic edges (claim → claim)</h3>
+  <p>Detected by rule. These are the analytically interesting edges.</p>
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Edge</th><th>Meaning</th><th>Trigger</th><th>Colour</th></tr></thead>
+    <tbody>
+      <tr><td><code>CONTRADICTS</code></td><td>Same metric, opposing direction</td><td>supports-claim vs contradicts-claim on matching metric</td><td style="color:var(--red)">red</td></tr>
+      <tr><td><code>SUPERSEDES</code></td><td>Higher-trust claim displaces lower-trust</td><td>attested/observed over asserted on CONTRADICTS pair</td><td style="color:#ff7b72">salmon</td></tr>
+      <tr><td><code>CHALLENGES</code></td><td>Attested fact challenges asserted claim (&gt;5% delta)</td><td>Cross-source, same metric, measurable gap</td><td style="color:var(--yellow)">yellow</td></tr>
+      <tr><td><code>TRACKS</code></td><td>Same metric, different period</td><td>Time-series link</td><td style="color:var(--purple)">purple dashed</td></tr>
+      <tr><td><code>REFINES</code></td><td>Same metric, different perimeter</td><td>Scope/boundary difference</td><td style="color:#79c0ff">blue dashed</td></tr>
+      <tr><td><code>CORROBORATES</code></td><td>Both support the same question from different sources</td><td>Shared bears_on, different source_doc</td><td style="color:var(--green)">green</td></tr>
+      <tr><td><code>DERIVES_FROM</code></td><td>Computed claim references its inputs</td><td>derived epistemic + rests_on field</td><td style="color:var(--orange)">orange</td></tr>
+      <tr><td><code>SUPPORTS</code></td><td>Quantitative fact supports a narrative thesis</td><td>numeric claim → thesis claim, same area</td><td style="color:#9ecbff">light blue dashed</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2 id="algorithms">Graph algorithms</h2>
+  <p>The property graph (<code>tools/graph_store.py</code>) runs on NetworkX. Available via the <code>/analytics</code> endpoint or directly in Python.</p>
+
+  <pre><span class="kw">from</span> tools.graph_store <span class="kw">import</span> DealGraph, graph_path
+
+dg = DealGraph.load(graph_path(<span class="st">"panta"</span>))
+
+<span class="cm"># PageRank — most structurally central nodes</span>
+pr = dg.pagerank()
+
+<span class="cm"># Betweenness — bridge nodes between clusters</span>
+btwn = dg.betweenness()
+
+<span class="cm"># HITS — hubs vs authorities</span>
+hubs, authorities = dg.hubs_and_authorities()
+
+<span class="cm"># All CONTRADICTS edges with full node data</span>
+contras = dg.contradictions()
+
+<span class="cm"># Claims that measure a specific metric</span>
+claims = dg.claims_sharing_metric(<span class="st">"EBITDA"</span>)
+
+<span class="cm"># Structural path between any two nodes</span>
+path = dg.shortest_path(<span class="st">"claim:0000"</span>, <span class="st">"claim:0006"</span>)
+
+<span class="cm"># Top-N nodes by PageRank, filtered by type</span>
+top = dg.top_by_pagerank(n=<span class="nu">10</span>, types={<span class="st">"claim"</span>, <span class="st">"metric"</span>})
+
+<span class="cm"># Full stats</span>
+dg.stats()
+<span class="cm"># → {"nodes": 38, "edges": 82, "node_types": {"claim": 10, "metric": 6, …}}</span></pre>
+
+  <div class="callout callout-info">
+    <span class="callout-icon">ℹ</span>
+    <div class="callout-body">
+      The graph is persisted at <code>.index/graphs/&lt;deal&gt;.json</code> in NetworkX node-link format after every extraction. Load it any time with <code>DealGraph.load()</code> — no server needed.
+    </div>
+  </div>
+
+  <h2 id="files">File map</h2>
+
+  <h3>Entry points</h3>
+  <div class="file-list">
+    <div class="file-row"><span class="file-name">tools/test_ui.py</span><span class="file-desc">Main workbench. HTTP server + browser UI. Start here.</span></div>
+    <div class="file-row"><span class="file-name">Makefile</span><span class="file-desc"><code>make index</code> rebuilds SQLite from vault. <code>make report</code> health check.</span></div>
+  </div>
+
+  <h3>Graph layer</h3>
+  <div class="file-list">
+    <div class="file-row"><span class="file-name">tools/graph_store.py</span><span class="file-desc">NetworkX property graph. DealGraph class, all algorithms, persistence.</span></div>
+    <div class="file-row"><span class="file-name">tools/indexer.py</span><span class="file-desc">Vault → SQLite index builder. Disposable; rebuild anytime.</span></div>
+    <div class="file-row"><span class="file-name">tools/coverage_report.py</span><span class="file-desc">Coverage report across 8 macro areas for a deal.</span></div>
+  </div>
+
+  <h3>Vault tooling</h3>
+  <div class="file-list">
+    <div class="file-row"><span class="file-name">tools/model_parser.py</span><span class="file-desc">Excel model parser → structured claims (zero-LLM).</span></div>
+    <div class="file-row"><span class="file-name">tools/identity_resolver.py</span><span class="file-desc">Cross-source entity deduplication.</span></div>
+    <div class="file-row"><span class="file-name">tools/binding_proposer.py</span><span class="file-desc">Links model line-items to canonical question nodes.</span></div>
+    <div class="file-row"><span class="file-name">tools/staleness_cascade.py</span><span class="file-desc">When a core claim updates, flags all downstream analyses for review.</span></div>
+  </div>
+
+  <h2 id="vault">Vault structure</h2>
+  <p>The vault is the canonical data store — plain typed markdown, git-backed. The SQLite index is derived and disposable; never treat it as truth.</p>
+
+  <pre>vault/
+  ontology/        <span class="cm">← schemas: claim.md, question.md, decision.md, …</span>
+  deals/
+    panta/
+      deal.md      <span class="cm">← deal metadata (state DERIVED, never manually set)</span>
+      questions/   <span class="cm">← diligence questions</span>
+      claims/      <span class="cm">← typed claim files</span>
+      decisions/   <span class="cm">← IC records, append-only</span>
+  entities/        <span class="cm">← companies, people (observed, not maintained)</span>
+  library/         <span class="cm">← reusable question-types across deals</span>
+  policy/
+    policy-table.md  <span class="cm">← every allowed external action</span>
+  inbox/           <span class="cm">← artifact drop-zone → run /ingest</span>
+
+.index/
+  vault.db         <span class="cm">← SQLite (disposable, rebuild: make index)</span>
+  graphs/
+    panta.json     <span class="cm">← NetworkX property graph</span></pre>
+
+  <h2 id="areas">8 macro areas</h2>
+  <p>Every claim maps to one of 8 areas by keyword matching on its topic field. Rendered as background clusters in the graph; coverage chips in the Analytics tab.</p>
+
+  <div class="table-wrap">
+  <table>
+    <thead><tr><th>Area</th><th>Covers</th></tr></thead>
+    <tbody>
+      <tr><td><strong>Earnings</strong></td><td>EBITDA, margins, normalisation, QoE adjustments</td></tr>
+      <tr><td><strong>Revenue</strong></td><td>Top-line, recurring revenue, backlog, billing</td></tr>
+      <tr><td><strong>Customer</strong></td><td>Concentration, churn, retention, contracts, accounts</td></tr>
+      <tr><td><strong>Market</strong></td><td>Market position, regulatory, competitive dynamics</td></tr>
+      <tr><td><strong>Operations</strong></td><td>Working capital, integration risk, systems, headcount</td></tr>
+      <tr><td><strong>Structure</strong></td><td>Debt, leverage, covenants, capital structure</td></tr>
+      <tr><td><strong>Governance</strong></td><td>Management team, board, incentive alignment</td></tr>
+      <tr><td><strong>Returns</strong></td><td>IRR, MOIC, exit multiples, acquisition thesis</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <div class="callout callout-good">
+    <span class="callout-icon">→</span>
+    <div class="callout-body">
+      <strong>Start here:</strong> run <code>.venv/bin/python3 tools/test_ui.py</code>, paste the PANTA input from the example above, hit Extract. You should see 10 claims, 3 contradictions, and the EBITDA cluster in the graph within ~5 seconds.
+    </div>
+  </div>
+
+</main>
+</div>
+
+<script>
+  const sections = document.querySelectorAll('h2[id], h3[id]');
+  const links    = document.querySelectorAll('nav a[href^="#"]');
+  const obs = new IntersectionObserver(entries => {
+    entries.forEach(e => {
+      if (e.isIntersecting)
+        links.forEach(l => l.classList.toggle('active', l.getAttribute('href') === '#' + e.target.id));
+    });
+  }, { rootMargin: '-44px 0px -70% 0px' });
+  sections.forEach(s => obs.observe(s));
+</script>
+
+</body>
+</html>

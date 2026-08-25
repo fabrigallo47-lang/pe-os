@@ -1,0 +1,241 @@
+EXTRACTOR V2 — COME FUNZIONA E COSA PRODUCE
+Nota tecnica per il layer runtime (PANTA V7)
+Data: 2026-08-25
+
+
+1. ARCHITETTURA — QUATTRO LAYER
+================================================================
+
+L1  Document parser    deterministico, nessun modello
+L2  LLM annotator      una chiamata per chunk, schema-constrained (tool_use)
+L3  Claim validator    normalizzazione deterministica + stable_id
+L4  Graph assembler    dedup deterministico + rilevazione conflitti
+
+Il modello interviene SOLO in L2. L1, L3 e L4 sono codice puro. Questo e'
+voluto: tutto cio' che determina identita' (locator, stable_id, dedup) non
+dipende dal modello, quindi e' riproducibile.
+
+
+2. L1 — SEGMENTAZIONE
+================================================================
+
+Il file viene diviso per heading markdown di livello 2 e 3:
+
+    parts = re.split(r"(?=^#{2,3} )", text, flags=re.MULTILINE)
+
+Il confine primario e' quindi SEMANTICO (la sezione), non un offset
+arbitrario. Ogni sezione viene poi confrontata con CHUNK_WORDS = 250:
+
+    <= 250 parole  -> resta un chunk unico, sezione integra
+    >  250 parole  -> _split_words() la spezza in sotto-chunk che ereditano
+                      la stessa etichetta di sezione
+
+Run K-IC: 423 chunk, media 217 parole, max 250.
+
+    127 chunk  keystone_data_room_extract.md
+    112 chunk  keystone-model-part3.md
+     72 chunk  keystone-model-part2.md
+     48 chunk  keystone-model-part1.md
+     13 chunk  keystone_seller_cim.md
+     13 chunk  keystone_firm_initial_assessment.md
+     11 chunk  keystone_firm_model_summary.md
+     11 chunk  keystone_ic_memo.md
+
+Ogni chunk e' content-addressed:  chunk_id = "ch-" + sha256(body)[:12]
+Testo identico -> stesso id tra run diversi.
+
+
+3. IL LOCATOR — PERCHE' E' AFFIDABILE (IN PARTE)
+================================================================
+
+Ogni chunk porta:
+
+    locator = "{nome_file}::{etichetta_sezione}"
+    es.  keystone_seller_cim.md::## Company overview
+
+Alla creazione del claim:
+
+    locator = f"{chunk.locator}:{hint}" if hint else chunk.locator
+
+Quindi la meta' "file::sezione" e' DETERMINISTICA e verificabile. Solo il
+suffisso "hint" e' generato dal modello e non e' verificato carattere per
+carattere.
+
+Conseguenza pratica: 296/296 claim hanno un locator risolvibile al file
+sorgente. Il campo locator_hint e' required nello schema tool_use, quindi un
+claim senza puntatore non puo' essere costruito. Il grounding a livello
+documento+sezione e' garantito; il grounding a livello di testo esatto no.
+
+
+4. L2 — ANNOTAZIONE
+================================================================
+
+Una chiamata API per chunk, output vincolato da schema tool_use.
+Cap di 4 claim per chunk (maxItems: 4).
+Campi required: metric, value, unit, period, perimeter, epistemic_class,
+direction, topic, statement, locator_hint.
+
+Esiste una cache dei raw claim: se L2 e' gia' stato completato, un fallimento
+in L3/L4 non fa ri-pagare le chiamate API.
+
+
+5. OUTPUT
+================================================================
+
+Formato CAP-003. Il record del claim contiene solo i campi congelati:
+
+    claim_id, statement, source_id, locator, epistemic_class, value, unit,
+    definition_id, period, perimeter, ground_truth_flag, validation_only, notes
+
+I metadati del compilatore (derivation, author, metric, known_at, direction,
+topic) NON stanno sul claim: stanno in
+
+    extraction_metadata.compiler_fields_per_claim
+
+joinabili per claim_id. Questo e' rilevante se cerchi il campo `derivation`:
+non e' assente, e' a fianco. Sui claim K-IC: 39 derivation popolate.
+
+
+6. STATO DI QUALITA' MISURATO (K-IC, 296 claim)
+================================================================
+
+Benchmark contro il CIC canonico (claims_live.csv, 75 claim):
+
+    recall            100.0%   75/75 matchati
+    value              82.7%   62/75
+    epistemic          33.3%   25/75
+    period              1.3%    1/75
+    perimeter           2.7%    2/75
+    locator            22.7%   17/75
+
+Causa radice di period e perimeter, verificata:
+  - 55/75 claim matchati hanno period VUOTO
+  - 44/75 hanno perimeter = 'unknown'
+  - dove il perimeter c'e', e' troppo grossolano: 'Alderstone standalone'
+    contro il canonico 'Alderstone consolidated revenue' da Jaccard 0.25,
+    sotto la soglia 0.30
+
+Il fix e' committato (schema period/perimeter passato da enum a testo libero)
+ma NON e' ancora validato: richiede una ri-estrazione con API key. I numeri
+sopra sono quelli reali di oggi, non proiezioni.
+
+Nota su epistemic: era riportato 0.0%. Era un bug dello scorer, non della
+qualita' di estrazione — leggeva item["epistemic"] mentre l'extractor emette
+"epistemic_class". Corretto lo scorer: 0.0% -> 33.3% senza toccare
+l'extractor.
+
+
+7. LIMITE NOTO DELLA SEGMENTAZIONE
+================================================================
+
+La segmentazione per heading tiene la sezione coerente, ma quando una sezione
+e' una LISTA DI ASSERZIONI INDIPENDENTI tutto il contenuto diventa contesto
+disponibile per ogni claim estratto da quella sezione.
+
+Caso osservato, keystone_ic_memo.md::## Concern block / what must be true —
+un unico chunk da ~250 parole contenente 8 item numerati:
+
+    1. Riverton remains sufficiently durable that a material reduction is a
+       downside, not the base case.
+    2. The Firm prices the transaction on $11.4m, not seller or covenant
+       EBITDA.
+    ...
+
+L'extractor ha prodotto:
+
+    statement: "The IC memo attests that the Firm prices the Riverton
+                transaction on $11.4m EBITDA, not seller or covenant EBITDA."
+    perimeter: "Riverton Group"
+    epistemic_class: attested
+
+La fonte dice "the transaction". "Riverton" e' arrivato dall'item 1. Riverton
+e' il cliente piu' grande di Alderstone, non il target dell'acquisizione. Il
+claim e' classificato `attested`, cioe' il tier di autorita' massimo.
+
+Un controllo di presenza-token NON intercetta questo caso: "Riverton" e'
+effettivamente nel chunk. Serve sapere che Riverton e' una controparte e non
+puo' essere il perimetro economico di una posizione finanziaria. Quella
+conoscenza e' dichiarata per deal, non inferita.
+
+
+8. GROUNDING GATE
+================================================================
+
+tools/grounding_gate.py intercetta questa classe di errore a valle. Non
+riscrive e non scarta nulla: produce una coda di revisione umana.
+
+Controlli:
+    G1  PERIMETER_IS_COUNTERPARTY   il perimetro nomina una controparte
+                                    dichiarata                        BLOCCA
+    G2  PERIMETER_OFF_VOCABULARY    perimetro fuori dal vocabolario del deal
+    G3  PERIMETER_MISSING           claim con valore ma senza perimetro
+    G4  VALUE_NOT_IN_SOURCE         il numero non compare nella fonte citata
+                                                                      BLOCCA
+    G4b DERIVATION_MISSING          epistemic=derived senza derivation
+                                                                      BLOCCA
+    G5  ENTITY_NOT_IN_SOURCE        entita' citata assente dalla fonte
+
+Il check numerico e' numerico, non testuale: tollera la notazione contabile
+negativa ($(0.20)m per -0.2), gli arrotondamenti (30.7 citato da una fonte che
+dice 30.72) e i numeri scritti in lettere ("approximately eight years").
+
+Risultato su K-IC:  55/296 puliti, 30 finding bloccanti, 241 segnalati.
+
+I 30 bloccanti includono casi in cui il campo value e' scollegato dallo
+statement — es. "8 employee records" con value 763.0, "7 active staff" con
+value 1092.0 — e precisioni inventate, es. "capex approximately 1%-2% of
+revenue" con value 1.5.
+
+
+9. CONFORMITA' SEMANTICA VERSO L'ENGINE — PUNTO DA SAPERE
+================================================================
+
+Il bundle V7 passa il transition engine con FULL, 4/4 SETTLED, 0 blocked.
+Ma la conformita' semantica che rende ammissibile la mutation NON viene
+dall'estrazione.
+
+CP-EBITDA-FIRM nel bundle ha:
+    perimeter: "Alderstone standalone, firm underwriting definition"
+    unit:      "$m/year"
+
+I tre claim che lo supportano hanno:
+    ks-c53078d13a55   perimeter 'unknown'              unit '$m'
+    ks-cfc5a5cb2f49   perimeter 'Keystone standalone'  unit '$m'
+    ks-987d2d468a39   perimeter 'Riverton Group'       unit '$m'
+
+Cioe': i tre claim sono in disaccordo tra loro, e perimeter/unit ammissibili
+sono DICHIARATI per deal in
+
+    vault/deals/<slug>/deal_profile.json
+
+non letti dai claim. Questo e' voluto — il perimetro e' un contratto con il
+layer eventi, non metadato descrittivo — ma va detto esplicitamente: oggi
+l'estrazione da sola non raggiunge la conformita' semantica richiesta
+dall'engine.
+
+Un deal senza profilo NON eredita il perimetro di un altro deal: riceve
+perimetro vuoto e un warning registrato, cosi' l'engine risponde
+NON_APPLICABLE_PERIMETER invece di accettare semantica falsa in silenzio.
+
+
+10. COME RIPRODURRE
+================================================================
+
+    make verify
+
+Esegue: regression 36/36, V7 acceptance 181/181, V7 end-to-end 21/21,
+staleness cascade (40 nodi), grounding gate, e il transition engine PANTA
+(FULL, 4 settled, 0 blocked). Il kit di riferimento viene trovato da solo,
+anche se e' ancora uno zip.
+
+Ri-estrazione (richiede ANTHROPIC_API_KEY):
+
+    python3 tools/extract_v2.py --manifest K-IC --deal keystone \
+            --output pipeline_out/e3/K-IC
+    python3 tools/adapter_alpha.py --e3 pipeline_out/e3/K-IC/e3_claims.json \
+            --out pipeline_out/e3/K-IC/adapter_alpha \
+            --manifest K-IC --deal keystone
+
+Parametro di segmentazione: --chunk-words (default 250). Chunk piu' piccoli
+riducono il bleed tra asserzioni ma costano piu' chiamate e tolgono il
+contesto che serve a inferire period e perimeter. E' un trade-off reale.

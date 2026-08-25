@@ -24,6 +24,15 @@ TOOLS   = ROOT / "tools"
 sys.path.insert(0, str(HERE / "api"))
 sys.path.insert(0, str(TOOLS))
 
+# Load .env.local (Vercel convention) so ANTHROPIC_API_KEY is available locally
+_env_file = ROOT / ".env.local"
+if _env_file.exists():
+    for _line in _env_file.read_text().splitlines():
+        _line = _line.strip()
+        if _line and not _line.startswith("#") and "=" in _line:
+            _k, _, _v = _line.partition("=")
+            os.environ.setdefault(_k.strip(), _v.strip().strip('"'))
+
 try:
     from _core import SYSTEM_PROMPT, CHAT_SYSTEM, call_api, parse_json, API_KEY
     from _claim_graph import claims_to_graph
@@ -111,7 +120,7 @@ def _handle_extract(body: dict) -> dict:
     text    = (body.get("text") or "").strip()
     deal    = (body.get("deal") or "test").strip()
     req_key = (body.get("api_key") or "").strip()
-    key     = req_key or API_KEY
+    key     = API_KEY or req_key   # server env wins; browser field is fallback only
     if not text:
         return {"error": "empty text"}
     if not key:
@@ -136,7 +145,7 @@ def _handle_chat(body: dict) -> dict:
     msg     = (body.get("message") or "").strip()
     graph   = body.get("graph", {"nodes": [], "edges": []})
     req_key = (body.get("api_key") or "").strip()
-    key     = req_key or API_KEY
+    key     = API_KEY or req_key   # server env wins; browser field is fallback only
     if not key:
         return {"error": "No API key"}
     if not msg:
@@ -206,17 +215,22 @@ class DevHandler(SimpleHTTPRequestHandler):
         path = self.path.split("?")[0].rstrip("/")
         fn = API_POST_ROUTES.get(path)
         if fn is None:
-            self.send_response(404)
-            self.end_headers()
+            self._json_response({"error": f"unknown route: {path}"})
             return
-        length = int(self.headers.get("Content-Length", 0))
-        body   = json.loads(self.rfile.read(length)) if length else {}
-        self._json_response(fn(body))
+        try:
+            length = int(self.headers.get("Content-Length", 0))
+            raw    = self.rfile.read(length) if length else b"{}"
+            body   = json.loads(raw)
+            result = fn(body)
+            self._json_response(result)
+        except Exception:
+            tb = traceback.format_exc()
+            print(tb)
+            self._json_response({"error": tb[-400:]})
 
     def log_message(self, fmt, *args):
-        # only log API routes
-        if "/api/" in (args[0] if args else ""):
-            print(f"  {args[0]}  →  {args[1]}")
+        if args:
+            print(f"  {args[0]}  →  {args[1] if len(args) > 1 else ''}")
 
 
 if __name__ == "__main__":

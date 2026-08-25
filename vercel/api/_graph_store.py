@@ -42,13 +42,11 @@ import re
 from pathlib import Path
 from typing import Any
 
-# v1 is stdlib-only (CLAUDE.md). tools/minigraph implements the DiGraph slice
-# this module uses; networkx is used only if it happens to be installed, and the
-# two are interchangeable here.
-try:
-    import networkx as nx           # type: ignore
-except ModuleNotFoundError:
-    from tools import minigraph as nx
+# The Vercel bundle ships its own dependencies (requirements.txt), so it
+# imports networkx directly. The stdlib-only rule applies to tools/, which is
+# not part of this deployment — reaching for tools.minigraph here raised
+# ModuleNotFoundError at import time and took the whole function down.
+import networkx as nx
 
 # ── Node type constants ────────────────────────────────────────────────────────
 CLAIM     = "claim"

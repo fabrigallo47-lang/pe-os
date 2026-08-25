@@ -280,17 +280,8 @@ PERIOD_MAP: dict[str, str] = {
     "Q3 2026": "2026-12-31", "Q4 2026": "2027-03-31",
     "Q1 2027": "2027-06-30", "Q2 2027": "2027-09-30",
 }
-PERIOD_ENUM: list[str | None] = [None] + sorted(PERIOD_MAP.keys())
-
-PERIMETER_ENUM: list[str | None] = [
-    None,
-    "Alderstone standalone",
-    "Alderstone consolidated",
-    "Alderstone QoE-normalized",
-    "Alderstone covenant definition",
-    "combined with target",
-    "Riverton Group",
-]
+# Period is now free-text — no enum constraint.
+# PERIOD_MAP is kept for period_iso normalization only (not for constraining the field).
 
 EPISTEMIC_CLASS_ENUM = ["asserted", "observed", "derived", "attested"]
 DIRECTION_ENUM = ["supports", "contradicts", "context"]
@@ -351,11 +342,27 @@ CLAIM_TOOL = {
                         },
                         "period": {
                             "type": ["string", "null"],
-                            "enum": PERIOD_ENUM,
+                            "description": (
+                                "The time period or vintage this claim refers to, in the document's own language. "
+                                "Use the richest description available. Examples: "
+                                "'FY2025A', 'FY2025A / FY2025E seller presentation', 'As of 2025-10-27', "
+                                "'LTM Sep-25', '2020 to 2025-10-27', 'FY2026E–FY2030E forecast'. "
+                                "Null only if the claim is genuinely timeless."
+                            ),
                         },
                         "perimeter": {
                             "type": ["string", "null"],
-                            "enum": PERIMETER_ENUM,
+                            "description": (
+                                "The precise economic scope — entity + metric definition + any adjustments. "
+                                "Write the full descriptive string, not a shorthand. Examples: "
+                                "'Alderstone consolidated revenue', "
+                                "'Alderstone consolidated EBITDA under seller adjustment perimeter', "
+                                "'Alderstone consolidated EBITDA under independent QoE adjustment perimeter', "
+                                "'Alderstone consolidated EBITDA under Firm valuation, leverage and returns perimeter', "
+                                "'Alderstone customer revenue measured by individual billing account', "
+                                "'Alderstone accounts-receivable ledger'. "
+                                "Null only if scope is truly unspecified."
+                            ),
                         },
                         "epistemic_class": {
                             "type": "string",
@@ -409,15 +416,39 @@ SYSTEM_PROMPT = textwrap.dedent("""
     Extract only claims explicitly stated in the fragment. Never infer or interpolate.
     Return an empty list when the fragment contains no financial claims.
 
-    epistemic_class rules:
-    - asserted: seller or management claims without third-party verification (CIM, seller deck)
-    - observed: third-party measurement in real time (QoE workpaper walkthrough, call transcript)
-    - attested: third-party formally certifies or underwrites (QoE conclusion, IC decision, audit)
-    - derived: YOU computed this from other stated values — requires derivation field
+    EPISTEMIC CLASS — apply strictly by document source and claim type:
+    - attested: ANY claim from the IC memo, QoE report conclusion, firm underwriting, or
+      formal buyer analysis. This includes the firm's EBITDA view, QoE findings,
+      covenant analysis, and any value the buyer's team formally concluded.
+      When in doubt for IC memo or QoE document fragments → use attested.
+    - asserted: seller or management stated claims with no third-party verification.
+      CIM numbers, management presentations, seller-deck projections → asserted.
+    - observed: a third-party measured or witnessed something directly in real time
+      (e.g. QoE workpaper data room observation, call transcript quote, site visit).
+    - derived: YOU computed this claim from two or more stated values — requires derivation field.
+      Only use when you performed arithmetic (ratio, sum, subtraction).
 
-    IC memo claims → attested. QoE conclusions → attested. Seller CIM numbers → asserted.
+    Source → class mapping (use this every time):
+      IC memo         → attested  (the firm's own formal conclusion)
+      QoE report      → attested  (third-party certifies)
+      Initial assessment → attested  (firm's own preliminary underwriting)
+      Data room docs  → observed  (raw third-party data)
+      Seller CIM / IM → asserted  (seller's marketing claims)
+      Management presentation → asserted
+      Computed by you → derived
 
-    Identity rule: claim period and perimeter must be explicit. Do not collapse:
+    Identity rule — write the FULL perimeter and FULL period, not a shorthand:
+    - period: use the document's own language including context, e.g.
+        'FY2025A / FY2025E seller presentation'  not just 'FY2025A'
+        'As of 2025-10-27'  not just '2025-10-27'
+        'FY2026E–FY2030E forecast'  not just 'FY2026E'
+    - perimeter: write the complete scope string, e.g.
+        'Alderstone consolidated EBITDA under seller adjustment perimeter'
+        'Alderstone consolidated EBITDA under independent QoE adjustment perimeter'
+        'Alderstone customer revenue measured by individual billing account'
+      NOT just 'Alderstone consolidated' or 'Alderstone standalone'.
+
+    Do not collapse different definitions:
     - Firm EBITDA ≠ QoE EBITDA ≠ Covenant EBITDA ≠ Seller EBITDA
     - account-level concentration ≠ parent-level concentration
     - FY2025A ≠ LTM ≠ FY2026E
@@ -689,8 +720,8 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         errors.append(f"unknown metric: '{raw.metric}'")
     value = _parse_float(raw.value)
     period_iso = _normalize_period(raw.period)
-    if period_iso.startswith("RAW:"):
-        errors.append(f"unrecognized period: '{raw.period}'")
+    # RAW: prefix means period didn't match PERIOD_MAP — store as-is, no longer reject.
+    # period_iso carries the raw label for non-standard periods.
     perimeter = raw.perimeter or "unknown"
     ec = raw.epistemic_class if raw.epistemic_class in EPISTEMIC_CLASS_ENUM else "asserted"
     if raw.epistemic_class not in EPISTEMIC_CLASS_ENUM:

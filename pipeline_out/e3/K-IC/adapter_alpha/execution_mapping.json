@@ -2,12 +2,12 @@
   "mapping_version": "v7",
   "deal": "PROJECT-KEYSTONE",
   "company": "Alderstone",
-  "canonical_graph_hash": "sha256:790399538c19aa6b7edcc7c677684b5c02b7a577dc43bc783e8d394a8026ea9b",
+  "canonical_graph_hash": "sha256:bca4f474f2efe66fa2276b89ce8a1f1c535424e0e041fac73078344a95c809e6",
   "provenance": {
     "extraction_hash": "sha256:bfff6c83477bec595fe8b81d598ec203bc2a96d9b52c9e5de1f7f9c155e4ce72",
     "execution_graph_hash": "sha256:0d95813dcd0ec39005df0dee5d1050b948939e9255e89d8c47415d9889a8bbab",
-    "canonical_current_hash": "sha256:790399538c19aa6b7edcc7c677684b5c02b7a577dc43bc783e8d394a8026ea9b",
-    "admission_manifest_hash": "sha256:2c3dd0503909d3dfac8edb701f06bbf0bea4963417ea3e186720f6fd44111e39"
+    "canonical_current_hash": "sha256:bca4f474f2efe66fa2276b89ce8a1f1c535424e0e041fac73078344a95c809e6",
+    "admission_manifest_hash": "sha256:389295d34a95161eb4c96710154310ac8117817e2f41ed1c32883269a5105180"
   },
   "lbo_runtime_module": "tools/keystone_model.py",
   "lbo_runtime_entrypoint": "propagate_claim",
@@ -1474,7 +1474,7 @@
       "model_node_id": "MN-REVENUE",
       "direction": "POSITION_DRIVES_MODEL",
       "value": 74.0,
-      "unit": "$m",
+      "unit": "$m/year",
       "period_iso": "2025-12-31",
       "epistemic_class": "asserted",
       "model_node_computational_form": "INPUT"
@@ -1496,7 +1496,7 @@
       "model_node_id": "MN-CONCENTRATION",
       "direction": "POSITION_DRIVES_MODEL",
       "value": 0.0258,
-      "unit": "x",
+      "unit": "%",
       "period_iso": "",
       "epistemic_class": "observed",
       "model_node_computational_form": "INPUT"
@@ -1562,7 +1562,7 @@
       "model_node_id": "MN-FIRM-EBITDA",
       "direction": "POSITION_DRIVES_MODEL",
       "value": 11.4,
-      "unit": "$m",
+      "unit": "$m/year",
       "period_iso": "2026-03-10",
       "epistemic_class": "attested",
       "model_node_computational_form": "INPUT"
@@ -1573,7 +1573,7 @@
       "model_node_id": "MN-QUARTERLY-FIRM-EBITDA",
       "direction": "POSITION_DRIVES_MODEL",
       "value": 11.4,
-      "unit": "$m",
+      "unit": "$m/year",
       "period_iso": "2026-03-10",
       "epistemic_class": "attested",
       "model_node_computational_form": "INPUT"
@@ -1628,7 +1628,7 @@
       "model_node_id": "MN-COV-EBITDA",
       "direction": "POSITION_DRIVES_MODEL",
       "value": 10.8,
-      "unit": "$m",
+      "unit": "$m/year",
       "period_iso": "2025-12-31",
       "epistemic_class": "derived",
       "model_node_computational_form": "DERIVED"
@@ -1646,56 +1646,6 @@
     }
   ],
   "formulas": [
-    {
-      "formula_id": "F-REVENUE-FROM-DRIVERS",
-      "description": "Quarterly revenue from Scenario_Drivers sheet (Standalone Base)",
-      "input_ids": [],
-      "output_id": "MN-REVENUE",
-      "expression_or_function_ref": "Scenario_Drivers!C5:V5",
-      "evaluation_type": "WORKBOOK_READ",
-      "workbook_cell_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C5:V5",
-      "unit": "MM_USD",
-      "period": "2026-06-30/2031-03-31",
-      "perimeter": "Alderstone_standalone",
-      "scenario": "standalone_base",
-      "source_ref": "keystone_model.py:SB_REVENUE",
-      "variable_binding": {},
-      "tolerances": {}
-    },
-    {
-      "formula_id": "F-FIRM-EBITDA-OPENING",
-      "description": "Opening firm EBITDA from Inputs sheet",
-      "input_ids": [],
-      "output_id": "MN-FIRM-EBITDA",
-      "expression_or_function_ref": "Inputs!B11",
-      "evaluation_type": "WORKBOOK_READ",
-      "workbook_cell_ref": "keystone_lbo_model_working.xlsx:Inputs!B11",
-      "unit": "MM_USD",
-      "period": "2025-12-31",
-      "perimeter": "Alderstone_standalone",
-      "scenario": null,
-      "source_ref": "keystone_model.py:DealInputs.firm_ebitda_opening",
-      "variable_binding": {},
-      "tolerances": {}
-    },
-    {
-      "formula_id": "F-QUARTERLY-FIRM-EBITDA",
-      "description": "Quarterly firm EBITDA from Scenario_Drivers!C7:V7",
-      "input_ids": [
-        "MN-REVENUE"
-      ],
-      "output_id": "MN-QUARTERLY-FIRM-EBITDA",
-      "expression_or_function_ref": "Scenario_Drivers!C7:V7",
-      "evaluation_type": "WORKBOOK_READ",
-      "workbook_cell_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C7:V7",
-      "unit": "MM_USD",
-      "period": "2026-06-30/2031-03-31",
-      "perimeter": "Alderstone_standalone",
-      "scenario": "standalone_base",
-      "source_ref": "keystone_model.py:SB_EBITDA",
-      "variable_binding": {},
-      "tolerances": {}
-    },
     {
       "formula_id": "F-COV-EBITDA-OPENING",
       "description": "Opening covenant EBITDA = firm_ebitda + rent_norm + integration_addback",

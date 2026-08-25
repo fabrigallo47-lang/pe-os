@@ -778,13 +778,15 @@ def _build_current_graph(
         cp_id = d["position_id"]
         if mn_id not in node_values:
             mn = model_nodes_raw.get(mn_id, {})
+            _val = d.get("value")
             node_values[mn_id] = {
                 "model_node_id": mn_id,
                 "name": _mn_name(mn_id),
                 "kind": _mn_kind(mn_id),
                 "period": _mn_period(mn_id, d.get("period_iso")),
                 "perimeter": _mn_perimeter(mn_id),
-                "value": d.get("value"),
+                "value": _val,
+                "initial_value": _val,   # PANTA event contract: mutations target initial_value
                 "unit": _MN_UNIT_CANONICAL.get(mn_id) or d.get("unit"),
                 "period_iso": d.get("period_iso"),
                 "epistemic_class": d.get("epistemic_class"),
@@ -804,18 +806,22 @@ def _build_current_graph(
         if mn_id in node_values and src_mn_id in node_values:
             annual_val = node_values[src_mn_id].get("value")
             if isinstance(annual_val, (int, float)) and annual_val is not None:
-                node_values[mn_id]["value"] = round(annual_val / divisor, 4)
+                derived = round(annual_val / divisor, 4)
+                node_values[mn_id]["value"] = derived
+                node_values[mn_id]["initial_value"] = derived
 
     # Add workbook-bound values for unbound INPUT nodes
     for mn_id, mn in model_nodes_raw.items():
         if mn_id not in node_values and mn.get("computational_form") == "INPUT" and mn.get("value_current") is not None:
+            _wb_val = mn.get("value_current")
             node_values[mn_id] = {
                 "model_node_id": mn_id,
                 "name": _mn_name(mn_id),
                 "kind": _mn_kind(mn_id),
                 "period": _mn_period(mn_id),
                 "perimeter": _mn_perimeter(mn_id),
-                "value": mn.get("value_current"),
+                "value": _wb_val,
+                "initial_value": _wb_val,
                 "unit": _MN_UNIT_CANONICAL.get(mn_id) or mn.get("unit"),
                 "period_iso": mn.get("effective_date"),
                 "epistemic_class": mn.get("epistemic_class", "asserted"),

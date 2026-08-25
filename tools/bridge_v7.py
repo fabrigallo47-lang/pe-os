@@ -408,18 +408,19 @@ def _build_case_positions(claims: list[dict]) -> dict[str, dict]:
             for i, c in enumerate(claims_for_cp)
         ]
 
+        inst = _CP_INSTITUTIONAL.get(cp_id, {})
         case_positions[cp_id] = {
             "cp_id": cp_id,
             "metric": primary.get("metric", ""),
             "value": _parse_float(primary.get("value")),
             "value_raw": primary.get("value"),
-            "unit": primary.get("unit", ""),
+            "unit": inst.get("unit") if inst.get("unit") is not None else primary.get("unit", ""),
             "epistemic_class": primary.get("epistemic_class", "asserted"),
             "period_iso": period_iso,
             "period_raw": primary.get("period_raw", ""),
             "effective_date": period_iso if _is_iso(period_iso) else None,
             "known_at": primary.get("known_at") or f"{_UNDERWRITING_CUTOFF}T00:00:00Z",
-            "perimeter": primary.get("perimeter", ""),
+            "perimeter": inst.get("perimeter") or primary.get("perimeter") or "Alderstone standalone",
             "model_node_ids": meta["model_node_ids"],
             "route_type": meta["route_type"],
             "support_routes": support_routes,
@@ -508,6 +509,74 @@ _CP_DIRECTION: dict[str, str] = {
     "CP-EBITDA-ADJ":       "MONITOR_ONLY",
     "CP-NWC-ADJ":          "MONITOR_ONLY",
     "CP-INTEGRATION-RISK": "MONITOR_ONLY",
+}
+
+
+# ── Institutional perimeter + unit per CP (contract with the event layer) ────
+# These values must match the mutations in event_ebitda_correction.json and
+# any future PANTA events.  They define the SEMANTIC IDENTITY of each position
+# (not the raw claim label), so they override the claim's perimeter/unit.
+_CP_INSTITUTIONAL: dict[str, dict] = {
+    "CP-EBITDA-FIRM":           {"perimeter": "Alderstone standalone, firm underwriting definition", "unit": "$m/year"},
+    "CP-EBITDA-QOE":            {"perimeter": "Alderstone standalone, QoE definition",              "unit": "$m/year"},
+    "CP-EBITDA-MARGIN":         {"perimeter": "Alderstone standalone",                              "unit": "%"},
+    "CP-EBITDA-ADJ":            {"perimeter": "Alderstone standalone",                              "unit": "$m"},
+    "CP-COV-EBITDA":            {"perimeter": "Alderstone standalone, covenant definition",         "unit": "$m/year"},
+    "CP-REVENUE":               {"perimeter": "Alderstone consolidated",                            "unit": "$m/year"},
+    "CP-RECURRING-REV":         {"perimeter": "Alderstone consolidated",                            "unit": "%"},
+    "CP-CONCENTRATION":         {"perimeter": "Alderstone consolidated",                            "unit": "%"},
+    "CP-DSO":                   {"perimeter": "Alderstone standalone",                              "unit": "days"},
+    "CP-WIP":                   {"perimeter": "Alderstone standalone",                              "unit": "$m"},
+    "CP-NWC":                   {"perimeter": "Alderstone standalone",                              "unit": "$m"},
+    "CP-NWC-TARGET":            {"perimeter": "Alderstone standalone",                              "unit": "$m"},
+    "CP-NWC-ADJ":               {"perimeter": "Alderstone standalone",                              "unit": "$m"},
+    "CP-DEBT":                  {"perimeter": "Alderstone standalone",                              "unit": "$m"},
+    "CP-EV":                    {"perimeter": "Alderstone standalone",                              "unit": "$m"},
+    "CP-SPONSOR-EQUITY":        {"perimeter": "Alderstone standalone",                              "unit": "$m"},
+    "CP-ROLLOVER":              {"perimeter": "Alderstone standalone",                              "unit": "$m"},
+    "CP-OPENING-CASH":          {"perimeter": "Alderstone standalone",                              "unit": "$m"},
+    "CP-INTEGRATION-RISK":      {"perimeter": "Alderstone consolidated",                            "unit": ""},
+    "CP-STANDALONE-BASE-MOIC":  {"perimeter": "Alderstone standalone",                              "unit": "x"},
+    "CP-STANDALONE-BASE-IRR":   {"perimeter": "Alderstone standalone",                              "unit": "%"},
+    "CP-STANDALONE-DOWNSIDE-MOIC": {"perimeter": "Alderstone standalone",                           "unit": "x"},
+    "CP-STANDALONE-DOWNSIDE-IRR":  {"perimeter": "Alderstone standalone",                           "unit": "%"},
+    "CP-STANDALONE-UPSIDE-MOIC":   {"perimeter": "Alderstone standalone",                           "unit": "x"},
+    "CP-STANDALONE-UPSIDE-IRR":    {"perimeter": "Alderstone standalone",                           "unit": "%"},
+    "CP-ACQUISITION-BASE-MOIC":    {"perimeter": "Alderstone standalone",                           "unit": "x"},
+    "CP-ACQUISITION-BASE-IRR":     {"perimeter": "Alderstone standalone",                           "unit": "%"},
+}
+
+# Period override for nodes whose execution-graph period is a forecast range
+# but whose semantic identity for event applicability is the opening snapshot date.
+_MN_PERIOD_OVERRIDE: dict[str, str] = {
+    "MN-QUARTERLY-FIRM-EBITDA": "2025-12-31",  # opening snapshot; event targets this date
+}
+
+# Quarterly model nodes: (annual_source_mn, divisor) — value = annual / divisor
+_MN_QUARTERLY_DERIVE: dict[str, tuple[str, int]] = {
+    "MN-QUARTERLY-FIRM-EBITDA": ("MN-FIRM-EBITDA", 4),
+}
+
+# Canonical time-frequency units for model nodes (overrides raw unit from claims)
+_MN_UNIT_CANONICAL: dict[str, str] = {
+    "MN-FIRM-EBITDA":            "$m/year",
+    "MN-QUARTERLY-FIRM-EBITDA":  "$m/quarter",
+    "MN-COV-EBITDA":             "$m/year",
+    "MN-REVENUE":                "$m/year",
+    "MN-FIRM-EBITDA-MARGIN":     "%",
+    "MN-BASE-DSO":               "days",
+    "MN-NWC":                    "$m",
+    "MN-DEBT":                   "$m",
+    "MN-EV":                     "$m",
+    "MN-ROLLOVER":               "$m",
+    "MN-SPONSOR-EQUITY":         "$m",
+    "MN-CONCENTRATION":          "%",
+    "MN-BASE-MOIC":              "x",
+    "MN-BASE-IRR":               "%",
+    "MN-DOWN-MOIC":              "x",
+    "MN-DOWN-IRR":               "%",
+    "MN-UP-MOIC":                "x",
+    "MN-UP-IRR":                 "%",
 }
 
 
@@ -678,13 +747,16 @@ def _build_current_graph(
 
     def _mn_period(mn_id: str, fallback_period_iso: str | None = None) -> str:
         """Return period string for a model node (schema requires non-empty)."""
+        if mn_id in _MN_PERIOD_OVERRIDE:
+            return _MN_PERIOD_OVERRIDE[mn_id]
         raw = model_nodes_raw.get(mn_id, {})
         return (raw.get("period") or raw.get("effective_date")
                 or fallback_period_iso or "OPENING")
 
     def _mn_perimeter(mn_id: str) -> str:
         raw = model_nodes_raw.get(mn_id, {})
-        return raw.get("perimeter") or "Alderstone standalone"
+        p = raw.get("perimeter") or "Alderstone standalone"
+        return p.replace("_", " ")
 
     def _mn_name(mn_id: str) -> str:
         raw = model_nodes_raw.get(mn_id, {})
@@ -713,7 +785,7 @@ def _build_current_graph(
                 "period": _mn_period(mn_id, d.get("period_iso")),
                 "perimeter": _mn_perimeter(mn_id),
                 "value": d.get("value"),
-                "unit": d.get("unit"),
+                "unit": _MN_UNIT_CANONICAL.get(mn_id) or d.get("unit"),
                 "period_iso": d.get("period_iso"),
                 "epistemic_class": d.get("epistemic_class"),
                 "bound_from_cp": cp_id,
@@ -727,6 +799,13 @@ def _build_current_graph(
                 "bound_from_cp": cp_id,
             })
 
+    # Derive quarterly model node values from their annual sources
+    for mn_id, (src_mn_id, divisor) in _MN_QUARTERLY_DERIVE.items():
+        if mn_id in node_values and src_mn_id in node_values:
+            annual_val = node_values[src_mn_id].get("value")
+            if isinstance(annual_val, (int, float)) and annual_val is not None:
+                node_values[mn_id]["value"] = round(annual_val / divisor, 4)
+
     # Add workbook-bound values for unbound INPUT nodes
     for mn_id, mn in model_nodes_raw.items():
         if mn_id not in node_values and mn.get("computational_form") == "INPUT" and mn.get("value_current") is not None:
@@ -737,7 +816,7 @@ def _build_current_graph(
                 "period": _mn_period(mn_id),
                 "perimeter": _mn_perimeter(mn_id),
                 "value": mn.get("value_current"),
-                "unit": mn.get("unit"),
+                "unit": _MN_UNIT_CANONICAL.get(mn_id) or mn.get("unit"),
                 "period_iso": mn.get("effective_date"),
                 "epistemic_class": mn.get("epistemic_class", "asserted"),
                 "bound_from_cp": None,
@@ -945,7 +1024,13 @@ def _normalize_execution_mapping(execution: dict,
         "model_nodes": nodes_list,
         "directed_model_edges": execution.get("directed_model_edges", []),
         "position_model_directions": pm_directions,
-        "formulas": execution.get("formulas", []),
+        # Exclude workbook-reference formulas: the reference runtime's AST
+        # evaluator only handles Python arithmetic expressions.  WORKBOOK_READ /
+        # WORKBOOK_FUNCTION_CALL entries become MISSING_EXECUTABLE_FORMULA limits.
+        "formulas": [
+            f for f in execution.get("formulas", [])
+            if f.get("evaluation_type") not in {"WORKBOOK_READ", "WORKBOOK_FUNCTION_CALL"}
+        ],
         "rule_switches": execution.get("rule_switches", []),
         "cyclic_component_solver_configs": execution.get("cyclic_component_solver_configs", []),
         "inverse_solver_configs": execution.get("inverse_solver_configs", []),

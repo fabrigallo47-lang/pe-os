@@ -17,6 +17,12 @@
   "trigger_claim_ids": [
     "ks-987d2d468a39"
   ],
+  "metric": "ebitda",
+  "from_value": 11.4,
+  "to_value": 12.2,
+  "unit": "$m",
+  "period": "2026-03-10",
+  "perimeter": "Riverton Group",
   "mutations": [
     {
       "operation": "CORRECT",

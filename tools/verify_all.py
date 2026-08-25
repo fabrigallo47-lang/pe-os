@@ -154,7 +154,13 @@ print(json.dumps({{
         d = json.loads(line)
     except Exception:
         return s.done(False, f"engine error: {out.strip()[:120]}")
-    ok = d["settlement"] == "FULL" and d["settled"] > 0 and d["blocked"] == 0
+    # PARTIAL is the correct outcome, not a failure: the event corrects one
+    # claim and the rest follows by propagation, which legitimately stops at
+    # the declared coverage limits. What must hold is that real propagation
+    # happened and nothing was blocked. A FULL obtained by hand-mutating the
+    # derived objects is what this used to accept.
+    ok = (d["settlement"] in {"FULL", "PARTIAL"}
+          and d["settled"] > 0 and d["blocked"] == 0)
     return s.done(ok, f"{d['settlement']}, {d['settled']} settled, {d['blocked']} blocked")
 
 
@@ -196,6 +202,21 @@ def _find_reference_kit() -> Path | None:
     return None
 
 
+def stage_independent(kit: Path | None) -> Stage:
+    """Antonio's own 46-check structural validation of the bundle."""
+    s = Stage("PANTA independent validation")
+    if kit is None or not (kit / "check_all.py").exists():
+        return s.done(True, "skipped — reference kit not on this machine")
+    bundle = ROOT / "pipeline_out/e3/K-IC/adapter_alpha"
+    rc, out = _run([PY, str(kit / "check_all.py"), str(bundle)], timeout=1200)
+    m = re.search(r"VERDICT:\s*(\w+)\s*\|\s*PASS=(\d+)\s+WARN=(\d+)\s+FAIL=(\d+)", out)
+    if not m:
+        return s.done(False, "no verdict line")
+    verdict, passed, warn, failed = m.group(1), *map(int, m.groups()[1:])
+    return s.done(verdict == "PASS" and failed == 0,
+                  f"{verdict} — PASS={passed} WARN={warn} FAIL={failed}")
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run every check and print one verdict")
     ap.add_argument("--reference-kit", type=Path, default=None,
@@ -210,7 +231,8 @@ def main() -> int:
     print(bar)
 
     stages = [stage_regression(), stage_v7(), stage_e2e(), stage_cascade(),
-              stage_grounding(), stage_reference(kit)]
+              stage_grounding(), stage_reference(kit),
+              stage_independent(kit)]
 
     print()
     for s in stages:

@@ -1295,7 +1295,12 @@ def apply_event(
     current = bundle["current_graph"]
     cp_dict = bundle.get("_cp_dict", {})
     event_id = event.get("event_id", "EV-UNKNOWN")
-    stable_claim_id_event = event.get("stable_claim_id", "")
+    # PANTA events name the corrected claim in trigger_claim_ids; the older
+    # hand-written event used a top-level stable_claim_id. Accept both.
+    stable_claim_id_event = (
+        event.get("stable_claim_id")
+        or next(iter(event.get("trigger_claim_ids", [])), "")
+    )
 
     # Locate the CP this event affects (use internal dict for O(1) access)
     affected_cp_id = None

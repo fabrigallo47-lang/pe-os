@@ -96,6 +96,14 @@ def build_event(bundle: Path, position_id: str, to_value: float,
         ),
         "source_ids": [claim.get("source_id", "")],
         "trigger_claim_ids": [claim_id],
+        # Convenience mirrors of the mutation, read by tools/bridge_v7.apply_event.
+        # The mutation list stays the authority; these must agree with it.
+        "metric": (claim.get("metric") or "").lower().strip(),
+        "from_value": from_value,
+        "to_value": to_value,
+        "unit": claim.get("unit", ""),
+        "period": claim.get("period_iso") or claim.get("period"),
+        "perimeter": claim.get("perimeter", ""),
         "mutations": [
             {
                 "operation": "CORRECT",

@@ -1,0 +1,421 @@
+<!doctype html>
+<html lang="it">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Keystone — Grafo di estrazione</title>
+<style>
+  :root{
+    --bg:#0d1117; --panel:#161b22; --line:#30363d; --ink:#e6edf3; --dim:#8b949e;
+    --claim:#58a6ff; --entity:#f0883e; --metric:#3fb950; --source:#bc8cff;
+    --area:#e3b341; --period:#39c5cf; --warn:#f85149;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;height:100%;background:var(--bg);color:var(--ink);
+    font:13px/1.5 ui-sans-serif,-apple-system,"Segoe UI",Roboto,sans-serif}
+  #app{display:flex;height:100vh;overflow:hidden}
+  #stage{flex:1;position:relative;min-width:0}
+  canvas{display:block;cursor:grab}
+  canvas.dragging{cursor:grabbing}
+
+  aside{width:330px;flex:none;background:var(--panel);border-left:1px solid var(--line);
+    display:flex;flex-direction:column;overflow:hidden}
+  aside header{padding:14px 16px;border-bottom:1px solid var(--line)}
+  aside h1{margin:0;font-size:14px;font-weight:600;letter-spacing:.2px}
+  aside .sub{color:var(--dim);font-size:11px;margin-top:3px}
+  .scroll{overflow-y:auto;padding:14px 16px;flex:1}
+  section{margin-bottom:18px}
+  section h2{margin:0 0 8px;font-size:10px;text-transform:uppercase;
+    letter-spacing:.9px;color:var(--dim);font-weight:600}
+
+  .seg{display:flex;gap:6px}
+  .seg button{flex:1;background:#21262d;border:1px solid var(--line);color:var(--ink);
+    padding:6px 8px;border-radius:6px;cursor:pointer;font-size:12px}
+  .seg button[aria-pressed="true"]{background:#1f6feb;border-color:#1f6feb}
+
+  .chip{display:flex;align-items:center;gap:8px;padding:4px 0;cursor:pointer;user-select:none}
+  .chip input{margin:0;accent-color:#1f6feb}
+  .dot{width:9px;height:9px;border-radius:50%;flex:none}
+  .chip .n{margin-left:auto;color:var(--dim);font-variant-numeric:tabular-nums}
+  .chip.off{opacity:.4}
+
+  .stat{display:flex;justify-content:space-between;padding:3px 0;
+    border-bottom:1px solid #21262d}
+  .stat b{font-weight:600;font-variant-numeric:tabular-nums}
+
+  #detail{border-top:1px solid var(--line);padding:14px 16px;max-height:46%;
+    overflow-y:auto;background:#0f141a}
+  #detail .empty{color:var(--dim);font-style:italic}
+  #detail .tag{display:inline-block;padding:2px 7px;border-radius:999px;
+    font-size:10px;letter-spacing:.4px;text-transform:uppercase;margin-right:5px}
+  #detail .stmt{margin:9px 0;line-height:1.55}
+  #detail dl{margin:0;display:grid;grid-template-columns:88px 1fr;gap:3px 10px;font-size:12px}
+  #detail dt{color:var(--dim)}
+  #detail dd{margin:0;word-break:break-word}
+  #detail .loc{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:10.5px;
+    color:var(--dim);word-break:break-all}
+
+  #hud{position:absolute;left:14px;top:14px;background:rgba(13,17,23,.86);
+    border:1px solid var(--line);border-radius:8px;padding:9px 12px;pointer-events:none;
+    font-variant-numeric:tabular-nums}
+  #hud .k{color:var(--dim)}
+  #tip{position:absolute;pointer-events:none;background:#1c2128;border:1px solid var(--line);
+    border-radius:6px;padding:6px 9px;font-size:11.5px;max-width:300px;display:none;z-index:5}
+  #zoom{position:absolute;right:14px;bottom:14px;display:flex;gap:6px}
+  #zoom button{width:30px;height:30px;border-radius:6px;background:#21262d;
+    border:1px solid var(--line);color:var(--ink);cursor:pointer;font-size:15px}
+  #load{position:absolute;inset:0;display:grid;place-items:center;color:var(--dim)}
+  label.search{display:block}
+  label.search input{width:100%;background:#0d1117;border:1px solid var(--line);
+    color:var(--ink);border-radius:6px;padding:6px 9px;font-size:12px}
+  .note{color:var(--dim);font-size:11px;line-height:1.5;margin-top:6px}
+</style>
+</head>
+<body>
+<div id="app">
+  <div id="stage">
+    <canvas id="cv"></canvas>
+    <div id="hud"><span class="k">nodi</span> <b id="hn">–</b> &nbsp;
+                  <span class="k">archi</span> <b id="he">–</b></div>
+    <div id="tip"></div>
+    <div id="zoom">
+      <button id="zin" title="Zoom +">+</button>
+      <button id="zout" title="Zoom −">−</button>
+      <button id="zfit" title="Adatta">⤢</button>
+    </div>
+    <div id="load">carico il grafo…</div>
+  </div>
+
+  <aside>
+    <header>
+      <h1>Keystone — grafo di estrazione</h1>
+      <div class="sub" id="sub">extract_v2 · pipeline L1–L4</div>
+    </header>
+    <div class="scroll">
+      <section>
+        <h2>Manifest</h2>
+        <div class="seg">
+          <button id="mKIC"  aria-pressed="true">K-IC</button>
+          <button id="mKPRE" aria-pressed="false">K-PRE</button>
+        </div>
+      </section>
+
+      <section>
+        <h2>Cerca</h2>
+        <label class="search"><input id="q" placeholder="metrica, entità, testo…"></label>
+      </section>
+
+      <section>
+        <h2>Tipi di nodo</h2>
+        <div id="types"></div>
+      </section>
+
+      <section>
+        <h2>Classe epistemica</h2>
+        <div id="epis"></div>
+      </section>
+
+      <section>
+        <h2>Struttura</h2>
+        <div id="stats"></div>
+        <p class="note" id="note"></p>
+      </section>
+    </div>
+    <div id="detail"><span class="empty">Clicca un nodo per ispezionarlo.</span></div>
+  </aside>
+</div>
+
+<script>
+const TYPE_COLOR = {claim:'#58a6ff',entity:'#f0883e',metric:'#3fb950',
+                    source:'#bc8cff',area:'#e3b341',period:'#39c5cf'};
+const EPI_COLOR  = {attested:'#3fb950',observed:'#39c5cf',
+                    derived:'#bc8cff',asserted:'#8b949e'};
+// CHALLENGES is what the contradiction pass emits; draw it so it reads as tension.
+const REL_STYLE  = {CHALLENGES:{c:'#f85149',w:1.5},
+                    DERIVES_FROM:{c:'#bc8cff',w:1.1},
+                    CONTRADICTS:{c:'#f85149',w:1.8}};
+
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+let G = {nodes:[],edges:[]}, N = [], E = [];
+let view = {x:0,y:0,k:1}, hover = null, picked = null;
+let typeOn = {}, epiOn = {}, query = '';
+
+const $ = id => document.getElementById(id);
+
+function resize(){
+  const r = cv.parentElement.getBoundingClientRect(), d = devicePixelRatio||1;
+  cv.width = r.width*d; cv.height = r.height*d;
+  cv.style.width = r.width+'px'; cv.style.height = r.height+'px';
+  ctx.setTransform(d,0,0,d,0,0);
+  draw();
+}
+addEventListener('resize', resize);
+
+async function load(manifest){
+  $('load').style.display='grid';
+  $('load').textContent='carico il grafo…';
+  try{
+    const res = await fetch(`./data/graph-${manifest}.json`);
+    if(!res.ok) throw new Error(res.status+' '+res.statusText);
+    G = await res.json();
+  }catch(err){
+    $('load').textContent = 'impossibile caricare il grafo: '+err.message;
+    return;
+  }
+  prepare();
+  layout();
+  buildFilters();
+  fit();
+  $('load').style.display='none';
+}
+
+function prepare(){
+  const byId = new Map();
+  N = G.nodes.map(n=>{
+    const o = Object.assign({}, n, {x:0,y:0,vx:0,vy:0});
+    o.r = 3 + Math.sqrt((n.pagerank||0)*900)*7;
+    byId.set(n.id,o); return o;
+  });
+  E = [];
+  for(const e of G.edges){
+    const s = byId.get(e.source), t = byId.get(e.target);
+    if(s && t) E.push({s,t,rel:e.rel});
+  }
+  $('hn').textContent = N.length;
+  $('he').textContent = E.length;
+}
+
+// Deterministic layout: seeded so the same graph always lays out the same way.
+function layout(){
+  let seed = 42;
+  const rnd = () => (seed = seed*1103515245+12345 & 0x7fffffff) / 0x7fffffff;
+  const R = Math.min(cv.width, cv.height)/2 || 400;
+  N.forEach((n,i)=>{
+    const a = (i/N.length)*Math.PI*2, rad = R*(0.25+rnd()*0.75);
+    n.x = Math.cos(a)*rad; n.y = Math.sin(a)*rad;
+  });
+
+  const deg = new Map();
+  for(const e of E){
+    deg.set(e.s.id,(deg.get(e.s.id)||0)+1);
+    deg.set(e.t.id,(deg.get(e.t.id)||0)+1);
+  }
+  // Hubs (many edges) resist being pulled around, so the layout does not
+  // collapse everything onto the few high-degree nodes.
+  N.forEach(n => n.mass = 1 + Math.log1p(deg.get(n.id)||0));
+
+  const ITER=340, AREA=1100;
+  const k = AREA/Math.sqrt(N.length);
+  for(let it=0; it<ITER; it++){
+    const t = 1 - it/ITER;
+    for(let i=0;i<N.length;i++){
+      const a=N[i]; a.vx=0; a.vy=0;
+      for(let j=0;j<N.length;j++){
+        if(i===j) continue;
+        const b=N[j];
+        let dx=a.x-b.x, dy=a.y-b.y, d2=dx*dx+dy*dy;
+        if(d2<1e-6){ dx=(Math.random()-.5); dy=(Math.random()-.5); d2=dx*dx+dy*dy; }
+        const f = (k*k)/d2;
+        a.vx += dx*f; a.vy += dy*f;
+      }
+    }
+    for(const e of E){
+      let dx=e.t.x-e.s.x, dy=e.t.y-e.s.y;
+      const d = Math.hypot(dx,dy)||1e-6, f = (d*d)/k;
+      dx/=d; dy/=d;
+      e.s.vx += dx*f/e.s.mass; e.s.vy += dy*f/e.s.mass;
+      e.t.vx -= dx*f/e.t.mass; e.t.vy -= dy*f/e.t.mass;
+    }
+    const cap = 26*t + 1;
+    for(const n of N){
+      const sp = Math.hypot(n.vx,n.vy)||1e-6, s = Math.min(sp,cap)/sp;
+      n.x += n.vx*s; n.y += n.vy*s;
+      n.x -= n.x*0.004; n.y -= n.y*0.004;   // gentle pull to centre
+    }
+  }
+}
+
+function buildFilters(){
+  const tc = {}, ec = {};
+  for(const n of G.nodes){
+    tc[n.type] = (tc[n.type]||0)+1;
+    if(n.type==='claim'){ const k=n.epistemic||'—'; ec[k]=(ec[k]||0)+1; }
+  }
+  const row = (key,label,count,color,store,host) => {
+    if(!(key in store)) store[key]=true;
+    const el = document.createElement('label');
+    el.className='chip'+(store[key]?'':' off');
+    el.innerHTML = `<input type="checkbox" ${store[key]?'checked':''}>
+      <span class="dot" style="background:${color}"></span><span>${label}</span>
+      <span class="n">${count}</span>`;
+    el.querySelector('input').onchange = ev => {
+      store[key]=ev.target.checked;
+      el.classList.toggle('off',!ev.target.checked);
+      draw();
+    };
+    host.appendChild(el);
+  };
+  const tHost=$('types'); tHost.innerHTML='';
+  Object.entries(tc).sort((a,b)=>b[1]-a[1])
+    .forEach(([t,c])=>row(t,t,c,TYPE_COLOR[t]||'#8b949e',typeOn,tHost));
+  const eHost=$('epis'); eHost.innerHTML='';
+  Object.entries(ec).sort((a,b)=>b[1]-a[1])
+    .forEach(([e,c])=>row(e,e,c,EPI_COLOR[e]||'#8b949e',epiOn,eHost));
+
+  const rel = {};
+  for(const e of G.edges) rel[e.rel]=(rel[e.rel]||0)+1;
+  const contra = (rel.CHALLENGES||0)+(rel.CONTRADICTS||0);
+  const claims = tc.claim||0;
+  $('stats').innerHTML =
+    `<div class="stat"><span>claim</span><b>${claims}</b></div>` +
+    `<div class="stat"><span>nodi</span><b>${G.nodes.length}</b></div>` +
+    `<div class="stat"><span>archi</span><b>${G.edges.length}</b></div>` +
+    `<div class="stat"><span>contraddizioni</span><b style="color:var(--warn)">${contra}</b></div>`;
+
+  const top = [...G.nodes].sort((a,b)=>(b.pagerank||0)-(a.pagerank||0))[0];
+  $('note').textContent = top
+    ? `Nodo più centrale: “${top.label}” (${top.type}, PageRank ${top.pagerank}).`
+    : '';
+}
+
+const visible = n => typeOn[n.type] !== false &&
+  (n.type!=='claim' || epiOn[n.epistemic||'—'] !== false) &&
+  (!query || (n.label+' '+(n.statement||'')+' '+(n.value||'')).toLowerCase().includes(query));
+
+function draw(){
+  const w=cv.clientWidth, h=cv.clientHeight;
+  ctx.clearRect(0,0,w,h);
+  ctx.save();
+  ctx.translate(w/2+view.x, h/2+view.y); ctx.scale(view.k,view.k);
+
+  const near = picked ? new Set(E.filter(e=>e.s===picked||e.t===picked)
+                                 .flatMap(e=>[e.s.id,e.t.id])) : null;
+
+  for(const e of E){
+    if(!visible(e.s)||!visible(e.t)) continue;
+    const st = REL_STYLE[e.rel];
+    const on = !picked || e.s===picked || e.t===picked;
+    ctx.globalAlpha = on ? (st?0.5:0.13) : 0.04;
+    ctx.strokeStyle = st ? st.c : '#8b949e';
+    ctx.lineWidth   = (st ? st.w : 0.6)/view.k;
+    ctx.beginPath(); ctx.moveTo(e.s.x,e.s.y); ctx.lineTo(e.t.x,e.t.y); ctx.stroke();
+  }
+
+  for(const n of N){
+    if(!visible(n)) continue;
+    const dim = picked && n!==picked && !near.has(n.id);
+    ctx.globalAlpha = dim ? 0.16 : 1;
+    ctx.fillStyle = n.type==='claim'
+      ? (EPI_COLOR[n.epistemic] || TYPE_COLOR.claim)
+      : (TYPE_COLOR[n.type] || '#8b949e');
+    ctx.beginPath(); ctx.arc(n.x,n.y,n.r,0,6.2832); ctx.fill();
+    if(n===picked || n===hover){
+      ctx.strokeStyle='#fff'; ctx.lineWidth=2/view.k; ctx.stroke();
+    }
+    if(view.k>1.5 && n.type!=='claim' && !dim){
+      ctx.globalAlpha=.85; ctx.fillStyle='#e6edf3';
+      ctx.font=`${11/view.k}px ui-sans-serif,sans-serif`; ctx.textAlign='center';
+      ctx.fillText(n.label, n.x, n.y - n.r - 4/view.k);
+    }
+  }
+  ctx.restore(); ctx.globalAlpha=1;
+}
+
+function at(px,py){
+  const w=cv.clientWidth,h=cv.clientHeight;
+  const x=(px-w/2-view.x)/view.k, y=(py-h/2-view.y)/view.k;
+  let best=null,bd=1e9;
+  for(const n of N){
+    if(!visible(n)) continue;
+    const d=Math.hypot(n.x-x,n.y-y);
+    if(d<Math.max(n.r,6)+3 && d<bd){bd=d;best=n;}
+  }
+  return best;
+}
+
+function show(n){
+  const d=$('detail');
+  if(!n){ d.innerHTML='<span class="empty">Clicca un nodo per ispezionarlo.</span>'; return; }
+  const col = n.type==='claim' ? (EPI_COLOR[n.epistemic]||'#58a6ff') : (TYPE_COLOR[n.type]||'#8b949e');
+  let html = `<span class="tag" style="background:${col}22;color:${col}">${n.type}</span>`;
+  if(n.epistemic) html += `<span class="tag" style="background:#21262d;color:var(--dim)">${n.epistemic}</span>`;
+  if(n.statement) html += `<div class="stmt">${esc(n.statement)}</div>`;
+  else html += `<div class="stmt"><b>${esc(n.label)}</b></div>`;
+  const rows=[];
+  if(n.value!=='' && n.value!=null) rows.push(['valore',`${esc(String(n.value))} ${esc(n.unit||'')}`]);
+  if(n.direction) rows.push(['direzione',esc(n.direction)]);
+  if(n.derivation) rows.push(['derivazione',esc(n.derivation)]);
+  const deg = E.filter(e=>e.s===n||e.t===n).length;
+  rows.push(['grado',String(deg)]);
+  rows.push(['pagerank',String(n.pagerank ?? '–')]);
+  if(rows.length) html += '<dl>'+rows.map(([k,v])=>`<dt>${k}</dt><dd>${v}</dd>`).join('')+'</dl>';
+  if(n.locator) html += `<dl><dt>locator</dt><dd class="loc">${esc(n.locator)}</dd></dl>`;
+  d.innerHTML = html;
+}
+const esc = s => String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+// ── interaction ──────────────────────────────────────────────────────────────
+let drag=null;
+cv.addEventListener('mousedown',e=>{drag={x:e.clientX,y:e.clientY,vx:view.x,vy:view.y,moved:false};
+  cv.classList.add('dragging');});
+addEventListener('mouseup',()=>{ if(drag&&!drag.moved){} drag=null; cv.classList.remove('dragging'); });
+cv.addEventListener('mousemove',e=>{
+  const r=cv.getBoundingClientRect(), px=e.clientX-r.left, py=e.clientY-r.top;
+  if(drag){
+    if(Math.abs(e.clientX-drag.x)+Math.abs(e.clientY-drag.y)>3) drag.moved=true;
+    view.x=drag.vx+(e.clientX-drag.x); view.y=drag.vy+(e.clientY-drag.y);
+    draw(); return;
+  }
+  const n=at(px,py);
+  if(n!==hover){ hover=n; draw(); }
+  const tip=$('tip');
+  if(n){
+    tip.style.display='block';
+    tip.style.left=Math.min(px+14, r.width-310)+'px';
+    tip.style.top=(py+14)+'px';
+    tip.innerHTML = n.statement ? esc(n.statement.slice(0,180)) : `<b>${esc(n.label)}</b>`;
+  } else tip.style.display='none';
+});
+cv.addEventListener('click',e=>{
+  if(drag&&drag.moved) return;
+  const r=cv.getBoundingClientRect();
+  picked = at(e.clientX-r.left, e.clientY-r.top);
+  show(picked); draw();
+});
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  const f=e.deltaY<0?1.12:1/1.12;
+  view.k=Math.max(.12,Math.min(9,view.k*f));
+  draw();
+},{passive:false});
+
+function fit(){
+  if(!N.length) return;
+  const vis=N.filter(visible); const use=vis.length?vis:N;
+  const xs=use.map(n=>n.x), ys=use.map(n=>n.y);
+  const w=Math.max(...xs)-Math.min(...xs), h=Math.max(...ys)-Math.min(...ys);
+  view.k=Math.min(cv.clientWidth/(w+120), cv.clientHeight/(h+120), 2.4);
+  view.x=-((Math.max(...xs)+Math.min(...xs))/2)*view.k;
+  view.y=-((Math.max(...ys)+Math.min(...ys))/2)*view.k;
+  draw();
+}
+$('zin').onclick =()=>{view.k=Math.min(9,view.k*1.25);draw();};
+$('zout').onclick=()=>{view.k=Math.max(.12,view.k/1.25);draw();};
+$('zfit').onclick=fit;
+$('q').oninput=e=>{query=e.target.value.trim().toLowerCase();draw();};
+
+function pick(m){
+  $('mKIC').setAttribute('aria-pressed', String(m==='K-IC'));
+  $('mKPRE').setAttribute('aria-pressed', String(m==='K-PRE'));
+  $('sub').textContent = `extract_v2 · manifest ${m}`;
+  picked=null; show(null);
+  load(m);
+}
+$('mKIC').onclick =()=>pick('K-IC');
+$('mKPRE').onclick=()=>pick('K-PRE');
+
+resize();
+pick('K-IC');
+</script>
+</body>
+</html>

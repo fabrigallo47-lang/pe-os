@@ -1,0 +1,584 @@
+{
+  "schema_version": "transition-output-1.0",
+  "engine_version": "0.4.0-conformance",
+  "execution_mode": "INCREMENTAL_SCC",
+  "run_id": "run:82532c87522c",
+  "case_id": "PROJECT-KEYSTONE",
+  "prior_state_id": "STATE-PROJECT-KEYSTONE-2026-03-10T23:59:59Z",
+  "policy_refs": {
+    "materiality_policy_id": "KEYSTONE-MATERIALITY-V0@0.2.0",
+    "authority_policy_id": "KEYSTONE-AUTHORITY-V0@0.2.0",
+    "canonical_graph_hash": "sha256:a4e22a911d463aa7e6f701e1d02eeb4de2d5ff45898a92059d95c5e7ea9f9a7a",
+    "execution_mapping_hash": "sha256:29480bafeba1188c332e0a7a92b3893cff49391226b281fe7cbd764049d04e20",
+    "solver_config_hash": "sha256:8f29d4e4bfdd5717a3b7ae8a19e529ab8bc838717ce8734ac1b7aece813a80c1"
+  },
+  "affected_set": [
+    {
+      "object_type": "MODEL_NODE",
+      "object_id": "MN-COV-EBITDA",
+      "seed": false,
+      "reached_via": [
+        "F-COV-EBITDA-OPENING:MN-FIRM-EBITDA:MN-COV-EBITDA:FORMULA_INPUT"
+      ]
+    },
+    {
+      "object_type": "MODEL_NODE",
+      "object_id": "MN-FIRM-EBITDA",
+      "seed": true,
+      "reached_via": [
+        "PMD-009:POSITION_DRIVES_MODEL"
+      ]
+    },
+    {
+      "object_type": "MODEL_NODE",
+      "object_id": "MN-QUARTERLY-FIRM-EBITDA",
+      "seed": true,
+      "reached_via": [
+        "PMD-010:POSITION_DRIVES_MODEL"
+      ]
+    },
+    {
+      "object_type": "POSITION",
+      "object_id": "CP-EBITDA-FIRM",
+      "seed": true,
+      "reached_via": []
+    }
+  ],
+  "ordered_transitions": [
+    {
+      "order": 0,
+      "component_id": "component:2b98233bf5d0",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "CP-EBITDA-FIRM"
+      ],
+      "result": "SETTLED",
+      "reason_codes": []
+    },
+    {
+      "order": 1,
+      "component_id": "component:97c973bee2ea",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "MN-FIRM-EBITDA"
+      ],
+      "result": "SETTLED",
+      "reason_codes": []
+    },
+    {
+      "order": 2,
+      "component_id": "component:6d1d0bbe1976",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "MN-COV-EBITDA"
+      ],
+      "result": "SETTLED",
+      "reason_codes": []
+    },
+    {
+      "order": 3,
+      "component_id": "component:5045993814f5",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "MN-QUARTERLY-FIRM-EBITDA"
+      ],
+      "result": "SETTLED",
+      "reason_codes": []
+    }
+  ],
+  "rule_switches": [],
+  "recomputed_values": [
+    {
+      "object_id": "CP-EBITDA-FIRM",
+      "old_value": 11.4,
+      "candidate_value": 12.2,
+      "unit": "$m/year",
+      "provisional": true,
+      "formula_or_solver_ref": null,
+      "materiality_class": "M1_PROFESSIONAL_REVIEW"
+    },
+    {
+      "object_id": "MN-COV-EBITDA",
+      "old_value": 10.8,
+      "candidate_value": "11.4",
+      "unit": "$m/year",
+      "provisional": true,
+      "formula_or_solver_ref": "F-COV-EBITDA-OPENING",
+      "materiality_class": "M1_PROFESSIONAL_REVIEW"
+    }
+  ],
+  "unchanged_objects": [],
+  "human_stops": [
+    {
+      "stop_id": "STOP-CURRENT-REVIEW",
+      "object_or_component_id": "candidate-change-set",
+      "reason_code": "DECISION_REQUIRES_HUMAN",
+      "requested_action": "Review and adopt or reject the Candidate treatment.",
+      "required_role": "WORKSTREAM_REVIEWER",
+      "policy_rule_id": "AUTH-010",
+      "downstream_scope": [
+        "CP-EBITDA-FIRM",
+        "MN-COV-EBITDA",
+        "MN-FIRM-EBITDA",
+        "MN-QUARTERLY-FIRM-EBITDA"
+      ]
+    }
+  ],
+  "blocked_components": [],
+  "coverage_limits": [
+    {
+      "limit_id": "CL-CONCENTRATION",
+      "reason_code": "COVERAGE_LIMIT_DECLARED",
+      "scope_ids": [
+        "MN-CONCENTRATION",
+        "RS-FINANCING-GRID"
+      ],
+      "effect": "MN-CONCENTRATION has no quantitative workbook binding. RS-FINANCING-GRID cannot fully evaluate the step-down rule."
+    },
+    {
+      "limit_id": "CL-FINANCING-GRID",
+      "reason_code": "COVERAGE_LIMIT_DECLARED",
+      "scope_ids": [
+        "MN-DEBT-CAPACITY",
+        "RS-FINANCING-GRID"
+      ],
+      "effect": "Financing grid step-down rule (>15% single-parent exposure) not available in current policy file. RS-FINANCING-GRID branch RS-FG-STANDARD is the only declared branch. MN-DEBT-CAPACITY is conservative until policy_owner confirms."
+    },
+    {
+      "limit_id": "CL-MATERIALITY-POLICY",
+      "reason_code": "COVERAGE_LIMIT_DECLARED",
+      "scope_ids": [
+        "MN-SUPPORTED-PRICE",
+        "RS-ECF-SWEEP"
+      ],
+      "effect": "keystone_materiality_policy_v0.json referenced in prior extractions does not exist. Materiality thresholds are not applied in this V7."
+    },
+    {
+      "limit_id": "CL-SCENARIO-DRIVERS",
+      "reason_code": "COVERAGE_LIMIT_DECLARED",
+      "scope_ids": [
+        "MN-ACQ-IRR",
+        "MN-ACQ-MOIC",
+        "MN-COMBINED-RISK-IRR",
+        "MN-COMBINED-RISK-MOIC",
+        "MN-DOWN-IRR",
+        "MN-DOWN-MOIC"
+      ],
+      "effect": "Scenario drivers other than Standalone Base (Downside, Upside, Acq Base, Combined Risk) are declared as node stubs only. Workbook extraction pass needed to bind their values."
+    },
+    {
+      "limit_id": "FORMULA-F-CFO",
+      "reason_code": "AMBIGUOUS_FORMULA_OPERAND_BINDING",
+      "scope_ids": [
+        "MN-NWC",
+        "MN-QUARTERLY-CFO",
+        "MN-QUARTERLY-FIRM-EBITDA",
+        "MN-QUARTERLY-INTEREST",
+        "MN-REVENUE"
+      ],
+      "effect": "The standalone formula could not produce a Candidate value."
+    },
+    {
+      "limit_id": "FORMULA-F-DEBT-CAPACITY",
+      "reason_code": "MISSING_FORMULA_INPUT",
+      "scope_ids": [
+        "MN-COV-EBITDA",
+        "MN-DEBT-CAPACITY",
+        "MN-NET-LEVERAGE"
+      ],
+      "effect": "The standalone formula could not produce a Candidate value."
+    },
+    {
+      "limit_id": "FORMULA-F-EXIT-EV",
+      "reason_code": "MISSING_FORMULA_OUTPUT",
+      "scope_ids": [
+        "MN-BASE-EXIT-MULT",
+        "MN-EXIT-EV",
+        "MN-QUARTERLY-FIRM-EBITDA"
+      ],
+      "effect": "The standalone formula could not produce a Candidate value."
+    },
+    {
+      "limit_id": "FORMULA-F-NET-LEVERAGE",
+      "reason_code": "MISSING_FORMULA_INPUT",
+      "scope_ids": [
+        "MN-FIRM-EBITDA",
+        "MN-NET-LEVERAGE",
+        "MN-QUARTERLY-CASH",
+        "MN-QUARTERLY-COV-EBITDA",
+        "MN-QUARTERLY-DDTL",
+        "MN-QUARTERLY-REVOLVER",
+        "MN-QUARTERLY-TERM-LOAN"
+      ],
+      "effect": "The standalone formula could not produce a Candidate value."
+    },
+    {
+      "limit_id": "FORMULA-F-QUARTERLY-COV-EBITDA",
+      "reason_code": "MISSING_FORMULA_OUTPUT",
+      "scope_ids": [
+        "MN-INTEGRATION-COST-ADJ",
+        "MN-QUARTERLY-COV-EBITDA",
+        "MN-QUARTERLY-FIRM-EBITDA",
+        "MN-RELATED-PARTY-RENT-NORM"
+      ],
+      "effect": "The standalone formula could not produce a Candidate value."
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-101",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-CONCENTRATION"
+      ],
+      "effect": "COVERAGE_LIMIT: concentration metrics not modelled in workbook; qualitative risk factor only"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-102",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-DEBT-CAPACITY"
+      ],
+      "effect": "COVERAGE_LIMIT: financing grid step-down rule (>15% single-parent exposure) not available in current policy file; treatment is conservative hold until policy_owner confirms step-down threshold"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-103",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-BASE-GROWTH"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-BASE-GROWTH requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-104",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-BASE-EBITDA-MARGIN"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-BASE-EBITDA-MARGIN requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-105",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-DOWN-GROWTH"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-DOWN-GROWTH requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-106",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-DOWN-EBITDA-MARGIN"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-DOWN-EBITDA-MARGIN requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-107",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-DOWN-DSO"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-DOWN-DSO requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-108",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-DOWN-WIP"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-DOWN-WIP requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-109",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-DOWN-CAPEX"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-DOWN-CAPEX requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-110",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-STANDALONE-UPSIDE-PLATFORM-GROWTH"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-STANDALONE-UPSIDE-PLATFORM-GROWTH requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-111",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-STANDALONE-UPSIDE-FIRM-EBITDA-MARGIN"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-STANDALONE-UPSIDE-FIRM-EBITDA-MARGIN requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-112",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-STANDALONE-UPSIDE-DSO"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-STANDALONE-UPSIDE-DSO requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-113",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-STANDALONE-UPSIDE-WIP-REVENUE"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-STANDALONE-UPSIDE-WIP-REVENUE requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-114",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-STANDALONE-UPSIDE-CAPEX-REVENUE"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-STANDALONE-UPSIDE-CAPEX-REVENUE requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-115",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-ACQUISITION-BASE-PLATFORM-GROWTH"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-ACQUISITION-BASE-PLATFORM-GROWTH requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-116",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-ACQUISITION-BASE-FIRM-EBITDA-MARGIN"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-ACQUISITION-BASE-FIRM-EBITDA-MARGIN requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-117",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-ACQUISITION-BASE-DSO"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-ACQUISITION-BASE-DSO requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-118",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-ACQUISITION-BASE-WIP-REVENUE"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-ACQUISITION-BASE-WIP-REVENUE requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-119",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-ACQUISITION-BASE-CAPEX-REVENUE"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-ACQUISITION-BASE-CAPEX-REVENUE requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-120",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-COMBINED-RISK-GROWTH"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-COMBINED-RISK-GROWTH requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-121",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-COMBINED-RISK-EBITDA-MARGIN"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-COMBINED-RISK-EBITDA-MARGIN requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-122",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-COMBINED-RISK-DSO"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-COMBINED-RISK-DSO requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-123",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-COMBINED-RISK-WIP"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-COMBINED-RISK-WIP requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-124",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-COMBINED-RISK-CAPEX-REVENUE"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-COMBINED-RISK-CAPEX-REVENUE requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-125",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-COMBINED-RISK-INTEGRATION-SPEND"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-COMBINED-RISK-INTEGRATION-SPEND requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-126",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-SELLER-EBITDA"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-SELLER-EBITDA requires workbook extraction pass"
+    },
+    {
+      "limit_id": "KS-BRIDGE-CL-127",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-QOE-EBITDA"
+      ],
+      "effect": "COVERAGE_LIMIT: value not yet bound from workbook; scenario node MN-QOE-EBITDA requires workbook extraction pass"
+    }
+  ],
+  "invariant_checks": [
+    {
+      "invariant_id": "CURRENT_INPUT_IMMUTABLE",
+      "status": "PASS",
+      "details": "All mutations were applied to a Candidate copy."
+    },
+    {
+      "invariant_id": "APPROVED_NOT_REWRITTEN",
+      "status": "PASS",
+      "details": "Approved snapshot is byte-equivalent to the prior state."
+    },
+    {
+      "invariant_id": "HISTORY_APPEND_ONLY",
+      "status": "PASS",
+      "details": "Prior history was not modified; new records are returned separately."
+    },
+    {
+      "invariant_id": "FULL_EVALUATION_COVERAGE",
+      "status": "PASS",
+      "details": "No downstream evaluation remained in this run."
+    }
+  ],
+  "candidate_current_approved_delta": {
+    "candidate": [
+      {
+        "object_type": "MODEL_NODE",
+        "object_id": "MN-COV-EBITDA",
+        "field": "value",
+        "from": 10.8,
+        "to": "11.4",
+        "status": "PROPOSED",
+        "reason_code": "FORMULA_RECOMPUTATION"
+      },
+      {
+        "object_type": "MODEL_NODE",
+        "object_id": "MN-FIRM-EBITDA",
+        "field": "initial_value",
+        "from": 11.4,
+        "to": 12.2,
+        "status": "PROPOSED",
+        "reason_code": "DIRECT_EVENT_MUTATION"
+      },
+      {
+        "object_type": "MODEL_NODE",
+        "object_id": "MN-QUARTERLY-FIRM-EBITDA",
+        "field": "initial_value",
+        "from": 2.85,
+        "to": 3.05,
+        "status": "PROPOSED",
+        "reason_code": "DIRECT_EVENT_MUTATION"
+      },
+      {
+        "object_type": "POSITION",
+        "object_id": "CP-EBITDA-FIRM",
+        "field": "value",
+        "from": 11.4,
+        "to": 12.2,
+        "status": "PROPOSED",
+        "reason_code": "DIRECT_EVENT_MUTATION"
+      }
+    ],
+    "current": [],
+    "approved": []
+  },
+  "partial_settlement_status": {
+    "candidate": "FULL",
+    "current": "REVIEW_PENDING",
+    "approved": "UNCHANGED",
+    "settled_component_ids": [
+      "component:2b98233bf5d0",
+      "component:97c973bee2ea",
+      "component:6d1d0bbe1976",
+      "component:5045993814f5"
+    ],
+    "unsettled_component_ids": []
+  },
+  "replay_hash": "sha256:82532c87522c946807d200ec18ef98faf507a814aff9599485e27116765993ab",
+  "route_results": [],
+  "support_combination_results": [],
+  "invalid_route_ids": [],
+  "numerical_solver_invocations": 0,
+  "numerical_solver_results": [],
+  "inverse_solver_invocations": 0,
+  "inverse_solver_results": [],
+  "global_block": false,
+  "materiality_assessment": {
+    "overall_class": "M1_PROFESSIONAL_REVIEW",
+    "triggered_rule_ids": [],
+    "assessments": [
+      {
+        "rule_id": "M0-AUTO-RECONCILIATION-GUARDS",
+        "object_id": "candidate-change-set",
+        "materiality_class": "M1_PROFESSIONAL_REVIEW",
+        "reason_code": "M0_AUTO_RECONCILIATION_GUARDS_FAILED"
+      }
+    ],
+    "comparison_after_full_affected_set": true,
+    "severity_aggregation": "MAX"
+  },
+  "governance": {
+    "current_treatment": "PROFESSIONAL_REVIEW_REQUIRED",
+    "gate_status": "OPEN",
+    "waiver_allowed": null,
+    "approved_treatment": "UNCHANGED"
+  },
+  "governance_action_results": [],
+  "audit_records": [],
+  "accumulation": {
+    "comparison_basis": "LAST_ABSORBED_CURRENT_K_T",
+    "K_t": {
+      "MN-REVENUE": 74.0,
+      "MN-DEBT": 42.8,
+      "MN-CONCENTRATION": 0.0258,
+      "MN-BASE-DSO": 35.5,
+      "MN-EV": 165.120480014,
+      "MN-ROLLOVER": 12.0,
+      "MN-NWC": 8.4,
+      "MN-FIRM-EBITDA": 11.4,
+      "MN-QUARTERLY-FIRM-EBITDA": 2.85,
+      "MN-SPONSOR-EQUITY": 62.0,
+      "MN-BASE-MOIC": 1.99599330786,
+      "MN-BASE-IRR": 0.148150819261,
+      "MN-OPENING-CASH": 4.78,
+      "MN-COV-EBITDA": 10.8,
+      "MN-DOWN-MOIC": 1.28,
+      "MN-SELLER-NET-DEBT-AND-DEBT-LIKE-IT": 10.2,
+      "MN-INTEGRATION-COST-ADJ": 0.0,
+      "MN-RELATED-PARTY-RENT-NORM": 0.0,
+      "MN-BASE-EXIT-MULT": 9.0,
+      "MN-BASE-WIP": 0.067,
+      "MN-BASE-CAPEX": 0.016,
+      "MN-STANDALONE-DOWNSIDE-EXIT-MULTIPLE": 7.5,
+      "MN-STANDALONE-UPSIDE-EXIT-MULTIPLE": 10.0,
+      "MN-ACQUISITION-BASE-EXIT-MULTIPLE": 9.5,
+      "MN-COMBINED-RISK-EXIT-MULT": 8.0
+    },
+    "sub_tolerance_recorded": false,
+    "sub_tolerance_movements": [],
+    "cumulative_trigger_ids": []
+  },
+  "semantic_result_hash": "sha256:017fec82a65fcf19fd8a5a6e36ad2a88b86e347b596b5e3029abc77a76791613"
+}

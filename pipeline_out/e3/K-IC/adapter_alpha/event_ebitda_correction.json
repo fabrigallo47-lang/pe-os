@@ -1,0 +1,89 @@
+{
+  "event_id": "EV-KS-EBITDA-001",
+  "event_type": "claim_correction",
+  "deal": "PROJECT-KEYSTONE",
+  "company": "Alderstone",
+
+  "stable_claim_id": "ks-41c79954bd44",
+  "claim_metric_original": "EBITDA",
+  "claim_value_original": "11.4",
+  "claim_period_original": "FY2025A",
+
+  "metric": "firm ebitda",
+  "from_value": 11.4,
+  "to_value": 12.2,
+  "unit": "$m/year",
+  "period": "2025-12-31",
+  "period_label": "FY2025A",
+  "perimeter": "Alderstone standalone, firm underwriting definition",
+  "note": "IC Memo 2026-03-10: firm underwritten EBITDA revised from $11.4m (Firm Model) to $12.2m (adopting QoE v2 conclusion and covenant add-backs). Ratio 12.2/11.4 ≈ 1.070 applied uniformly to all 20 model quarters.",
+
+  "effective_date": "2026-03-10",
+  "known_at": "2026-03-10T00:00:00Z",
+  "source": "IC Memo 2026-03-10",
+  "author": "IC",
+  "epistemic_type": "asserted",
+  "authority_required": "IC_MEMO",
+
+  "cp_affected": "CP-EBITDA-FIRM",
+  "mn_primary": "MN-FIRM-EBITDA",
+  "mn_secondary": "MN-QUARTERLY-FIRM-EBITDA",
+
+  "propagation_expected": {
+    "chain": [
+      "EBITDA annual $11.4m → $12.2m (+7.0%)",
+      "→ CP-EBITDA-FIRM",
+      "→ MN-QUARTERLY-FIRM-EBITDA (all 20 quarters × 1.070)",
+      "→ MN-NET-LEVERAGE (lower, covenant headroom improves)",
+      "→ SCC: MN-QUARTERLY-CFO ↔ MN-QUARTERLY-INTEREST ↔ MN-QUARTERLY-REVOLVER",
+      "→ MN-EXIT-EV (exit_ltm_ebitda × 9.0×)",
+      "→ MN-BASE-MOIC / MN-BASE-IRR (both improve)",
+      "→ MN-SUPPORTED-PRICE (inverse solver re-runs, max entry EV s.t. IRR≥14% AND MOIC≥2.0×)"
+    ],
+    "direction": "positive",
+    "delta_qualitative": "MOIC +0.17–0.21×; IRR +180–230 bps; Exit EV +10–13m"
+  },
+
+  "event": "CLAIM_CORRECTION:INPUT_REVISION — Firm underwritten EBITDA revised upward at IC gate",
+  "event_status": "SYNTHETIC_TEST_EVENT",
+  "source_ids": ["IC-MEMO-2026-03-10"],
+  "trigger_claim_ids": ["ks-41c79954bd44"],
+  "mutations": [
+    {
+      "operation": "CORRECT",
+      "object_type": "POSITION",
+      "object_id": "CP-EBITDA-FIRM",
+      "field": "value",
+      "from": 11.4,
+      "to": 12.2,
+      "unit": "$m/year",
+      "definition_id": "DEF-CP-EBITDA-FIRM",
+      "period": "2025-12-31",
+      "perimeter": "Alderstone standalone, firm underwriting definition"
+    },
+    {
+      "operation": "CORRECT",
+      "object_type": "MODEL_NODE",
+      "object_id": "MN-FIRM-EBITDA",
+      "field": "initial_value",
+      "from": 11.4,
+      "to": 12.2,
+      "unit": "$m/year",
+      "definition_id": null,
+      "period": "2025-12-31",
+      "perimeter": "Alderstone standalone"
+    },
+    {
+      "operation": "CORRECT",
+      "object_type": "MODEL_NODE",
+      "object_id": "MN-QUARTERLY-FIRM-EBITDA",
+      "field": "initial_value",
+      "from": 2.85,
+      "to": 3.05,
+      "unit": "$m/quarter",
+      "definition_id": null,
+      "period": "2025-12-31",
+      "perimeter": "Alderstone standalone"
+    }
+  ]
+}

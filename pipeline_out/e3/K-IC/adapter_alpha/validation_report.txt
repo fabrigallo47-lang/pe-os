@@ -1,0 +1,22 @@
+PANTA V7 Transition Engine — Validation Report
+=======================================================
+Extractor        : E3 K-IC (adapter_alpha)
+Engine version   : 0.4.0-conformance
+Run ID           : run:82532c87522c
+Execution mode   : INCREMENTAL_SCC
+
+Settlement:
+  candidate      : FULL
+  current        : REVIEW_PENDING
+
+Ordered transitions: 4 (4 settled, 0 blocked)
+  [SETTLED] CP-EBITDA-FIRM  rc=[]
+  [SETTLED] MN-FIRM-EBITDA  rc=[]
+  [SETTLED] MN-COV-EBITDA  rc=[]
+  [SETTLED] MN-QUARTERLY-FIRM-EBITDA  rc=[]
+
+Affected objects : 4
+Recomputed values: [{'object_id': 'CP-EBITDA-FIRM', 'old_value': 11.4, 'candidate_value': 12.2, 'unit': '$m/year', 'provisional': True, 'formula_or_solver_ref': None, 'materiality_class': 'M1_PROFESSIONAL_REVIEW'}, {'object_id': 'MN-COV-EBITDA', 'old_value': 10.8, 'candidate_value': '11.4', 'unit': '$m/year', 'provisional': True, 'formula_or_solver_ref': 'F-COV-EBITDA-OPENING', 'materiality_class': 'M1_PROFESSIONAL_REVIEW'}]
+Coverage limits  : 36
+
+Unchanged objects (non_applicable):

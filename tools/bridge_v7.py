@@ -775,9 +775,15 @@ def _build_current_graph(
                 node_values[mn_id]["value"] = derived
                 node_values[mn_id]["initial_value"] = derived
 
-    # Add workbook-bound values for unbound INPUT nodes
+    # Carry the REST of the model, not just the position-bound nodes.
+    # The Current graph is the state PANTA propagates over and that model
+    # controls reference; holding only the 25 bound nodes left controls
+    # pointing at objects outside the graph (MAPPING_REFERENCES) and made the
+    # canonical event unable to reach its required outputs
+    # (CANONICAL_TARGET_REACHABILITY). Derived nodes carry their compiled value
+    # and are recomputed by the engine from the execution mapping.
     for mn_id, mn in model_nodes_raw.items():
-        if mn_id not in node_values and mn.get("computational_form") == "INPUT" and mn.get("value_current") is not None:
+        if mn_id not in node_values:
             _wb_val = mn.get("value_current")
             node_values[mn_id] = {
                 "model_node_id": mn_id,
@@ -793,7 +799,7 @@ def _build_current_graph(
                 "bound_from_cp": None,
                 "workbook_ref": mn.get("workbook_ref"),
                 "computational_form": mn.get("computational_form"),
-                "source": "workbook_direct",
+                "source": "workbook_direct" if mn.get("computational_form") == "INPUT" else "model_compiled",
             }
 
     # PANTA Live Case format: case_positions as array
@@ -916,8 +922,13 @@ def _normalize_execution_mapping(execution: dict,
             "unit": mn.get("unit"),
             "period": mn.get("period"),
             "effective_date": mn.get("effective_date"),
-            "perimeter": _profile().mn_perimeter(
-                mn.get("model_node_id") or mn.get("mn_id", ""), mn.get("perimeter")),
+            # Keep the execution graph's own perimeter verbatim here. This
+            # mapping entry is a computational identity and is reconciled
+            # field-by-field against execution_graph_v7; normalising
+            # "deal_level" to "deal level" made the two look like different
+            # compilations. The Current graph still carries the readable form,
+            # which is what event applicability matches against.
+            "perimeter": mn.get("perimeter"),
             "epistemic_class": mn.get("epistemic_class"),
             "initial_value": mn.get("value_current"),
             "workbook_ref": mn.get("workbook_ref"),
@@ -1027,11 +1038,15 @@ def _build_adapter_report(
     monitoring = [c for c in all_claims if c["temporal_class"] == "monitoring"]
 
     mn_ids = set(execution.get("model_nodes", {}).keys())
-    bound_mn = set()
-    for cp in case_positions.values():
-        for mn_id in cp["model_node_ids"]:
-            if mn_id in mn_ids:
-                bound_mn.add(mn_id)
+    # Count BINDINGS, not distinct nodes: one model node can be driven by two
+    # positions, and the handoff the adapter report describes is
+    # position_model_directions, which has one row per binding.
+    bound_mn = [
+        mn_id
+        for cp in case_positions.values()
+        for mn_id in cp["model_node_ids"]
+        if mn_id in mn_ids
+    ]
 
     return {
         "adapter_version": "v7",

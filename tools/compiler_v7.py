@@ -204,7 +204,7 @@ def _build_model_nodes(inp: DealInputs) -> dict:
         "workbook_ref": f"{WB}:Inputs!B11",
         "known_at": "2026-03-10T00:00:00Z",
         "directed_deps": [],
-        "formula_id": "F-FIRM-EBITDA-OPENING",
+        "formula_id": None,   # INPUT seeded by CP-EBITDA-FIRM
         "coverage_limits": [],
         "note": "Valuation + internal leverage metric; DIFFERENT from MN-COV-EBITDA",
     }
@@ -315,7 +315,7 @@ def _build_model_nodes(inp: DealInputs) -> dict:
         "workbook_ref": f"{WB}:Scenario_Drivers!C5:V5",
         "known_at": "2026-03-10T00:00:00Z",
         "directed_deps": [],
-        "formula_id": "F-REVENUE-FROM-DRIVERS",
+        "formula_id": None,   # INPUT seeded by CP-REVENUE
         "coverage_limits": [],
     }
 
@@ -927,8 +927,10 @@ def _build_directed_edges() -> list[dict]:
         })
 
     # ── Operating model chain ─────────────────────────────────────────────
-    _e("E-REV-EBITDA",        "MN-REVENUE",               "MN-QUARTERLY-FIRM-EBITDA", "F-QUARTERLY-FIRM-EBITDA")
-    _e("E-REV-FIRM-EBITDA",   "MN-REVENUE",               "MN-FIRM-EBITDA",           "F-FIRM-EBITDA-OPENING")
+    _e("E-EBITDA-QUARTERLY",  "MN-FIRM-EBITDA",           "MN-QUARTERLY-FIRM-EBITDA", "F-QUARTERLY-FIRM-EBITDA")
+    # MN-FIRM-EBITDA and MN-REVENUE are INPUT nodes seeded by their Case
+    # Positions rather than computed from a workbook cell, so they carry no
+    # formula edge. Revenue never produced opening EBITDA in any case.
     _e("E-EBITDA-COV-EBITDA", "MN-QUARTERLY-FIRM-EBITDA", "MN-QUARTERLY-COV-EBITDA",  "F-QUARTERLY-COV-EBITDA")
     _e("E-EBITDA-LEVERAGE",   "MN-FIRM-EBITDA",           "MN-NET-LEVERAGE",          "F-NET-LEVERAGE")
     _e("E-QEBITDA-LEVERAGE",  "MN-QUARTERLY-COV-EBITDA",  "MN-NET-LEVERAGE",          "F-NET-LEVERAGE")
@@ -1013,49 +1015,22 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
         F.append(kw)
 
     # Revenue (direct workbook read)
-    _f(
-        formula_id="F-REVENUE-FROM-DRIVERS",
-        description="Quarterly revenue from Scenario_Drivers sheet (Standalone Base)",
-        input_ids=[],
-        output_id="MN-REVENUE",
-        expression_or_function_ref="Scenario_Drivers!C5:V5",
-        evaluation_type="WORKBOOK_READ",
-        workbook_cell_ref=f"{WB}:Scenario_Drivers!C5:V5",
-        unit="MM_USD",
-        period=f"{PERIODS[0]}/{PERIODS[-1]}",
-        perimeter="Alderstone_standalone",
-        scenario="standalone_base",
-        source_ref="keystone_model.py:SB_REVENUE",
-        variable_binding={},
-        tolerances={},
-    )
 
     # Opening Firm EBITDA (direct workbook read)
-    _f(
-        formula_id="F-FIRM-EBITDA-OPENING",
-        description="Opening firm EBITDA from Inputs sheet",
-        input_ids=[],
-        output_id="MN-FIRM-EBITDA",
-        expression_or_function_ref="Inputs!B11",
-        evaluation_type="WORKBOOK_READ",
-        workbook_cell_ref=f"{WB}:Inputs!B11",
-        unit="MM_USD",
-        period="2025-12-31",
-        perimeter="Alderstone_standalone",
-        scenario=None,
-        source_ref="keystone_model.py:DealInputs.firm_ebitda_opening",
-        variable_binding={},
-        tolerances={},
-    )
 
     # Quarterly Firm EBITDA (workbook read — scenario drivers)
     _f(
         formula_id="F-QUARTERLY-FIRM-EBITDA",
         description="Quarterly firm EBITDA from Scenario_Drivers!C7:V7",
-        input_ids=["MN-REVENUE"],
+        # Quarterly firm EBITDA is the annual figure spread across four
+        # quarters — exactly what bridge_v7 already computes. Stating it as an
+        # executable expression lets a correction to the annual node propagate,
+        # instead of re-reading a frozen workbook range.
+        input_ids=["MN-FIRM-EBITDA"],
         output_id="MN-QUARTERLY-FIRM-EBITDA",
-        expression_or_function_ref="Scenario_Drivers!C7:V7",
-        evaluation_type="WORKBOOK_READ",
+        expression_or_function_ref="firm_ebitda / 4",
+        operand_bindings={"firm_ebitda": "MN-FIRM-EBITDA"},
+        evaluation_type="ARITHMETIC",
         workbook_cell_ref=f"{WB}:Scenario_Drivers!C7:V7",
         unit="MM_USD",
         period=f"{PERIODS[0]}/{PERIODS[-1]}",
@@ -1533,11 +1508,19 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
         input_ids=["MN-EV", "MN-DEBT", "MN-ROLLOVER", "MN-SPONSOR-EQUITY",
                    "MN-OPENING-CASH"],
         output_id="MN-CHECK-SOURCES-USES",
+        # Written as a single evaluable expression: the previous form carried a
+        # pseudo-code "where" clause, which is not parseable Python and made the
+        # whole bundle unrunnable once control nodes entered the Current graph.
         expression_or_function_ref=(
-            "abs(uses - sources) < 0.001  "
-            "where uses = ev + financing_fees + buyer_tx_expenses, "
-            "sources = term_loan + rollover + sponsor_equity"
+            "abs((ev + opening_cash) - (debt + rollover + sponsor_equity)) < 0.001"
         ),
+        operand_bindings={
+            "ev": "MN-EV",
+            "opening_cash": "MN-OPENING-CASH",
+            "debt": "MN-DEBT",
+            "rollover": "MN-ROLLOVER",
+            "sponsor_equity": "MN-SPONSOR-EQUITY",
+        },
         evaluation_type="ARITHMETIC",
         workbook_cell_ref=f"{WB}:S&U_Opening (balance check)",
         unit="BOOL",

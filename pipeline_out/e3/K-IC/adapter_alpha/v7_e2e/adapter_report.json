@@ -1,0 +1,624 @@
+{
+  "adapter_version": "v7",
+  "total_claims_in_extraction": 296,
+  "admitted_count": 257,
+  "monitoring_excluded_count": 39,
+  "unbound_claim_count": 21,
+  "case_positions_built": 22,
+  "model_nodes_bound": 15,
+  "model_nodes_total": 74,
+  "identity_migration_map": {
+    "claim:0000": "ks-05ec154f2a67",
+    "claim:0001": "ks-45d122145cfe",
+    "claim:0002": "ks-f05133320af3",
+    "claim:0003": "ks-4c1781ca4725",
+    "claim:0004": "ks-b0f58a5b1553",
+    "claim:0005": "ks-7f66c15e36e5",
+    "claim:0006": "ks-002ac3ca3dfa",
+    "claim:0007": "ks-ec3ee3501876",
+    "claim:0008": "ks-7a6885ad01d3",
+    "claim:0009": "ks-c808130034c8",
+    "claim:0010": "ks-c11c52dfb3f1",
+    "claim:0011": "ks-86b14a42fd69",
+    "claim:0012": "ks-bfe1cf069e5a",
+    "claim:0013": "ks-74c442a3f885",
+    "claim:0014": "ks-889cd395b5aa",
+    "claim:0015": "ks-6c1911bd9d72",
+    "claim:0016": "ks-1e50e9c72d05",
+    "claim:0017": "ks-1c1c0f1b71eb",
+    "claim:0018": "ks-9feded4f1bd9",
+    "claim:0019": "ks-0da9fa72f057",
+    "claim:0020": "ks-af5445b88677",
+    "claim:0021": "ks-fe043566bf10",
+    "claim:0022": "ks-761422e9b012",
+    "claim:0023": "ks-699763c3729f",
+    "claim:0024": "ks-c311c07bb3fe",
+    "claim:0025": "ks-a42c55db3b87",
+    "claim:0026": "ks-8ec213329147",
+    "claim:0027": "ks-6380595c34f6",
+    "claim:0028": "ks-ef6912bcef60",
+    "claim:0029": "ks-4c54068104ac",
+    "claim:0030": "ks-99b3f03623e3",
+    "claim:0031": "ks-584d65aa2b59",
+    "claim:0032": "ks-bd844455dee2",
+    "claim:0033": "ks-ce013671399e",
+    "claim:0034": "ks-8968fc71fb26",
+    "claim:0035": "ks-0238823797cd",
+    "claim:0036": "ks-612b177d6b7d",
+    "claim:0037": "ks-b4388b4ac391",
+    "claim:0038": "ks-8463ac546e2d",
+    "claim:0039": "ks-f7192947fa97",
+    "claim:0040": "ks-ba73f5685412",
+    "claim:0041": "ks-7af7276545de",
+    "claim:0042": "ks-1b90d3214b40",
+    "claim:0043": "ks-0d793710db86",
+    "claim:0044": "ks-ed830791b93f",
+    "claim:0045": "ks-8f30d1bd1788",
+    "claim:0046": "ks-3830f42df42c",
+    "claim:0047": "ks-5c07f87a5fa8",
+    "claim:0048": "ks-1bf13ddc5c6f",
+    "claim:0049": "ks-f1a09cf9adb3",
+    "claim:0050": "ks-30d96180f49f",
+    "claim:0051": "ks-5a7ffa185a2d",
+    "claim:0052": "ks-42e54dd73cce",
+    "claim:0053": "ks-7ca7b9928846",
+    "claim:0054": "ks-826d20e8e2bf",
+    "claim:0055": "ks-f8cebd5ee9ba",
+    "claim:0056": "ks-c6a34517748f",
+    "claim:0057": "ks-e369e6cbf70d",
+    "claim:0058": "ks-cd0dba853341",
+    "claim:0059": "ks-c7221e6bbcc9",
+    "claim:0060": "ks-ccfa1b3008bf",
+    "claim:0061": "ks-026a16c913ea",
+    "claim:0062": "ks-9a5211f06581",
+    "claim:0063": "ks-672e39cb051f",
+    "claim:0064": "ks-89a5cab907eb",
+    "claim:0065": "ks-8bf8480ba4ec",
+    "claim:0066": "ks-2b5b7ca8a756",
+    "claim:0067": "ks-99208e2af7af",
+    "claim:0068": "ks-99e8e0a2e2b1",
+    "claim:0069": "ks-870c906a87d9",
+    "claim:0070": "ks-c1825863297c",
+    "claim:0071": "ks-ebdaf2dbb7df",
+    "claim:0072": "ks-be241f85208f",
+    "claim:0073": "ks-52d801060f02",
+    "claim:0074": "ks-a819393bc96d",
+    "claim:0075": "ks-d685ecbd2dc5",
+    "claim:0076": "ks-c68382756429",
+    "claim:0077": "ks-a9f77d0da4bd",
+    "claim:0078": "ks-e223f3e11e05",
+    "claim:0079": "ks-884adb73a6e3",
+    "claim:0080": "ks-6f6a37f63aa1",
+    "claim:0081": "ks-ee4effb1b941",
+    "claim:0082": "ks-5d65ed137a1a",
+    "claim:0083": "ks-9b6c329b10aa",
+    "claim:0084": "ks-5cf195ed6aa1",
+    "claim:0085": "ks-fb39d21ca1d2",
+    "claim:0086": "ks-a9ae731be279",
+    "claim:0087": "ks-f5e6139f6f4d",
+    "claim:0088": "ks-a9c98090d495",
+    "claim:0089": "ks-241a896afc51",
+    "claim:0090": "ks-0ac1e9e9184c",
+    "claim:0091": "ks-4c06e435e8d7",
+    "claim:0092": "ks-7168337778bd",
+    "claim:0093": "ks-5d47638ad6c5",
+    "claim:0094": "ks-85204bc378e3",
+    "claim:0095": "ks-49ef93662f70",
+    "claim:0096": "ks-004938bcaad8",
+    "claim:0097": "ks-72b02a0fb984",
+    "claim:0098": "ks-13f43634217b",
+    "claim:0099": "ks-a172e0b3e474",
+    "claim:0100": "ks-6a6eadb3c5c7",
+    "claim:0101": "ks-c53078d13a55",
+    "claim:0102": "ks-6757cd2080f1",
+    "claim:0103": "ks-f5a3edd03980",
+    "claim:0104": "ks-b5087b176b11",
+    "claim:0105": "ks-5bf4930e9f00",
+    "claim:0106": "ks-b7c603042df9",
+    "claim:0107": "ks-2ae33e3d93b6",
+    "claim:0108": "ks-fe13b5c9b5ad",
+    "claim:0109": "ks-54424b21b804",
+    "claim:0110": "ks-cfc5a5cb2f49",
+    "claim:0111": "ks-2340f5ee4ca9",
+    "claim:0112": "ks-bb57ca652db8",
+    "claim:0113": "ks-e054fa9a2027",
+    "claim:0114": "ks-cc4a5ec25462",
+    "claim:0115": "ks-4fccac168b02",
+    "claim:0116": "ks-86175da78c5c",
+    "claim:0117": "ks-4da002230688",
+    "claim:0118": "ks-076c1860805f",
+    "claim:0119": "ks-a83df75527d8",
+    "claim:0120": "ks-834bc8dacd94",
+    "claim:0121": "ks-9ebfd130e92e",
+    "claim:0122": "ks-89905f696e26",
+    "claim:0123": "ks-a56c4c8cf6c2",
+    "claim:0124": "ks-6051b7b42300",
+    "claim:0125": "ks-3e02b461a9ad",
+    "claim:0126": "ks-1d5c72f56e43",
+    "claim:0127": "ks-45c1d4e8aecc",
+    "claim:0128": "ks-02b5d0075676",
+    "claim:0129": "ks-9050b0ce6619",
+    "claim:0130": "ks-1caf1b1fcdb0",
+    "claim:0131": "ks-b17926525c7d",
+    "claim:0132": "ks-d2c57b0bc5d7",
+    "claim:0133": "ks-15308842e3e3",
+    "claim:0134": "ks-3fed09498945",
+    "claim:0135": "ks-d704f8294168",
+    "claim:0136": "ks-00272378e9ca",
+    "claim:0137": "ks-9807f803e23c",
+    "claim:0138": "ks-81689a39d0d1",
+    "claim:0139": "ks-ddc173a73f2f",
+    "claim:0140": "ks-fb949b785779",
+    "claim:0141": "ks-049ec99e51b1",
+    "claim:0142": "ks-2995464346ad",
+    "claim:0143": "ks-73d985ed6592",
+    "claim:0144": "ks-e60b4a797056",
+    "claim:0145": "ks-53f8a1b46276",
+    "claim:0146": "ks-9e970378e35a",
+    "claim:0147": "ks-607f99877d60",
+    "claim:0148": "ks-abf849a15c38",
+    "claim:0149": "ks-363a143dfac1",
+    "claim:0150": "ks-b168307fc4e7",
+    "claim:0151": "ks-da83b269ba72",
+    "claim:0152": "ks-00f2c493939f",
+    "claim:0153": "ks-751b4d9216d3",
+    "claim:0154": "ks-244b82595162",
+    "claim:0155": "ks-57ec46218647",
+    "claim:0156": "ks-776c9d16726a",
+    "claim:0157": "ks-62b46ed809eb",
+    "claim:0158": "ks-346aa9f1e42f",
+    "claim:0159": "ks-a73f3a32f349",
+    "claim:0160": "ks-646b2222bf22",
+    "claim:0161": "ks-dc47ae237d41",
+    "claim:0162": "ks-7243ba8f8ef6",
+    "claim:0163": "ks-803ad1fc1b41",
+    "claim:0164": "ks-54b75a99bf1f",
+    "claim:0165": "ks-de1d28986645",
+    "claim:0166": "ks-76f0c936a8bc",
+    "claim:0167": "ks-742321e28d4b",
+    "claim:0168": "ks-6ce12dada312",
+    "claim:0169": "ks-3a25093b865c",
+    "claim:0170": "ks-d4094fc943d2",
+    "claim:0171": "ks-5f8471197d36",
+    "claim:0172": "ks-5dc4a05e0a12",
+    "claim:0173": "ks-549515057d5b",
+    "claim:0174": "ks-34ce2c64eb2b",
+    "claim:0175": "ks-fa725588ae1d",
+    "claim:0176": "ks-73f0b0c3047c",
+    "claim:0177": "ks-d85c723e8d85",
+    "claim:0178": "ks-45da983b451c",
+    "claim:0179": "ks-781a14fbc565",
+    "claim:0180": "ks-20d8763f7585",
+    "claim:0181": "ks-058962ee0ba5",
+    "claim:0182": "ks-8fab7102af77",
+    "claim:0183": "ks-e9bf59d21699",
+    "claim:0184": "ks-044ee3bba06e",
+    "claim:0185": "ks-4f43bbfd9fa5",
+    "claim:0186": "ks-d5861dd8775b",
+    "claim:0187": "ks-c2da9df42411",
+    "claim:0188": "ks-9ac379ba53e1",
+    "claim:0189": "ks-063dad0c555e",
+    "claim:0190": "ks-cc365c0b1729",
+    "claim:0191": "ks-8fbfdcf03d74",
+    "claim:0192": "ks-24a34e51ea22",
+    "claim:0193": "ks-91c265187df4",
+    "claim:0194": "ks-688d5d70d1e9",
+    "claim:0195": "ks-931bee40e4aa",
+    "claim:0196": "ks-06e8330ae5cf",
+    "claim:0197": "ks-b2f2a0a650b8",
+    "claim:0198": "ks-71ea5b01be1f",
+    "claim:0199": "ks-7c16c1358a45",
+    "claim:0200": "ks-242074e53e91",
+    "claim:0201": "ks-1124209023cd",
+    "claim:0202": "ks-5768202ee66b",
+    "claim:0203": "ks-af6a02ccf113",
+    "claim:0204": "ks-c158dd4e107b",
+    "claim:0205": "ks-30c8cc7fc7e7",
+    "claim:0206": "ks-2c99defb5a17",
+    "claim:0207": "ks-104d6f5c49d1",
+    "claim:0208": "ks-60d94c14a05e",
+    "claim:0209": "ks-d0c33485cebf",
+    "claim:0210": "ks-3d55acec49e0",
+    "claim:0211": "ks-067383f47c64",
+    "claim:0212": "ks-3c97ec2fbdef",
+    "claim:0213": "ks-26cc655903cf",
+    "claim:0214": "ks-2e587f0b2605",
+    "claim:0215": "ks-d6356fe7efe0",
+    "claim:0216": "ks-83e90145dc17",
+    "claim:0217": "ks-be501f77827a",
+    "claim:0218": "ks-8b207562dce4",
+    "claim:0219": "ks-6cd8f84a117b",
+    "claim:0220": "ks-54221fdb877d",
+    "claim:0221": "ks-014baaf06bc2",
+    "claim:0222": "ks-a3f613f0665f",
+    "claim:0223": "ks-43ae4f5de9f8",
+    "claim:0224": "ks-6d18a8bcbeb7",
+    "claim:0225": "ks-590ff9c5fd68",
+    "claim:0226": "ks-177cdf115b4a",
+    "claim:0227": "ks-290a8ef05711",
+    "claim:0228": "ks-75644dbf3602",
+    "claim:0229": "ks-a360da207a6a",
+    "claim:0230": "ks-8c058967b934",
+    "claim:0231": "ks-ad9dbc296c13",
+    "claim:0232": "ks-53bcbd056f25",
+    "claim:0233": "ks-13e821089258",
+    "claim:0234": "ks-fd1d34a38b5a",
+    "claim:0235": "ks-d3631e5bb84e",
+    "claim:0236": "ks-61dab74def53",
+    "claim:0237": "ks-d4a15ae507ab",
+    "claim:0238": "ks-fb7f4ea64d12",
+    "claim:0239": "ks-43996f9adba5",
+    "claim:0240": "ks-fe8f4b913254",
+    "claim:0241": "ks-8a65e06d96f0",
+    "claim:0242": "ks-6aadb1c58fe4",
+    "claim:0243": "ks-c0ec62811a21",
+    "claim:0244": "ks-5952b14a1e4f",
+    "claim:0245": "ks-412f477e8434",
+    "claim:0246": "ks-1a2a1ccac205",
+    "claim:0247": "ks-008e52b65cba",
+    "claim:0248": "ks-662ca5c858c2",
+    "claim:0249": "ks-70e73467065d",
+    "claim:0250": "ks-02f4f1d85357",
+    "claim:0251": "ks-a5d04131d811",
+    "claim:0252": "ks-39a4e5d4c518",
+    "claim:0253": "ks-846805d79626",
+    "claim:0254": "ks-dea0649c8251",
+    "claim:0255": "ks-d96f27d51454",
+    "claim:0256": "ks-2e8371260a9a",
+    "claim:0257": "ks-6a394afd5959",
+    "claim:0258": "ks-fa3a31b0626d",
+    "claim:0259": "ks-3c387b6cdf61",
+    "claim:0260": "ks-d3c564eaecb1",
+    "claim:0261": "ks-b43a575de0dd",
+    "claim:0262": "ks-55712a3878f6",
+    "claim:0263": "ks-8305a2106b29",
+    "claim:0264": "ks-3af734f8183c",
+    "claim:0265": "ks-563af0acde4e",
+    "claim:0266": "ks-edf03770d344",
+    "claim:0267": "ks-137da600b3ed",
+    "claim:0268": "ks-ae48018d5ba5",
+    "claim:0269": "ks-68a709263301",
+    "claim:0270": "ks-81023edf0b00",
+    "claim:0271": "ks-863246c683f5",
+    "claim:0272": "ks-71e464972278",
+    "claim:0273": "ks-42ff5c95ff16",
+    "claim:0274": "ks-297e5e75995e",
+    "claim:0275": "ks-79357788dbb4",
+    "claim:0276": "ks-de300306f176",
+    "claim:0277": "ks-34b0d82d1467",
+    "claim:0278": "ks-03c6eb673475",
+    "claim:0279": "ks-3b2b56b9aea1",
+    "claim:0280": "ks-987d2d468a39",
+    "claim:0281": "ks-225a514779f8",
+    "claim:0282": "ks-a3f71873a148",
+    "claim:0283": "ks-e72ffe1b7d8e",
+    "claim:0284": "ks-bacc0fdd8184",
+    "claim:0285": "ks-a6e40199fe02",
+    "claim:0286": "ks-fc2d47aabccc",
+    "claim:0287": "ks-eb9fcb9200c6",
+    "claim:0288": "ks-e7d3e392aa2e",
+    "claim:0289": "ks-b6b32b592745",
+    "claim:0290": "ks-af3279c74da8",
+    "claim:0291": "ks-28eac5f1740d",
+    "claim:0292": "ks-76a84175363e",
+    "claim:0293": "ks-30d5b5fe88c1",
+    "claim:0294": "ks-5c2561638672",
+    "claim:0295": "ks-fcbe491e48a2"
+  },
+  "unbound_claims": [
+    {
+      "stable_id": "ks-05ec154f2a67",
+      "metric": "Active Billing Accounts",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-45d122145cfe",
+      "metric": "Customer Retention",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-4c1781ca4725",
+      "metric": "Customer Contract Terms",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-74c442a3f885",
+      "metric": "Gross Profit",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-699763c3729f",
+      "metric": "Customer Contract Terms",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-c311c07bb3fe",
+      "metric": "Customer Retention",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-ba73f5685412",
+      "metric": "Contract Terms",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-0d793710db86",
+      "metric": "Contract Terms",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-6f6a37f63aa1",
+      "metric": "Adjustment Supportability",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-0ac1e9e9184c",
+      "metric": "Adjustment Supportability",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-834bc8dacd94",
+      "metric": "DDTL Availability",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-9807f803e23c",
+      "metric": "Net Income",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-776c9d16726a",
+      "metric": "Customer Count",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-7243ba8f8ef6",
+      "metric": "Customer Contract Terms",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-803ad1fc1b41",
+      "metric": "Customer Contract Terms",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-d4094fc943d2",
+      "metric": "Customer Contract Terms",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-7c16c1358a45",
+      "metric": "Equity Value",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-412f477e8434",
+      "metric": "DDTL Availability",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-d3c564eaecb1",
+      "metric": "DDTL Availability",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-bacc0fdd8184",
+      "metric": "IC Conditions",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-b6b32b592745",
+      "metric": "IC Vote",
+      "reason": "no CP mapping for metric"
+    }
+  ],
+  "monitoring_excluded": [
+    {
+      "stable_id": "ks-c11c52dfb3f1",
+      "metric": "Gross Debt",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-86b14a42fd69",
+      "metric": "Gross Debt",
+      "period": "2027-12-31"
+    },
+    {
+      "stable_id": "ks-a172e0b3e474",
+      "metric": "Exit Multiple",
+      "period": "2031-12-31"
+    },
+    {
+      "stable_id": "ks-2340f5ee4ca9",
+      "metric": "Acquisition Count",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-bb57ca652db8",
+      "metric": "DDTL Availability",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-e054fa9a2027",
+      "metric": "Sponsor Equity",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-6051b7b42300",
+      "metric": "Revenue Growth",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-3e02b461a9ad",
+      "metric": "EBITDA Margin",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-1d5c72f56e43",
+      "metric": "Gross Margin",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-45c1d4e8aecc",
+      "metric": "DSO",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-15308842e3e3",
+      "metric": "EBITDA Margin",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-3fed09498945",
+      "metric": "Gross Margin",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-d704f8294168",
+      "metric": "Revenue Growth",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-00272378e9ca",
+      "metric": "DSO",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-fb949b785779",
+      "metric": "Operating Cash Flow",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-049ec99e51b1",
+      "metric": "Operating Cash Flow",
+      "period": "2027-12-31"
+    },
+    {
+      "stable_id": "ks-5f8471197d36",
+      "metric": "Customer Concentration",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-5dc4a05e0a12",
+      "metric": "Customer Contract Terms",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-06e8330ae5cf",
+      "metric": "EBITDA Adjustment",
+      "period": "2028-12-31"
+    },
+    {
+      "stable_id": "ks-b2f2a0a650b8",
+      "metric": "EBITDA Adjustment",
+      "period": "2028-12-31"
+    },
+    {
+      "stable_id": "ks-71ea5b01be1f",
+      "metric": "EBITDA Adjustment",
+      "period": "2028-12-31"
+    },
+    {
+      "stable_id": "ks-c158dd4e107b",
+      "metric": "Revenue",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-2c99defb5a17",
+      "metric": "EBITDA",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-26cc655903cf",
+      "metric": "DSO",
+      "period": "2030-12-31"
+    },
+    {
+      "stable_id": "ks-83e90145dc17",
+      "metric": "Covenant Threshold",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-be501f77827a",
+      "metric": "Covenant Threshold",
+      "period": "2027-12-31"
+    },
+    {
+      "stable_id": "ks-8b207562dce4",
+      "metric": "Interest Coverage",
+      "period": "2027-12-31"
+    },
+    {
+      "stable_id": "ks-6d18a8bcbeb7",
+      "metric": "DSO",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-590ff9c5fd68",
+      "metric": "DSO",
+      "period": "2028-12-31"
+    },
+    {
+      "stable_id": "ks-75644dbf3602",
+      "metric": "Revenue",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-a360da207a6a",
+      "metric": "Gross Margin",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-8c058967b934",
+      "metric": "EBITDA",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-d4a15ae507ab",
+      "metric": "Covenant Threshold",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-fb7f4ea64d12",
+      "metric": "Covenant Threshold",
+      "period": "2027-12-31"
+    },
+    {
+      "stable_id": "ks-43996f9adba5",
+      "metric": "Covenant Threshold",
+      "period": "2028-12-31"
+    },
+    {
+      "stable_id": "ks-fe8f4b913254",
+      "metric": "Covenant Threshold",
+      "period": "2029-12-31"
+    },
+    {
+      "stable_id": "ks-6aadb1c58fe4",
+      "metric": "EBITDA",
+      "period": "2030-12-31"
+    },
+    {
+      "stable_id": "ks-c0ec62811a21",
+      "metric": "EBITDA Adjustment",
+      "period": "2027-12-31"
+    },
+    {
+      "stable_id": "ks-b43a575de0dd",
+      "metric": "Covenant Threshold",
+      "period": "2027-12-31"
+    }
+  ],
+  "coverage_limits": [
+    {
+      "limit_id": "KS-BRIDGE-UNBOUND-CP-STANDALONE-UPSIDE-MOIC-MN-UP-MOIC",
+      "reason_code": "MISSING_EXECUTABLE_DIRECTION",
+      "scope_ids": [
+        "CP-STANDALONE-UPSIDE-MOIC",
+        "MN-UP-MOIC"
+      ],
+      "effect": "CP-STANDALONE-UPSIDE-MOIC has no model node binding for MN-UP-MOIC in execution graph"
+    }
+  ],
+  "validation_errors": []
+}

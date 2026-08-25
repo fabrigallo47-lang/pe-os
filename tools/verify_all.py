@@ -158,19 +158,51 @@ print(json.dumps({{
     return s.done(ok, f"{d['settlement']}, {d['settled']} settled, {d['blocked']} blocked")
 
 
+def _find_reference_kit() -> Path | None:
+    """
+    Locate Antonio's validator. It is distributed as a zip, so accept either an
+    unpacked directory or the archive, which is expanded into a cache dir.
+    """
+    dirs = [
+        ROOT / "PANTA_V7_INDEPENDENT_VALIDATOR",
+        Path.home() / "Downloads" / "PANTA_V7_INDEPENDENT_VALIDATOR",
+    ]
+    for d in dirs:
+        if (d / "panta_reference").exists():
+            return d
+        # some archives nest one level
+        nested = d / "PANTA_V7_INDEPENDENT_VALIDATOR"
+        if (nested / "panta_reference").exists():
+            return nested
+
+    for z in (ROOT / "PANTA_V7_INDEPENDENT_VALIDATOR.zip",
+              Path.home() / "Downloads" / "PANTA_V7_INDEPENDENT_VALIDATOR.zip"):
+        if not z.exists():
+            continue
+        import zipfile
+        dest = ROOT / ".index" / "reference_kit"
+        try:
+            if not (dest / "panta_reference").exists():
+                dest.mkdir(parents=True, exist_ok=True)
+                with zipfile.ZipFile(z) as zf:
+                    zf.extractall(dest)
+            if (dest / "panta_reference").exists():
+                return dest
+            for child in dest.iterdir():
+                if (child / "panta_reference").exists():
+                    return child
+        except Exception:
+            return None
+    return None
+
+
 def main() -> int:
     ap = argparse.ArgumentParser(description="Run every check and print one verdict")
     ap.add_argument("--reference-kit", type=Path, default=None,
                     help="Path to unpacked PANTA_V7_INDEPENDENT_VALIDATOR")
     a = ap.parse_args()
 
-    kit = a.reference_kit
-    if kit is None:
-        for guess in (ROOT / "PANTA_V7_INDEPENDENT_VALIDATOR",
-                      Path.home() / "Downloads" / "PANTA_V7_INDEPENDENT_VALIDATOR"):
-            if guess.exists():
-                kit = guess
-                break
+    kit = a.reference_kit or _find_reference_kit()
 
     bar = "=" * 66
     print(bar)

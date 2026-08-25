@@ -141,6 +141,8 @@ def main() -> None:
     ap.add_argument("--out",       required=True, help="Output directory")
     ap.add_argument("--manifest",  default=None, help="Manifest label (K-IC/K-PRE/K-LIVE)")
     ap.add_argument("--status",    default="ALPHA", help="Bundle status tag")
+    ap.add_argument("--deal",      default="keystone",
+                    help="Deal slug — selects vault/deals/<slug>/deal_profile.json")
     args = ap.parse_args()
 
     e3_path   = Path(args.e3)
@@ -175,12 +177,30 @@ def main() -> None:
     eg_size = _write(eg_path, extraction_graph)
     print(f"[adapter_alpha]   → extraction_graph.json ({eg_size // 1024}KB, {claim_count} claim nodes)")
 
+    # Step 1b — grounding gate. Reports what could not be verified against the
+    # cited sources; it never drops or rewrites a claim (agents do not adjudicate).
+    print("[adapter_alpha] Step 1b: grounding gate ...")
+    try:
+        from tools.grounding_gate import run as _gg_run
+        gg_rep = _gg_run(e3_path, args.deal)
+        _write(out_dir / "grounding_review.json", gg_rep)
+        print(f"[adapter_alpha]   → {gg_rep['claims_clean']}/{gg_rep['claims_total']} clean, "
+              f"{gg_rep['blocking_total']} blocking, "
+              f"{gg_rep['claims_flagged']} flagged → grounding_review.json")
+    except Exception as exc:            # never block the bundle on the gate
+        gg_rep = {"error": str(exc)}
+        print(f"[adapter_alpha]   grounding gate skipped: {exc}")
+
     # Step 2 — run bridge_v7.compile_v7_bundle()
     print("[adapter_alpha] Step 2: running bridge_v7.compile_v7_bundle() ...")
     try:
-        bundle = compile_v7_bundle(eg_path, exec_path, status=args.status)
+        bundle = compile_v7_bundle(eg_path, exec_path, status=args.status,
+                                   deal=args.deal)
     except ValueError as exc:
         sys.exit(f"[adapter_alpha] Bridge validation error:\n{exc}")
+    bundle["adapter_report"]["grounding"] = {
+        k: v for k, v in gg_rep.items() if k != "review_queue"
+    }
 
     # Step 3 — write V7 bundle outputs
     print("[adapter_alpha] Step 3: writing V7 bundle ...")

@@ -38,6 +38,8 @@ from typing import Any
 
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
+from tools import deal_profile as _dp
+
 ROOT = Path(__file__).resolve().parent.parent
 
 # ── Period normalisation ──────────────────────────────────────────────────────
@@ -263,6 +265,25 @@ _MONITORING_PERIODS = {
 }
 _UNDERWRITING_CUTOFF = "2026-03-10"
 
+# ── Active deal profile ──────────────────────────────────────────────────────
+# Institutional perimeter/unit per position live in vault/deals/<slug>/
+# deal_profile.json, not in this file. compile_v7_bundle() sets the active
+# profile for the bundle it is building.
+#
+# The default supplies NOTHING. A deal with no profile gets empty perimeters
+# and recorded warnings, so the engine reports NON_APPLICABLE_PERIMETER
+# instead of the bridge stamping another deal's scope onto its positions.
+_ACTIVE_PROFILE = _dp.DealProfile("<unset>")
+
+
+def _profile() -> "_dp.DealProfile":
+    return _ACTIVE_PROFILE
+
+
+def _set_active_profile(profile: "_dp.DealProfile") -> None:
+    global _ACTIVE_PROFILE
+    _ACTIVE_PROFILE = profile
+
 # known_at per source: date at which this source was available to the deal team
 _SOURCE_KNOWN_AT: dict[str, str] = {
     "CIM":                    "2026-01-15T00:00:00Z",
@@ -408,19 +429,20 @@ def _build_case_positions(claims: list[dict]) -> dict[str, dict]:
             for i, c in enumerate(claims_for_cp)
         ]
 
-        inst = _CP_INSTITUTIONAL.get(cp_id, {})
+        prof = _profile()
+        inst = prof.cp_institutional.get(cp_id, {})
         case_positions[cp_id] = {
             "cp_id": cp_id,
             "metric": primary.get("metric", ""),
             "value": _parse_float(primary.get("value")),
             "value_raw": primary.get("value"),
-            "unit": inst.get("unit") if inst.get("unit") is not None else primary.get("unit", ""),
+            "unit": prof.cp_unit(cp_id, primary.get("unit", "")),
             "epistemic_class": primary.get("epistemic_class", "asserted"),
             "period_iso": period_iso,
             "period_raw": primary.get("period_raw", ""),
             "effective_date": period_iso if _is_iso(period_iso) else None,
             "known_at": primary.get("known_at") or f"{_UNDERWRITING_CUTOFF}T00:00:00Z",
-            "perimeter": inst.get("perimeter") or primary.get("perimeter") or "Alderstone standalone",
+            "perimeter": prof.cp_perimeter(cp_id, primary.get("perimeter")),
             "model_node_ids": meta["model_node_ids"],
             "route_type": meta["route_type"],
             "support_routes": support_routes,
@@ -512,72 +534,10 @@ _CP_DIRECTION: dict[str, str] = {
 }
 
 
-# ── Institutional perimeter + unit per CP (contract with the event layer) ────
-# These values must match the mutations in event_ebitda_correction.json and
-# any future PANTA events.  They define the SEMANTIC IDENTITY of each position
-# (not the raw claim label), so they override the claim's perimeter/unit.
-_CP_INSTITUTIONAL: dict[str, dict] = {
-    "CP-EBITDA-FIRM":           {"perimeter": "Alderstone standalone, firm underwriting definition", "unit": "$m/year"},
-    "CP-EBITDA-QOE":            {"perimeter": "Alderstone standalone, QoE definition",              "unit": "$m/year"},
-    "CP-EBITDA-MARGIN":         {"perimeter": "Alderstone standalone",                              "unit": "%"},
-    "CP-EBITDA-ADJ":            {"perimeter": "Alderstone standalone",                              "unit": "$m"},
-    "CP-COV-EBITDA":            {"perimeter": "Alderstone standalone, covenant definition",         "unit": "$m/year"},
-    "CP-REVENUE":               {"perimeter": "Alderstone consolidated",                            "unit": "$m/year"},
-    "CP-RECURRING-REV":         {"perimeter": "Alderstone consolidated",                            "unit": "%"},
-    "CP-CONCENTRATION":         {"perimeter": "Alderstone consolidated",                            "unit": "%"},
-    "CP-DSO":                   {"perimeter": "Alderstone standalone",                              "unit": "days"},
-    "CP-WIP":                   {"perimeter": "Alderstone standalone",                              "unit": "$m"},
-    "CP-NWC":                   {"perimeter": "Alderstone standalone",                              "unit": "$m"},
-    "CP-NWC-TARGET":            {"perimeter": "Alderstone standalone",                              "unit": "$m"},
-    "CP-NWC-ADJ":               {"perimeter": "Alderstone standalone",                              "unit": "$m"},
-    "CP-DEBT":                  {"perimeter": "Alderstone standalone",                              "unit": "$m"},
-    "CP-EV":                    {"perimeter": "Alderstone standalone",                              "unit": "$m"},
-    "CP-SPONSOR-EQUITY":        {"perimeter": "Alderstone standalone",                              "unit": "$m"},
-    "CP-ROLLOVER":              {"perimeter": "Alderstone standalone",                              "unit": "$m"},
-    "CP-OPENING-CASH":          {"perimeter": "Alderstone standalone",                              "unit": "$m"},
-    "CP-INTEGRATION-RISK":      {"perimeter": "Alderstone consolidated",                            "unit": ""},
-    "CP-STANDALONE-BASE-MOIC":  {"perimeter": "Alderstone standalone",                              "unit": "x"},
-    "CP-STANDALONE-BASE-IRR":   {"perimeter": "Alderstone standalone",                              "unit": "%"},
-    "CP-STANDALONE-DOWNSIDE-MOIC": {"perimeter": "Alderstone standalone",                           "unit": "x"},
-    "CP-STANDALONE-DOWNSIDE-IRR":  {"perimeter": "Alderstone standalone",                           "unit": "%"},
-    "CP-STANDALONE-UPSIDE-MOIC":   {"perimeter": "Alderstone standalone",                           "unit": "x"},
-    "CP-STANDALONE-UPSIDE-IRR":    {"perimeter": "Alderstone standalone",                           "unit": "%"},
-    "CP-ACQUISITION-BASE-MOIC":    {"perimeter": "Alderstone standalone",                           "unit": "x"},
-    "CP-ACQUISITION-BASE-IRR":     {"perimeter": "Alderstone standalone",                           "unit": "%"},
-}
-
-# Period override for nodes whose execution-graph period is a forecast range
-# but whose semantic identity for event applicability is the opening snapshot date.
-_MN_PERIOD_OVERRIDE: dict[str, str] = {
-    "MN-QUARTERLY-FIRM-EBITDA": "2025-12-31",  # opening snapshot; event targets this date
-}
-
-# Quarterly model nodes: (annual_source_mn, divisor) — value = annual / divisor
-_MN_QUARTERLY_DERIVE: dict[str, tuple[str, int]] = {
-    "MN-QUARTERLY-FIRM-EBITDA": ("MN-FIRM-EBITDA", 4),
-}
-
-# Canonical time-frequency units for model nodes (overrides raw unit from claims)
-_MN_UNIT_CANONICAL: dict[str, str] = {
-    "MN-FIRM-EBITDA":            "$m/year",
-    "MN-QUARTERLY-FIRM-EBITDA":  "$m/quarter",
-    "MN-COV-EBITDA":             "$m/year",
-    "MN-REVENUE":                "$m/year",
-    "MN-FIRM-EBITDA-MARGIN":     "%",
-    "MN-BASE-DSO":               "days",
-    "MN-NWC":                    "$m",
-    "MN-DEBT":                   "$m",
-    "MN-EV":                     "$m",
-    "MN-ROLLOVER":               "$m",
-    "MN-SPONSOR-EQUITY":         "$m",
-    "MN-CONCENTRATION":          "%",
-    "MN-BASE-MOIC":              "x",
-    "MN-BASE-IRR":               "%",
-    "MN-DOWN-MOIC":              "x",
-    "MN-DOWN-IRR":               "%",
-    "MN-UP-MOIC":                "x",
-    "MN-UP-IRR":                 "%",
-}
+# ── Institutional semantics ──────────────────────────────────────────────────
+# The per-deal perimeter/unit/period maps that used to live here now live in
+# vault/deals/<slug>/deal_profile.json and are reached through _profile().
+# Keeping them in code meant every deal inherited Keystone's scope.
 
 
 def _build_position_model_directions(case_positions: dict[str, dict],
@@ -622,7 +582,7 @@ def _normalize_claim_for_schema(c: dict) -> dict:
     date_part = known_at[:10] if known_at else ""
     source_id = _SOURCE_ID_MAP.get(date_part, f"SOURCE-{date_part}" if date_part else "UNKNOWN")
     period = c.get("period_iso") or c.get("period_raw") or "unknown"
-    perimeter = c.get("perimeter") or "Alderstone standalone"
+    perimeter = _profile().claim_perimeter(c.get("perimeter"))
     out = {
         "claim_id": c.get("stable_id") or c.get("id", ""),
         "statement": c.get("statement", ""),
@@ -747,16 +707,16 @@ def _build_current_graph(
 
     def _mn_period(mn_id: str, fallback_period_iso: str | None = None) -> str:
         """Return period string for a model node (schema requires non-empty)."""
-        if mn_id in _MN_PERIOD_OVERRIDE:
-            return _MN_PERIOD_OVERRIDE[mn_id]
+        _po = _profile().mn_period_override
+        if mn_id in _po:
+            return _po[mn_id]
         raw = model_nodes_raw.get(mn_id, {})
         return (raw.get("period") or raw.get("effective_date")
                 or fallback_period_iso or "OPENING")
 
     def _mn_perimeter(mn_id: str) -> str:
         raw = model_nodes_raw.get(mn_id, {})
-        p = raw.get("perimeter") or "Alderstone standalone"
-        return p.replace("_", " ")
+        return _profile().mn_perimeter(mn_id, raw.get("perimeter"))
 
     def _mn_name(mn_id: str) -> str:
         raw = model_nodes_raw.get(mn_id, {})
@@ -787,7 +747,7 @@ def _build_current_graph(
                 "perimeter": _mn_perimeter(mn_id),
                 "value": _val,
                 "initial_value": _val,   # PANTA event contract: mutations target initial_value
-                "unit": _MN_UNIT_CANONICAL.get(mn_id) or d.get("unit"),
+                "unit": _profile().mn_unit(mn_id, d.get("unit")),
                 "period_iso": d.get("period_iso"),
                 "epistemic_class": d.get("epistemic_class"),
                 "bound_from_cp": cp_id,
@@ -802,7 +762,7 @@ def _build_current_graph(
             })
 
     # Derive quarterly model node values from their annual sources
-    for mn_id, (src_mn_id, divisor) in _MN_QUARTERLY_DERIVE.items():
+    for mn_id, (src_mn_id, divisor) in _profile().mn_quarterly_derive.items():
         if mn_id in node_values and src_mn_id in node_values:
             annual_val = node_values[src_mn_id].get("value")
             if isinstance(annual_val, (int, float)) and annual_val is not None:
@@ -822,7 +782,7 @@ def _build_current_graph(
                 "perimeter": _mn_perimeter(mn_id),
                 "value": _wb_val,
                 "initial_value": _wb_val,
-                "unit": _MN_UNIT_CANONICAL.get(mn_id) or mn.get("unit"),
+                "unit": _profile().mn_unit(mn_id, mn.get("unit")),
                 "period_iso": mn.get("effective_date"),
                 "epistemic_class": mn.get("epistemic_class", "asserted"),
                 "bound_from_cp": None,
@@ -887,9 +847,9 @@ def _build_current_graph(
 
     return {
         "schema_version": "1.1.0",
-        "case_id": "PROJECT-KEYSTONE",
-        "state_id": "KS-CURRENT-V7-001",
-        "company": "Alderstone",
+        "case_id": _profile().case_id,
+        "state_id": _profile().state_id,
+        "company": _profile().entity,
         "state": "CURRENT",
         "canonical_as_of": f"{_UNDERWRITING_CUTOFF}T23:59:59Z",
         "extraction_ref": "graph.json",
@@ -951,7 +911,8 @@ def _normalize_execution_mapping(execution: dict,
             "unit": mn.get("unit"),
             "period": mn.get("period"),
             "effective_date": mn.get("effective_date"),
-            "perimeter": mn.get("perimeter", "Alderstone standalone"),
+            "perimeter": _profile().mn_perimeter(
+                mn.get("model_node_id") or mn.get("mn_id", ""), mn.get("perimeter")),
             "epistemic_class": mn.get("epistemic_class"),
             "initial_value": mn.get("value_current"),
             "workbook_ref": mn.get("workbook_ref"),
@@ -1016,8 +977,8 @@ def _normalize_execution_mapping(execution: dict,
 
     return {
         "mapping_version": "v7",
-        "deal": "PROJECT-KEYSTONE",
-        "company": "Alderstone",
+        "deal": _profile().case_id,
+        "company": _profile().entity,
         "canonical_graph_hash": f"sha256:{canonical_current_hash}",
         "provenance": {
             "extraction_hash": f"sha256:{extraction_hash}" if extraction_hash else None,
@@ -1112,7 +1073,7 @@ def _build_manifest(
 ) -> dict:
     return {
         "manifest_version": "1.0",
-        "case_id": "PROJECT-KEYSTONE",
+        "case_id": _profile().case_id,
         "as_of_known_at": "2026-08-24T00:00:00Z",
         "source_graph_hash": f"sha256:{extraction_hash}",
         "execution_graph_hash": f"sha256:{execution_hash}",
@@ -1166,6 +1127,8 @@ def compile_v7_bundle(
     extraction_path: Path,
     execution_path: Path,
     status: str = "TEST",
+    deal: str = "keystone",
+    strict_profile: bool = False,
 ) -> dict:
     """
     Build the V7 bundle from extraction + execution graphs.
@@ -1178,6 +1141,10 @@ def compile_v7_bundle(
       adapter_report      – coverage limits + identity migration map
       manifest            – admission manifest with stable IDs
     """
+    # 0. Institutional semantics for THIS deal. Without a profile the bridge
+    #    declares no perimeters rather than borrowing another deal's.
+    _set_active_profile(_dp.load_profile(deal, strict=strict_profile))
+
     # 1. Load
     extraction = json.loads(extraction_path.read_text())
     execution  = json.loads(execution_path.read_text())
@@ -1226,6 +1193,9 @@ def compile_v7_bundle(
     adapter_report = _build_adapter_report(
         all_claims, admitted, case_positions, execution
     )
+    # Surface deal-profile conformance: any position/model node whose perimeter
+    # the profile could not supply is reported, not silently defaulted.
+    adapter_report["deal_profile"] = _profile().conformance_report()
 
     # 11. Manifest
     manifest = _build_manifest(admitted, extraction_hash, execution_hash, status)
@@ -1352,7 +1322,7 @@ def apply_event(
     candidate = {
         "candidate_id": f"CAND-{event_id}",
         "base_state": "CURRENT",
-        "base_case_id": "PROJECT-KEYSTONE",
+        "base_case_id": _profile().case_id,
         "event_id": event_id,
         "event_metric": metric,
         "event_period": period,

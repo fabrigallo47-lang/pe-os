@@ -220,17 +220,114 @@ def print_stats(dg: DealGraph, claims: list[dict]) -> None:
 
 # ── Main ──────────────────────────────────────────────────────────────────────
 
+def e3_to_claims(e3: dict) -> list[dict]:
+    """Convert an extract_v2 manifest into the claim shape this pipeline emits.
+
+    CAP-003 keeps the claim record to frozen fields and parks compiler metadata
+    (metric, direction, topic, author, derivation) alongside it, so the two are
+    joined back on claim_id here.
+    """
+    sidecar = {
+        m.get("claim_id"): m
+        for m in e3.get("extraction_metadata", {}).get("compiler_fields_per_claim", [])
+        if m.get("claim_id")
+    }
+    out = []
+    for c in e3.get("claims", []):
+        meta = sidecar.get(c.get("claim_id"), {})
+        perimeter = c.get("perimeter") or ""
+        out.append({
+            # subject is the economic scope the claim is about; the extractor
+            # records that as the perimeter.
+            "subject":    perimeter.split(",")[0].strip() or "unknown",
+            "metric":     meta.get("metric", ""),
+            "value":      c.get("value"),
+            "unit":       c.get("unit", ""),
+            "as_of":      c.get("period") or "",
+            "period":     c.get("period") or "",
+            "perimeter":  perimeter,
+            "topic":      meta.get("topic", ""),
+            "source_doc": c.get("source_id", ""),
+            "epistemic":  c.get("epistemic_class", "asserted"),
+            "direction":  meta.get("direction", "context"),
+            "bears_on":   [],
+            "locator":    c.get("locator", ""),
+            "author":     meta.get("author"),
+            "statement":  c.get("statement", ""),
+            "derivation": meta.get("derivation"),
+        })
+    return out
+
+
+def _run_from_e3(e3_path: Path, out_dir: Path, deal: str) -> None:
+    if not e3_path.exists():
+        print(f"ERROR: file not found: {e3_path}", file=sys.stderr)
+        sys.exit(1)
+    out_dir.mkdir(parents=True, exist_ok=True)
+    e3 = json.loads(e3_path.read_text(encoding="utf-8"))
+    claims = e3_to_claims(e3)
+
+    print("\n=== PANTA Extraction Pipeline (from E3) ===")
+    print(f"  source : {e3_path}")
+    print(f"  deal   : {deal}")
+    print(f"  output : {out_dir}\n")
+
+    claims_path = out_dir / "claims.json"
+    claims_path.write_text(json.dumps(claims, indent=2, ensure_ascii=False))
+    print(f"[1/4] {len(claims)} claim da {e3.get('manifest_id', '?')} → {claims_path.name}")
+
+    print("[2/4] Building semantic graph…")
+    graph_dict = claims_to_graph(claims, source_name=e3.get("manifest_id", "E3"))
+    dg = DealGraph(deal=deal)
+    dg.load_from_claims_graph(claims, graph_dict)
+    graph_json = dg.to_json()
+    (out_dir / "graph.json").write_text(
+        json.dumps(graph_json, indent=2, ensure_ascii=False))
+    print_stats(dg, claims)
+
+    # storage_export writes graph.db, nodes.csv and edges.csv from this one
+    # snapshot, so the three reconcile row by row rather than merely in counts.
+    print("\n[3/4] Writing SQLite + CSVs…")
+    if "links" in graph_json and "edges" not in graph_json:
+        graph_json["edges"] = graph_json.pop("links")
+    from tools import storage_export
+    errs = storage_export.validate_graph(graph_json)
+    if errs:
+        print("  graph non esportabile:", *errs[:5], sep="\n   - ")
+        sys.exit(1)
+    stats = storage_export.export(graph_json, out_dir)
+    print(f"  {stats['nodes']} nodes, {stats['edges']} edges → graph.db / nodes.csv / edges.csv")
+
+    print("\n[4/4] Reconciling…")
+    problems = storage_export.verify(out_dir, graph_json)
+    if problems:
+        print("  RICONCILIAZIONE FALLITA:", *problems, sep="\n   - ")
+        sys.exit(1)
+    print("  graph.json ↔ CSV ↔ SQLite coerenti")
+    print(f"\nDone → {out_dir}")
+
+
 def main() -> None:
     ap = argparse.ArgumentParser(
         description="PANTA extraction pipeline: file → claims JSON + graph DB",
     )
-    ap.add_argument("file", help="Input file (PDF, xlsx, md, txt, csv, …)")
+    ap.add_argument("file", nargs="?",
+                    help="Input file (PDF, xlsx, md, txt, csv, …)")
+    ap.add_argument("--from-e3", metavar="E3_CLAIMS",
+                    help="Build the graph from an existing extract_v2 e3_claims.json "
+                         "instead of extracting. No API key needed.")
     ap.add_argument("--deal", default="pipeline", help="Deal slug (default: pipeline)")
     ap.add_argument("--out",  default="pipeline_out", help="Output directory")
     ap.add_argument("--no-api", action="store_true",
                     help="Skip LLM extraction (use if claims.json already exists)")
     args = ap.parse_args()
 
+    if args.from_e3:
+        return _run_from_e3(Path(args.from_e3).expanduser().resolve(),
+                            Path(args.out).expanduser().resolve(), args.deal)
+
+    if not args.file:
+        ap.error("serve un file di input, oppure --from-e3")
     src = Path(args.file).expanduser().resolve()
     if not src.exists():
         print(f"ERROR: file not found: {src}", file=sys.stderr)

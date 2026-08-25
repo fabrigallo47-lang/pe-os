@@ -50,3 +50,10 @@ grade-keystone-arc: ## Run arc tests only (Layer-2 event chronology)
 
 bind-keystone: ## Retroactively bind Layer-1 keystone claims to questions via subject-to-QID map
 	$(PY) tools/bind_keystone_claims.py
+
+verify: ## Run the full test suite: regression + V7 acceptance + e2e + cascade + grounding
+	@$(PY) tools/verify_all.py $(ARGS)
+
+grounding: ## Grounding gate over extracted claims (usage: make grounding DEAL=keystone)
+	$(PY) tools/grounding_gate.py --claims pipeline_out/e3/K-IC/e3_claims.json \
+		--deal $(or $(DEAL),keystone) --out pipeline_out/e3/K-IC/grounding_review.json

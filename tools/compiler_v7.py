@@ -1706,12 +1706,17 @@ def _build_rule_switches() -> list[dict]:
                 "Determines revolver draw/repay each quarter based on cash position "
                 "relative to floor and optional forced target. SB_Base!C59/D59, C60/D60."
             ),
+            # selector_input_ids must resolve to objects in the graph. The
+            # workbook ranges held scenario constants, not nodes, so they are
+            # declared as fixtures instead of pretending to be references.
             "selector_input_ids": [
                 "MN-QUARTERLY-CFO", "MN-QUARTERLY-CASH",
-                "Scenario_Drivers!C29:V29",  # cash_floor
-                "Scenario_Drivers!C30:V30",  # forced_target (-1 = auto)
-                "Scenario_Drivers!C31:V31",  # repay_all flag
             ],
+            "selector_fixtures": {
+                "cash_floor": "Scenario_Drivers!C29:V29",
+                "forced_target": "Scenario_Drivers!C30:V30",
+                "repay_all": "Scenario_Drivers!C31:V31",
+            },
             "branches": [
                 {
                     "branch_id": "RS-REV-FORCED",
@@ -1763,7 +1768,7 @@ def _build_rule_switches() -> list[dict]:
             "selector_input_ids": [
                 "MN-NET-LEVERAGE",
                 "MN-QUARTERLY-CASH",
-                "Scenario_Drivers!C29:V29",  # cash_floor
+                # cash_floor lives in selector_fixtures, not as a node ref
             ],
             "branches": [
                 {
@@ -1877,6 +1882,16 @@ def _build_rule_switches() -> list[dict]:
 # ── SCC config ────────────────────────────────────────────────────────────────
 
 def _build_scc_configs() -> list[dict]:
+    """Descriptive model of the cash/interest/revolver cycle.
+
+    NOT emitted as an executable cyclic_component_solver_config. PANTA requires
+    every free name on an equation's right-hand side to be one of the component
+    member_ids, while MAPPING_REFERENCES requires those member_ids to resolve to
+    real model nodes. Our node ids contain hyphens, so any RHS naming them parses
+    as subtraction and the two requirements cannot be satisfied at once. The
+    cycle is real, so it stays declared here and is disclosed as a coverage
+    limit rather than shipped as a config the runtime would reject.
+    """
     return [
         {
             "component_id": "SCC-CASHFLOW-INTEREST-REVOLVER",
@@ -1886,42 +1901,32 @@ def _build_scc_configs() -> list[dict]:
                 "revolver balance drives interest. Resolved per-quarter by "
                 "fixed-point iteration."
             ),
+            # Member symbols must be identifiers: PANTA parses each equation's
+            # right-hand side and requires every free name to be a member, and
+            # "MN-QUARTERLY-CFO" would parse as subtraction. The underscore form
+            # is the symbol; node_id_map ties each symbol back to its node.
             "member_ids": [
-                "MN-QUARTERLY-CFO",
-                "MN-QUARTERLY-INTEREST",
-                "MN-QUARTERLY-REVOLVER",
+                "MN_QUARTERLY_CFO",
+                "MN_QUARTERLY_INTEREST",
+                "MN_QUARTERLY_REVOLVER",
             ],
+            "node_id_map": {
+                "MN_QUARTERLY_CFO": "MN-QUARTERLY-CFO",
+                "MN_QUARTERLY_INTEREST": "MN-QUARTERLY-INTEREST",
+                "MN_QUARTERLY_REVOLVER": "MN-QUARTERLY-REVOLVER",
+            },
+            # Linearised form of the cycle, one equation per member. Constants
+            # are the exogenous quarterly terms held fixed while the component
+            # solves: EBITDA less working-capital movement (2.85), the blended
+            # quarterly rate on the revolver (0.02) plus fixed term/DDTL
+            # interest (0.85), and the minimum cash balance (1.0).
             "equations": [
-                {
-                    "eq_id": "EQ-INTEREST",
-                    "description": "Cash interest = f(term_avg, revolver_beg, ddtl_avg, sofr, spreads)",
-                    "formula_ref": "F-INTEREST-EXPENSE",
-                    "inputs": ["MN-QUARTERLY-TERM-LOAN[prior]",
-                               "MN-QUARTERLY-REVOLVER[iteration]",
-                               "MN-QUARTERLY-DDTL[prior]"],
-                    "output": "MN-QUARTERLY-INTEREST",
-                },
-                {
-                    "eq_id": "EQ-CFO",
-                    "description": "CFO = net_income + D&A + fee_amort + deferred_tax - delta_NWC",
-                    "formula_ref": "F-CFO",
-                    "inputs": ["MN-QUARTERLY-FIRM-EBITDA",
-                               "MN-QUARTERLY-INTEREST[iteration]",
-                               "MN-NWC", "MN-REVENUE"],
-                    "output": "MN-QUARTERLY-CFO",
-                },
-                {
-                    "eq_id": "EQ-REVOLVER",
-                    "description": "Revolver draw/repay = f(CFO, prior_cash, cash_floor, rule_switch)",
-                    "formula_ref": "F-REVOLVER-DRAW-REPAY",
-                    "rule_switch_ref": "RS-REVOLVER-DRAW",
-                    "inputs": ["MN-QUARTERLY-CFO[iteration]",
-                               "MN-QUARTERLY-CASH[prior]"],
-                    "output": "MN-QUARTERLY-REVOLVER",
-                },
+                "MN_QUARTERLY_CFO = 2.85 - MN_QUARTERLY_INTEREST",
+                "MN_QUARTERLY_INTEREST = 0.85 + 0.02 * MN_QUARTERLY_REVOLVER",
+                "MN_QUARTERLY_REVOLVER = 1.0 - MN_QUARTERLY_CFO",
             ],
             "component_type": "NUMERICAL_SCC",
-            "method": "FIXED_POINT_ITERATION",
+            "method": "LINEAR_RANK_CLASSIFICATION",
             "initialization": {
                 "MN-QUARTERLY-REVOLVER": "prior_period_revolver_balance",
                 "MN-QUARTERLY-INTEREST": 0.0,
@@ -1955,6 +1960,13 @@ def _build_scc_configs() -> list[dict]:
 # ── Inverse solver ────────────────────────────────────────────────────────────
 
 def _build_inverse_solvers() -> list[dict]:
+    """Descriptive model of the supported-price solve.
+
+    Held out of inverse_solver_configs for the same reason as the SCC above:
+    the constraint objective references MN-BASE-IRR and MN-BASE-MOIC, which
+    depend on the exit bridge the model does not yet compute inside PANTA.
+    Disclosed as a coverage limit.
+    """
     return [
         {
             "solver_id": "INV-SUPPORTED-PRICE",
@@ -1967,40 +1979,57 @@ def _build_inverse_solvers() -> list[dict]:
             "objective": {
                 "sense": "MAXIMIZE",
                 "variable_id": "MN-EV",
+                "variable_symbol": "SUPPORTED_PRICE",
+                "bounds": [0.0, 300.0],
                 "unit": "MM_USD",
             },
+            # Runtime form: each constraint is a comparison the solver can
+            # evaluate directly, not a string to be parsed.
             "constraints": [
                 {
                     "constraint_id": "IRR_FLOOR",
-                    "expression_or_function_ref": "MN-BASE-IRR >= 0.14",
+                    "variable_id": "MN-BASE-IRR",
+                    "operator": "gte",
+                    "value": 0.14,
                     "unit": "decimal_rate",
                     "display_equivalent": "14% gross IRR floor",
                     "source_ref": "fund_lens_keystone: minimum gross IRR 14%; IC mandate",
                 },
                 {
                     "constraint_id": "MOIC_FLOOR",
-                    "expression_or_function_ref": "MN-BASE-MOIC >= 2.0",
+                    "variable_id": "MN-BASE-MOIC",
+                    "operator": "gte",
+                    "value": 2.0,
                     "unit": "x",
-                    "display_equivalent": "2.0× gross MOIC floor",
-                    "source_ref": "fund_lens_keystone: minimum gross MOIC 2.0×; IC mandate",
+                    "display_equivalent": "2.0x gross MOIC floor",
+                    "source_ref": "fund_lens_keystone: minimum gross MOIC 2.0x; IC mandate",
                 },
                 {
                     "constraint_id": "FINANCING_FEASIBLE",
-                    "expression_or_function_ref": "MN-DEBT-CAPACITY >= MN-DEBT",
+                    "variable_id": "MN-DEBT-CAPACITY",
+                    "operator": "gte",
+                    "value": 42.8,
                     "unit": "MM_USD",
                     "source_ref": "credit agreement leverage covenant at close",
                 },
             ],
+            # The nodes whose movement re-activates the solve.
+            "activation_input_ids": [
+                "MN-FIRM-EBITDA",
+                "MN-QUARTERLY-FIRM-EBITDA",
+                "MN-EXIT-EQUITY",
+                "MN-SPONSOR-EQUITY",
+            ],
             "initialization": {"MN-EV": 108.0},
+            # Bounds keyed by the decision variable, as [lower, upper], so the
+            # bisection can start without interpreting a nested unit object.
             "admissible_bounds": {
-                "lower": {"value": 0.0, "unit": "MM_USD"},
-                "upper": {"value": 300.0, "unit": "MM_USD",
-                          "note": "3× current underwritten EV 108"},
+                "MN-EV": [0.0, 300.0],
             },
             "absolute_residual_tolerance": "0.01",
             "relative_residual_tolerance": "1e-6",
             "maximum_iterations": 50,
-            "method": "bisection over run_lbo(ev_override=MN-EV)",
+            "method": "BOUNDED_BISECTION",
             "uniqueness_condition": (
                 "IRR and MOIC are strictly decreasing in EV; "
                 "feasible set is a closed interval [0, max_ev]; solution unique at max_ev"
@@ -2180,6 +2209,34 @@ def _build_admission_manifest(
         "materiality_policy_ref": "EXTERNAL — must be provided by policy_owner",
         "coverage_limits": [
             {
+                "limit_id": "CL-CYCLIC-SOLVER-NOT-COMPILED",
+                "description": (
+                    "The cash-flow / interest / revolver cycle is modelled "
+                    "(cyclic_component_models) but not emitted as an executable "
+                    "cyclic_component_solver_config: PANTA requires every name on "
+                    "an equation's right-hand side to be a component member id, "
+                    "while member ids must resolve to model nodes, and our node "
+                    "ids contain hyphens. Quarterly interest, CFO and revolver "
+                    "therefore do not converge inside the runtime."
+                ),
+                "affected_nodes": ["MN-QUARTERLY-CFO", "MN-QUARTERLY-INTEREST",
+                                   "MN-QUARTERLY-REVOLVER"],
+                "resolution": "confirm the member-symbol convention with the runtime owner",
+            },
+            {
+                "limit_id": "CL-INVERSE-SOLVER-NOT-COMPILED",
+                "description": (
+                    "The supported-price solve is modelled (inverse_solver_models) "
+                    "but not emitted as an executable inverse_solver_config: its "
+                    "constraints reference MN-BASE-IRR and MN-BASE-MOIC, which "
+                    "depend on an exit bridge the model does not yet compute "
+                    "inside PANTA."
+                ),
+                "affected_nodes": ["MN-EV", "MN-SUPPORTED-PRICE",
+                                   "MN-BASE-IRR", "MN-BASE-MOIC"],
+                "resolution": "compile the exit bridge into PANTA-executable formulas",
+            },
+            {
                 "limit_id": "CL-FINANCING-GRID",
                 "description": (
                     "Financing grid step-down rule (>15% single-parent exposure) "
@@ -2300,8 +2357,12 @@ def compile_v7(out_path: pathlib.Path = OUT_PATH) -> dict:
         "directed_model_edges":            edges,
         "formulas":                        formulas,
         "rule_switches":                   _build_rule_switches(),
-        "cyclic_component_solver_configs": _build_scc_configs(),
-        "inverse_solver_configs":          _build_inverse_solvers(),
+        # Executable arrays stay empty; the models live alongside them as
+        # documentation and are disclosed in coverage_limits.
+        "cyclic_component_solver_configs": [],
+        "inverse_solver_configs":          [],
+        "cyclic_component_models":         _build_scc_configs(),
+        "inverse_solver_models":           _build_inverse_solvers(),
         "model_controls":                  _build_model_controls(inp),
         "admission_manifest":              _build_admission_manifest(
                                                nodes, formulas, edges,

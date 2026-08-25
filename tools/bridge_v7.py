@@ -983,9 +983,26 @@ def _normalize_execution_mapping(execution: dict,
             c["resolution"] = "REQUIRES_MANUAL_REVIEW"
         controls.append(c)
 
+    # Bridge-level limits: a position that names a model node the execution
+    # graph does not define. The adapter report declares these, and the handoff
+    # requires the mapping to declare them too — generating both from the same
+    # rule keeps them from drifting apart.
+    _exec_mn_ids = set(execution.get("model_nodes", {}).keys())
+    bridge_limits = [
+        {
+            "limit_id": f"KS-BRIDGE-UNBOUND-{cp['cp_id']}-{mn}",
+            "reason_code": "MISSING_EXECUTABLE_DIRECTION",
+            "scope_ids": [cp["cp_id"], mn],
+            "effect": f"{cp['cp_id']} has no model node binding for {mn} in execution graph",
+        }
+        for cp in case_positions.values()
+        for mn in cp["model_node_ids"]
+        if mn not in _exec_mn_ids
+    ]
+
     # Add resolution to coverage limits
     all_limits = []
-    for lim in node_coverage_limits + manifest_limits_normalized:
+    for lim in node_coverage_limits + manifest_limits_normalized + bridge_limits:
         l = dict(lim)
         if not l.get("resolution"):
             l["resolution"] = "PARTIAL_SETTLEMENT"
@@ -1129,11 +1146,18 @@ def _validate_extraction(g: dict) -> list[str]:
 
 def _validate_execution(e: dict) -> list[str]:
     errors = []
+    # These must exist and carry content — without them there is no model.
     for k in ["model_nodes", "directed_model_edges", "formulas",
-              "rule_switches", "cyclic_component_solver_configs",
-              "inverse_solver_configs", "model_controls"]:
+              "rule_switches", "model_controls"]:
         if not e.get(k):
             errors.append(f"execution: missing or empty '{k}'")
+    # Solver configs must be present as keys but may legitimately be empty: a
+    # deal with no cycle and no inverse solve declares none, and a cycle that
+    # cannot be compiled into PANTA's grammar is disclosed as a coverage limit
+    # rather than shipped as a config the runtime would reject.
+    for k in ["cyclic_component_solver_configs", "inverse_solver_configs"]:
+        if k not in e:
+            errors.append(f"execution: missing '{k}'")
     return errors
 
 

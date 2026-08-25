@@ -161,11 +161,14 @@ def assemble(bundle_dir: Path, bundle: dict, event_src: Path,
             # transition_output plus the top-level history_append, so the
             # declared file has to carry that key too.
             to["history_append"] = result.get("history_append", [])
-            _w(bundle_dir / "transition_output.json", to)
             # candidate_state wraps the snapshot; the graph itself is inside.
             candidate_state = result.get("candidate_state", {})
-            _w(bundle_dir / "candidate_graph.json",
-               candidate_state.get("current_graph", candidate_state))
+            candidate_graph = candidate_state.get("current_graph", candidate_state)
+            # The handoff expects the same snapshot both standalone and nested
+            # inside the output, and checks the two hash identically.
+            to["candidate_graph"] = candidate_graph
+            _w(bundle_dir / "transition_output.json", to)
+            _w(bundle_dir / "candidate_graph.json", candidate_graph)
             written += ["transition_output.json", "candidate_graph.json"]
             ordered = to.get("ordered_transitions", [])
             settled = [c for c in ordered if c.get("result") == "SETTLED"]

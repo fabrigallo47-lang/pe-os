@@ -591,6 +591,25 @@ def _build_model_nodes(inp: DealInputs) -> dict:
         "coverage_limits": [],
     }
 
+    # XIRR consumes one dated cash-flow vector, so the sponsor's flows are a
+    # first-class node rather than an argument list inside a Python helper.
+    nodes["MN-SPONSOR-CF-VECTOR"] = {
+        "id": "MN-SPONSOR-CF-VECTOR",
+        "label": "Sponsor cash-flow vector (entry outflow to exit proceeds)",
+        "computational_form": "DERIVED",
+        "unit": "MM_USD",
+        "period": f"{PERIODS[0]}/{PERIODS[-1]}",
+        "effective_date": "2026-03-10",
+        "perimeter": "deal_level",
+        "epistemic_class": "derived",
+        "value_current": "DATED_CASH_FLOW_VECTOR",
+        "workbook_ref": f"{WB}:OR!L3:L4",
+        "known_at": "2026-03-10T00:00:00Z",
+        "directed_deps": ["MN-SPONSOR-EQUITY", "MN-EXIT-EQUITY"],
+        "formula_id": "F-SPONSOR-CF-VECTOR",
+        "coverage_limits": [],
+    }
+
     nodes["MN-BASE-IRR"] = {
         "id": "MN-BASE-IRR",
         "label": "Standalone Base Gross XIRR (ACT/365)",
@@ -1104,8 +1123,18 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
         input_ids=["MN-QUARTERLY-TERM-LOAN", "MN-QUARTERLY-DDTL",
                    "MN-QUARTERLY-REVOLVER", "MN-DEBT"],
         output_id="MN-QUARTERLY-INTEREST",
-        expression_or_function_ref="_interest_expense",
-        evaluation_type="PYTHON_FUNCTION",
+        expression_or_function_ref=(
+            "(term_loan + ddtl + revolver) * quarterly_rate"
+        ),
+        operand_bindings={
+            "term_loan": "MN-QUARTERLY-TERM-LOAN",
+            "ddtl": "MN-QUARTERLY-DDTL",
+            "revolver": "MN-QUARTERLY-REVOLVER",
+        },
+        fixture_parameters={
+            "quarterly_rate": "blended quarterly cash interest rate",
+        },
+        evaluation_type="ARITHMETIC",
         workbook_cell_ref=f"{WB}:SB_Base!C22:V22",
         unit="MM_USD",
         period=f"{PERIODS[0]}/{PERIODS[-1]}",
@@ -1137,12 +1166,14 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
             "Cash flow from operations = net_income + D&A + fee_amort "
             "+ deferred_tax_adj − delta_nwc. SB_Base!C52."
         ),
-        input_ids=["MN-QUARTERLY-FIRM-EBITDA", "MN-QUARTERLY-INTEREST",
-                   "MN-NWC", "MN-REVENUE"],
+        input_ids=["MN-QUARTERLY-FIRM-EBITDA", "MN-QUARTERLY-INTEREST", "MN-NWC"],
         output_id="MN-QUARTERLY-CFO",
-        expression_or_function_ref=(
-            "net_income + total_da + fee_amort + deferred_tax_adj - delta_nwc"
-        ),
+        expression_or_function_ref="ebitda - interest - delta_nwc",
+        operand_bindings={
+            "ebitda": "MN-QUARTERLY-FIRM-EBITDA",
+            "interest": "MN-QUARTERLY-INTEREST",
+            "delta_nwc": "MN-NWC",
+        },
         evaluation_type="DATED_VECTOR_ARITHMETIC",
         workbook_cell_ref=f"{WB}:SB_Base!C52:V52",
         unit="MM_USD",
@@ -1171,8 +1202,15 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
         input_ids=["MN-QUARTERLY-CFO", "MN-QUARTERLY-CASH",
                    "MN-QUARTERLY-DDTL"],
         output_id="MN-QUARTERLY-REVOLVER",
-        expression_or_function_ref="_revolver_draw_repay",
-        evaluation_type="PYTHON_FUNCTION",
+        expression_or_function_ref="MAX(0, min_cash - (cash + cfo))",
+        operand_bindings={
+            "cash": "MN-QUARTERLY-CASH",
+            "cfo": "MN-QUARTERLY-CFO",
+        },
+        fixture_parameters={
+            "min_cash": "minimum operating cash balance covenant",
+        },
+        evaluation_type="ARITHMETIC",
         workbook_cell_ref=f"{WB}:SB_Base!C59:V59,C60:V60",
         unit="MM_USD",
         period=f"{PERIODS[0]}/{PERIODS[-1]}",
@@ -1204,6 +1242,13 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
         expression_or_function_ref=(
             "max(0, max(0, beg_term - min(term_amort_q, beg_term)) + ecf_sweep)"
         ),
+        operand_bindings={
+            "beg_term": "MN-DEBT",
+            "ecf_sweep": "MN-QUARTERLY-CFO",
+        },
+        fixture_parameters={
+            "term_amort_q": "scheduled quarterly term-loan amortisation",
+        },
         evaluation_type="DATED_VECTOR_ARITHMETIC",
         workbook_cell_ref=f"{WB}:SB_Base!C76:V76",
         unit="MM_USD",
@@ -1226,6 +1271,13 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
         input_ids=["MN-DEBT"],
         output_id="MN-QUARTERLY-DDTL",
         expression_or_function_ref="max(0, beg_ddtl + ddtl_draw_q + ddtl_amort_q)",
+        operand_bindings={
+            "beg_ddtl": "MN-DEBT",
+        },
+        fixture_parameters={
+            "ddtl_draw_q": "scheduled DDTL draw",
+            "ddtl_amort_q": "scheduled DDTL amortisation",
+        },
         evaluation_type="DATED_VECTOR_ARITHMETIC",
         workbook_cell_ref=f"{WB}:SB_Base!C77:V77",
         unit="MM_USD",
@@ -1248,6 +1300,14 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
         input_ids=["MN-OPENING-CASH", "MN-QUARTERLY-CFO", "MN-QUARTERLY-REVOLVER"],
         output_id="MN-QUARTERLY-CASH",
         expression_or_function_ref="beg_cash + cfo + cfi + cff",
+        operand_bindings={
+            "beg_cash": "MN-OPENING-CASH",
+            "cfo": "MN-QUARTERLY-CFO",
+            "cff": "MN-QUARTERLY-REVOLVER",
+        },
+        fixture_parameters={
+            "cfi": "quarterly investing cash flow (capex)",
+        },
         evaluation_type="DATED_VECTOR_ARITHMETIC",
         workbook_cell_ref=f"{WB}:SB_Base!C67:V67",
         unit="MM_USD",
@@ -1338,6 +1398,15 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
         expression_or_function_ref=(
             "ev - term_loan - seller_rollover + financing_fees + buyer_tx_expenses"
         ),
+        operand_bindings={
+            "ev": "MN-EV",
+            "term_loan": "MN-DEBT",
+            "seller_rollover": "MN-ROLLOVER",
+        },
+        fixture_parameters={
+            "financing_fees": "financing fees at close",
+            "buyer_tx_expenses": "buyer transaction expenses",
+        },
         evaluation_type="ARITHMETIC",
         workbook_cell_ref=f"{WB}:S&U_Opening!E21",
         unit="MM_USD",
@@ -1438,6 +1507,14 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
         expression_or_function_ref=(
             "(exit_equity * (1 - mip_vested) * sponsor_pre_mip_pct) / sponsor_invested"
         ),
+        operand_bindings={
+            "exit_equity": "MN-EXIT-EQUITY",
+            "sponsor_invested": "MN-SPONSOR-EQUITY",
+        },
+        fixture_parameters={
+            "mip_vested": "vested MIP share at exit",
+            "sponsor_pre_mip_pct": "sponsor pre-MIP ownership",
+        },
         evaluation_type="ARITHMETIC",
         workbook_cell_ref=f"{WB}:Ownership_Returns!K4",
         unit="RATIO",
@@ -1456,15 +1533,41 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
 
     # Gross XIRR (ACT/365)
     _f(
+        formula_id="F-SPONSOR-CF-VECTOR",
+        description="Sponsor dated cash flows: entry equity out, exit equity in",
+        input_ids=["MN-SPONSOR-EQUITY", "MN-EXIT-EQUITY"],
+        output_id="MN-SPONSOR-CF-VECTOR",
+        expression_or_function_ref="BUILD_DATED_CASH_FLOW_VECTOR",
+        dated_cash_flow_spec={
+            "total_invested_input_id": "MN-SPONSOR-EQUITY",
+            "exit_proceeds_input_id": "MN-EXIT-EQUITY",
+            "entry_date": "2026-03-10",
+            "exit_date": "2031-03-31",
+        },
+        evaluation_type="BUILD_DATED_CASH_FLOW_VECTOR",
+        workbook_cell_ref=f"{WB}:OR!L3:L4",
+        unit="MM_USD",
+        period=f"{PERIODS[0]}/{PERIODS[-1]}",
+        perimeter="deal_level",
+        scenario="standalone_base",
+        source_ref="keystone_model.py:sponsor_cash_flows",
+        variable_binding={},
+        tolerances={},
+    )
+
+    _f(
         formula_id="F-GROSS-XIRR",
         description=(
             "gross_xirr = XIRR([-sponsor_invested, 0..., +sponsor_proceeds], "
             "[entry_date, ..., exit_date]). Newton-Raphson, ACT/365. OR!L4."
         ),
-        input_ids=["MN-EXIT-EQUITY", "MN-SPONSOR-EQUITY"],
+        input_ids=["MN-SPONSOR-CF-VECTOR"],
         output_id="MN-BASE-IRR",
-        expression_or_function_ref="_xirr",
-        evaluation_type="PYTHON_FUNCTION",
+        expression_or_function_ref="XIRR(sponsor_cf_vector)",
+        operand_bindings={
+            "sponsor_cf_vector": "MN-SPONSOR-CF-VECTOR",
+        },
+        evaluation_type="XIRR",
         workbook_cell_ref=f"{WB}:Ownership_Returns!L4",
         unit="PERCENT",
         period="2026-03-10/2031-03-31",
@@ -1544,9 +1647,15 @@ def _build_formulas(inp: DealInputs) -> list[dict]:
         description="Opening balance sheet assets = liabilities + equity",
         input_ids=["MN-DEBT", "MN-OPENING-CASH", "MN-SPONSOR-EQUITY", "MN-ROLLOVER"],
         output_id="MN-CHECK-OPENING-BS",
-        expression_or_function_ref=(
-            "abs(total_assets - (total_liabilities + total_equity)) < 0.001"
-        ),
+        expression_or_function_ref="abs(total_assets - (debt + sponsor_equity + rollover)) < 0.001",
+        operand_bindings={
+            "debt": "MN-DEBT",
+            "sponsor_equity": "MN-SPONSOR-EQUITY",
+            "rollover": "MN-ROLLOVER",
+        },
+        fixture_parameters={
+            "total_assets": "opening total assets",
+        },
         evaluation_type="ARITHMETIC",
         workbook_cell_ref=f"{WB}:S&U_Opening!BS_check",
         unit="BOOL",

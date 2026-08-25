@@ -3,7 +3,7 @@ V7 End-to-End Validation Report
   Extraction : /Users/fabriziogallo/Desktop/pe-os/pipeline_out/keystone_full_story/graph.json
   Execution  : /Users/fabriziogallo/Desktop/pe-os/vault/deals/keystone/models/execution_graph_v7.json
   Event      : /Users/fabriziogallo/Desktop/pe-os/event_ebitda_correction.json
-  Candidate  : pipeline_out/e3/K-IC/adapter_alpha/v7_e2e/candidate_graph.json
+  Candidate  : /Users/fabriziogallo/Desktop/pe-os/pipeline_out/v7_e2e/candidate_graph.json
 
 Result: 21/21 PASS
 

@@ -3,7 +3,7 @@
   "total_claims_in_extraction": 45,
   "admitted_count": 38,
   "monitoring_excluded_count": 7,
-  "unbound_claim_count": 6,
+  "unbound_claim_count": 7,
   "case_positions_built": 22,
   "model_nodes_bound": 15,
   "model_nodes_total": 74,
@@ -58,6 +58,11 @@
     {
       "stable_id": "ks-bd0460fd2ea4",
       "metric": "Active Billing Accounts",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-5b65f33a9b15",
+      "metric": "Acquisition Count",
       "reason": "no CP mapping for metric"
     },
     {
@@ -143,14 +148,5 @@
       "effect": "CP-STANDALONE-UPSIDE-IRR has no model node binding for MN-UP-IRR in execution graph"
     }
   ],
-  "validation_errors": [],
-  "deal_profile": {
-    "deal": "keystone",
-    "profile_loaded": true,
-    "entity": "Alderstone",
-    "positions_mapped": 27,
-    "model_nodes_mapped": 18,
-    "unmapped_warnings": [],
-    "status": "OK"
-  }
+  "validation_errors": []
 }

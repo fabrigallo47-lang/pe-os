@@ -1,0 +1,2205 @@
+{
+  "deal": "keystone",
+  "claims_file": "pipeline_out/e3/K-PRE/e3_claims.json",
+  "profile_loaded": true,
+  "claims_total": 254,
+  "claims_flagged": 212,
+  "claims_clean": 42,
+  "findings_total": 243,
+  "blocking_total": 32,
+  "by_code": {
+    "PERIMETER_MISSING": 135,
+    "VALUE_NOT_IN_SOURCE": 12,
+    "PERIMETER_IS_COUNTERPARTY": 20,
+    "PERIMETER_OFF_VOCABULARY": 76
+  },
+  "review_queue": [
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-5747898178af",
+      "statement": "The Company serves more than 600 active billing accounts.",
+      "perimeter": "unknown",
+      "locator": "keystone_seller_cim.md::## Revenue characteristics:Revenue characteristics section",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-c3e5eb5f5743",
+      "statement": "Reported EBITDA for FY2025A was $10.2m.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w250-500:section:w250-500, Reported EBITDA line",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-a17715a242cf",
+      "statement": "EBITDA margin for FY2025A was 13.8%.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w250-500:section:w250-500, EBITDA margin line",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-a17715a242cf",
+      "statement": "EBITDA margin for FY2025A was 13.8%.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w250-500:section:w250-500, EBITDA margin line",
+      "detail": "value '13.8' does not appear in keystone_data_room_extract.md."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-9bc78e528ac8",
+      "statement": "Net income for FY2025A was $5.73m.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w250-500:section:w250-500, Net income line",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-e45705ebd5c9",
+      "statement": "Total gross debt (Bank debt + Finance leases) in FY2025A was $9.4m, derived from Bank debt $9m plus Finance leases $0.4m.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w500-750:keystone_data_room_extract.md::section:w500-750, Balance Sheet lines",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-d2e4ee092528",
+      "statement": "Total gross debt (Bank debt + Finance leases) in FY2026E was $10.0m, derived from Bank debt $9.5m plus Finance leases $0.5m.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w500-750:keystone_data_room_extract.md::section:w500-750, Balance Sheet lines",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-d1a1dfe74ea3",
+      "statement": "Total gross debt (Bank debt + Finance leases) in FY2027E was $10.65m, derived from Bank debt $10.1m plus Finance leases $0.55m.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w500-750:keystone_data_room_extract.md::section:w500-750, Balance Sheet lines",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-c092417bc648",
+      "statement": "Revenue for the period starting 2025-11-01 was $4.26m.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w1250-1500:keystone_data_room_extract.md::section:w1250-1500 | Revenue table, first data point",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-220e53034a68",
+      "statement": "Gross profit for the period starting 2025-11-01 was $1.455m.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w1250-1500:keystone_data_room_extract.md::section:w1250-1500 | Gross profit table, first data point",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-f5739ba41c7d",
+      "statement": "Gross margin for the initial period was 34.15%, holding constant through the first 12 monthly observations.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w1250-1500:keystone_data_room_extract.md::section:w1250-1500 | Gross margin table, 0.341549 conversion",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-f5739ba41c7d",
+      "statement": "Gross margin for the initial period was 34.15%, holding constant through the first 12 monthly observations.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w1250-1500:keystone_data_room_extract.md::section:w1250-1500 | Gross margin table, 0.341549 conversion",
+      "detail": "value '34.15' does not appear in keystone_data_room_extract.md."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-ade602e720d6",
+      "statement": "RIV-CORP (Riverton Corporate EHS) generates $1.912m in annual revenue.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w2000-2250:Customer ledger / KS-DL-1.2, RIV-CORP row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-f848f9724432",
+      "statement": "BIO-01 (BioHealth Laboratories) generates $1.7m in annual revenue.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w2000-2250:Customer ledger / KS-DL-1.2, BIO-01 row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-0a9a872887e9",
+      "statement": "APX-01 (Apex Manufacturing - Main) generates $1.6m in annual revenue.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w2000-2250:Customer ledger / KS-DL-1.2, APX-01 row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-100bc73564d9",
+      "statement": "RIV-CORP (Riverton Corporate EHS) represents approximately 2.58% of total customer revenue concentration.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w2000-2250:Customer ledger / KS-DL-1.2, RIV-CORP row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-8e8ebbb5f686",
+      "statement": "Riverton Advanced Materials - Decatur (RIV-DEC) generated $5.624m in 2025 revenue from EHS Compliance services.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w1750-2000:Data room customer ledger (KS-DL-1.2) — Riverton Industrial Group account",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-8e8ebbb5f686",
+      "statement": "Riverton Advanced Materials - Decatur (RIV-DEC) generated $5.624m in 2025 revenue from EHS Compliance services.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w1750-2000:Data room customer ledger (KS-DL-1.2) — Riverton Industrial Group account",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-aba37c6bf1b4",
+      "statement": "Riverton Advanced Materials - Decatur represents 0.076% of total 2025 revenue.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w1750-2000:Data room customer ledger (KS-DL-1.2) — concentration metric",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-aba37c6bf1b4",
+      "statement": "Riverton Advanced Materials - Decatur represents 0.076% of total 2025 revenue.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w1750-2000:Data room customer ledger (KS-DL-1.2) — concentration metric",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-00553531f681",
+      "statement": "Riverton Advanced Materials - Decatur contract includes 60-day termination notice, no minimum volume, and requires notice for change of control.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w1750-2000:Data room customer ledger (KS-DL-1.2) — contract terms columns",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-00553531f681",
+      "statement": "Riverton Advanced Materials - Decatur contract includes 60-day termination notice, no minimum volume, and requires notice for change of control.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w1750-2000:Data room customer ledger (KS-DL-1.2) — contract terms columns",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-db425bf1a4ac",
+      "statement": "Riverton Advanced Materials - Decatur has maintained a 9-year relationship tenure (contract start 2017-02-01).",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w1750-2000:Data room customer ledger (KS-DL-1.2) — relationship tenure column",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-db425bf1a4ac",
+      "statement": "Riverton Advanced Materials - Decatur has maintained a 9-year relationship tenure (contract start 2017-02-01).",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w1750-2000:Data room customer ledger (KS-DL-1.2) — relationship tenure column",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-9cde3f43dace",
+      "statement": "Riverton Metals - Milltown (RIV-MIL) represents 1.76% of customer concentration within the Riverton Industrial Group portfolio, with recurring industrial hygien",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w2250-2500:Customer ledger / KS-DL-1.2, row RIV-MIL",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-9cde3f43dace",
+      "statement": "Riverton Metals - Milltown (RIV-MIL) represents 1.76% of customer concentration within the Riverton Industrial Group portfolio, with recurring industrial hygien",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w2250-2500:Customer ledger / KS-DL-1.2, row RIV-MIL",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-d4f96675fb9a",
+      "statement": "Riverton Chemicals - East (RIV-CHEM) represents 1.62% of customer concentration within the Riverton Industrial Group portfolio, with repeat EHS compliance contr",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w2250-2500:Customer ledger / KS-DL-1.2, row RIV-CHEM",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-d4f96675fb9a",
+      "statement": "Riverton Chemicals - East (RIV-CHEM) represents 1.62% of customer concentration within the Riverton Industrial Group portfolio, with repeat EHS compliance contr",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w2250-2500:Customer ledger / KS-DL-1.2, row RIV-CHEM",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-72638f053264",
+      "statement": "Riverton Logistics Hub (RIV-LOG) represents 1.35% of customer concentration within the Riverton Industrial Group portfolio, with repeat field inspection contrac",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w2250-2500:Customer ledger / KS-DL-1.2, row RIV-LOG",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-72638f053264",
+      "statement": "Riverton Logistics Hub (RIV-LOG) represents 1.35% of customer concentration within the Riverton Industrial Group portfolio, with repeat field inspection contrac",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w2250-2500:Customer ledger / KS-DL-1.2, row RIV-LOG",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-950771c049c3",
+      "statement": "Apex Manufacturing - Components (APX-02) represents 1.22% of customer concentration within the Riverton Industrial Group portfolio, with repeat field inspection",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w2250-2500:Customer ledger / KS-DL-1.2, row APX-02",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-950771c049c3",
+      "statement": "Apex Manufacturing - Components (APX-02) represents 1.22% of customer concentration within the Riverton Industrial Group portfolio, with repeat field inspection",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w2250-2500:Customer ledger / KS-DL-1.2, row APX-02",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-27717e9d0da6",
+      "statement": "Oak Ridge Manufacturing 2 (Account 23) holds a concentration score of 0.9865 within the customer portfolio.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w3750-4000:Customer ledger / KS-DL-1.2 | Account 23",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-b7e752b7f0e0",
+      "statement": "Summit Water 2 (Account 24) holds a concentration score of 0.9745 within the customer portfolio.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w3750-4000:Customer ledger / KS-DL-1.2 | Account 24",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-d4f8e44161f7",
+      "statement": "Keystone Health 2 (Account 25) holds a concentration score of 0.9625 within the customer portfolio.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w3750-4000:Customer ledger / KS-DL-1.2 | Account 25",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-773bde509472",
+      "statement": "Lakefront Infrastructure 2 (Account 26) holds a concentration score of 0.9505 within the customer portfolio.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w3750-4000:Customer ledger / KS-DL-1.2 | Account 26",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-b7556b5912ef",
+      "statement": "Largest customer concentration at ultimate-parent view is 0.182 (18.2%), matching the ledger target of 0.182, with PASS status.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w4250-4500:Concentration Summary table, Ultimate-parent view",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-af4c7a30bb3d",
+      "statement": "Top five customers concentration at ultimate-parent view is 0.365 (36.5%), matching the ledger target of 0.365, with PASS status.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w4250-4500:Concentration Summary table, Ultimate-parent view",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-91b8238fc38d",
+      "statement": "Top ten customers concentration at ultimate-parent view is 0.505 (50.5%), matching the ledger target of 0.505, with PASS status.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w4250-4500:Concentration Summary table, Ultimate-parent view",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-3175793dc0bd",
+      "statement": "Total revenue in FY2025A is $74m, with billing-account view, ultimate-parent view, and ledger target all equal at 74, passing validation check.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w4250-4500:Concentration Summary table, Total revenue row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-4564dcf5605f",
+      "statement": "RIV-DEC-P1 (Riverton Industrial Group EHS Compliance project) generated $1.618m in 2025 revenue with 30.7% gross margin, per project ledger.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w4500-4750:Project ID RIV-DEC-P1, row 1",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-4564dcf5605f",
+      "statement": "RIV-DEC-P1 (Riverton Industrial Group EHS Compliance project) generated $1.618m in 2025 revenue with 30.7% gross margin, per project ledger.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w4500-4750:Project ID RIV-DEC-P1, row 1",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-936c9c80101f",
+      "statement": "RIV-DEC-P2 (Riverton Industrial Group EHS Compliance project) generated $0.754m in 2025 revenue with 35.1% gross margin, per project ledger.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w4500-4750:Project ID RIV-DEC-P2, row 2",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-936c9c80101f",
+      "statement": "RIV-DEC-P2 (Riverton Industrial Group EHS Compliance project) generated $0.754m in 2025 revenue with 35.1% gross margin, per project ledger.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w4500-4750:Project ID RIV-DEC-P2, row 2",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-6073b27d9c40",
+      "statement": "RIV-DEC-P3 (Riverton Industrial Group EHS Compliance project) generated $3.252m in 2025 revenue with 30.9% gross margin, per project ledger.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w4500-4750:Project ID RIV-DEC-P3, row 3",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-6073b27d9c40",
+      "statement": "RIV-DEC-P3 (Riverton Industrial Group EHS Compliance project) generated $3.252m in 2025 revenue with 30.9% gross margin, per project ledger.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w4500-4750:Project ID RIV-DEC-P3, row 3",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-4149797ba7d6",
+      "statement": "MedCore Health Industrial Hygiene contract MED-01-P1 has recurring revenue of $0.67m per the project ledger.",
+      "perimeter": "Keystone",
+      "locator": "keystone_data_room_extract.md::section:w5000-5250:keystone_data_room_extract.md::section:w5000-5250; Industrial Hygiene | Recurring | 2024-02-01 | 2026-03-01",
+      "detail": "'Keystone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-941bcf92c94b",
+      "statement": "Multiple recurring revenue contracts (MED-01-P1, MED-01-P2, MED-01-P3, RIV-CORP-P1, RIV-CORP-P2, BIO-01-P1) are documented with 30-60 day payment terms in the p",
+      "perimeter": "Keystone",
+      "locator": "keystone_data_room_extract.md::section:w5000-5250:keystone_data_room_extract.md::section:w5000-5250",
+      "detail": "'Keystone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-0c0e16111cbd",
+      "statement": "Riverton Industrial Group EHS Compliance contract RIV-CORP-P1 has recurring revenue of $1.41m per the project ledger.",
+      "perimeter": "Keystone",
+      "locator": "keystone_data_room_extract.md::section:w5000-5250:keystone_data_room_extract.md::section:w5000-5250; EHS Compliance | Recurring | 2024-02-01 | 2026-03-01",
+      "detail": "'Keystone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-66df89916b1c",
+      "statement": "Multiple customer contracts are classified as recurring revenue arrangements with contract terms of 30–60 days across multiple projects (MET-N-P3, STA-01-P1, ST",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w4750-5000:Project ledger / data room; recurring revenue indicator column",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-ed55180e5c25",
+      "statement": "Three major customer entities are present in the observed project ledger: Metro Utility Holdings (MET-N), State Infrastructure Authority (STA-01), and MedCore H",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w4750-5000:Project ledger / data room; customer entity column",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-fef2b788bf14",
+      "statement": "Multiple customer contracts (Harbor Utilities, CityWorks Municipal Group) specify 30-60 day payment terms across all identified projects.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w6250-6500:Project ledger / data room; payment terms column, rows 115-end",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-bdd3176561d8",
+      "statement": "The project ledger extract identifies three distinct customers: Harbor Utilities (HBR-01, HBR-02), CityWorks Municipal Group (CTY-01), and one additional custom",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w6250-6500:Project ledger / data room; customer name column rows 115-end",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-567b17c86ee6",
+      "statement": "Riverton Industrial Group contracts across EHS Compliance, Field Inspection, and Permitting & Advisory service lines exhibit standard payment terms of 30-60 day",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w5750-6000:keystone_data_room_extract.md::section:w5750-6000 — Project ledger payment terms column",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-567b17c86ee6",
+      "statement": "Riverton Industrial Group contracts across EHS Compliance, Field Inspection, and Permitting & Advisory service lines exhibit standard payment terms of 30-60 day",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w5750-6000:keystone_data_room_extract.md::section:w5750-6000 — Project ledger payment terms column",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-ed5be2972ee1",
+      "statement": "All visible Riverton Industrial Group revenue in the project ledger extract is concentrated in a single customer entity (Riverton Industrial Group), representin",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w5750-6000:keystone_data_room_extract.md::section:w5750-6000 — Customer column (all rows = Riverton Industrial Group)",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-ed5be2972ee1",
+      "statement": "All visible Riverton Industrial Group revenue in the project ledger extract is concentrated in a single customer entity (Riverton Industrial Group), representin",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w5750-6000:keystone_data_room_extract.md::section:w5750-6000 — Customer column (all rows = Riverton Industrial Group)",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-105bab2bd507",
+      "statement": "The project ledger extract shows exactly one unique customer: Riverton Industrial Group across six service contracts.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w5750-6000:keystone_data_room_extract.md::section:w5750-6000 — Customer column",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-105bab2bd507",
+      "statement": "The project ledger extract shows exactly one unique customer: Riverton Industrial Group across six service contracts.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone_data_room_extract.md::section:w5750-6000:keystone_data_room_extract.md::section:w5750-6000 — Customer column",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-ebe05fe1134a",
+      "statement": "At least 2 employees (E0001 and E0002) were active on the payroll as of December 31, 2025, per the Employee and Utilization Schedule.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w9750-10000:Employee and Utilization Schedule - December 31, 2025; Employee ID rows E0001, E0002",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-35b5ba00adc4",
+      "statement": "Employee E0001 (Chicago, Industrial Hygiene Technical) was hired on 2016-02-01, representing approximately 9.8 years of tenure as of December 31, 2025.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w9750-10000:Employee and Utilization Schedule - December 31, 2025; Employee ID E0001 Hire Date",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-2e728f755b81",
+      "statement": "The data room extract lists 7 staff members (E0016–E0022) across multiple geographic regions (Detroit, Louisville, Nashville, Raleigh, Charlotte, Cincinnati, Co",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w10500-10750:keystone_data_room_extract.md::section:w10500-10750, HRIS / KS-DL-1.2 employee records table",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-2e728f755b81",
+      "statement": "The data room extract lists 7 staff members (E0016–E0022) across multiple geographic regions (Detroit, Louisville, Nashville, Raleigh, Charlotte, Cincinnati, Co",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w10500-10750:keystone_data_room_extract.md::section:w10500-10750, HRIS / KS-DL-1.2 employee records table",
+      "detail": "value '771.0' does not appear in keystone_data_room_extract.md."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-a6f78dbbb3a6",
+      "statement": "HRIS extract KS-DL-1.2 records 7 active employees (E0023–E0029) across multiple locations and functional departments with hire dates ranging from December 2016 ",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w10750-11000:HRIS / KS-DL-1.2 employee roster table",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-0d5988021cb8",
+      "statement": "Average tenure across recorded active employees is approximately 5.9 years (hire dates: Dec 2016, Jan 2017, Feb 2018, Mar 2019, Apr 2020, May 2021, Jun 2022).",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w10750-11000:HRIS / KS-DL-1.2 employee roster table",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-9e6744682d06",
+      "statement": "HRIS data shows 9 active staff and manager positions across multiple business units and geographies as of the snapshot date.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w13750-14000:HRIS / KS-DL-1.2 table, rows E0105–E0111",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-ca0a41f4d559",
+      "statement": "Longest-tenured employee (E0110) has been active since 2015-03-01, representing approximately 10 years tenure as of the known date 2025-11-15.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w13750-14000:HRIS / KS-DL-1.2 table, row E0110 hire date",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-5ebac118ec6e",
+      "statement": "HRIS data shows 8 active staff members (E0378 through E0384) across the payroll listing, spanning Indianapolis, Chicago, Detroit, Louisville, Nashville, Raleigh",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w23750-24000:HRIS / KS-DL-1.2 — payroll roster rows",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-40d6c5445e3b",
+      "statement": "As of December 31, 2025, Keystone has at least 2 active billing accounts in Accounts Receivable (MedCore Health and Apex Manufacturing).",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w27000-27250:AR_WIP Detail - December 31, 2025; Invoice ID INV-0001, INV-0002",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-4126cd39f577",
+      "statement": "Top customer (Apex Manufacturing) represents 50.5% of the visible AR balance ($0.202/$0.291mm total), indicating moderate concentration risk.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w27000-27250:AR_WIP Detail - December 31, 2025",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-4f62cb2a3e68",
+      "statement": "Average Days Sales Outstanding across visible invoices is approximately 35.5 days (weighted by invoice size: MedCore 21 days, Apex 50 days).",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w27000-27250:AR_WIP Detail - December 31, 2025; Age (days) column",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-0935421eead2",
+      "statement": "Pioneer Components (INV-0070) represents a concentration of 0.278 (27.8%) in the customer revenue mix as of the data room extract date.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w29000-29250:keystone_data_room_extract.md::section:w29000-29250, INV-0070 row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-61306e0b451e",
+      "statement": "Apex Manufacturing (INV-0064) represents a concentration of 0.260 (26.0%) in the customer revenue mix as of the data room extract date.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w29000-29250:keystone_data_room_extract.md::section:w29000-29250, INV-0064 row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-6435e1f70863",
+      "statement": "Keystone Health (INV-0069, SM-007) shows a retention status of 'Yes', indicating the customer remains active or retained as of the data room extract.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w29000-29250:keystone_data_room_extract.md::section:w29000-29250, INV-0069 row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-13328cb04bff",
+      "statement": "Work-in-progress (WIP) billing line WIP-0001 for Metro Utility Holdings (Field Inspection service line) totals $0.113m with expected bill date 2026-01-16.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w29500-29750:WIP-0001, MET-N project, Metro Utility Holdings",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-67fa188002d9",
+      "statement": "Work-in-progress (WIP) billing line WIP-0002 for MedCore Health (Industrial Hygiene service line) totals $0.126m with expected bill date 2026-01-17.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w29500-29750:WIP-0002, MED-01 project, MedCore Health",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-450d042ac3d2",
+      "statement": "Work-in-progress (WIP) billing line WIP-0003 for BioHealth Laboratories (Industrial Hygiene service line) totals $0.092m with expected bill date 2026-01-18.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w29500-29750:WIP-0003, BIO-01 project, BioHealth Laboratories",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-ec57c1ab2a1b",
+      "statement": "Work-in-progress (WIP) billing line WIP-0005 for Riverton Industrial Group (Industrial Hygiene service line) totals $0.076m with expected bill date 2026-01-20.",
+      "perimeter": "unknown",
+      "locator": "keystone_data_room_extract.md::section:w29500-29750:WIP-0005, RIV-MIL project, Riverton Industrial Group",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-5e3e332ab109",
+      "statement": "Firm recommends maintaining exclusivity at no more than $108.0m of enterprise value.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_initial_assessment.md::## Recommendation:Recommendation section",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-2c0fad56d234",
+      "statement": "Capex is low at approximately 1%-2% of revenue.",
+      "perimeter": "Alderstone standalone",
+      "locator": "keystone_firm_initial_assessment.md::## Preliminary merits:Preliminary merits – Capex intensity",
+      "detail": "value '1.5' does not appear in keystone_firm_initial_assessment.md."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-ad455af3d25f",
+      "statement": "The seller presents the largest billing account as 7.6% of revenue.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_initial_assessment.md::### Customer concentration:Customer concentration section",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-74f81e3d1b46",
+      "statement": "The Company has completed four acquisitions since 2020.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_initial_assessment.md::### Integration and execution:Integration and execution – first sentence",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-20932ab38b76",
+      "statement": "The Firm prices the transaction on $11.4m enterprise value.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_initial_assessment.md::## What must be true:## What must be true, point 2",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-8c980d37dbfb",
+      "statement": "The investment is modeled to work at a 9.0x exit multiple.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_initial_assessment.md::## What must be true:## What must be true, point 8",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-bd610d54227f",
+      "statement": "An integration program of $2.0m is funded and governed.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_initial_assessment.md::## What must be true:## What must be true, point 5",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-43afd4edeb6f",
+      "statement": "The seller proposed a net working capital target of $7.7m.",
+      "perimeter": "unknown",
+      "locator": "keystone_qoe_report.md::## Working-capital findings:Working-capital findings",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-dce22c0ff5b3",
+      "statement": "Normalized operating working capital is $8.4m per the QoE analysis.",
+      "perimeter": "unknown",
+      "locator": "keystone_qoe_report.md::## Working-capital findings:Working-capital findings",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-26a66be8181e",
+      "statement": "The difference between normalized operating working capital ($8.4m) and the seller's proposed target ($7.7m) is $0.7m.",
+      "perimeter": "unknown",
+      "locator": "keystone_qoe_report.md::## Working-capital findings:Working-capital findings",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-c1a3bee04465",
+      "statement": "Revenue cut-off adjustment reduced EBITDA by $0.1m and was accepted by QoE review.",
+      "perimeter": "Keystone",
+      "locator": "keystone_qoe_report.md::## Adjustment conclusions:keystone_qoe_report.md::Adjustment conclusions",
+      "detail": "'Keystone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-7c81f9e7a29d",
+      "statement": "Founder and executive compensation adjustment accepted at market replacement cost by QoE review.",
+      "perimeter": "Keystone",
+      "locator": "keystone_qoe_report.md::## Adjustment conclusions:keystone_qoe_report.md::Adjustment conclusions",
+      "detail": "'Keystone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-85962f9f6964",
+      "statement": "Reported EBITDA is $10.2m per historical accounts.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_qoe_report.md::## Normalized EBITDA schedule:Normalized EBITDA schedule, Reported EBITDA row",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-d55a979e25c0",
+      "statement": "QoE-supported add-backs total $2.5m (founder/executive comp $0.35m, transaction-readiness fees $0.25m, integration/systems $0.3m, legal/settlement $0.2m, duplic",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_qoe_report.md::## Normalized EBITDA schedule:Normalized EBITDA schedule, sum of supported adjustments",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-d55a979e25c0",
+      "statement": "QoE-supported add-backs total $2.5m (founder/executive comp $0.35m, transaction-readiness fees $0.25m, integration/systems $0.3m, legal/settlement $0.2m, duplic",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_qoe_report.md::## Normalized EBITDA schedule:Normalized EBITDA schedule, sum of supported adjustments",
+      "detail": "value '2.5' does not appear in keystone_qoe_report.md."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-2770c0562d11",
+      "statement": "QoE correction for revenue cut-off reduces normalized EBITDA by $0.1m.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_qoe_report.md::## Normalized EBITDA schedule:Normalized EBITDA schedule, Revenue cut-off row",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-fb25df4118d0",
+      "statement": "Normalized EBITDA (QoE-defined) is $12.6m, computed as reported EBITDA $10.2m plus supported add-backs $2.5m less revenue cut-off correction $0.1m.",
+      "perimeter": "Keystone QoE-normalized",
+      "locator": "keystone_qoe_report.md::## Normalized EBITDA schedule:Normalized EBITDA schedule",
+      "detail": "'Keystone QoE-normalized' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-43293fb01709",
+      "statement": "Gross debt and debt-like items totaled $14.40m at deal opening, comprising funded debt of $10.75m and debt-like items of $3.65m.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_qoe_report.md::## Debt and debt-like items:Debt and debt-like items table, Gross debt and debt-like items row",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-277c76a7a14e",
+      "statement": "Net debt and debt-like items totaled $10.20m at deal opening, calculated as gross debt of $14.40m less acquired unrestricted cash of $4.20m.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_qoe_report.md::## Debt and debt-like items:Debt and debt-like items table, Net debt and debt-like items row",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-6c005e48e3e0",
+      "statement": "First-lien funded debt totaled $10.10m at deal opening, comprising existing bank term loan of $8.60m, existing revolver of $1.50m, and finance-lease obligations",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_qoe_report.md::## Debt and debt-like items:Debt and debt-like items table, funded debt subtotal row",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-6c005e48e3e0",
+      "statement": "First-lien funded debt totaled $10.10m at deal opening, comprising existing bank term loan of $8.60m, existing revolver of $1.50m, and finance-lease obligations",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_qoe_report.md::## Debt and debt-like items:Debt and debt-like items table, funded debt subtotal row",
+      "detail": "value '10.1' does not appear in keystone_qoe_report.md."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-56e81aeeb671",
+      "statement": "Accepted historical adjustments to EBITDA total $1.70m.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_firm_model_summary.md::## Firm-underwritten EBITDA adjustments:Firm-underwritten EBITDA adjustments table, Accepted historical adjustments line",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-5e35f2732000",
+      "statement": "Firm-underwritten reserves for revenue quality, customer run-rate sustainability, and integration costs total $(0.50)m, reflecting earnings quality risks.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_firm_model_summary.md::## Firm-underwritten EBITDA adjustments:Firm-underwritten EBITDA adjustments table, Revenue/WIP quality reserve through Residual recurring integration requirement lines",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-5e35f2732000",
+      "statement": "Firm-underwritten reserves for revenue quality, customer run-rate sustainability, and integration costs total $(0.50)m, reflecting earnings quality risks.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_firm_model_summary.md::## Firm-underwritten EBITDA adjustments:Firm-underwritten EBITDA adjustments table, Revenue/WIP quality reserve through Residual recurring integration requirement lines",
+      "detail": "value '-0.5' does not appear in keystone_firm_model_summary.md."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-1b3dd791af85",
+      "statement": "Firm-underwritten EBITDA for Keystone is $11.40m.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_firm_model_summary.md::## Firm-underwritten EBITDA adjustments:Firm-underwritten EBITDA adjustments table, Firm-underwritten EBITDA line",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-9231df49a44b",
+      "statement": "Standalone base case assumes approximately 7% organic revenue growth.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_firm_model_summary.md::### Standalone base:Standalone base",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-5229357ff50c",
+      "statement": "Entry firm EBITDA margin is 15.4% at opening, with gradual margin expansion assumed.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_firm_model_summary.md::### Standalone base:Standalone base",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-5f857b49a23c",
+      "statement": "Exit valuation uses a 9.0x exit multiple on LTM March 31, 2031 EBITDA.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_firm_model_summary.md::### Standalone base:Standalone base",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-ed4df1f4066a",
+      "statement": "Exit valuation is calculated on LTM EBITDA as of March 31, 2031.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone_firm_model_summary.md::### Standalone base:Standalone base",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-a5e0c7bd40b8",
+      "statement": "The acquisition base includes Sentinel and a second fully funded acquisition, totaling two acquisitions in FY2026.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_model_summary.md::### Acquisition base:Acquisition base",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-0b025b1976cb",
+      "statement": "The second acquisition is funded with $4.0m of DDTL.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_model_summary.md::### Acquisition base:Acquisition base",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-18b65acb3955",
+      "statement": "The second acquisition is funded with $5.0m of sponsor equity.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_model_summary.md::### Acquisition base:Acquisition base",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-fc1c1277a810",
+      "statement": "No unidentified revenue synergies are included in the acquisition base.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_model_summary.md::### Acquisition base:Acquisition base",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-fc1c1277a810",
+      "statement": "No unidentified revenue synergies are included in the acquisition base.",
+      "perimeter": "unknown",
+      "locator": "keystone_firm_model_summary.md::### Acquisition base:Acquisition base",
+      "detail": "value '0.0' does not appear in keystone_firm_model_summary.md."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-1d842800b8d9",
+      "statement": "Eligible cash netting cap is $5mm for covenant purposes only.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Inputs:w250-500:Inputs sheet, Eligible cash netting cap row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-162d28f06145",
+      "statement": "Revolver commitment is $7.5mm.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Inputs:w250-500:Inputs sheet, Revolver commitment row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-36e05943c63e",
+      "statement": "DDTL commitment is $10mm.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Inputs:w250-500:Inputs sheet, DDTL commitment row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-debca3949805",
+      "statement": "Annual DDTL amortization is 0.01% of original principal, with quarterly amortization after draw.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Inputs:w500-750:Sheet: Inputs — Annual DDTL amortization row, KS-DL-1.2",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-e7a0fb00e688",
+      "statement": "Unused revolver fee is 0.005% per annum.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Inputs:w500-750:Sheet: Inputs — Unused revolver fee row, KS-DL-1.2",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-d0899953b8f1",
+      "statement": "Unused DDTL fee is 0.01% per annum, charged after first 90 days.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Inputs:w500-750:Sheet: Inputs — Unused DDTL fee row, KS-DL-1.2",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-c3df31e10be4",
+      "statement": "Opening equity after transaction expense is $69.6m, derived from $74.0m less $4.4m buyer transaction expenses.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Inputs:w500-750:Sheet: Inputs — Opening equity after transaction expense row, KS-DL-1.2",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-d1bc6dfb05dc",
+      "statement": "Standalone Downside case assumes an exit multiple of 8.0x.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Inputs:w750-1000:Sheet: Inputs — Standalone Downside - Exit multiple",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-2de0e622629b",
+      "statement": "Standalone Downside case projects Firm EBITDA margin of 14.5% in Year 1.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Inputs:w750-1000:Sheet: Inputs — Standalone Downside - Firm EBITDA margin",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-958d9af72779",
+      "statement": "Standalone Upside case assumes sustained platform growth of 8.5% across all years.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Inputs:w750-1000:Sheet: Inputs — Standalone Upside - Platform growth",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-890e66ab255d",
+      "statement": "Net income for FY2025A was $5.73m.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_3Stmt:w500-750:Sheet: Hist_3Stmt, Cash Flow Statement section",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-8fa9ddc2e4b4",
+      "statement": "Implied working capital (current assets minus current liabilities) for FY2025A was approximately $27.8 million based on cash, AR, WIP, prepaids less accounts pa",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_3Stmt:w250-500:Sheet Hist_3Stmt, Balance sheet components",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-40ffa1d9ee58",
+      "statement": "Operating cash flow was $4.78m in FY2025A per LBO model.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_3Stmt:w750-960:Hist_3Stmt: Cash from operations, column 1",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-870333f7bd61",
+      "statement": "Capital expenditure was $0.8m in FY2025A per LBO model.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_3Stmt:w750-960:Hist_3Stmt: Capital expenditure, column 1",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-2c2f44ab8453",
+      "statement": "Keystone monthly management accounts show revenue of $4.26mm in January 2023.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_Monthly:w0-250:Sheet: Hist_Monthly, monthly revenue row, 2023-01-01",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-7374365b8a32",
+      "statement": "Keystone monthly management accounts show revenue of $5.55mm in January 2025.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_Monthly:w0-250:Sheet: Hist_Monthly, monthly revenue row, 2025-01-01",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-d56e00c1c061",
+      "statement": "Keystone monthly management accounts show revenue of $6.882mm in December 2025.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_Monthly:w0-250:Sheet: Hist_Monthly, monthly revenue row, 2025-12-01",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-49a7c6fff34f",
+      "statement": "Gross margin is modeled at 34.15% across the historical monthly period (months 1-12).",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_Monthly:w250-500:Hist_Monthly:w250-500, Gross margin row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-b65d2efd8c30",
+      "statement": "Gross margin is modeled at 35.02% across months 13-24 of the historical monthly period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_Monthly:w250-500:Hist_Monthly:w250-500, Gross margin row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-07f6c34b0633",
+      "statement": "Gross margin is modeled at 35.95% across months 25-36 of the historical monthly period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_Monthly:w250-500:Hist_Monthly:w250-500, Gross margin row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-a28825844605",
+      "statement": "EBITDA margin is modeled at 13.20% in the early historical monthly period (months 1-12).",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Hist_Monthly:w250-500:Hist_Monthly:w250-500, EBITDA margin row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-0b99a805a88b",
+      "statement": "Riverton Advanced Materials - Decatur (RIV-DEC) generated $5.624m in revenue in FY2025A.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w0-250:Sheet: Customer_Data | Raw Customer Revenue Schedule - FY2025A | Billing Account RIV-DEC",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-be3669de6b9a",
+      "statement": "Metro Utility - North (MET-N) generated $3.2m in revenue in FY2025A.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w0-250:Sheet: Customer_Data | Raw Customer Revenue Schedule - FY2025A | Billing Account MET-N",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-6135819d4e3e",
+      "statement": "Riverton Advanced Materials - Decatur (RIV-DEC) represented 7.6% of total revenue in FY2025A.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w0-250:Sheet: Customer_Data | Raw Customer Revenue Schedule - FY2025A | Billing Account RIV-DEC | % Revenue",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-95a7e467f61c",
+      "statement": "Metro Utility - North (MET-N) represented 4.3% of total revenue in FY2025A.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w0-250:Sheet: Customer_Data | Raw Customer Revenue Schedule - FY2025A | Billing Account MET-N | % Revenue",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-b85539ff9af2",
+      "statement": "RIV-CORP (Riverton Corporate EHS) represents 2.58% of total revenue concentration, based on customer ledger data.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w250-500:keystone-model-part1.md::Customer_Data:w250-500 | RIV-CORP row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-f69cd0527437",
+      "statement": "BIO-01 (BioHealth Laboratories) represents 2.30% of total revenue concentration, based on customer ledger data.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w250-500:keystone-model-part1.md::Customer_Data:w250-500 | BIO-01 row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-43d0be022bb9",
+      "statement": "APX-01 (Apex Manufacturing - Main) represents 2.16% of total revenue concentration, based on customer ledger data.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w250-500:keystone-model-part1.md::Customer_Data:w250-500 | APX-01 row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-1f419654ead8",
+      "statement": "RIV-GRN (Riverton Components - Greenville) represents 2.03% of total revenue concentration, based on customer ledger data.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w250-500:keystone-model-part1.md::Customer_Data:w250-500 | RIV-GRN row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-aeebb68d47cd",
+      "statement": "Customer data sheet lists 6 distinct customer entities (Harbor Utilities, CityWorks Municipal Group, Clinica Health) with multiple service lines and contract te",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w750-1000:Sheet: Customer_Data, rows HBR-01 through CLN-02",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-310cfc34e5d6",
+      "statement": "Four of six customer contracts are classified as 'Recurring' revenue (HBR-01, CTY-01, CLN-01) with one 'Repeat' classification, indicating recurring revenue str",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w750-1000:Sheet: Customer_Data, column 'Revenue Type'",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-23996ad232b5",
+      "statement": "Six customer accounts are enumerated in the ledger: Precision Components (Ohio), Precision Components (Tennessee), Northfield Foods, Ironbridge Logistics, Cedar",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w1000-1250:Customer_Data ledger KS-DL-1.2",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-63dc55468736",
+      "statement": "The largest single customer (Northfield Foods Account 1) represents a concentration metric of 1.25x in the customer ledger.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w1000-1250:Customer_Data ledger KS-DL-1.2, SM-001 row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-162d4d4e3a77",
+      "statement": "RIV-DEC account expected recurring revenue totaled $1.41 million across three EHS Compliance projects (P1: $0.40m, P2: $0.19m, P3: $0.81m) in FY2025A.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part1.md::## Sheet: Project_Data:w0-250:Sheet: Project_Data | RIV-DEC projects P1-P3, Expected Recurring Revenue column",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-162d4d4e3a77",
+      "statement": "RIV-DEC account expected recurring revenue totaled $1.41 million across three EHS Compliance projects (P1: $0.40m, P2: $0.19m, P3: $0.81m) in FY2025A.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part1.md::## Sheet: Project_Data:w0-250:Sheet: Project_Data | RIV-DEC projects P1-P3, Expected Recurring Revenue column",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-c48af568b612",
+      "statement": "Of 6 customer accounts shown, 5 have no notice of termination or issue, while 1 account (SM-029, Evergreen Chemicals 2) carries a Notice status flag.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w2250-2500:keystone-model-part1.md::Sheet: Customer_Data:w2250-2500, Notice column",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-155d37fcc102",
+      "statement": "Largest customer concentration at ultimate-parent view level is 0.182 (18.2%).",
+      "perimeter": "Keystone",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w2500-2744:Customer_Data sheet, Concentration Summary table, Largest customer row",
+      "detail": "'Keystone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-46a1b91381d0",
+      "statement": "Top five customers concentration at ultimate-parent view level is 0.365 (36.5%).",
+      "perimeter": "Keystone",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w2500-2744:Customer_Data sheet, Concentration Summary table, Top five row",
+      "detail": "'Keystone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-c1cd61bc0e5d",
+      "statement": "Top ten customers concentration at ultimate-parent view level is 0.505 (50.5%).",
+      "perimeter": "Keystone",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w2500-2744:Customer_Data sheet, Concentration Summary table, Top ten row",
+      "detail": "'Keystone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-e19aa5d928c0",
+      "statement": "Total revenue from customer ledger is $74m.",
+      "perimeter": "Keystone",
+      "locator": "keystone-model-part1.md::## Sheet: Customer_Data:w2500-2744:Customer_Data sheet, Concentration Summary table, Total revenue row",
+      "detail": "'Keystone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-cf739d62d7ba",
+      "statement": "BioHealth Laboratories maintains two active recurring revenue projects (BIO-01-P1 and BIO-01-P2) in the project ledger.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part1.md::## Sheet: Project_Data:w750-1000:keystone-model-part1.md::Project_Data sheet; BioHealth Laboratories entries",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-cddd4dba4d51",
+      "statement": "Industrial Hygiene project RIV-MIL-P1 generated $0.644m in revenue, categorized as recurring revenue per the project ledger.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part1.md::## Sheet: Project_Data:w1250-1500:Project_Data table; RIV-MIL-P1 row, revenue column",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-cddd4dba4d51",
+      "statement": "Industrial Hygiene project RIV-MIL-P1 generated $0.644m in revenue, categorized as recurring revenue per the project ledger.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part1.md::## Sheet: Project_Data:w1250-1500:Project_Data table; RIV-MIL-P1 row, revenue column",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-80e9285287f4",
+      "statement": "Industrial Hygiene project RIV-MIL-P2 generated $0.655m in revenue, categorized as recurring revenue per the project ledger.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part1.md::## Sheet: Project_Data:w1250-1500:Project_Data table; RIV-MIL-P2 row, revenue column",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-80e9285287f4",
+      "statement": "Industrial Hygiene project RIV-MIL-P2 generated $0.655m in revenue, categorized as recurring revenue per the project ledger.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part1.md::## Sheet: Project_Data:w1250-1500:Project_Data table; RIV-MIL-P2 row, revenue column",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-5bbeab84745c",
+      "statement": "As of December 31, 2025, the employee roster includes at least 5 active staff members across technical, project management, and corporate functions.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part2.md::## Sheet: Employees:w0-250:Sheet: Employees | Employee and Utilization Schedule - December 31, 2025",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-05f7e8417387",
+      "statement": "Average tenure of visible employees ranges from ~6 to 9+ years; earliest hire date is February 2016 (E0001, ~9.83 years at FY2025 year-end).",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part2.md::## Sheet: Employees:w0-250:Sheet: Employees | Employee and Utilization Schedule - December 31, 2025 | Hire Date column",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-a32399af7b15",
+      "statement": "Latest hire in roster (E0065) shows start date 2024-05-01; earliest recorded hire (E0059) shows 2019-12-01, indicating maximum team tenure of approximately 4.25",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part2.md::## Sheet: Employees:w2250-2500:Sheet: Employees:w2250-2500, hire date range E0059–E0065",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-b0c854b97eba",
+      "statement": "Average tenure across identified employees is approximately 9.75 years, ranging from 1 year (E0373, start 2025-02-01) to 11 years (E0374, start 2015-03-01).",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part2.md::## Sheet: Employees:w14000-14250:Sheet: Employees, w14000-14250, hire date column",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-5c21df8ca9e2",
+      "statement": "LBO model Employees sheet shows payroll data spanning rows w14750–w15000 with active staff records from multiple regional and functional units (Technical, Proje",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part2.md::## Sheet: Employees:w14750-15000:keystone-model-part2.md::Sheet: Employees:w14750-15000 (row range indicator)",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-5c21df8ca9e2",
+      "statement": "LBO model Employees sheet shows payroll data spanning rows w14750–w15000 with active staff records from multiple regional and functional units (Technical, Proje",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part2.md::## Sheet: Employees:w14750-15000:keystone-model-part2.md::Sheet: Employees:w14750-15000 (row range indicator)",
+      "detail": "value '14750.0' does not appear in keystone-model-part2.md."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-b776fb376242",
+      "statement": "Accounts receivable aging as of December 31, 2025 shows a weighted average DSO of approximately 51.8 days, derived from invoice aging detail across six invoices",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: AR_WIP:w0-250:Sheet: AR_WIP | Accounts Receivable Detail",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-cffc78c2fc34",
+      "statement": "As of December 31, 2025, Apex Manufacturing (via billing accounts APX-01 and APX-02) represents the largest customer concentration at approximately 29% of visib",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: AR_WIP:w0-250:Sheet: AR_WIP | Accounts Receivable Detail",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-0923cca091f2",
+      "statement": "Unbilled Work in Progress (WIP) detail for Riverton Industrial Group shows five WIP items totaling approximately $0.58m across multiple service lines and custom",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part3.md::## Sheet: AR_WIP:w2500-2750:Sheet: AR_WIP, WIP Detail table rows WIP-0001 through WIP-0005",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-0923cca091f2",
+      "statement": "Unbilled Work in Progress (WIP) detail for Riverton Industrial Group shows five WIP items totaling approximately $0.58m across multiple service lines and custom",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part3.md::## Sheet: AR_WIP:w2500-2750:Sheet: AR_WIP, WIP Detail table rows WIP-0001 through WIP-0005",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-0923cca091f2",
+      "statement": "Unbilled Work in Progress (WIP) detail for Riverton Industrial Group shows five WIP items totaling approximately $0.58m across multiple service lines and custom",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part3.md::## Sheet: AR_WIP:w2500-2750:Sheet: AR_WIP, WIP Detail table rows WIP-0001 through WIP-0005",
+      "detail": "value '0.58' does not appear in keystone-model-part3.md."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-a75a0b933865",
+      "statement": "Riverton Industrial Group aggregate WIP receivable metric (header ratio) is 0.2115 or 21.15% as of the AR_WIP sheet summary.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part3.md::## Sheet: AR_WIP:w2500-2750:Sheet: AR_WIP header row, column 4 (0.2115139208082644)",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-a75a0b933865",
+      "statement": "Riverton Industrial Group aggregate WIP receivable metric (header ratio) is 0.2115 or 21.15% as of the AR_WIP sheet summary.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part3.md::## Sheet: AR_WIP:w2500-2750:Sheet: AR_WIP header row, column 4 (0.2115139208082644)",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_IS_COUNTERPARTY",
+      "blocking": true,
+      "claim_id": "ks-a57bf2b1ddc9",
+      "statement": "Weighted average age of unbilled WIP across five items is approximately 61 days, indicating typical collection timing.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part3.md::## Sheet: AR_WIP:w2500-2750:Sheet: AR_WIP, Age (days) column for WIP-0001 through WIP-0005",
+      "detail": "perimeter names 'Riverton Group', which is a customer — largest account; ultimate-parent relationship 18.2%. A counterparty is not an economic perimeter for this deal."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-a57bf2b1ddc9",
+      "statement": "Weighted average age of unbilled WIP across five items is approximately 61 days, indicating typical collection timing.",
+      "perimeter": "Riverton Group",
+      "locator": "keystone-model-part3.md::## Sheet: AR_WIP:w2500-2750:Sheet: AR_WIP, Age (days) column for WIP-0001 through WIP-0005",
+      "detail": "'Riverton Group' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-1a131d9532ff",
+      "statement": "Enterprise value for the Keystone LBO is $108 million as of the purchase price bridge.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: S&U_Opening:w0-250:Sheet: S&U_Opening, Purchase Price Bridge",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-d5013a8bc5e4",
+      "statement": "Seller net debt and debt-like items total $10.2 million deducted from enterprise value.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: S&U_Opening:w0-250:Sheet: S&U_Opening, Purchase Price Bridge",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-f5bd1c2eab4b",
+      "statement": "Seller equity value is $97.8 million after deducting net debt from enterprise value.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: S&U_Opening:w0-250:Sheet: S&U_Opening, Purchase Price Bridge",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-e1e81866ca52",
+      "statement": "Seller equity rollover into the transaction is $12 million, reducing cash consideration to $85.8 million.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: S&U_Opening:w0-250:Sheet: S&U_Opening, Sources & Uses",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-dcb1f09f0c1d",
+      "statement": "Revenue / WIP quality reserve of -$0.2m applied as EBITDA adjustment for FY2026E in QoE bridge, representing firm conservatism.",
+      "perimeter": "Alderstone covenant definition",
+      "locator": "keystone-model-part3.md::## Sheet: QoE_Bridge:w250-354:QoE_Bridge:w250-354 — Revenue / WIP quality reserve row",
+      "detail": "'Alderstone covenant definition' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-e4d310bbee29",
+      "statement": "Customer / project run-rate reserve of -$0.15m applied as EBITDA adjustment for FY2026E in QoE bridge, representing firm conservatism.",
+      "perimeter": "Alderstone covenant definition",
+      "locator": "keystone-model-part3.md::## Sheet: QoE_Bridge:w250-354:QoE_Bridge:w250-354 — Customer / project run-rate reserve row",
+      "detail": "'Alderstone covenant definition' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-c3482eedfeff",
+      "statement": "Incremental finance and reporting cost of -$0.05m applied as EBITDA adjustment for FY2026E, representing recurring post-close cost.",
+      "perimeter": "Alderstone covenant definition",
+      "locator": "keystone-model-part3.md::## Sheet: QoE_Bridge:w250-354:QoE_Bridge:w250-354 — Incremental finance and reporting cost row",
+      "detail": "'Alderstone covenant definition' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-3722f5abbc9a",
+      "statement": "Procurement and software savings of +$0.15m applied as covenant-only certified EBITDA adjustment for FY2026E.",
+      "perimeter": "Alderstone covenant definition",
+      "locator": "keystone-model-part3.md::## Sheet: QoE_Bridge:w250-354:QoE_Bridge:w250-354 — Procurement and software savings row",
+      "detail": "'Alderstone covenant definition' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-e7f9552387dc",
+      "statement": "QoE View cumulative adjustments total $3.45 million, comprising accepted add-backs for executive compensation ($0.35m), transaction fees ($0.25m), integration c",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: QoE_Bridge:w0-250:QoE_Bridge: Sum of QoE View adjustments",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-eb9506f02c3a",
+      "statement": "QoE-normalized EBITDA is $13.65 million, calculated as reported EBITDA of $10.2 million plus QoE-approved adjustments of $3.45 million.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: QoE_Bridge:w0-250:QoE_Bridge: QoE View column total",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-eb9506f02c3a",
+      "statement": "QoE-normalized EBITDA is $13.65 million, calculated as reported EBITDA of $10.2 million plus QoE-approved adjustments of $3.45 million.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: QoE_Bridge:w0-250:QoE_Bridge: QoE View column total",
+      "detail": "value '13.65' does not appear in keystone-model-part3.md."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-468c8035fd1b",
+      "statement": "Covenant EBITDA is $13.4 million, reflecting management's headcount savings of $0.5 million but excluding related-party rent normalization ($0.1m adjustment).",
+      "perimeter": "Keystone covenant definition",
+      "locator": "keystone-model-part3.md::## Sheet: QoE_Bridge:w0-250:QoE_Bridge: Covenant View column",
+      "detail": "'Keystone covenant definition' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "VALUE_NOT_IN_SOURCE",
+      "blocking": true,
+      "claim_id": "ks-468c8035fd1b",
+      "statement": "Covenant EBITDA is $13.4 million, reflecting management's headcount savings of $0.5 million but excluding related-party rent normalization ($0.1m adjustment).",
+      "perimeter": "Keystone covenant definition",
+      "locator": "keystone-model-part3.md::## Sheet: QoE_Bridge:w0-250:QoE_Bridge: Covenant View column",
+      "detail": "value '13.4' does not appear in keystone-model-part3.md."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-b0c484af820d",
+      "statement": "Annual amortization of customer relationships intangible asset is $2.8 million over 10-year useful life.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Purchase_Accounting:Purchase_Accounting sheet, Customer relationships row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-3864c76bdb28",
+      "statement": "Opening balance sheet reflects net working capital of $5.8m, comprised of unbilled WIP $4.9m and prepaids $0.9m less deferred revenue $0.9m.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: S&U_Opening:w250-430:Sheet S&U_Opening, balance sheet opening position",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-adc48922f367",
+      "statement": "Enterprise value at opening equals total assets $133.1m plus net debt of $42.8m (term loan), implying equity value of $90.3m.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: S&U_Opening:w250-430:Sheet S&U_Opening, balance sheet total assets and liabilities",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-1c9c5e32a126",
+      "statement": "Opening equity balance is $69.6m as recorded on the opening balance sheet.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: S&U_Opening:w250-430:Sheet S&U_Opening, equity line item",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-69a529b67d70",
+      "statement": "FY2025A revenue was $74 million per seller operating model.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Seller_Model:Seller_Model sheet, Revenue row, FY2025A column",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-0a3fc976b5c6",
+      "statement": "FY2026E revenue is forecast at $82.1 million per management forecast in seller operating model.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Seller_Model:Seller_Model sheet, Revenue row, FY2026E column",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-7b780f2a4591",
+      "statement": "FY2025A management-adjusted EBITDA was $12.7 million per seller-defined EBITDA in operating model.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Seller_Model:Seller_Model sheet, Management-adjusted EBITDA row, FY2025A column",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-123b7d3c78e8",
+      "statement": "FY2025A EBITDA margin was 17.2% based on management-adjusted EBITDA of $12.7m on revenue of $74m.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Seller_Model:Seller_Model sheet, EBITDA margin row, FY2025A column",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-37eed7488ebb",
+      "statement": "Days Sales Outstanding (DSO) projected at 64 days in FY2025 per LBO model scenario drivers.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w250-500:Sheet: Scenario_Drivers, DSO row, columns 1–2",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-927058038b2b",
+      "statement": "Days Sales Outstanding (DSO) projected to decline to 60 days by FY2026E per LBO model scenario drivers.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w250-500:Sheet: Scenario_Drivers, DSO row, columns 16–20",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-b6d54eb95e8a",
+      "statement": "One-time charges are modeled at $0mm throughout the forecast period per LBO model scenario drivers.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w250-500:Sheet: Scenario_Drivers, One-time charges row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-309f8dcb1257",
+      "statement": "Keystone standalone revenue projected at $19.8 million in Q2 2026 under the LBO model Base scenario.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w0-250:Sheet: Scenario_Drivers | Revenue row, Q2 2026 column",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-502dbdb362b9",
+      "statement": "Keystone standalone gross margin projected at 36.2% in Q2 2026 under the LBO model Base scenario.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w0-250:Sheet: Scenario_Drivers | Gross margin row, Q2 2026 column",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-baabf7be1387",
+      "statement": "Keystone standalone Firm EBITDA projected at $3.1 million in Q2 2026 under the LBO model Base scenario.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w0-250:Sheet: Scenario_Drivers | Firm EBITDA row, Q2 2026 column",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-284db58da366",
+      "statement": "The LBO model assumes a normalized working capital / annualized revenue ratio of 5.5% across the projection period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w500-750:keystone-model-part3.md::Sheet Scenario_Drivers — normalized WC / annualized revenue",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-68a4a174b5cc",
+      "statement": "The LBO model assumes accruals as a percentage of annualized revenue of 7.5% across the projection period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w500-750:keystone-model-part3.md::Sheet Scenario_Drivers — Accruals / annualized revenue",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-96e86e55b373",
+      "statement": "The LBO model assumes deferred revenue as a percentage of annualized revenue of 1.2% across the projection period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w500-750:keystone-model-part3.md::Sheet Scenario_Drivers — Deferred revenue / annualized revenue",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-e005d5952321",
+      "statement": "The LBO model assumes capital expenditure of 1.6% of revenue across the projection period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w500-750:keystone-model-part3.md::Sheet Scenario_Drivers — Capex / revenue",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-c2175865315d",
+      "statement": "LBO model Scenario_Drivers sheet specifies covenant limit of 4.25x for initial periods.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w1250-1500:Sheet: Scenario_Drivers, Covenant limit row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-0655b5427b67",
+      "statement": "LBO model Scenario_Drivers sheet specifies covenant limit of 4.0x for mid-period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w1250-1500:Sheet: Scenario_Drivers, Covenant limit row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-2561ccbcd22d",
+      "statement": "LBO model Scenario_Drivers sheet specifies covenant limit of 3.75x for later periods.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w1250-1500:Sheet: Scenario_Drivers, Covenant limit row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-0bbd3765128c",
+      "statement": "LBO model Scenario_Drivers sheet specifies covenant limit of 3.5x for final periods.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w1250-1500:Sheet: Scenario_Drivers, Covenant limit row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-efa82f5444a2",
+      "statement": "Core PPA amortization is modeled at $0.75 million across all forecast periods in the Keystone LBO model Scenario_Drivers.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w1500-1750:Sheet: Scenario_Drivers | Core PPA amortization row",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-8bb87c83d8a1",
+      "statement": "Standalone Downside scenario models opening revenue of $19.24 million in FY2025A.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w1500-1750:Sheet: Scenario_Drivers | Standalone Downside Revenue row, period 1",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-95296e532c99",
+      "statement": "Standalone Downside scenario models opening gross margin of 35.5% in FY2025A.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w1500-1750:Sheet: Scenario_Drivers | Standalone Downside Gross margin row, period 1",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_OFF_VOCABULARY",
+      "blocking": false,
+      "claim_id": "ks-ad6417f8f7ff",
+      "statement": "Firm EBITDA in Standalone Downside scenario is $2.79 million in FY2025A, derived from modeled revenue of $19.24 million and gross margin of 35.5%.",
+      "perimeter": "Keystone standalone",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w1500-1750:Sheet: Scenario_Drivers | Standalone Downside Firm EBITDA row, period 1",
+      "detail": "'Keystone standalone' is not in the declared perimeter vocabulary (6 entries)."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-2d648e2c17ee",
+      "statement": "LBO model scenario assumes covenant limit of 4.25x for first three quarters of 2026.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w2750-3000:Sheet: Scenario_Drivers, Covenant limit row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-74c8dd5f8268",
+      "statement": "LBO model scenario assumes covenant limit steps down to 3.5x starting Q4 2027.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w2750-3000:Sheet: Scenario_Drivers, Covenant limit row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-bc97f5be69e5",
+      "statement": "DSO is modeled at 62 days in early periods, declining to 58 days by period 13 onwards in the LBO scenario.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w3250-3500:Sheet: Scenario_Drivers, DSO row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-3f9bf557d645",
+      "statement": "Core PPA amortization is modeled as a constant $0.75mm add-back across all forecast periods.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w3000-3250:Sheet: Scenario_Drivers — Core PPA amortization row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-507c81b08400",
+      "statement": "Days sales outstanding (DSO) implied by AR / annualized revenue of 1.2% is approximately 4.38 days.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w3500-3750:Sheet: Scenario_Drivers, AR / annualized revenue row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-d7029a7588bb",
+      "statement": "Days payable outstanding (DPO) implied by AP / annualized revenue of 5.5% is approximately 20.08 days.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w3500-3750:Sheet: Scenario_Drivers, AP / annualized revenue row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-34841a0c9890",
+      "statement": "Capex / revenue is modeled at 1.6% across the projection period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w3500-3750:Sheet: Scenario_Drivers, Capex / revenue row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-820131d9c79a",
+      "statement": "Acquisition Base revenue is projected at $19.795 million in the first modeled period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w4500-4750:Sheet: Scenario_Drivers — Acquisition Base Revenue row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-e179dd7f72d9",
+      "statement": "Acquisition Base gross margin is assumed at 36.2% in the initial modeled period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w4500-4750:Sheet: Scenario_Drivers — Acquisition Base Gross margin row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-dc28bde6115e",
+      "statement": "Acquisition EV for one target is $8.4mm per LBO model scenario drivers.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w5250-5500:Sheet: Scenario_Drivers, Acquisition EV row, column w5250",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-7ecef87b057d",
+      "statement": "Acquisition EV for another target is $11.9mm per LBO model scenario drivers.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w5250-5500:Sheet: Scenario_Drivers, Acquisition EV row, column w5500",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-fe28fd59e59d",
+      "statement": "Deferred revenue as a percentage of annualized revenue is held constant at 1.2% across the projection period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w5000-5250:Scenario_Drivers: Deferred revenue / annualized revenue row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-11a5f9b7c02b",
+      "statement": "Accruals as a percentage of annualized revenue are assumed at 7.5% for each period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w5000-5250:Scenario_Drivers: Accruals / annualized revenue row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-47d58a3a1c9e",
+      "statement": "Sponsor equity contribution of $5 million is modeled in the LBO scenario.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w5500-5750:Scenario_Drivers sheet, sponsor equity contribution row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-1e70204bca88",
+      "statement": "Delayed draw term loan (DDTL) draw of $6 million is included in the opening financing structure.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w5500-5750:Scenario_Drivers sheet, DDTL draw row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-5bb6e6f51b73",
+      "statement": "Opening gross debt includes $6 million DDTL draw in the LBO financing.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w5500-5750:Scenario_Drivers sheet, DDTL draw row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-3a06059a490d",
+      "statement": "LBO model assumes revolver is not drawn, with forced revolver target of -1 ($mm) and repay all revolver flag set to 0 throughout projection.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w5750-6000:Sheet Scenario_Drivers, Forced revolver target and Repay all revolver rows",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-b0f28b8aa797",
+      "statement": "Sponsor equity contribution of $7.5m modeled in the LBO financing structure.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w7000-7250:Sheet: Scenario_Drivers, Sponsor equity contribution row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-53b4bd6d7490",
+      "statement": "Acquired PP&E of $0.4 million included in LBO model acquisition assumptions.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w6750-7000:Sheet: Scenario_Drivers — Acquired PP&E row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-2bc7f319063c",
+      "statement": "Acquisition fees of $0.4 million modeled as transaction cost in LBO scenario.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w6750-7000:Sheet: Scenario_Drivers — Acquisition fees row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-7a01b11ae609",
+      "statement": "Combined acquired intangibles ($3.0m) and goodwill ($5.75m) total $8.75 million on acquisition balance sheet.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w6750-7000:Sheet: Scenario_Drivers — Acquired intangibles and Acquired goodwill rows",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-6d1371bfbc9a",
+      "statement": "LBO model scenario assumes forced revolver draw requirement of $4.78 million in one projection period.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w7250-7500:Sheet: Scenario_Drivers, Forced revolver target row, column w7250-7500",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-0292741eb40f",
+      "statement": "LBO model scenario specifies leverage covenant thresholds ranging from 3.5x to 4.75x across projection periods.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Scenario_Drivers:w7250-7500:Sheet: Scenario_Drivers, Covenant limit row, column w7250-7500",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-dbfc9ad7ccd6",
+      "statement": "First-lien term loan facility commitment and opening draw are $42.8m, maturing March 31, 2032, at SOFR + 5.50% with 1.0% annual amortization.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Debt_Covenants:w0-250:Debt_Covenants sheet, Facility Terms table",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-f9f86a0d1701",
+      "statement": "Revolver facility has $7.5m commitment with zero opening draw, maturing September 30, 2031, at SOFR + 5.00% with no amortization.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Debt_Covenants:w0-250:Debt_Covenants sheet, Facility Terms table",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-e081788771e1",
+      "statement": "Delayed draw term loan (DDTL) facility has $10m commitment with zero opening draw, maturing March 31, 2032, at SOFR + 5.75% with 1.0% annual amortization after ",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Debt_Covenants:w0-250:Debt_Covenants sheet, Facility Terms table",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-29936b5d03d0",
+      "statement": "Total net leverage covenant threshold is 4.25x through 2027, tested quarterly, with steps down thereafter.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Debt_Covenants:w0-250:Debt_Covenants sheet, Original Financial Covenants table",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-bd0ed2570628",
+      "statement": "LTM add-backs total $1.4m, subject to a 15% cap of $1.41m as per covenant compliance certificate.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Debt_Covenants:w250-500:Debt_Covenants sheet, LTM add-backs row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-3efe31ae8678",
+      "statement": "LTM covenant EBITDA is $10.8m, calculated from reported EBITDA of $9.4m plus add-backs of $1.4m.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Debt_Covenants:w250-500:Debt_Covenants sheet, LTM covenant EBITDA row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-d98e2cb48104",
+      "statement": "Total net leverage is 4.7x, which exceeds the maximum requirement of 4.25x, resulting in a covenant FAIL.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part3.md::## Sheet: Debt_Covenants:w250-500:Debt_Covenants sheet, Total net leverage row",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-3cb33d0fac14",
+      "statement": "An amendment contribution of $7.5m to sponsor equity was modeled.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part4.md::## Sheet: Ownership_Returns:w250-280:Ownership_Returns table, line: After $7.5m amendment contribution",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    },
+    {
+      "code": "PERIMETER_MISSING",
+      "blocking": false,
+      "claim_id": "ks-715fcd18128a",
+      "statement": "Standalone Base case projects Sponsor Gross MOIC of 2.0x at exit.",
+      "perimeter": "unknown",
+      "locator": "keystone-model-part4.md::## Sheet: Ownership_Returns:w0-250:Sheet: Ownership_Returns | Standalone Base row | Gross MOIC",
+      "detail": "valued claim has no economic perimeter — scope is undetermined."
+    }
+  ]
+}

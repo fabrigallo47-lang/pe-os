@@ -620,5 +620,30 @@
       "effect": "CP-STANDALONE-UPSIDE-MOIC has no model node binding for MN-UP-MOIC in execution graph"
     }
   ],
-  "validation_errors": []
+  "validation_errors": [],
+  "deal_profile": {
+    "deal": "keystone",
+    "profile_loaded": true,
+    "entity": "Alderstone",
+    "positions_mapped": 27,
+    "model_nodes_mapped": 18,
+    "unmapped_warnings": [],
+    "status": "OK"
+  },
+  "grounding": {
+    "deal": "keystone",
+    "claims_file": "pipeline_out/e3/K-IC/e3_claims.json",
+    "profile_loaded": true,
+    "claims_total": 296,
+    "claims_flagged": 241,
+    "claims_clean": 55,
+    "findings_total": 270,
+    "blocking_total": 30,
+    "by_code": {
+      "PERIMETER_MISSING": 170,
+      "PERIMETER_IS_COUNTERPARTY": 17,
+      "PERIMETER_OFF_VOCABULARY": 70,
+      "VALUE_NOT_IN_SOURCE": 13
+    }
+  }
 }

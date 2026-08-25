@@ -1,0 +1,6921 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "type": "claim",
+      "value": "38.23",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY24A revenue of €38.23m.",
+      "locator": "Financial Analysis table, FY24A revenue row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0000"
+    },
+    {
+      "type": "entity",
+      "label": "Astrelia",
+      "id": "entity:astrelia"
+    },
+    {
+      "type": "metric",
+      "label": "Revenue",
+      "id": "metric:revenue"
+    },
+    {
+      "type": "period",
+      "label": "FY24A",
+      "id": "period:fy24a"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated revenue",
+      "id": "perimeter:astrelia_consolidated_revenue"
+    },
+    {
+      "type": "source",
+      "label": "Business Plan Extract",
+      "id": "source:business_plan_extract"
+    },
+    {
+      "type": "author",
+      "label": "Astrelia management",
+      "id": "author:astrelia_management"
+    },
+    {
+      "type": "claim",
+      "value": "62.06",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY25A revenue of €62.06m.",
+      "locator": "Financial Analysis table, FY25A revenue row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0001"
+    },
+    {
+      "type": "period",
+      "label": "FY25A",
+      "id": "period:fy25a"
+    },
+    {
+      "type": "claim",
+      "value": "115.57",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia forecasts FY26E revenue of €115.57m.",
+      "locator": "Financial Analysis table, FY26E revenue row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0002"
+    },
+    {
+      "type": "period",
+      "label": "FY26E",
+      "id": "period:fy26e"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated revenue, management forecast",
+      "id": "perimeter:astrelia_consolidated_revenue,_management_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "212",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia forecasts FY27E revenue of €212m.",
+      "locator": "Financial Analysis table, FY27E revenue row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0003"
+    },
+    {
+      "type": "period",
+      "label": "FY27E",
+      "id": "period:fy27e"
+    },
+    {
+      "type": "claim",
+      "value": "385.6",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia forecasts FY28E revenue of €385.6m.",
+      "locator": "Financial Analysis table, FY28E revenue row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0004"
+    },
+    {
+      "type": "period",
+      "label": "FY28E",
+      "id": "period:fy28e"
+    },
+    {
+      "type": "claim",
+      "value": "631.72",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia forecasts FY29E revenue of €631.72m.",
+      "locator": "Financial Analysis table, FY29E revenue row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0005"
+    },
+    {
+      "type": "period",
+      "label": "FY29E",
+      "id": "period:fy29e"
+    },
+    {
+      "type": "claim",
+      "value": "996.76",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia forecasts FY30E revenue of €996.76m.",
+      "locator": "Financial Analysis table, FY30E revenue row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0006"
+    },
+    {
+      "type": "period",
+      "label": "FY30E",
+      "id": "period:fy30e"
+    },
+    {
+      "type": "claim",
+      "value": "21.01",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY24A COGS of €21.01m.",
+      "locator": "Financial Analysis table, FY24A COGS row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0007"
+    },
+    {
+      "type": "metric",
+      "label": "COGS",
+      "id": "metric:cogs"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated cost of goods sold",
+      "id": "perimeter:astrelia_consolidated_cost_of_goods_sold"
+    },
+    {
+      "type": "claim",
+      "value": "24.54",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY25A COGS of €24.54m.",
+      "locator": "Financial Analysis table, FY25A COGS row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0008"
+    },
+    {
+      "type": "claim",
+      "value": "17.23",
+      "unit": "€m",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia reported FY24A gross margin of €17.23m.",
+      "locator": "Financial Analysis table, FY24A gross margin row",
+      "derivation": "Revenue €38.23m minus COGS €21.01m",
+      "deal": "astrelia",
+      "id": "claim:0009"
+    },
+    {
+      "type": "metric",
+      "label": "Gross Margin",
+      "id": "metric:gross_margin"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated gross margin",
+      "id": "perimeter:astrelia_consolidated_gross_margin"
+    },
+    {
+      "type": "claim",
+      "value": "37.52",
+      "unit": "€m",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia reported FY25A gross margin of €37.52m.",
+      "locator": "Financial Analysis table, FY25A gross margin row",
+      "derivation": "Revenue €62.06m minus COGS €24.54m",
+      "deal": "astrelia",
+      "id": "claim:0010"
+    },
+    {
+      "type": "claim",
+      "value": "45.06",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia FY24A gross margin percentage was 45.06%.",
+      "locator": "Financial Analysis table, FY24A metrics",
+      "derivation": "Gross margin €17.23m / Revenue €38.23m × 100",
+      "deal": "astrelia",
+      "id": "claim:0011"
+    },
+    {
+      "type": "metric",
+      "label": "Gross Margin %",
+      "id": "metric:gross_margin_%"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated gross margin percentage",
+      "id": "perimeter:astrelia_consolidated_gross_margin_percentage"
+    },
+    {
+      "type": "claim",
+      "value": "60.45",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia FY25A gross margin percentage was 60.45%.",
+      "locator": "Financial Analysis table, FY25A metrics",
+      "derivation": "Gross margin €37.52m / Revenue €62.06m × 100",
+      "deal": "astrelia",
+      "id": "claim:0012"
+    },
+    {
+      "type": "claim",
+      "value": "1.4",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY24A EBITDA of €1.4m.",
+      "locator": "Financial Analysis table, FY24A EBITDA row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0013"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA",
+      "id": "metric:ebitda"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBITDA",
+      "id": "perimeter:astrelia_consolidated_ebitda"
+    },
+    {
+      "type": "claim",
+      "value": "16.19",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY25A EBITDA of €16.19m.",
+      "locator": "Financial Analysis table, FY25A EBITDA row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0014"
+    },
+    {
+      "type": "claim",
+      "value": "19.98",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia forecasts FY26E EBITDA of €19.98m.",
+      "locator": "Financial Analysis table, FY26E EBITDA row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0015"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBITDA, management forecast",
+      "id": "perimeter:astrelia_consolidated_ebitda,_management_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "45.06",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia forecasts FY27E EBITDA of €45.06m.",
+      "locator": "Financial Analysis table, FY27E EBITDA row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0016"
+    },
+    {
+      "type": "claim",
+      "value": "100.62",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia forecasts FY28E EBITDA of €100.62m.",
+      "locator": "Financial Analysis table, FY28E EBITDA row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0017"
+    },
+    {
+      "type": "claim",
+      "value": "190.28",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia forecasts FY29E EBITDA of €190.28m.",
+      "locator": "Financial Analysis table, FY29E EBITDA row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0018"
+    },
+    {
+      "type": "claim",
+      "value": "323.94",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia forecasts FY30E EBITDA of €323.94m.",
+      "locator": "Financial Analysis table, FY30E EBITDA row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0019"
+    },
+    {
+      "type": "claim",
+      "value": "3.66",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia FY24A EBITDA margin was 3.66%.",
+      "locator": "Financial Analysis table, FY24A metrics",
+      "derivation": "EBITDA €1.4m / Revenue €38.23m × 100",
+      "deal": "astrelia",
+      "id": "claim:0020"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA Margin %",
+      "id": "metric:ebitda_margin_%"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBITDA margin percentage",
+      "id": "perimeter:astrelia_consolidated_ebitda_margin_percentage"
+    },
+    {
+      "type": "claim",
+      "value": "26.07",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia FY25A EBITDA margin was 26.07%.",
+      "locator": "Financial Analysis table, FY25A metrics",
+      "derivation": "EBITDA €16.19m / Revenue €62.06m × 100",
+      "deal": "astrelia",
+      "id": "claim:0021"
+    },
+    {
+      "type": "claim",
+      "value": "17.28",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia FY26E forecast EBITDA margin is 17.28%.",
+      "locator": "Financial Analysis table, FY26E metrics",
+      "derivation": "EBITDA €19.98m / Revenue €115.57m × 100",
+      "deal": "astrelia",
+      "id": "claim:0022"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBITDA margin percentage, management forecast",
+      "id": "perimeter:astrelia_consolidated_ebitda_margin_percentage,_management_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "21.25",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia FY27E forecast EBITDA margin is 21.25%.",
+      "locator": "Financial Analysis table, FY27E metrics",
+      "derivation": "EBITDA €45.06m / Revenue €212m × 100",
+      "deal": "astrelia",
+      "id": "claim:0023"
+    },
+    {
+      "type": "claim",
+      "value": "26.11",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia FY28E forecast EBITDA margin is 26.11%.",
+      "locator": "Financial Analysis table, FY28E metrics",
+      "derivation": "EBITDA €100.62m / Revenue €385.6m × 100",
+      "deal": "astrelia",
+      "id": "claim:0024"
+    },
+    {
+      "type": "claim",
+      "value": "30.11",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia FY29E forecast EBITDA margin is 30.11%.",
+      "locator": "Financial Analysis table, FY29E metrics",
+      "derivation": "EBITDA €190.28m / Revenue €631.72m × 100",
+      "deal": "astrelia",
+      "id": "claim:0025"
+    },
+    {
+      "type": "claim",
+      "value": "32.50",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia FY30E forecast EBITDA margin is 32.50%.",
+      "locator": "Financial Analysis table, FY30E metrics",
+      "derivation": "EBITDA €323.94m / Revenue €996.76m × 100",
+      "deal": "astrelia",
+      "id": "claim:0026"
+    },
+    {
+      "type": "claim",
+      "value": "-0.05",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY24A EBIT of €-0.05m.",
+      "locator": "Financial Analysis table, FY24A EBIT row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0027"
+    },
+    {
+      "type": "metric",
+      "label": "EBIT",
+      "id": "metric:ebit"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBIT",
+      "id": "perimeter:astrelia_consolidated_ebit"
+    },
+    {
+      "type": "claim",
+      "value": "12.34",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY25A EBIT of €12.34m.",
+      "locator": "Financial Analysis table, FY25A EBIT row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0028"
+    },
+    {
+      "type": "claim",
+      "value": "62.47",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia management forecasts revenue CAGR of 62.47% from FY25A (€62.06m) to FY30E (€996.76m).",
+      "locator": "Financial Analysis table, FY25A–FY30E revenue projection",
+      "derivation": "((FY30E Revenue / FY25A Revenue) ^ (1 / 5) - 1) × 100 = ((996.76 / 62.06) ^ 0.2 - 1) × 100",
+      "deal": "astrelia",
+      "id": "claim:0029"
+    },
+    {
+      "type": "metric",
+      "label": "Revenue CAGR",
+      "id": "metric:revenue_cagr"
+    },
+    {
+      "type": "period",
+      "label": "FY25A–FY30E",
+      "id": "period:fy25a–fy30e"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated revenue, management forecast CAGR",
+      "id": "perimeter:astrelia_consolidated_revenue,_management_forecast_cagr"
+    },
+    {
+      "type": "claim",
+      "value": "16",
+      "unit": "x",
+      "epistemic": "derived",
+      "direction": "context",
+      "statement": "Astrelia Base Case forecast projects revenue growth of 16× from FY25A to FY30E.",
+      "locator": "Plan scenarios, Base Case",
+      "derivation": "FY30E Revenue €996.76m / FY25A Revenue €62.06m = 16.05x",
+      "deal": "astrelia",
+      "id": "claim:0030"
+    },
+    {
+      "type": "metric",
+      "label": "Revenue Growth",
+      "id": "metric:revenue_growth"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated revenue multiple growth, management forecast",
+      "id": "perimeter:astrelia_consolidated_revenue_multiple_growth,_management_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "20",
+      "unit": "x",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Bull Case forecast projects revenue growth of ~20× from FY25A to FY30E.",
+      "locator": "Plan scenarios, Bull Case",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0031"
+    },
+    {
+      "type": "claim",
+      "value": "10",
+      "unit": "x",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Bear Case forecast projects revenue growth of ~10× from FY25A to FY30E.",
+      "locator": "Plan scenarios, Bear Case",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0032"
+    },
+    {
+      "type": "claim",
+      "value": "288",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Base Case forecast projects FY30E EBITDA of €288m (31% margin).",
+      "locator": "Plan scenarios, Base Case",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0033"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA Base Case",
+      "id": "metric:ebitda_base_case"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBITDA, management Base Case forecast",
+      "id": "perimeter:astrelia_consolidated_ebitda,_management_base_case_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "31",
+      "unit": "%",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Base Case forecast projects FY30E EBITDA margin of 31%.",
+      "locator": "Plan scenarios, Base Case",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0034"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA Margin Base Case",
+      "id": "metric:ebitda_margin_base_case"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBITDA margin, management Base Case forecast",
+      "id": "perimeter:astrelia_consolidated_ebitda_margin,_management_base_case_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "1154",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Bull Case forecast projects FY30E revenue of €1,154m.",
+      "locator": "Plan scenarios, Bull Case",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0035"
+    },
+    {
+      "type": "metric",
+      "label": "Revenue Bull Case",
+      "id": "metric:revenue_bull_case"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated revenue, management Bull Case forecast",
+      "id": "perimeter:astrelia_consolidated_revenue,_management_bull_case_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "381",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Bull Case forecast projects FY30E EBITDA of €381m (33% margin).",
+      "locator": "Plan scenarios, Bull Case",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0036"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA Bull Case",
+      "id": "metric:ebitda_bull_case"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBITDA, management Bull Case forecast",
+      "id": "perimeter:astrelia_consolidated_ebitda,_management_bull_case_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "33",
+      "unit": "%",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Bull Case forecast projects FY30E EBITDA margin of 33%.",
+      "locator": "Plan scenarios, Bull Case",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0037"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA Margin Bull Case",
+      "id": "metric:ebitda_margin_bull_case"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBITDA margin, management Bull Case forecast",
+      "id": "perimeter:astrelia_consolidated_ebitda_margin,_management_bull_case_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "554",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Bear Case forecast projects FY30E revenue of €554m.",
+      "locator": "Plan scenarios, Bear Case",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0038"
+    },
+    {
+      "type": "metric",
+      "label": "Revenue Bear Case",
+      "id": "metric:revenue_bear_case"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated revenue, management Bear Case forecast",
+      "id": "perimeter:astrelia_consolidated_revenue,_management_bear_case_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "138",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Bear Case forecast projects FY30E EBITDA of €138m (25% margin).",
+      "locator": "Plan scenarios, Bear Case",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0039"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA Bear Case",
+      "id": "metric:ebitda_bear_case"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBITDA, management Bear Case forecast",
+      "id": "perimeter:astrelia_consolidated_ebitda,_management_bear_case_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "25",
+      "unit": "%",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Bear Case forecast projects FY30E EBITDA margin of 25%.",
+      "locator": "Plan scenarios, Bear Case",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0040"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA Margin Bear Case",
+      "id": "metric:ebitda_margin_bear_case"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated EBITDA margin, management Bear Case forecast",
+      "id": "perimeter:astrelia_consolidated_ebitda_margin,_management_bear_case_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "5.36",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY24A direct personnel costs of €5.36m.",
+      "locator": "Financial Analysis table, FY24A direct personnel row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0041"
+    },
+    {
+      "type": "metric",
+      "label": "Direct Personnel Costs",
+      "id": "metric:direct_personnel_costs"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated direct personnel costs",
+      "id": "perimeter:astrelia_consolidated_direct_personnel_costs"
+    },
+    {
+      "type": "area",
+      "label": "Operations",
+      "id": "area:operations"
+    },
+    {
+      "type": "claim",
+      "value": "8.83",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY25A direct personnel costs of €8.83m.",
+      "locator": "Financial Analysis table, FY25A direct personnel row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0042"
+    },
+    {
+      "type": "claim",
+      "value": "5.36",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY24A indirect personnel costs of €5.36m.",
+      "locator": "Financial Analysis table, FY24A indirect personnel row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0043"
+    },
+    {
+      "type": "metric",
+      "label": "Indirect Personnel Costs",
+      "id": "metric:indirect_personnel_costs"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated indirect personnel costs",
+      "id": "perimeter:astrelia_consolidated_indirect_personnel_costs"
+    },
+    {
+      "type": "claim",
+      "value": "4.28",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY25A indirect personnel costs of €4.28m.",
+      "locator": "Financial Analysis table, FY25A indirect personnel row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0044"
+    },
+    {
+      "type": "claim",
+      "value": "1.24",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY24A overhead charged of €1.24m.",
+      "locator": "Financial Analysis table, FY24A overhead charged row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0045"
+    },
+    {
+      "type": "metric",
+      "label": "Overhead Charged",
+      "id": "metric:overhead_charged"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated overhead charged",
+      "id": "perimeter:astrelia_consolidated_overhead_charged"
+    },
+    {
+      "type": "claim",
+      "value": "2.73",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY25A overhead charged of €2.73m.",
+      "locator": "Financial Analysis table, FY25A overhead charged row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0046"
+    },
+    {
+      "type": "claim",
+      "value": "3.91",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY24A overhead not charged of €3.91m.",
+      "locator": "Financial Analysis table, FY24A overhead not charged row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0047"
+    },
+    {
+      "type": "metric",
+      "label": "Overhead Not Charged",
+      "id": "metric:overhead_not_charged"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated overhead not charged",
+      "id": "perimeter:astrelia_consolidated_overhead_not_charged"
+    },
+    {
+      "type": "claim",
+      "value": "6.1",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY25A overhead not charged of €6.1m.",
+      "locator": "Financial Analysis table, FY25A overhead not charged row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0048"
+    },
+    {
+      "type": "claim",
+      "value": "1.45",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY24A depreciation and amortization of €1.45m.",
+      "locator": "Financial Analysis table, FY24A D&A row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0049"
+    },
+    {
+      "type": "metric",
+      "label": "Depreciation & Amortization",
+      "id": "metric:depreciation_&_amortization"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia consolidated depreciation and amortization",
+      "id": "perimeter:astrelia_consolidated_depreciation_and_amortization"
+    },
+    {
+      "type": "claim",
+      "value": "3.85",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia reported FY25A depreciation and amortization of €3.85m.",
+      "locator": "Financial Analysis table, FY25A D&A row",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0050"
+    },
+    {
+      "type": "claim",
+      "value": "0",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment reported FY24A backlog revenue of €0m.",
+      "locator": "Segment revenue tranches, Defense backlog, FY24A",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0051"
+    },
+    {
+      "type": "metric",
+      "label": "Defense Segment Revenue",
+      "id": "metric:defense_segment_revenue"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia Defense segment revenue",
+      "id": "perimeter:astrelia_defense_segment_revenue"
+    },
+    {
+      "type": "area",
+      "label": "Market",
+      "id": "area:market"
+    },
+    {
+      "type": "claim",
+      "value": "16.29",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment reported FY25A backlog revenue of €16.29m.",
+      "locator": "Segment revenue tranches, Defense backlog, FY25A",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0052"
+    },
+    {
+      "type": "metric",
+      "label": "Defense Segment Backlog Revenue",
+      "id": "metric:defense_segment_backlog_revenue"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia Defense segment backlog revenue",
+      "id": "perimeter:astrelia_defense_segment_backlog_revenue"
+    },
+    {
+      "type": "claim",
+      "value": "23.38",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY26E backlog revenue of €23.38m.",
+      "locator": "Segment revenue tranches, Defense backlog, FY26E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0053"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia Defense segment backlog revenue, management forecast",
+      "id": "perimeter:astrelia_defense_segment_backlog_revenue,_management_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "3.3",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY27E backlog revenue of €3.3m.",
+      "locator": "Segment revenue tranches, Defense backlog, FY27E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0054"
+    },
+    {
+      "type": "claim",
+      "value": "14.9",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY28E backlog revenue of €14.9m.",
+      "locator": "Segment revenue tranches, Defense backlog, FY28E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0055"
+    },
+    {
+      "type": "claim",
+      "value": "26",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY29E backlog revenue of €26m.",
+      "locator": "Segment revenue tranches, Defense backlog, FY29E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0056"
+    },
+    {
+      "type": "claim",
+      "value": "0",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY30E backlog revenue of €0m.",
+      "locator": "Segment revenue tranches, Defense backlog, FY30E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0057"
+    },
+    {
+      "type": "claim",
+      "value": "0",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment reported FY24A high-probability revenue of €0m.",
+      "locator": "Segment revenue tranches, Defense high-prob, FY24A",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0058"
+    },
+    {
+      "type": "metric",
+      "label": "Defense Segment High-Probability Revenue",
+      "id": "metric:defense_segment_high-probability_revenue"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia Defense segment high-probability revenue",
+      "id": "perimeter:astrelia_defense_segment_high-probability_revenue"
+    },
+    {
+      "type": "claim",
+      "value": "0",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment reported FY25A high-probability revenue of €0m.",
+      "locator": "Segment revenue tranches, Defense high-prob, FY25A",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0059"
+    },
+    {
+      "type": "claim",
+      "value": "32.32",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY26E high-probability revenue of €32.32m.",
+      "locator": "Segment revenue tranches, Defense high-prob, FY26E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0060"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia Defense segment high-probability revenue, management forecast",
+      "id": "perimeter:astrelia_defense_segment_high-probability_revenue,_management_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "33.17",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY27E high-probability revenue of €33.17m.",
+      "locator": "Segment revenue tranches, Defense high-prob, FY27E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0061"
+    },
+    {
+      "type": "claim",
+      "value": "52.99",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY28E high-probability revenue of €52.99m.",
+      "locator": "Segment revenue tranches, Defense high-prob, FY28E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0062"
+    },
+    {
+      "type": "claim",
+      "value": "0",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY29E high-probability revenue of €0m.",
+      "locator": "Segment revenue tranches, Defense high-prob, FY29E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0063"
+    },
+    {
+      "type": "claim",
+      "value": "0",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY30E high-probability revenue of €0m.",
+      "locator": "Segment revenue tranches, Defense high-prob, FY30E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0064"
+    },
+    {
+      "type": "claim",
+      "value": "0",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment reported FY24A pipeline revenue of €0m.",
+      "locator": "Segment revenue tranches, Defense pipeline, FY24A",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0065"
+    },
+    {
+      "type": "metric",
+      "label": "Defense Segment Pipeline Revenue",
+      "id": "metric:defense_segment_pipeline_revenue"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia Defense segment pipeline revenue",
+      "id": "perimeter:astrelia_defense_segment_pipeline_revenue"
+    },
+    {
+      "type": "claim",
+      "value": "0",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment reported FY25A pipeline revenue of €0m.",
+      "locator": "Segment revenue tranches, Defense pipeline, FY25A",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0066"
+    },
+    {
+      "type": "claim",
+      "value": "0",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY26E pipeline revenue of €0m.",
+      "locator": "Segment revenue tranches, Defense pipeline, FY26E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0067"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia Defense segment pipeline revenue, management forecast",
+      "id": "perimeter:astrelia_defense_segment_pipeline_revenue,_management_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "32.49",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY27E pipeline revenue of €32.49m.",
+      "locator": "Segment revenue tranches, Defense pipeline, FY27E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0068"
+    },
+    {
+      "type": "claim",
+      "value": "42",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY28E pipeline revenue of €42m.",
+      "locator": "Segment revenue tranches, Defense pipeline, FY28E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0069"
+    },
+    {
+      "type": "claim",
+      "value": "147.56",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY29E pipeline revenue of €147.56m.",
+      "locator": "Segment revenue tranches, Defense pipeline, FY29E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0070"
+    },
+    {
+      "type": "claim",
+      "value": "288.75",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Defense segment forecast FY30E pipeline revenue of €288.75m.",
+      "locator": "Segment revenue tranches, Defense pipeline, FY30E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0071"
+    },
+    {
+      "type": "claim",
+      "value": "27.54",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Earth Observation segment reported FY24A backlog revenue of €27.54m.",
+      "locator": "Segment revenue tranches, Earth Observation backlog, FY24A",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0072"
+    },
+    {
+      "type": "metric",
+      "label": "Earth Observation Segment Backlog Revenue",
+      "id": "metric:earth_observation_segment_backlog_revenue"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia Earth Observation segment backlog revenue",
+      "id": "perimeter:astrelia_earth_observation_segment_backlog_revenue"
+    },
+    {
+      "type": "claim",
+      "value": "29.46",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Earth Observation segment reported FY25A backlog revenue of €29.46m.",
+      "locator": "Segment revenue tranches, Earth Observation backlog, FY25A",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0073"
+    },
+    {
+      "type": "claim",
+      "value": "16.26",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Earth Observation segment forecast FY26E backlog revenue of €16.26m.",
+      "locator": "Segment revenue tranches, Earth Observation backlog, FY26E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0074"
+    },
+    {
+      "type": "perimeter",
+      "label": "Astrelia Earth Observation segment backlog revenue, management forecast",
+      "id": "perimeter:astrelia_earth_observation_segment_backlog_revenue,_management_forecast"
+    },
+    {
+      "type": "claim",
+      "value": "0.47",
+      "unit": "€m",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "Astrelia Earth Observation segment forecast FY27E backlog revenue of €0.47m.",
+      "locator": "Segment revenue tranches, Earth Observation backlog, FY27E",
+      "derivation": null,
+      "deal": "astrelia",
+      "id": "claim:0075"
+    }
+  ],
+  "edges": [
+    {
+      "rel": "ABOUT",
+      "source": "claim:0000",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0000",
+      "target": "metric:revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0000",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0000",
+      "target": "perimeter:astrelia_consolidated_revenue"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0000",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0000",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0029"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0030"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0031"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0032"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0035"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0000",
+      "target": "claim:0051"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0052"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0053"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0054"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0055"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0000",
+      "target": "claim:0058"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0059"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0060"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0061"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0000",
+      "target": "claim:0065"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0066"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0067"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0068"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0000",
+      "target": "claim:0072"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0073"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0074"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0000",
+      "target": "claim:0075"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0001",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0001",
+      "target": "metric:revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0001",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0001",
+      "target": "perimeter:astrelia_consolidated_revenue"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0001",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0001",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0029"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0030"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0031"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0032"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0035"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0051"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0001",
+      "target": "claim:0052"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0053"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0054"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0055"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0058"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0001",
+      "target": "claim:0059"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0060"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0061"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0065"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0001",
+      "target": "claim:0066"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0067"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0068"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0072"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0001",
+      "target": "claim:0073"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0074"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0075"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0002",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0002",
+      "target": "metric:revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0002",
+      "target": "period:fy26e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0002",
+      "target": "perimeter:astrelia_consolidated_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0002",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0002",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0029"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0030"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0031"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0032"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0035"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0051"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0052"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0002",
+      "target": "claim:0053"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0054"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0055"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0058"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0059"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0002",
+      "target": "claim:0060"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0061"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0065"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0066"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0002",
+      "target": "claim:0067"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0068"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0072"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0073"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0002",
+      "target": "claim:0074"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0075"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0003",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0003",
+      "target": "metric:revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0003",
+      "target": "period:fy27e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0003",
+      "target": "perimeter:astrelia_consolidated_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0003",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0003",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0029"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0030"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0031"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0032"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0035"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0051"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0052"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0053"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0003",
+      "target": "claim:0054"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0055"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0058"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0059"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0060"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0003",
+      "target": "claim:0061"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0065"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0066"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0067"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0003",
+      "target": "claim:0068"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0072"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0073"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0003",
+      "target": "claim:0074"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0003",
+      "target": "claim:0075"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0004",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0004",
+      "target": "metric:revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0004",
+      "target": "period:fy28e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0004",
+      "target": "perimeter:astrelia_consolidated_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0004",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0004",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0029"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0030"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0031"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0032"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0035"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0051"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0052"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0053"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0054"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0004",
+      "target": "claim:0055"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0058"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0059"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0060"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0061"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0004",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0065"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0066"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0067"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0068"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0004",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0072"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0073"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0074"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0004",
+      "target": "claim:0075"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0005",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0005",
+      "target": "metric:revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0005",
+      "target": "period:fy29e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0005",
+      "target": "perimeter:astrelia_consolidated_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0005",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0005",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0029"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0030"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0031"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0032"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0035"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0051"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0052"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0053"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0054"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0055"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0005",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0058"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0059"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0060"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0061"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0005",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0065"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0066"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0067"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0068"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0005",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0072"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0073"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0074"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0005",
+      "target": "claim:0075"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0006",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0006",
+      "target": "metric:revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0006",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0006",
+      "target": "perimeter:astrelia_consolidated_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0006",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0006",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0029"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0030"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0031"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0032"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0006",
+      "target": "claim:0035"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0006",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0051"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0052"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0053"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0054"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0055"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0006",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0058"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0059"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0060"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0061"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0006",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0065"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0066"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0067"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0068"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0006",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0072"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0073"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0074"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0006",
+      "target": "claim:0075"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0007",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0007",
+      "target": "metric:cogs"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0007",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0007",
+      "target": "perimeter:astrelia_consolidated_cost_of_goods_sold"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0007",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0007",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0007",
+      "target": "claim:0008"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0008",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0008",
+      "target": "metric:cogs"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0008",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0008",
+      "target": "perimeter:astrelia_consolidated_cost_of_goods_sold"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0008",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0008",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0009",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0009",
+      "target": "metric:gross_margin"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0009",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0009",
+      "target": "perimeter:astrelia_consolidated_gross_margin"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0009",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0009",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0009",
+      "target": "claim:0010"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0009",
+      "target": "claim:0011"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0009",
+      "target": "claim:0012"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0009",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0009",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0009",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0009",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0009",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0009",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0009",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0010",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0010",
+      "target": "metric:gross_margin"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0010",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0010",
+      "target": "perimeter:astrelia_consolidated_gross_margin"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0010",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0010",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0010",
+      "target": "claim:0011"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0010",
+      "target": "claim:0012"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0010",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0010",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0010",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0010",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0010",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0010",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0010",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0011",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0011",
+      "target": "metric:gross_margin_%"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0011",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0011",
+      "target": "perimeter:astrelia_consolidated_gross_margin_percentage"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0011",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0011",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0011",
+      "target": "claim:0012"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0011",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0011",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0011",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0011",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0011",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0011",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0011",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0011",
+      "target": "claim:0009"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0011",
+      "target": "claim:0010"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0012",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0012",
+      "target": "metric:gross_margin_%"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0012",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0012",
+      "target": "perimeter:astrelia_consolidated_gross_margin_percentage"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0012",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0012",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0012",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0012",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0012",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0012",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0012",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0012",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0012",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0012",
+      "target": "claim:0009"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0012",
+      "target": "claim:0010"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0013",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0013",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0013",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0013",
+      "target": "perimeter:astrelia_consolidated_ebitda"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0013",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0013",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0014"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0013",
+      "target": "claim:0020"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0022"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0023"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0013",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0034"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0036"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0037"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0039"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0013",
+      "target": "claim:0040"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0014",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0014",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0014",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0014",
+      "target": "perimeter:astrelia_consolidated_ebitda"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0014",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0014",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0020"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0014",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0022"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0023"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0014",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0034"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0036"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0037"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0039"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0014",
+      "target": "claim:0040"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0015",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0015",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0015",
+      "target": "period:fy26e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0015",
+      "target": "perimeter:astrelia_consolidated_ebitda,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0015",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0015",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0020"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0015",
+      "target": "claim:0022"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0023"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0034"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0036"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0037"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0039"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0015",
+      "target": "claim:0040"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0016",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0016",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0016",
+      "target": "period:fy27e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0016",
+      "target": "perimeter:astrelia_consolidated_ebitda,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0016",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0016",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0020"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0022"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0016",
+      "target": "claim:0023"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0034"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0036"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0037"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0039"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0016",
+      "target": "claim:0040"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0017",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0017",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0017",
+      "target": "period:fy28e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0017",
+      "target": "perimeter:astrelia_consolidated_ebitda,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0017",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0017",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0020"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0022"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0023"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0017",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0034"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0036"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0037"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0039"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0017",
+      "target": "claim:0040"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0018",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0018",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0018",
+      "target": "period:fy29e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0018",
+      "target": "perimeter:astrelia_consolidated_ebitda,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0018",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0018",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0020"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0022"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0023"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0018",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0034"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0036"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0037"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0039"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0018",
+      "target": "claim:0040"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0019",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0019",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0019",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0019",
+      "target": "perimeter:astrelia_consolidated_ebitda,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0019",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0019",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0019",
+      "target": "claim:0020"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0019",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0019",
+      "target": "claim:0022"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0019",
+      "target": "claim:0023"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0019",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0019",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0019",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0019",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0019",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0019",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0019",
+      "target": "claim:0034"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0019",
+      "target": "claim:0036"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0019",
+      "target": "claim:0037"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0019",
+      "target": "claim:0039"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0019",
+      "target": "claim:0040"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0020",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0020",
+      "target": "metric:ebitda_margin_%"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0020",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0020",
+      "target": "perimeter:astrelia_consolidated_ebitda_margin_percentage"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0020",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0020",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0020",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0020",
+      "target": "claim:0022"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0020",
+      "target": "claim:0023"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0020",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0020",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0020",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0020",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0020",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0014"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0020",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0021",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0021",
+      "target": "metric:ebitda_margin_%"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0021",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0021",
+      "target": "perimeter:astrelia_consolidated_ebitda_margin_percentage"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0021",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0021",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0021",
+      "target": "claim:0022"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0021",
+      "target": "claim:0023"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0021",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0021",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0021",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0021",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0021",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0014"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0021",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0022",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0022",
+      "target": "metric:ebitda_margin_%"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0022",
+      "target": "period:fy26e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0022",
+      "target": "perimeter:astrelia_consolidated_ebitda_margin_percentage,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0022",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0022",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0022",
+      "target": "claim:0023"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0022",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0022",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0022",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0022",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0022",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0014"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0022",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0023",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0023",
+      "target": "metric:ebitda_margin_%"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0023",
+      "target": "period:fy27e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0023",
+      "target": "perimeter:astrelia_consolidated_ebitda_margin_percentage,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0023",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0023",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0023",
+      "target": "claim:0024"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0023",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0023",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0023",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0023",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0014"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0023",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0024",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0024",
+      "target": "metric:ebitda_margin_%"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0024",
+      "target": "period:fy28e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0024",
+      "target": "perimeter:astrelia_consolidated_ebitda_margin_percentage,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0024",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0024",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0024",
+      "target": "claim:0025"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0024",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0024",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0024",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0014"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0024",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0025",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0025",
+      "target": "metric:ebitda_margin_%"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0025",
+      "target": "period:fy29e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0025",
+      "target": "perimeter:astrelia_consolidated_ebitda_margin_percentage,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0025",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0025",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0025",
+      "target": "claim:0026"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0025",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0025",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0014"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0025",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0026",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0026",
+      "target": "metric:ebitda_margin_%"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0026",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0026",
+      "target": "perimeter:astrelia_consolidated_ebitda_margin_percentage,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0026",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0026",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0026",
+      "target": "claim:0027"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0026",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0014"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0018"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0026",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0027",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0027",
+      "target": "metric:ebit"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0027",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0027",
+      "target": "perimeter:astrelia_consolidated_ebit"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0027",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0027",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0027",
+      "target": "claim:0028"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0027",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0027",
+      "target": "claim:0034"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0027",
+      "target": "claim:0036"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0027",
+      "target": "claim:0037"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0027",
+      "target": "claim:0039"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0027",
+      "target": "claim:0040"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0028",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0028",
+      "target": "metric:ebit"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0028",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0028",
+      "target": "perimeter:astrelia_consolidated_ebit"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0028",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0028",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0028",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0028",
+      "target": "claim:0034"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0028",
+      "target": "claim:0036"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0028",
+      "target": "claim:0037"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0028",
+      "target": "claim:0039"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0028",
+      "target": "claim:0040"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0029",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0029",
+      "target": "metric:revenue_cagr"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0029",
+      "target": "period:fy25a–fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0029",
+      "target": "perimeter:astrelia_consolidated_revenue,_management_forecast_cagr"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0029",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0029",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0029",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0029",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0029",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0029",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0029",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0029",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0029",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0030",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0030",
+      "target": "metric:revenue_growth"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0030",
+      "target": "period:fy25a–fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0030",
+      "target": "perimeter:astrelia_consolidated_revenue_multiple_growth,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0030",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0030",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "CHALLENGES",
+      "source": "claim:0030",
+      "target": "claim:0031"
+    },
+    {
+      "rel": "CHALLENGES",
+      "source": "claim:0030",
+      "target": "claim:0032"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0030",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0030",
+      "target": "claim:0001"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0030",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0030",
+      "target": "claim:0003"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0030",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0030",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0030",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0031",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0031",
+      "target": "metric:revenue_growth"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0031",
+      "target": "period:fy25a–fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0031",
+      "target": "perimeter:astrelia_consolidated_revenue_multiple_growth,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0031",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0031",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0032",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0032",
+      "target": "metric:revenue_growth"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0032",
+      "target": "period:fy25a–fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0032",
+      "target": "perimeter:astrelia_consolidated_revenue_multiple_growth,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0032",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0032",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0033",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0033",
+      "target": "metric:ebitda_base_case"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0033",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0033",
+      "target": "perimeter:astrelia_consolidated_ebitda,_management_base_case_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0033",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0033",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0034",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0034",
+      "target": "metric:ebitda_margin_base_case"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0034",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0034",
+      "target": "perimeter:astrelia_consolidated_ebitda_margin,_management_base_case_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0034",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0034",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0035",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0035",
+      "target": "metric:revenue_bull_case"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0035",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0035",
+      "target": "perimeter:astrelia_consolidated_revenue,_management_bull_case_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0035",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0035",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0036",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0036",
+      "target": "metric:ebitda_bull_case"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0036",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0036",
+      "target": "perimeter:astrelia_consolidated_ebitda,_management_bull_case_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0036",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0036",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0037",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0037",
+      "target": "metric:ebitda_margin_bull_case"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0037",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0037",
+      "target": "perimeter:astrelia_consolidated_ebitda_margin,_management_bull_case_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0037",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0037",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0038",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0038",
+      "target": "metric:revenue_bear_case"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0038",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0038",
+      "target": "perimeter:astrelia_consolidated_revenue,_management_bear_case_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0038",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0038",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0039",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0039",
+      "target": "metric:ebitda_bear_case"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0039",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0039",
+      "target": "perimeter:astrelia_consolidated_ebitda,_management_bear_case_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0039",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0039",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0040",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0040",
+      "target": "metric:ebitda_margin_bear_case"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0040",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0040",
+      "target": "perimeter:astrelia_consolidated_ebitda_margin,_management_bear_case_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0040",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0040",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0041",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0041",
+      "target": "metric:direct_personnel_costs"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0041",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0041",
+      "target": "perimeter:astrelia_consolidated_direct_personnel_costs"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0041",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0041",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0041",
+      "target": "area:operations"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0041",
+      "target": "claim:0042"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0041",
+      "target": "claim:0043"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0041",
+      "target": "claim:0044"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0042",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0042",
+      "target": "metric:direct_personnel_costs"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0042",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0042",
+      "target": "perimeter:astrelia_consolidated_direct_personnel_costs"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0042",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0042",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0042",
+      "target": "area:operations"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0042",
+      "target": "claim:0043"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0042",
+      "target": "claim:0044"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0043",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0043",
+      "target": "metric:indirect_personnel_costs"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0043",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0043",
+      "target": "perimeter:astrelia_consolidated_indirect_personnel_costs"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0043",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0043",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0043",
+      "target": "area:operations"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0043",
+      "target": "claim:0044"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0044",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0044",
+      "target": "metric:indirect_personnel_costs"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0044",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0044",
+      "target": "perimeter:astrelia_consolidated_indirect_personnel_costs"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0044",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0044",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0044",
+      "target": "area:operations"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0045",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0045",
+      "target": "metric:overhead_charged"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0045",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0045",
+      "target": "perimeter:astrelia_consolidated_overhead_charged"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0045",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0045",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0045",
+      "target": "area:operations"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0045",
+      "target": "claim:0046"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0046",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0046",
+      "target": "metric:overhead_charged"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0046",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0046",
+      "target": "perimeter:astrelia_consolidated_overhead_charged"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0046",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0046",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0046",
+      "target": "area:operations"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0047",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0047",
+      "target": "metric:overhead_not_charged"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0047",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0047",
+      "target": "perimeter:astrelia_consolidated_overhead_not_charged"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0047",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0047",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0047",
+      "target": "area:operations"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0047",
+      "target": "claim:0048"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0048",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0048",
+      "target": "metric:overhead_not_charged"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0048",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0048",
+      "target": "perimeter:astrelia_consolidated_overhead_not_charged"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0048",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0048",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0048",
+      "target": "area:operations"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0049",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0049",
+      "target": "metric:depreciation_&_amortization"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0049",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0049",
+      "target": "perimeter:astrelia_consolidated_depreciation_and_amortization"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0049",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0049",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0049",
+      "target": "claim:0050"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0050",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0050",
+      "target": "metric:depreciation_&_amortization"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0050",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0050",
+      "target": "perimeter:astrelia_consolidated_depreciation_and_amortization"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0050",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0050",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0051",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0051",
+      "target": "metric:defense_segment_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0051",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0051",
+      "target": "perimeter:astrelia_defense_segment_revenue"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0051",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0051",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0051",
+      "target": "area:market"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0052",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0052",
+      "target": "metric:defense_segment_backlog_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0052",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0052",
+      "target": "perimeter:astrelia_defense_segment_backlog_revenue"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0052",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0052",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0052",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0052",
+      "target": "claim:0053"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0052",
+      "target": "claim:0054"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0052",
+      "target": "claim:0055"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0052",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0052",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0053",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0053",
+      "target": "metric:defense_segment_backlog_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0053",
+      "target": "period:fy26e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0053",
+      "target": "perimeter:astrelia_defense_segment_backlog_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0053",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0053",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0053",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0053",
+      "target": "claim:0054"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0053",
+      "target": "claim:0055"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0053",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0053",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0054",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0054",
+      "target": "metric:defense_segment_backlog_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0054",
+      "target": "period:fy27e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0054",
+      "target": "perimeter:astrelia_defense_segment_backlog_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0054",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0054",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0054",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0054",
+      "target": "claim:0055"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0054",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0054",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0055",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0055",
+      "target": "metric:defense_segment_backlog_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0055",
+      "target": "period:fy28e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0055",
+      "target": "perimeter:astrelia_defense_segment_backlog_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0055",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0055",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0055",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0055",
+      "target": "claim:0056"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0055",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0056",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0056",
+      "target": "metric:defense_segment_backlog_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0056",
+      "target": "period:fy29e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0056",
+      "target": "perimeter:astrelia_defense_segment_backlog_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0056",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0056",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0056",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0056",
+      "target": "claim:0057"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0057",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0057",
+      "target": "metric:defense_segment_backlog_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0057",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0057",
+      "target": "perimeter:astrelia_defense_segment_backlog_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0057",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0057",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0057",
+      "target": "area:market"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0058",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0058",
+      "target": "metric:defense_segment_high-probability_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0058",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0058",
+      "target": "perimeter:astrelia_defense_segment_high-probability_revenue"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0058",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0058",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0058",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0058",
+      "target": "claim:0059"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0058",
+      "target": "claim:0060"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0058",
+      "target": "claim:0061"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0058",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0058",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0058",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0059",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0059",
+      "target": "metric:defense_segment_high-probability_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0059",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0059",
+      "target": "perimeter:astrelia_defense_segment_high-probability_revenue"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0059",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0059",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0059",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0059",
+      "target": "claim:0060"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0059",
+      "target": "claim:0061"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0059",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0059",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0059",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0060",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0060",
+      "target": "metric:defense_segment_high-probability_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0060",
+      "target": "period:fy26e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0060",
+      "target": "perimeter:astrelia_defense_segment_high-probability_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0060",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0060",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0060",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0060",
+      "target": "claim:0061"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0060",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0060",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0060",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0061",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0061",
+      "target": "metric:defense_segment_high-probability_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0061",
+      "target": "period:fy27e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0061",
+      "target": "perimeter:astrelia_defense_segment_high-probability_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0061",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0061",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0061",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0061",
+      "target": "claim:0062"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0061",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0061",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0062",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0062",
+      "target": "metric:defense_segment_high-probability_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0062",
+      "target": "period:fy28e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0062",
+      "target": "perimeter:astrelia_defense_segment_high-probability_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0062",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0062",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0062",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0062",
+      "target": "claim:0063"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0062",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0063",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0063",
+      "target": "metric:defense_segment_high-probability_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0063",
+      "target": "period:fy29e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0063",
+      "target": "perimeter:astrelia_defense_segment_high-probability_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0063",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0063",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0063",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0063",
+      "target": "claim:0064"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0064",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0064",
+      "target": "metric:defense_segment_high-probability_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0064",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0064",
+      "target": "perimeter:astrelia_defense_segment_high-probability_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0064",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0064",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0064",
+      "target": "area:market"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0065",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0065",
+      "target": "metric:defense_segment_pipeline_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0065",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0065",
+      "target": "perimeter:astrelia_defense_segment_pipeline_revenue"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0065",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0065",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0065",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0065",
+      "target": "claim:0066"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0065",
+      "target": "claim:0067"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0065",
+      "target": "claim:0068"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0065",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0065",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0065",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0066",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0066",
+      "target": "metric:defense_segment_pipeline_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0066",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0066",
+      "target": "perimeter:astrelia_defense_segment_pipeline_revenue"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0066",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0066",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0066",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0066",
+      "target": "claim:0067"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0066",
+      "target": "claim:0068"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0066",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0066",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0066",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0067",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0067",
+      "target": "metric:defense_segment_pipeline_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0067",
+      "target": "period:fy26e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0067",
+      "target": "perimeter:astrelia_defense_segment_pipeline_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0067",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0067",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0067",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0067",
+      "target": "claim:0068"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0067",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0067",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0067",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0068",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0068",
+      "target": "metric:defense_segment_pipeline_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0068",
+      "target": "period:fy27e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0068",
+      "target": "perimeter:astrelia_defense_segment_pipeline_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0068",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0068",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0068",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0068",
+      "target": "claim:0069"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0068",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0068",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0069",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0069",
+      "target": "metric:defense_segment_pipeline_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0069",
+      "target": "period:fy28e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0069",
+      "target": "perimeter:astrelia_defense_segment_pipeline_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0069",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0069",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0069",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0069",
+      "target": "claim:0070"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0069",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0070",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0070",
+      "target": "metric:defense_segment_pipeline_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0070",
+      "target": "period:fy29e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0070",
+      "target": "perimeter:astrelia_defense_segment_pipeline_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0070",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0070",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0070",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0070",
+      "target": "claim:0071"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0071",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0071",
+      "target": "metric:defense_segment_pipeline_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0071",
+      "target": "period:fy30e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0071",
+      "target": "perimeter:astrelia_defense_segment_pipeline_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0071",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0071",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0071",
+      "target": "area:market"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0072",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0072",
+      "target": "metric:earth_observation_segment_backlog_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0072",
+      "target": "period:fy24a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0072",
+      "target": "perimeter:astrelia_earth_observation_segment_backlog_revenue"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0072",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0072",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0072",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0072",
+      "target": "claim:0073"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0072",
+      "target": "claim:0074"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0072",
+      "target": "claim:0075"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0073",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0073",
+      "target": "metric:earth_observation_segment_backlog_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0073",
+      "target": "period:fy25a"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0073",
+      "target": "perimeter:astrelia_earth_observation_segment_backlog_revenue"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0073",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0073",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0073",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0073",
+      "target": "claim:0074"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0073",
+      "target": "claim:0075"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0074",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0074",
+      "target": "metric:earth_observation_segment_backlog_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0074",
+      "target": "period:fy26e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0074",
+      "target": "perimeter:astrelia_earth_observation_segment_backlog_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0074",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0074",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0074",
+      "target": "area:market"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0074",
+      "target": "claim:0075"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0075",
+      "target": "entity:astrelia"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0075",
+      "target": "metric:earth_observation_segment_backlog_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0075",
+      "target": "period:fy27e"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0075",
+      "target": "perimeter:astrelia_earth_observation_segment_backlog_revenue,_management_forecast"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0075",
+      "target": "source:business_plan_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0075",
+      "target": "author:astrelia_management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0075",
+      "target": "area:market"
+    }
+  ]
+}

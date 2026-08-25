@@ -21,7 +21,7 @@ Output files:
   extraction_graph.json     233KB
   current_graph.json        497KB
   execution_mapping.json    104KB
-  adapter_report.json       18KB
+  adapter_report.json       19KB
   admission_manifest.json   6KB
 
 Case Positions admitted:

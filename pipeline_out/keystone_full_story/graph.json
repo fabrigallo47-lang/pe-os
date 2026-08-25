@@ -1,0 +1,2964 @@
+{
+  "directed": true,
+  "multigraph": false,
+  "graph": {},
+  "nodes": [
+    {
+      "type": "claim",
+      "value": "74.0",
+      "unit": "$m",
+      "epistemic": "asserted",
+      "direction": "supports",
+      "statement": "The seller presents FY2025 revenue of $74.0 million as a management forecast.",
+      "locator": "Act I, headline seller case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0000"
+    },
+    {
+      "type": "entity",
+      "label": "Alderstone",
+      "id": "entity:alderstone"
+    },
+    {
+      "type": "metric",
+      "label": "Revenue",
+      "id": "metric:revenue"
+    },
+    {
+      "type": "period",
+      "label": "FY2025",
+      "id": "period:fy2025"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone consolidated revenue, management forecast basis",
+      "id": "perimeter:alderstone_consolidated_revenue,_management_forecast_basis"
+    },
+    {
+      "type": "source",
+      "label": "CIM",
+      "id": "source:cim"
+    },
+    {
+      "type": "author",
+      "label": "Seller/Management",
+      "id": "author:seller/management"
+    },
+    {
+      "type": "claim",
+      "value": "12.7",
+      "unit": "$m",
+      "epistemic": "asserted",
+      "direction": "supports",
+      "statement": "The seller presents adjusted EBITDA of $12.7 million, including $2.5 million of seller adjustments.",
+      "locator": "Act I, headline seller case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0001"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA",
+      "id": "metric:ebitda"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone seller-adjusted EBITDA including $2.5m of seller adjustments",
+      "id": "perimeter:alderstone_seller-adjusted_ebitda_including_$2.5m_of_seller_adjustments"
+    },
+    {
+      "type": "claim",
+      "value": "17.2",
+      "unit": "%",
+      "epistemic": "asserted",
+      "direction": "supports",
+      "statement": "The seller presents an EBITDA margin of 17.2% based on seller-defined EBITDA.",
+      "locator": "Act I, headline seller case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0002"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA Margin",
+      "id": "metric:ebitda_margin"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone seller-defined EBITDA basis",
+      "id": "perimeter:alderstone_seller-defined_ebitda_basis"
+    },
+    {
+      "type": "claim",
+      "value": "7.6",
+      "unit": "%",
+      "epistemic": "asserted",
+      "direction": "supports",
+      "statement": "The seller presents the largest customer as 7.6% of revenue, measured by billing account rather than ultimate parent.",
+      "locator": "Act I, headline seller case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0003"
+    },
+    {
+      "type": "metric",
+      "label": "Customer Concentration",
+      "id": "metric:customer_concentration"
+    },
+    {
+      "type": "perimeter",
+      "label": "Largest customer measured at billing-account level, not ultimate parent",
+      "id": "perimeter:largest_customer_measured_at_billing-account_level,_not_ultimate_parent"
+    },
+    {
+      "type": "area",
+      "label": "Customer",
+      "id": "area:customer"
+    },
+    {
+      "type": "claim",
+      "value": "18.2",
+      "unit": "%",
+      "epistemic": "derived",
+      "direction": "contradicts",
+      "statement": "Buyer found Riverton Industrial Group actually represents 18.2% of revenue on a parent basis versus the seller-advertised 7.6% billing-account figure.",
+      "locator": "Act II, customer-concentration trap",
+      "derivation": "Aggregated seven billing accounts across six facilities belonging to Riverton Industrial Group as percentage of total revenue, per customer schedule in data room.",
+      "deal": "keystone",
+      "id": "claim:0004"
+    },
+    {
+      "type": "perimeter",
+      "label": "Riverton Industrial Group aggregated across seven billing accounts and six facilities on ultimate-parent basis",
+      "id": "perimeter:riverton_industrial_group_aggregated_across_seven_billing_accounts_and_six_facilities_on_ultimate-parent_basis"
+    },
+    {
+      "type": "source",
+      "label": "Data Room Extract",
+      "id": "source:data_room_extract"
+    },
+    {
+      "type": "author",
+      "label": "Buyer/PANTA",
+      "id": "author:buyer/panta"
+    },
+    {
+      "type": "claim",
+      "value": "72",
+      "unit": "%",
+      "epistemic": "asserted",
+      "direction": "supports",
+      "statement": "The seller claims 72% of activity is recurring or repeat, including both scheduled programs and repeat projects.",
+      "locator": "Act I, headline seller case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0005"
+    },
+    {
+      "type": "metric",
+      "label": "Recurring Revenue",
+      "id": "metric:recurring_revenue"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone scheduled or repeat activity, including repeat projects as well as scheduled programs",
+      "id": "perimeter:alderstone_scheduled_or_repeat_activity,_including_repeat_projects_as_well_as_scheduled_programs"
+    },
+    {
+      "type": "claim",
+      "value": "",
+      "unit": "",
+      "epistemic": "asserted",
+      "direction": "supports",
+      "statement": "The seller describes Alderstone as commercially integrated despite systems and processes remaining partially different across acquisitions.",
+      "locator": "Act I, headline seller case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0006"
+    },
+    {
+      "type": "metric",
+      "label": "Systems Integration",
+      "id": "metric:systems_integration"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone platform across four acquired companies",
+      "id": "perimeter:alderstone_platform_across_four_acquired_companies"
+    },
+    {
+      "type": "area",
+      "label": "Operations",
+      "id": "area:operations"
+    },
+    {
+      "type": "claim",
+      "value": "600",
+      "unit": "count",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "The seller states Alderstone has more than 600 active billing accounts.",
+      "locator": "Act I narrative",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0007"
+    },
+    {
+      "type": "metric",
+      "label": "Active Billing Accounts",
+      "id": "metric:active_billing_accounts"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone total active billing accounts",
+      "id": "perimeter:alderstone_total_active_billing_accounts"
+    },
+    {
+      "type": "area",
+      "label": "Market",
+      "id": "area:market"
+    },
+    {
+      "type": "claim",
+      "value": "4",
+      "unit": "count",
+      "epistemic": "asserted",
+      "direction": "context",
+      "statement": "The seller states Alderstone has completed four acquisitions since 2020.",
+      "locator": "Act I narrative",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0008"
+    },
+    {
+      "type": "metric",
+      "label": "Acquisition Count",
+      "id": "metric:acquisition_count"
+    },
+    {
+      "type": "period",
+      "label": "since 2020",
+      "id": "period:since_2020"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone acquisitions completed since 2020",
+      "id": "perimeter:alderstone_acquisitions_completed_since_2020"
+    },
+    {
+      "type": "claim",
+      "value": "10.2",
+      "unit": "$m",
+      "epistemic": "observed",
+      "direction": "contradicts",
+      "statement": "Reported EBITDA per historical accounting records is $10.2 million, versus seller-adjusted EBITDA of $12.7 million.",
+      "locator": "Act II, five EBITDA figures table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0009"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone reported/historical accounting EBITDA, unadjusted",
+      "id": "perimeter:alderstone_reported/historical_accounting_ebitda,_unadjusted"
+    },
+    {
+      "type": "area",
+      "label": "Earnings",
+      "id": "area:earnings"
+    },
+    {
+      "type": "claim",
+      "value": "11.9",
+      "unit": "$m",
+      "epistemic": "attested",
+      "direction": "contradicts",
+      "statement": "The QoE firm certifies normalized EBITDA of $11.9 million as an independent historical earnings view.",
+      "locator": "Act II, five EBITDA figures table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0010"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone QoE-normalized EBITDA, independent historical earnings view",
+      "id": "perimeter:alderstone_qoe-normalized_ebitda,_independent_historical_earnings_view"
+    },
+    {
+      "type": "source",
+      "label": "QoE Report",
+      "id": "source:qoe_report"
+    },
+    {
+      "type": "author",
+      "label": "QoE Firm",
+      "id": "author:qoe_firm"
+    },
+    {
+      "type": "claim",
+      "value": "11.4",
+      "unit": "$m",
+      "epistemic": "attested",
+      "direction": "contradicts",
+      "statement": "The Firm underwrites EBITDA at $11.4 million, applying further reserves for revenue quality, customer risk, integration cost and finance capability beyond the QoE figure.",
+      "locator": "Act II, five EBITDA figures table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0011"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone firm-underwritten EBITDA used for valuation and leverage basis",
+      "id": "perimeter:alderstone_firm-underwritten_ebitda_used_for_valuation_and_leverage_basis"
+    },
+    {
+      "type": "source",
+      "label": "Firm Model Summary",
+      "id": "source:firm_model_summary"
+    },
+    {
+      "type": "author",
+      "label": "PANTA/Firm",
+      "id": "author:panta/firm"
+    },
+    {
+      "type": "claim",
+      "value": "12.2",
+      "unit": "$m",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "Covenant EBITDA at entry is contractually defined at $12.2 million, distinct from firm-underwritten and QoE EBITDA figures.",
+      "locator": "Act II, five EBITDA figures table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0012"
+    },
+    {
+      "type": "period",
+      "label": "Entry / later lender-defined",
+      "id": "period:entry_/_later_lender-defined"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone covenant EBITDA at entry, lender-defined contractual credit calculation",
+      "id": "perimeter:alderstone_covenant_ebitda_at_entry,_lender-defined_contractual_credit_calculation"
+    },
+    {
+      "type": "author",
+      "label": "Lender",
+      "id": "author:lender"
+    },
+    {
+      "type": "area",
+      "label": "Structure",
+      "id": "area:structure"
+    },
+    {
+      "type": "claim",
+      "value": "0.5",
+      "unit": "$m",
+      "epistemic": "attested",
+      "direction": "contradicts",
+      "statement": "The QoE firm declines to accept $0.5 million of seller-included pricing and utilization initiatives as historical earnings since they have not yet been achieved.",
+      "locator": "Act II narrative",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0013"
+    },
+    {
+      "type": "metric",
+      "label": "EBITDA Add-back",
+      "id": "metric:ebitda_add-back"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone pricing and utilization initiative add-backs, not yet achieved",
+      "id": "perimeter:alderstone_pricing_and_utilization_initiative_add-backs,_not_yet_achieved"
+    },
+    {
+      "type": "claim",
+      "value": "",
+      "unit": "",
+      "epistemic": "observed",
+      "direction": "context",
+      "statement": "There are no minimum-volume guarantees with Riverton, and the relationship can be reduced or terminated with ordinary notice, though it spans years, facilities and service lines.",
+      "locator": "Act II, customer-concentration trap",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0014"
+    },
+    {
+      "type": "metric",
+      "label": "Customer Contract Terms",
+      "id": "metric:customer_contract_terms"
+    },
+    {
+      "type": "perimeter",
+      "label": "Riverton Industrial Group relationship terms",
+      "id": "perimeter:riverton_industrial_group_relationship_terms"
+    },
+    {
+      "type": "claim",
+      "value": "",
+      "unit": "",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The Firm's canonical position treats Riverton as a major concentration risk but keeps it in the base case while modelling a material reduction in the downside case, given tenure, multiple facilities and service lines.",
+      "locator": "Act II, Canonical Case Position callout",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0015"
+    },
+    {
+      "type": "metric",
+      "label": "Concentration Risk Position",
+      "id": "metric:concentration_risk_position"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone base case treatment of Riverton concentration risk",
+      "id": "perimeter:alderstone_base_case_treatment_of_riverton_concentration_risk"
+    },
+    {
+      "type": "source",
+      "label": "Firm Initial Assessment",
+      "id": "source:firm_initial_assessment"
+    },
+    {
+      "type": "claim",
+      "value": "",
+      "unit": "",
+      "epistemic": "attested",
+      "direction": "contradicts",
+      "statement": "The buyer finds that despite the seller calling the platform integrated due to shared branding and commercial coordination, billing systems, project codes, customer masters, time-entry systems, WIP controls and AR processes remain fragmented across four acquisitions.",
+      "locator": "Act II, integration risk section",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0016"
+    },
+    {
+      "type": "metric",
+      "label": "Systems Integration Risk",
+      "id": "metric:systems_integration_risk"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone four acquired businesses' billing, project code, customer master, time-entry, WIP and AR systems",
+      "id": "perimeter:alderstone_four_acquired_businesses'_billing,_project_code,_customer_master,_time-entry,_wip_and_ar_systems"
+    },
+    {
+      "type": "claim",
+      "value": "",
+      "unit": "",
+      "epistemic": "attested",
+      "direction": "contradicts",
+      "statement": "The Firm identifies that a failed systems migration could delay invoices, increase WIP and DSO, divert managers, lower utilization, damage service, lose customers, weaken EBITDA and increase leverage, a causal path that later occurs.",
+      "locator": "Act II, integration risk section",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0017"
+    },
+    {
+      "type": "metric",
+      "label": "Integration Failure Risk",
+      "id": "metric:integration_failure_risk"
+    },
+    {
+      "type": "period",
+      "label": "FY2025-FY2027",
+      "id": "period:fy2025-fy2027"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone systems migration causal risk pathway",
+      "id": "perimeter:alderstone_systems_migration_causal_risk_pathway"
+    },
+    {
+      "type": "claim",
+      "value": "7.7",
+      "unit": "$m",
+      "epistemic": "asserted",
+      "direction": "supports",
+      "statement": "The seller proposes a normalized working-capital target of $7.7 million.",
+      "locator": "Act II, working-capital problem",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0018"
+    },
+    {
+      "type": "metric",
+      "label": "Net Working Capital Target",
+      "id": "metric:net_working_capital_target"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone seller-proposed normalized working capital target",
+      "id": "perimeter:alderstone_seller-proposed_normalized_working_capital_target"
+    },
+    {
+      "type": "claim",
+      "value": "8.4",
+      "unit": "$m",
+      "epistemic": "attested",
+      "direction": "contradicts",
+      "statement": "The QoE firm concludes an $8.4 million normalized working-capital target is appropriate versus the seller's proposed $7.7 million.",
+      "locator": "Act II, working-capital problem",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0019"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone QoE-normalized working capital target including aged unbilled WIP, billing delays, payroll accruals, deferred-revenue normalization and month-end timing",
+      "id": "perimeter:alderstone_qoe-normalized_working_capital_target_including_aged_unbilled_wip,_billing_delays,_payroll_accruals,_deferred-revenue_normalization_and_month-end_timing"
+    },
+    {
+      "type": "claim",
+      "value": "0.7",
+      "unit": "$m",
+      "epistemic": "derived",
+      "direction": "contradicts",
+      "statement": "The $0.7 million gap between the seller's $7.7 million and the QoE's $8.4 million working-capital target affects closing economics immediately.",
+      "locator": "Act II, working-capital problem",
+      "derivation": "8.4 - 7.7 = 0.7",
+      "deal": "keystone",
+      "id": "claim:0020"
+    },
+    {
+      "type": "metric",
+      "label": "Net Working Capital Adjustment",
+      "id": "metric:net_working_capital_adjustment"
+    },
+    {
+      "type": "perimeter",
+      "label": "Difference between QoE and seller-proposed normalized working capital targets",
+      "id": "perimeter:difference_between_qoe_and_seller-proposed_normalized_working_capital_targets"
+    },
+    {
+      "type": "claim",
+      "value": "",
+      "unit": "",
+      "epistemic": "attested",
+      "direction": "contradicts",
+      "statement": "The buyer concludes that Alderstone's earnings are lower-quality than advertised by the seller.",
+      "locator": "Act I/II summary",
+      "derivation": "Supported by: EBITDA (reported $10.2m vs seller-adjusted $12.7m vs QoE $11.9m vs firm-underwritten $11.4m), Customer Concentration 18.2%, Systems Integration Risk",
+      "deal": "keystone",
+      "id": "claim:0021"
+    },
+    {
+      "type": "metric",
+      "label": "Earnings Quality Risk",
+      "id": "metric:earnings_quality_risk"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone overall earnings quality versus seller presentation",
+      "id": "perimeter:alderstone_overall_earnings_quality_versus_seller_presentation"
+    },
+    {
+      "type": "claim",
+      "value": "108.0",
+      "unit": "$m",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The Investment Committee approves the acquisition of Alderstone at $108.0 million enterprise value.",
+      "locator": "Act III, decision summary",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0022"
+    },
+    {
+      "type": "metric",
+      "label": "Enterprise Value",
+      "id": "metric:enterprise_value"
+    },
+    {
+      "type": "period",
+      "label": "Entry",
+      "id": "period:entry"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone acquisition entry enterprise value",
+      "id": "perimeter:alderstone_acquisition_entry_enterprise_value"
+    },
+    {
+      "type": "source",
+      "label": "IC Memo",
+      "id": "source:ic_memo"
+    },
+    {
+      "type": "author",
+      "label": "Investment Committee",
+      "id": "author:investment_committee"
+    },
+    {
+      "type": "area",
+      "label": "Returns",
+      "id": "area:returns"
+    },
+    {
+      "type": "claim",
+      "value": "62.0",
+      "unit": "$m",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The acquisition is funded with $62.0 million of sponsor equity.",
+      "locator": "Act III, funding structure",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0023"
+    },
+    {
+      "type": "metric",
+      "label": "Sponsor Equity",
+      "id": "metric:sponsor_equity"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone acquisition funding, sponsor equity component",
+      "id": "perimeter:alderstone_acquisition_funding,_sponsor_equity_component"
+    },
+    {
+      "type": "claim",
+      "value": "12.0",
+      "unit": "$m",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The acquisition includes $12.0 million of seller rollover equity.",
+      "locator": "Act III, funding structure",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0024"
+    },
+    {
+      "type": "metric",
+      "label": "Seller Rollover",
+      "id": "metric:seller_rollover"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone acquisition funding, seller rollover equity",
+      "id": "perimeter:alderstone_acquisition_funding,_seller_rollover_equity"
+    },
+    {
+      "type": "claim",
+      "value": "42.8",
+      "unit": "$m",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The acquisition is funded with $42.8 million of first-lien debt.",
+      "locator": "Act III, funding structure",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0025"
+    },
+    {
+      "type": "metric",
+      "label": "First-Lien Debt",
+      "id": "metric:first-lien_debt"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone acquisition funding, first-lien debt tranche",
+      "id": "perimeter:alderstone_acquisition_funding,_first-lien_debt_tranche"
+    },
+    {
+      "type": "claim",
+      "value": "9.5",
+      "unit": "x",
+      "epistemic": "observed",
+      "direction": "context",
+      "statement": "The dissenting IC member notes the entry multiple is 9.5x, insufficient in his view to compensate for an 18.2% customer concentration and incomplete integration.",
+      "locator": "Act III, recorded dissent",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0026"
+    },
+    {
+      "type": "metric",
+      "label": "Entry Multiple",
+      "id": "metric:entry_multiple"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone entry EV/EBITDA multiple on firm-underwritten basis",
+      "id": "perimeter:alderstone_entry_ev/ebitda_multiple_on_firm-underwritten_basis"
+    },
+    {
+      "type": "author",
+      "label": "Dissenting IC member",
+      "id": "author:dissenting_ic_member"
+    },
+    {
+      "type": "claim",
+      "value": "2.00",
+      "unit": "x",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The standalone base case underwrites a 2.00x MOIC based on operations and deleveraging with a 9.0x exit multiple.",
+      "locator": "Act III, case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0027"
+    },
+    {
+      "type": "metric",
+      "label": "MOIC",
+      "id": "metric:moic"
+    },
+    {
+      "type": "period",
+      "label": "Hold period",
+      "id": "period:hold_period"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone standalone base case, operations and deleveraging, 9.0x exit",
+      "id": "perimeter:alderstone_standalone_base_case,_operations_and_deleveraging,_9.0x_exit"
+    },
+    {
+      "type": "claim",
+      "value": "14.8",
+      "unit": "%",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The standalone base case underwrites a 14.8% IRR.",
+      "locator": "Act III, case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0028"
+    },
+    {
+      "type": "metric",
+      "label": "IRR",
+      "id": "metric:irr"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone standalone base case",
+      "id": "perimeter:alderstone_standalone_base_case"
+    },
+    {
+      "type": "claim",
+      "value": "1.28",
+      "unit": "x",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The standalone downside case models 1.28x MOIC under lower growth, margin and cash conversion assumptions.",
+      "locator": "Act III, case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0029"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone standalone downside case, lower growth, margin and cash conversion",
+      "id": "perimeter:alderstone_standalone_downside_case,_lower_growth,_margin_and_cash_conversion"
+    },
+    {
+      "type": "claim",
+      "value": "5.1",
+      "unit": "%",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The standalone downside case models a 5.1% IRR.",
+      "locator": "Act III, case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0030"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone standalone downside case",
+      "id": "perimeter:alderstone_standalone_downside_case"
+    },
+    {
+      "type": "claim",
+      "value": "2.43",
+      "unit": "x",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The standalone upside case models 2.43x MOIC with stronger operations and cash generation.",
+      "locator": "Act III, case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0031"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone standalone upside case, stronger operations and cash generation",
+      "id": "perimeter:alderstone_standalone_upside_case,_stronger_operations_and_cash_generation"
+    },
+    {
+      "type": "claim",
+      "value": "19.5",
+      "unit": "%",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The standalone upside case models a 19.5% IRR.",
+      "locator": "Act III, case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0032"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone standalone upside case",
+      "id": "perimeter:alderstone_standalone_upside_case"
+    },
+    {
+      "type": "claim",
+      "value": "2.08",
+      "unit": "x",
+      "epistemic": "attested",
+      "direction": "supports",
+      "statement": "The acquisition base case underwrites 2.08x MOIC including Sentinel plus a second funded add-on.",
+      "locator": "Act III, case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0033"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone acquisition base case including Sentinel and a second funded add-on",
+      "id": "perimeter:alderstone_acquisition_base_case_including_sentinel_and_a_second_funded_add-on"
+    },
+    {
+      "type": "claim",
+      "value": "16.0",
+      "unit": "%",
+      "epistemic": "attested",
+      "direction": "supports",
+      "statement": "The acquisition base case underwrites a 16.0% IRR.",
+      "locator": "Act III, case table",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0034"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone acquisition base case",
+      "id": "perimeter:alderstone_acquisition_base_case"
+    },
+    {
+      "type": "claim",
+      "value": "13",
+      "unit": "count",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The IC approves the transaction subject to thirteen explicit conditions including EBITDA basis, NWC target, integration plan, liquidity reserve and reporting requirements.",
+      "locator": "Act III, IC conditions",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0035"
+    },
+    {
+      "type": "metric",
+      "label": "IC Conditions",
+      "id": "metric:ic_conditions"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone acquisition approval conditions",
+      "id": "perimeter:alderstone_acquisition_approval_conditions"
+    },
+    {
+      "type": "claim",
+      "value": "4-1",
+      "unit": "",
+      "epistemic": "observed",
+      "direction": "context",
+      "statement": "The IC approves the transaction 4-1, with one member dissenting on the basis that concentration, integration and multiple risks were not sufficiently compensated.",
+      "locator": "Act III, vote and conclusion",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0036"
+    },
+    {
+      "type": "metric",
+      "label": "IC Vote",
+      "id": "metric:ic_vote"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone acquisition IC vote outcome",
+      "id": "perimeter:alderstone_acquisition_ic_vote_outcome"
+    },
+    {
+      "type": "claim",
+      "value": "",
+      "unit": "",
+      "epistemic": "attested",
+      "direction": "context",
+      "statement": "The IC accepts customer concentration and integration risk as real and unresolved while nevertheless approving the deal under conditions, reflecting a contested-but-accepted institutional position.",
+      "locator": "Act III, institutional meaning callout",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0037"
+    },
+    {
+      "type": "metric",
+      "label": "Decision Coherence",
+      "id": "metric:decision_coherence"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone IC decision epistemic vs decision state",
+      "id": "perimeter:alderstone_ic_decision_epistemic_vs_decision_state"
+    },
+    {
+      "type": "claim",
+      "value": "",
+      "unit": "",
+      "epistemic": "observed",
+      "direction": "context",
+      "statement": "After closing, Alderstone acquires Sentinel, adding revenue and EBITDA but also more customer records, systems and project codes to an already difficult integration program.",
+      "locator": "Act IV, Sentinel acquisition",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0038"
+    },
+    {
+      "type": "metric",
+      "label": "Acquisition Integration",
+      "id": "metric:acquisition_integration"
+    },
+    {
+      "type": "period",
+      "label": "Post-close",
+      "id": "period:post-close"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone acquisition of Sentinel post-close",
+      "id": "perimeter:alderstone_acquisition_of_sentinel_post-close"
+    },
+    {
+      "type": "source",
+      "label": "Board Pack",
+      "id": "source:board_pack"
+    },
+    {
+      "type": "claim",
+      "value": "yellow",
+      "unit": "",
+      "epistemic": "observed",
+      "direction": "context",
+      "statement": "By December 2026, Project Unify is rated yellow ahead of go-live.",
+      "locator": "Act IV, Dec 2026 board pack",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0039"
+    },
+    {
+      "type": "metric",
+      "label": "Project Unify Status",
+      "id": "metric:project_unify_status"
+    },
+    {
+      "type": "period",
+      "label": "Dec 2026",
+      "id": "period:dec_2026"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone systems integration program (Project Unify) readiness rating",
+      "id": "perimeter:alderstone_systems_integration_program_(project_unify)_readiness_rating"
+    },
+    {
+      "type": "author",
+      "label": "Monitoring/Board",
+      "id": "author:monitoring/board"
+    },
+    {
+      "type": "claim",
+      "value": "17",
+      "unit": "count",
+      "epistemic": "observed",
+      "direction": "context",
+      "statement": "Seventeen high-severity defects remain in Project Unify as of December 2026.",
+      "locator": "Act IV, Dec 2026 board pack",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0040"
+    },
+    {
+      "type": "metric",
+      "label": "High-Severity Defects",
+      "id": "metric:high-severity_defects"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone Project Unify pre-cutover defect count",
+      "id": "perimeter:alderstone_project_unify_pre-cutover_defect_count"
+    },
+    {
+      "type": "claim",
+      "value": "11",
+      "unit": "%",
+      "epistemic": "observed",
+      "direction": "context",
+      "statement": "11% of customer records require manual review ahead of the systems cutover.",
+      "locator": "Act IV, Dec 2026 board pack",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0041"
+    },
+    {
+      "type": "metric",
+      "label": "Manual Review Rate",
+      "id": "metric:manual_review_rate"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone customer records requiring manual review pre-cutover",
+      "id": "perimeter:alderstone_customer_records_requiring_manual_review_pre-cutover"
+    },
+    {
+      "type": "claim",
+      "value": "5.1",
+      "unit": "$m",
+      "epistemic": "observed",
+      "direction": "context",
+      "statement": "Unbilled WIP had risen from $5.1 million to $6.4 million by December 2026.",
+      "locator": "Act IV, Dec 2026 board pack",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0042"
+    },
+    {
+      "type": "metric",
+      "label": "WIP",
+      "id": "metric:wip"
+    },
+    {
+      "type": "period",
+      "label": "prior to Dec 2026",
+      "id": "period:prior_to_dec_2026"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone unbilled WIP prior to rise",
+      "id": "perimeter:alderstone_unbilled_wip_prior_to_rise"
+    },
+    {
+      "type": "claim",
+      "value": "6.4",
+      "unit": "$m",
+      "epistemic": "observed",
+      "direction": "contradicts",
+      "statement": "Unbilled WIP reached $6.4 million by December 2026, up from $5.1 million.",
+      "locator": "Act IV, Dec 2026 board pack",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0043"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone unbilled WIP",
+      "id": "perimeter:alderstone_unbilled_wip"
+    },
+    {
+      "type": "claim",
+      "value": "58",
+      "unit": "days",
+      "epistemic": "observed",
+      "direction": "context",
+      "statement": "DSO had risen from 58 to 68 days by December 2026.",
+      "locator": "Act IV, Dec 2026 board pack",
+      "derivation": null,
+      "deal": "keystone",
+      "id": "claim:0044"
+    },
+    {
+      "type": "metric",
+      "label": "DSO",
+      "id": "metric:dso"
+    },
+    {
+      "type": "perimeter",
+      "label": "Alderstone days sales outstanding prior level",
+      "id": "perimeter:alderstone_days_sales_outstanding_prior_level"
+    }
+  ],
+  "edges": [
+    {
+      "rel": "ABOUT",
+      "source": "claim:0000",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0000",
+      "target": "metric:revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0000",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0000",
+      "target": "perimeter:alderstone_consolidated_revenue,_management_forecast_basis"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0000",
+      "target": "source:cim"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0000",
+      "target": "author:seller/management"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0000",
+      "target": "claim:0005"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0001",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0001",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0001",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0001",
+      "target": "perimeter:alderstone_seller-adjusted_ebitda_including_$2.5m_of_seller_adjustments"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0001",
+      "target": "source:cim"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0001",
+      "target": "author:seller/management"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0001",
+      "target": "claim:0002"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0001",
+      "target": "claim:0009"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0001",
+      "target": "claim:0010"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0001",
+      "target": "claim:0011"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0001",
+      "target": "claim:0012"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0001",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0002",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0002",
+      "target": "metric:ebitda_margin"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0002",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0002",
+      "target": "perimeter:alderstone_seller-defined_ebitda_basis"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0002",
+      "target": "source:cim"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0002",
+      "target": "author:seller/management"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0002",
+      "target": "claim:0009"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0002",
+      "target": "claim:0010"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0002",
+      "target": "claim:0011"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0002",
+      "target": "claim:0012"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0003",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0003",
+      "target": "metric:customer_concentration"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0003",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0003",
+      "target": "perimeter:largest_customer_measured_at_billing-account_level,_not_ultimate_parent"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0003",
+      "target": "source:cim"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0003",
+      "target": "author:seller/management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0003",
+      "target": "area:customer"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0003",
+      "target": "claim:0004"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0003",
+      "target": "claim:0014"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0003",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0004",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0004",
+      "target": "metric:customer_concentration"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0004",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0004",
+      "target": "perimeter:riverton_industrial_group_aggregated_across_seven_billing_accounts_and_six_facilities_on_ultimate-parent_basis"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0004",
+      "target": "source:data_room_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0004",
+      "target": "author:buyer/panta"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0004",
+      "target": "area:customer"
+    },
+    {
+      "rel": "DERIVES_FROM",
+      "source": "claim:0004",
+      "target": "claim:0000"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0004",
+      "target": "claim:0014"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0004",
+      "target": "claim:0015"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0005",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0005",
+      "target": "metric:recurring_revenue"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0005",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0005",
+      "target": "perimeter:alderstone_scheduled_or_repeat_activity,_including_repeat_projects_as_well_as_scheduled_programs"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0005",
+      "target": "source:cim"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0005",
+      "target": "author:seller/management"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0006",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0006",
+      "target": "metric:systems_integration"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0006",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0006",
+      "target": "perimeter:alderstone_platform_across_four_acquired_companies"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0006",
+      "target": "source:cim"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0006",
+      "target": "author:seller/management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0006",
+      "target": "area:operations"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0006",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0007",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0007",
+      "target": "metric:active_billing_accounts"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0007",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0007",
+      "target": "perimeter:alderstone_total_active_billing_accounts"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0007",
+      "target": "source:cim"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0007",
+      "target": "author:seller/management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0007",
+      "target": "area:market"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0008",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0008",
+      "target": "metric:acquisition_count"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0008",
+      "target": "period:since_2020"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0008",
+      "target": "perimeter:alderstone_acquisitions_completed_since_2020"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0008",
+      "target": "source:cim"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0008",
+      "target": "author:seller/management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0008",
+      "target": "area:operations"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0008",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0008",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0009",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0009",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0009",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0009",
+      "target": "perimeter:alderstone_reported/historical_accounting_ebitda,_unadjusted"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0009",
+      "target": "source:data_room_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0009",
+      "target": "author:buyer/panta"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0009",
+      "target": "area:earnings"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0009",
+      "target": "claim:0010"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0009",
+      "target": "claim:0011"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0009",
+      "target": "claim:0012"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0009",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0009",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0009",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0009",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0010",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0010",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0010",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0010",
+      "target": "perimeter:alderstone_qoe-normalized_ebitda,_independent_historical_earnings_view"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0010",
+      "target": "source:qoe_report"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0010",
+      "target": "author:qoe_firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0010",
+      "target": "area:earnings"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0010",
+      "target": "claim:0011"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0010",
+      "target": "claim:0012"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0010",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0010",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0010",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0010",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0011",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0011",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0011",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0011",
+      "target": "perimeter:alderstone_firm-underwritten_ebitda_used_for_valuation_and_leverage_basis"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0011",
+      "target": "source:firm_model_summary"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0011",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0011",
+      "target": "area:earnings"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0011",
+      "target": "claim:0012"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0011",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0011",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0011",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0011",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0012",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0012",
+      "target": "metric:ebitda"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0012",
+      "target": "period:entry_/_later_lender-defined"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0012",
+      "target": "perimeter:alderstone_covenant_ebitda_at_entry,_lender-defined_contractual_credit_calculation"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0012",
+      "target": "source:firm_model_summary"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0012",
+      "target": "author:lender"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0012",
+      "target": "area:structure"
+    },
+    {
+      "rel": "TRACKS",
+      "source": "claim:0012",
+      "target": "claim:0013"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0013",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0013",
+      "target": "metric:ebitda_add-back"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0013",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0013",
+      "target": "perimeter:alderstone_pricing_and_utilization_initiative_add-backs,_not_yet_achieved"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0013",
+      "target": "source:qoe_report"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0013",
+      "target": "author:qoe_firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0013",
+      "target": "area:earnings"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0013",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0013",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0013",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0014",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0014",
+      "target": "metric:customer_contract_terms"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0014",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0014",
+      "target": "perimeter:riverton_industrial_group_relationship_terms"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0014",
+      "target": "source:data_room_extract"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0014",
+      "target": "author:buyer/panta"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0014",
+      "target": "area:customer"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0015",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0015",
+      "target": "metric:concentration_risk_position"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0015",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0015",
+      "target": "perimeter:alderstone_base_case_treatment_of_riverton_concentration_risk"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0015",
+      "target": "source:firm_initial_assessment"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0015",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0015",
+      "target": "area:customer"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0016",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0016",
+      "target": "metric:systems_integration_risk"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0016",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0016",
+      "target": "perimeter:alderstone_four_acquired_businesses'_billing,_project_code,_customer_master,_time-entry,_wip_and_ar_systems"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0016",
+      "target": "source:firm_initial_assessment"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0016",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0016",
+      "target": "area:earnings"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0017",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0017",
+      "target": "metric:integration_failure_risk"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0017",
+      "target": "period:fy2025-fy2027"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0017",
+      "target": "perimeter:alderstone_systems_migration_causal_risk_pathway"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0017",
+      "target": "source:firm_initial_assessment"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0017",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0017",
+      "target": "area:earnings"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0018",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0018",
+      "target": "metric:net_working_capital_target"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0018",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0018",
+      "target": "perimeter:alderstone_seller-proposed_normalized_working_capital_target"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0018",
+      "target": "source:cim"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0018",
+      "target": "author:seller/management"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0018",
+      "target": "area:structure"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0018",
+      "target": "claim:0019"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0019",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0019",
+      "target": "metric:net_working_capital_target"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0019",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0019",
+      "target": "perimeter:alderstone_qoe-normalized_working_capital_target_including_aged_unbilled_wip,_billing_delays,_payroll_accruals,_deferred-revenue_normalization_and_month-end_timing"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0019",
+      "target": "source:qoe_report"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0019",
+      "target": "author:qoe_firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0019",
+      "target": "area:earnings"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0019",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0019",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0019",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0020",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0020",
+      "target": "metric:net_working_capital_adjustment"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0020",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0020",
+      "target": "perimeter:difference_between_qoe_and_seller-proposed_normalized_working_capital_targets"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0020",
+      "target": "source:qoe_report"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0020",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0020",
+      "target": "area:earnings"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0020",
+      "target": "claim:0016"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0020",
+      "target": "claim:0017"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0020",
+      "target": "claim:0021"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0021",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0021",
+      "target": "metric:earnings_quality_risk"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0021",
+      "target": "period:fy2025"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0021",
+      "target": "perimeter:alderstone_overall_earnings_quality_versus_seller_presentation"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0021",
+      "target": "source:firm_initial_assessment"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0021",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0021",
+      "target": "area:earnings"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0022",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0022",
+      "target": "metric:enterprise_value"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0022",
+      "target": "period:entry"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0022",
+      "target": "perimeter:alderstone_acquisition_entry_enterprise_value"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0022",
+      "target": "source:ic_memo"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0022",
+      "target": "author:investment_committee"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0022",
+      "target": "area:returns"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0023",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0023",
+      "target": "metric:sponsor_equity"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0023",
+      "target": "period:entry"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0023",
+      "target": "perimeter:alderstone_acquisition_funding,_sponsor_equity_component"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0023",
+      "target": "source:ic_memo"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0023",
+      "target": "author:investment_committee"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0023",
+      "target": "area:structure"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0024",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0024",
+      "target": "metric:seller_rollover"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0024",
+      "target": "period:entry"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0024",
+      "target": "perimeter:alderstone_acquisition_funding,_seller_rollover_equity"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0024",
+      "target": "source:ic_memo"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0024",
+      "target": "author:investment_committee"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0024",
+      "target": "area:structure"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0025",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0025",
+      "target": "metric:first-lien_debt"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0025",
+      "target": "period:entry"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0025",
+      "target": "perimeter:alderstone_acquisition_funding,_first-lien_debt_tranche"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0025",
+      "target": "source:ic_memo"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0025",
+      "target": "author:investment_committee"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0025",
+      "target": "area:structure"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0026",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0026",
+      "target": "metric:entry_multiple"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0026",
+      "target": "period:entry"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0026",
+      "target": "perimeter:alderstone_entry_ev/ebitda_multiple_on_firm-underwritten_basis"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0026",
+      "target": "source:ic_memo"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0026",
+      "target": "author:dissenting_ic_member"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0026",
+      "target": "area:returns"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0027",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0027",
+      "target": "metric:moic"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0027",
+      "target": "period:hold_period"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0027",
+      "target": "perimeter:alderstone_standalone_base_case,_operations_and_deleveraging,_9.0x_exit"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0027",
+      "target": "source:firm_model_summary"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0027",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0027",
+      "target": "area:returns"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0027",
+      "target": "claim:0029"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0027",
+      "target": "claim:0031"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0027",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0028",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0028",
+      "target": "metric:irr"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0028",
+      "target": "period:hold_period"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0028",
+      "target": "perimeter:alderstone_standalone_base_case"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0028",
+      "target": "source:firm_model_summary"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0028",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0028",
+      "target": "area:returns"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0029",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0029",
+      "target": "metric:moic"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0029",
+      "target": "period:hold_period"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0029",
+      "target": "perimeter:alderstone_standalone_downside_case,_lower_growth,_margin_and_cash_conversion"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0029",
+      "target": "source:firm_model_summary"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0029",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0029",
+      "target": "area:returns"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0029",
+      "target": "claim:0031"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0029",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0030",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0030",
+      "target": "metric:irr"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0030",
+      "target": "period:hold_period"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0030",
+      "target": "perimeter:alderstone_standalone_downside_case"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0030",
+      "target": "source:firm_model_summary"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0030",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0030",
+      "target": "area:returns"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0031",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0031",
+      "target": "metric:moic"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0031",
+      "target": "period:hold_period"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0031",
+      "target": "perimeter:alderstone_standalone_upside_case,_stronger_operations_and_cash_generation"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0031",
+      "target": "source:firm_model_summary"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0031",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0031",
+      "target": "area:returns"
+    },
+    {
+      "rel": "REFINES",
+      "source": "claim:0031",
+      "target": "claim:0033"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0032",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0032",
+      "target": "metric:irr"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0032",
+      "target": "period:hold_period"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0032",
+      "target": "perimeter:alderstone_standalone_upside_case"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0032",
+      "target": "source:firm_model_summary"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0032",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0032",
+      "target": "area:returns"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0033",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0033",
+      "target": "metric:moic"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0033",
+      "target": "period:hold_period"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0033",
+      "target": "perimeter:alderstone_acquisition_base_case_including_sentinel_and_a_second_funded_add-on"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0033",
+      "target": "source:firm_model_summary"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0033",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0033",
+      "target": "area:returns"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0034",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0034",
+      "target": "metric:irr"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0034",
+      "target": "period:hold_period"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0034",
+      "target": "perimeter:alderstone_acquisition_base_case"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0034",
+      "target": "source:firm_model_summary"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0034",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0034",
+      "target": "area:returns"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0035",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0035",
+      "target": "metric:ic_conditions"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0035",
+      "target": "period:entry"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0035",
+      "target": "perimeter:alderstone_acquisition_approval_conditions"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0035",
+      "target": "source:ic_memo"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0035",
+      "target": "author:investment_committee"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0036",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0036",
+      "target": "metric:ic_vote"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0036",
+      "target": "period:entry"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0036",
+      "target": "perimeter:alderstone_acquisition_ic_vote_outcome"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0036",
+      "target": "source:ic_memo"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0036",
+      "target": "author:investment_committee"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0037",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0037",
+      "target": "metric:decision_coherence"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0037",
+      "target": "period:entry"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0037",
+      "target": "perimeter:alderstone_ic_decision_epistemic_vs_decision_state"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0037",
+      "target": "source:ic_memo"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0037",
+      "target": "author:investment_committee"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0038",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0038",
+      "target": "metric:acquisition_integration"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0038",
+      "target": "period:post-close"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0038",
+      "target": "perimeter:alderstone_acquisition_of_sentinel_post-close"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0038",
+      "target": "source:board_pack"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0038",
+      "target": "author:panta/firm"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0038",
+      "target": "area:operations"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0039",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0039",
+      "target": "metric:project_unify_status"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0039",
+      "target": "period:dec_2026"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0039",
+      "target": "perimeter:alderstone_systems_integration_program_(project_unify)_readiness_rating"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0039",
+      "target": "source:board_pack"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0039",
+      "target": "author:monitoring/board"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0039",
+      "target": "area:operations"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0039",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0039",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0040",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0040",
+      "target": "metric:high-severity_defects"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0040",
+      "target": "period:dec_2026"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0040",
+      "target": "perimeter:alderstone_project_unify_pre-cutover_defect_count"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0040",
+      "target": "source:board_pack"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0040",
+      "target": "author:monitoring/board"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0040",
+      "target": "area:operations"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0040",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0040",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0041",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0041",
+      "target": "metric:manual_review_rate"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0041",
+      "target": "period:dec_2026"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0041",
+      "target": "perimeter:alderstone_customer_records_requiring_manual_review_pre-cutover"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0041",
+      "target": "source:board_pack"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0041",
+      "target": "author:monitoring/board"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0041",
+      "target": "area:operations"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0041",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0041",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0042",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0042",
+      "target": "metric:wip"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0042",
+      "target": "period:prior_to_dec_2026"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0042",
+      "target": "perimeter:alderstone_unbilled_wip_prior_to_rise"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0042",
+      "target": "source:board_pack"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0042",
+      "target": "author:monitoring/board"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0042",
+      "target": "area:operations"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0042",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0042",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0043",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0043",
+      "target": "metric:wip"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0043",
+      "target": "period:dec_2026"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0043",
+      "target": "perimeter:alderstone_unbilled_wip"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0043",
+      "target": "source:board_pack"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0043",
+      "target": "author:monitoring/board"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0043",
+      "target": "area:operations"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0043",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0043",
+      "target": "claim:0038"
+    },
+    {
+      "rel": "ABOUT",
+      "source": "claim:0044",
+      "target": "entity:alderstone"
+    },
+    {
+      "rel": "MEASURES",
+      "source": "claim:0044",
+      "target": "metric:dso"
+    },
+    {
+      "rel": "IN_PERIOD",
+      "source": "claim:0044",
+      "target": "period:prior_to_dec_2026"
+    },
+    {
+      "rel": "SCOPED_TO",
+      "source": "claim:0044",
+      "target": "perimeter:alderstone_days_sales_outstanding_prior_level"
+    },
+    {
+      "rel": "FROM_SOURCE",
+      "source": "claim:0044",
+      "target": "source:board_pack"
+    },
+    {
+      "rel": "BY_AUTHOR",
+      "source": "claim:0044",
+      "target": "author:monitoring/board"
+    },
+    {
+      "rel": "IN_AREA",
+      "source": "claim:0044",
+      "target": "area:operations"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0044",
+      "target": "claim:0006"
+    },
+    {
+      "rel": "SUPPORTS",
+      "source": "claim:0044",
+      "target": "claim:0038"
+    }
+  ]
+}

@@ -543,5 +543,30 @@
     }
   ],
   "coverage_limits": [],
-  "validation_errors": []
+  "validation_errors": [],
+  "deal_profile": {
+    "deal": "keystone",
+    "profile_loaded": true,
+    "entity": "Alderstone",
+    "positions_mapped": 27,
+    "model_nodes_mapped": 18,
+    "unmapped_warnings": [],
+    "status": "OK"
+  },
+  "grounding": {
+    "deal": "keystone",
+    "claims_file": "pipeline_out/e3/K-PRE/e3_claims.json",
+    "profile_loaded": true,
+    "claims_total": 254,
+    "claims_flagged": 212,
+    "claims_clean": 42,
+    "findings_total": 243,
+    "blocking_total": 32,
+    "by_code": {
+      "PERIMETER_MISSING": 135,
+      "VALUE_NOT_IN_SOURCE": 12,
+      "PERIMETER_IS_COUNTERPARTY": 20,
+      "PERIMETER_OFF_VOCABULARY": 76
+    }
+  }
 }

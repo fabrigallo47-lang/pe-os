@@ -1,0 +1,19 @@
+{
+  "manifest_id": "K-IC",
+  "deal": "keystone",
+  "sources": [
+    "SRC-CIM",
+    "SRC-DR",
+    "SRC-IA",
+    "SRC-QL",
+    "SRC-QOE",
+    "SRC-MODEL-SUM",
+    "SRC-MODEL",
+    "SRC-MODEL",
+    "SRC-MODEL",
+    "SRC-MODEL",
+    "SRC-IC"
+  ],
+  "admitted_count": 296,
+  "e3_claims_sha256": "5ebd9e01b4a095861c6c5e5d23f0aa875f47c7f4c89c6ad92de3e49e2afaa8e5"
+}

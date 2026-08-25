@@ -1,0 +1,3114 @@
+{
+  "manifest_id": "K-IC",
+  "deal": "keystone",
+  "total_claims": 296,
+  "bound_claims": 296,
+  "unbound_claims": 0,
+  "questions_covered": 18,
+  "questions_total": 20,
+  "coverage_recall": 0.9,
+  "bindings": [
+    {
+      "claim_id": "ks-5747898178af",
+      "statement": "The Company serves more than 600 active billing accounts.",
+      "metric": "Active Billing Accounts",
+      "source_id": "SRC-CIM",
+      "question_ids": [
+        "Q-01"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-51e6652813a4",
+      "statement": "The ten largest billing accounts have an average tenure of approximately eight years.",
+      "metric": "Customer Retention",
+      "source_id": "SRC-CIM",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ce8465a6de8d",
+      "statement": "Alderstone has completed four acquisitions since 2020.",
+      "metric": "Acquisition Count",
+      "source_id": "SRC-CIM",
+      "question_ids": [
+        "Q-12",
+        "Q-13"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d818cee35834",
+      "statement": "Customer relationships are generally governed by master agreements and site-level statements of work without guaranteed minimum volumes.",
+      "metric": "Customer Contract Terms",
+      "source_id": "SRC-CIM",
+      "question_ids": [
+        "Q-03",
+        "Q-05"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-921ca527a445",
+      "statement": "Acquired branches continue to operate on partially different systems and processes.",
+      "metric": "Systems Integration Risk",
+      "source_id": "SRC-CIM",
+      "question_ids": [
+        "Q-11",
+        "Q-12"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-398a1e8195db",
+      "statement": "The Company depends on qualified technical personnel and local customer relationships.",
+      "metric": "Key Person Risk",
+      "source_id": "SRC-CIM",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-0692e9fa1408",
+      "statement": "Integration and systems initiatives may require additional time and expenditure.",
+      "metric": "Integration Risk",
+      "source_id": "SRC-CIM",
+      "question_ids": [
+        "Q-11",
+        "Q-12"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-29eee64b6d85",
+      "statement": "Alderstone revenue for FY2025A was $74 million.",
+      "metric": "Revenue",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-c3e5eb5f5743",
+      "statement": "Reported EBITDA was $10.2m in FY2025A.",
+      "metric": "EBITDA",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-e45705ebd5c9",
+      "statement": "Total gross debt (bank debt plus finance leases) was $9.4m in FY2025A, comprising bank debt of $9.0m and finance leases of $0.4m.",
+      "metric": "Gross Debt",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d2e4ee092528",
+      "statement": "Total gross debt (bank debt plus finance leases) was $10.0m in FY2026E, comprising bank debt of $9.5m and finance leases of $0.5m.",
+      "metric": "Gross Debt",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d1a1dfe74ea3",
+      "statement": "Total gross debt (bank debt plus finance leases) was $10.65m in FY2027E, comprising bank debt of $10.1m and finance leases of $0.55m.",
+      "metric": "Gross Debt",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-c092417bc648",
+      "statement": "Revenue in the opening month (2025-11-01) was $4.26 million.",
+      "metric": "Revenue",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-220e53034a68",
+      "statement": "Gross profit in the opening month (2025-11-01) was $1.455 million.",
+      "metric": "Gross Profit",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f5739ba41c7d",
+      "statement": "Gross margin for the opening period (2025-11-01) was 34.15%, consistent with the stated gross margin percentage of 0.3415.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-dcd644286f83",
+      "statement": "Riverton Corporate EHS (RIV-CORP) represents 2.58% of customer revenue concentration.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-c124c512b7a5",
+      "statement": "BioHealth Laboratories (BIO-01) represents 2.30% of customer revenue concentration.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-039df391bbf0",
+      "statement": "Apex Manufacturing - Main (APX-01) represents 2.16% of customer revenue concentration.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d64d065cb51e",
+      "statement": "Six customers in the customer ledger have recurring or repeat revenue contracts, supporting revenue stability.",
+      "metric": "Recurring Revenue",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-9cde3f43dace",
+      "statement": "RIV-MIL (Riverton Metals - Milltown) represents 1.76% of customer concentration within the Riverton Industrial Group portfolio.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d4f96675fb9a",
+      "statement": "RIV-CHEM (Riverton Chemicals - East) represents 1.62% of customer concentration within the Riverton Industrial Group portfolio.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3b530c8dda6d",
+      "statement": "Riverton Advanced Materials - Decatur (Ultimate Parent: Riverton Industrial Group) generated $5.624m in 2025 revenue from EHS Compliance services in industrial manufacturing (Midwest).",
+      "metric": "Revenue",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-319c4f70dcba",
+      "statement": "Riverton Advanced Materials - Decatur represents 7.6% of total 2025 revenue.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-aad4e4e269e2",
+      "statement": "Riverton Advanced Materials - Decatur contract (commenced 2017-02-01) requires 60 days termination notice and triggers notice (not consent) on change of control.",
+      "metric": "Customer Contract Terms",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-03",
+        "Q-05",
+        "Q-15"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-2844f70a0475",
+      "statement": "Riverton Advanced Materials - Decatur has maintained a 9-year relationship tenure since contract start in February 2017.",
+      "metric": "Customer Retention",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-27717e9d0da6",
+      "statement": "Oak Ridge Manufacturing 2 (Account 23) represents a concentration metric of 0.9865 in the customer ledger.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-b7e752b7f0e0",
+      "statement": "Summit Water 2 (Account 24) represents a concentration metric of 0.9745 in the customer ledger.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d4f8e44161f7",
+      "statement": "Keystone Health 2 (Account 25) represents a concentration metric of 0.9625 in the customer ledger.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-773bde509472",
+      "statement": "Lakefront Infrastructure 2 (Account 26) represents a concentration metric of 0.9505 in the customer ledger.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4564dcf5605f",
+      "statement": "Project RIV-DEC-P1 (Riverton Industrial Group, EHS Compliance) generated 2025 revenue of $1.62 million.",
+      "metric": "Revenue",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-15547d9d4829",
+      "statement": "Project RIV-DEC-P1 (Riverton Industrial Group, EHS Compliance) achieved 2025 gross margin of 30.7%.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-936c9c80101f",
+      "statement": "Project RIV-DEC-P2 (Riverton Industrial Group, EHS Compliance) generated 2025 revenue of $0.75 million.",
+      "metric": "Revenue",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-6073b27d9c40",
+      "statement": "Project RIV-DEC-P3 (Riverton Industrial Group, EHS Compliance) generated 2025 revenue of $3.25 million.",
+      "metric": "Revenue",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-b7556b5912ef",
+      "statement": "Largest customer concentration is 0.182 (18.2%) at ultimate-parent view, measured from billing account data.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-af4c7a30bb3d",
+      "statement": "Top five customers concentration is 0.365 (36.5%) at ultimate-parent view, measured from billing account data.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-91b8238fc38d",
+      "statement": "Top ten customers concentration is 0.505 (50.5%) at ultimate-parent view, measured from billing account data.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3175793dc0bd",
+      "statement": "Total revenue in FY2025A is $74 million, as confirmed in Concentration Summary check.",
+      "metric": "Revenue",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f2130217b6d9",
+      "statement": "Customer contract portfolio includes recurring revenue contracts with MedCore Health (Industrial Hygiene), Riverton Industrial Group (EHS Compliance), and BioHealth Laboratories (Industrial Hygiene), with contract terms ranging from 2024-2026 and payment terms of 30-60 days.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-66df89916b1c",
+      "statement": "Portfolio of recurring revenue contracts documented in project ledger includes Industrial Hygiene and EHS Compliance service lines across multiple customer accounts with contract values ranging from approximately $0.13m to $1.41m.",
+      "metric": "Recurring Revenue",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-0cec1f105615",
+      "statement": "Riverton Industrial Group operates multiple service lines (RIV-CHEM, RIV-LOG, RIV-WST) across multiple contracts with repeat and project-based engagement types, as documented in project ledger data room records.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02",
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-567b17c86ee6",
+      "statement": "Riverton Industrial Group contracts carry payment terms of 30-60 days, as documented across all contract records (RIV-CHEM-P1, RIV-CHEM-P2, RIV-LOG-P1, RIV-LOG-P2, RIV-WST-P1) in the project ledger.",
+      "metric": "Contract Terms",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-03",
+        "Q-05"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-bc5a6074946f",
+      "statement": "Employee roster as of December 31, 2025 shows at least 2 active billable employees (E0001, E0002) with recorded utilization rates of 62% and unspecified for E0002.",
+      "metric": "Headcount",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-fdcd21774719",
+      "statement": "Employee E0001 (Technical, Industrial Hygiene) was hired 2016-02-01, representing 9+ years tenure as of December 31, 2025.",
+      "metric": "Team Tenure",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-fef2b788bf14",
+      "statement": "Customer contracts SM-034-P1 (Cobalt Industries 2, Industrial Hygiene) and SM-035-P1 (Meridian Transit 2, Field Inspection) both have payment terms of 30-60 days per project ledger.",
+      "metric": "Contract Terms",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-03",
+        "Q-05"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a6f78dbbb3a6",
+      "statement": "HRIS extract (KS-DL-1.2) shows 7 active employees in data room snapshot covering regional staff with tenure from 2016 to 2022.",
+      "metric": "Headcount",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ce72850b47a9",
+      "statement": "HRIS records show employees hired over span from December 2016 (E0023, Knoxville) through June 2022 (E0029, Chicago), indicating team formation across multiple acquisition cycles.",
+      "metric": "Team Tenure",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-c5fefc574725",
+      "statement": "Data room HRIS extract shows 8 employee records across multiple geographies and functions (Detroit, Louisville, Nashville, Raleigh, Charlotte, Cincinnati, Columbus) with tenures ranging from 2015 to 2025.",
+      "metric": "Headcount",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3a165042d981",
+      "statement": "Keystone headcount across E0016\u2013E0022 staff records spans 7 employees across multiple regions and functions (Detroit, Louisville, Nashville, Raleigh, Charlotte, Cincinnati, Columbus) with hire dates ranging from 2015-11-01 to 2025-10-01.",
+      "metric": "Headcount",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-59444f67534d",
+      "statement": "Keystone staff exhibit mixed tenure: one employee (E0022, Columbus, Technical/Field Inspection) hired 2015-11-01 (\u224810 years); most others hired 2020\u20132025; two technical staff (E0020 Charlotte, E0021 Cincinnati) show high engagement metrics (0.75\u20130.82 utilization, 0.71\u20130.78 quality) and recent hire dates (2024\u20132025).",
+      "metric": "Team Tenure",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-11f984720c44",
+      "statement": "Keystone technical staff (E0020, E0021, E0022) show high engagement and quality metrics (utilization 0.05\u20130.59, quality 0.55\u20130.82) and are concentrated in high-value functions (EHS Compliance, Industrial Hygiene, Field Inspection); E0022 (Columbus) represents long tenure (10 years) in technical function, indicating potential key person dependency.",
+      "metric": "Key Person Risk",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-79322ae8be9f",
+      "statement": "HRIS extract KS-DL-1.2 lists 7 active employees across IT, Technical, Project Management, and Corporate functions in Midwest and Southeast regions as of 2025-11-15.",
+      "metric": "Headcount",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-22747c40c083",
+      "statement": "Mean tenure across 7 active employees is approximately 9.92 years, with tenures ranging from 0.25 years (E0142, hired 2025-11-01) to 9.92 years (E0143, hired 2015-12-01).",
+      "metric": "Team Tenure",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4c13bd06baa0",
+      "statement": "HRIS record KS-DL-1.2 shows 7 active employees across Technical, Project Management, Corporate, and Sales functions as of the extract date, spanning Legacy Alderstone, Northstar, Delta, Meridian, and Summit entities.",
+      "metric": "Headcount",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-baa27ddccae7",
+      "statement": "Earliest recorded employee hire date is 2019-01-01 (E0180, St. Louis, Legacy Alderstone), indicating core team tenure spans at least 6+ years.",
+      "metric": "Team Tenure",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4cc47deeca24",
+      "statement": "Most recent recorded employee hire date is 2025-07-01 (E0186, Nashville, Sales function), indicating recent recruitment activity.",
+      "metric": "Team Tenure",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-449778e3fc17",
+      "statement": "HRIS extract shows 8 active staff members across multiple locations (Indianapolis, Chicago, Detroit, Louisville, Nashville, Raleigh, Charlotte) as of the data room extract date.",
+      "metric": "Headcount",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f696e757045e",
+      "statement": "Earliest hire date in the HRIS extract is 2019-07-01 (employee E0378), indicating tenure range spanning approximately 6 years.",
+      "metric": "Team Tenure",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4f62cb2a3e68",
+      "statement": "Weighted average days sales outstanding (DSO) across open accounts receivable as of December 31, 2025 is approximately 35.5 days.",
+      "metric": "DSO",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3bdc65180c03",
+      "statement": "Pioneer Components (INV-0011, SM-010) represents a customer concentration factor of 0.2092 as of 2025-12-07.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ad3be6ff202a",
+      "statement": "CityWorks Municipal Group (INV-0006, CTY-01) represents a customer concentration factor of 0.1628 as of 2025-08-04.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-01f7b4ff4afb",
+      "statement": "Apex Manufacturing (INV-0005, APX-02) represents a customer concentration factor of 0.1617 as of 2025-12-13.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-e5c11e687fa6",
+      "statement": "Clinica Health (INV-0007, CLN-02) represents a customer concentration factor of 0.1594 as of 2025-10-11.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-61306e0b451e",
+      "statement": "Apex Manufacturing represents a concentration metric of 0.260408511116, with invoice term spanning 2025-11-23 to 2025-12-23 and DSO of 38 days.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-fec2bf705b82",
+      "statement": "CityWorks Municipal Group represents a concentration metric of 0.194607147019, with invoice term spanning 2025-11-20 to 2025-12-20 and DSO of 41 days.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-fb66264454ab",
+      "statement": "Clinica Health represents a concentration metric of 0.232689111986, with invoice term spanning 2025-11-29 to 2025-12-29 and DSO of 32 days.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a9f5caaf7c3a",
+      "statement": "Work-in-progress billings across six active projects total $0.673 million across Field Inspection, Industrial Hygiene, and Permitting & Advisory service lines.",
+      "metric": "Revenue",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-2b121c9da968",
+      "statement": "Metro Utility Holdings represents 20.39% of total WIP value ($0.1375 million of $0.673 million across MET-N and MET-S projects).",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-85f2e7ed048e",
+      "statement": "Riverton Industrial Group represents 17.91% of total WIP value ($0.1205 million of $0.673 million across RIV-MIL and RIV-WST projects).",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a76766597ee9",
+      "statement": "66.7% of WIP amount ($0.449 million) is marked with High collectibility rating, while 33.3% ($0.224 million) is rated Review.",
+      "metric": "Revenue Quality",
+      "source_id": "SRC-DR",
+      "question_ids": [
+        "Q-09"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-5e3e332ab109",
+      "statement": "Firm recommends maintaining exclusivity at no more than $108.0m of enterprise value.",
+      "metric": "Enterprise Value",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-06",
+        "Q-11"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-558625a711bb",
+      "statement": "Reported EBITDA is $10.2m.",
+      "metric": "EBITDA",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ab1ebb077582",
+      "statement": "Seller-adjusted EBITDA is $12.7m.",
+      "metric": "EBITDA",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-7543ccce78f1",
+      "statement": "Management reports 38% of Alderstone revenue is scheduled or programmatic in nature.",
+      "metric": "Recurring Revenue",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-2866893279bc",
+      "statement": "Management reports a further 34% of Alderstone revenue derives from repeat-project work.",
+      "metric": "Revenue",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-2c0fad56d234",
+      "statement": "Capex at Alderstone is low at approximately 1%-2% of revenue.",
+      "metric": "Capex",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-14"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-168cbd36365a",
+      "statement": "Seller rollover is meaningful at $12.0m.",
+      "metric": "Seller Rollover",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ad455af3d25f",
+      "statement": "The seller presents the largest billing account as 7.6% of revenue.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-bd08bc9dfabd",
+      "statement": "The Company is asset-light but not working-capital-light, with unbilled WIP, AR aging, and branch-level billing controls requiring detailed review.",
+      "metric": "Working Capital",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-08",
+        "Q-09"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-74f81e3d1b46",
+      "statement": "The Company has completed four acquisitions since 2020.",
+      "metric": "Acquisition Count",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-12",
+        "Q-13"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d97e2edbf8e5",
+      "statement": "Seller-adjusted EBITDA includes run-rate pricing and utilization initiatives.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-06",
+        "Q-07"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a93ab4dcde32",
+      "statement": "The Firm should underwrite only implemented or supportable adjustments to seller-adjusted EBITDA.",
+      "metric": "Adjustment Supportability",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-20932ab38b76",
+      "statement": "The Firm prices the transaction on $11.4m, not seller-defined EBITDA.",
+      "metric": "Enterprise Value",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-8c980d37dbfb",
+      "statement": "The investment works at a 9.0x exit multiple.",
+      "metric": "Exit Multiple",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-bd610d54227f",
+      "statement": "The $2.0m integration program is funded and governed.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-IA",
+      "question_ids": [
+        "Q-06",
+        "Q-13"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-249a3a2255ad",
+      "statement": "Alderstone reported FY2025 EBITDA of $10.2m.",
+      "metric": "EBITDA",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-aa26d2bc51e0",
+      "statement": "Based on QoE procedures performed, normalized FY2025 EBITDA for Alderstone is $11.9m.",
+      "metric": "EBITDA",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-b6a5bc54afbe",
+      "statement": "Founder/executive compensation adjustment of $0.35m accepted by QoE at market replacement cost.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ab3442c4f546",
+      "statement": "Transaction-readiness and professional fees adjustment of $0.25m, with recurring audit/compliance costs of $0m retained per QoE treatment.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-58189444e3e3",
+      "statement": "Legal and settlement expense adjustment of $0.2m supported as non-recurring per QoE review.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-2770c0562d11",
+      "statement": "QoE adjustment: revenue cut-off reduced EBITDA by $0.1m.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-bb466b66157a",
+      "statement": "QoE concluded that founder and executive compensation adjustments were accepted at market replacement cost.",
+      "metric": "Adjustment Supportability",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-23ee04395866",
+      "statement": "The seller proposed a net working capital target of $7.7m.",
+      "metric": "Net Working Capital Target",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-266f27aec3cc",
+      "statement": "Normalized operating working capital is $8.4m according to the QoE analysis.",
+      "metric": "Net Working Capital",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ed03d58aa6f5",
+      "statement": "The variance between normalized operating working capital and seller target is $0.7m (favorable to buyer at closing).",
+      "metric": "Net Working Capital Adjustment",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-0dda76c98279",
+      "statement": "Gross debt and debt-like items total $14.40m, comprising $10.75m in funded debt and $3.65m in debt-like items.",
+      "metric": "Gross Debt",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-fe6558f34388",
+      "statement": "Net debt and debt-like items equal $10.20m after deducting $4.20m in acquired unrestricted cash from $14.40m in gross debt and debt-like items.",
+      "metric": "Net Debt",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-aabe71ab9745",
+      "statement": "First-lien funded debt is $10.10m, derived by summing existing bank term loan ($8.60m), existing revolver ($1.50m), and accrued interest ($0.10m).",
+      "metric": "First-Lien Debt",
+      "source_id": "SRC-QOE",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-9231df49a44b",
+      "statement": "Standalone base case model assumes approximately 7% organic revenue growth.",
+      "metric": "Revenue Growth",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-c2a8321a2c93",
+      "statement": "Entry firm EBITDA margin is 15.4%, with gradual margin expansion assumed thereafter.",
+      "metric": "EBITDA Margin",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-151c47a218ea",
+      "statement": "Standalone base case uses a 9.0x exit multiple applied to LTM March 31, 2031 EBITDA.",
+      "metric": "Exit Multiple",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-1a131d9532ff",
+      "statement": "Firm model entry enterprise value is $108.0m at OPENING.",
+      "metric": "Enterprise Value",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06",
+        "Q-11"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-957b81c7eebc",
+      "statement": "Firm-underwritten EBITDA at entry is $11.4m.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-858ecdfe53ab",
+      "statement": "Entry multiple of 9.5x is derived from $108.0m EV divided by $11.4m firm EBITDA.",
+      "metric": "Entry Multiple",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-06c98752b8b0",
+      "statement": "Sponsor initial cash equity contribution at entry is $62.0m.",
+      "metric": "Sponsor Equity",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-e1e81866ca52",
+      "statement": "Seller rollover equity at entry is $12.0m.",
+      "metric": "Seller Rollover",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-dbfc9ad7ccd6",
+      "statement": "First-lien opening debt at entry is $42.8m.",
+      "metric": "First-Lien Debt",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-538679828ca2",
+      "statement": "Opening net leverage on firm EBITDA is 3.49x at entry.",
+      "metric": "Leverage",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-85962f9f6964",
+      "statement": "Reported EBITDA for Keystone is $10.20m.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-56e81aeeb671",
+      "statement": "Firm accepted $1.70m of historical adjustments to reported EBITDA.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-411e4cc23f67",
+      "statement": "Firm applied a $(0.20)m revenue and WIP quality reserve as an EBITDA adjustment.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-1b3dd791af85",
+      "statement": "Firm-underwritten EBITDA for Keystone is $11.40m, calculated as reported EBITDA of $10.20m plus accepted adjustments of $1.70m less quality and integration reserves totaling $0.50m.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a5e0c7bd40b8",
+      "statement": "The firm model includes Sentinel and a second fully funded acquisition.",
+      "metric": "Acquisition Count",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-12",
+        "Q-13"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-0b025b1976cb",
+      "statement": "The second acquisition is funded with $4.0m of DDTL.",
+      "metric": "DDTL Availability",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-18b65acb3955",
+      "statement": "The second acquisition is funded with $5.0m of sponsor equity.",
+      "metric": "Sponsor Equity",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f85de87f93bd",
+      "statement": "Exit enterprise value in Standalone Base case is $165.1m, per audited LBO model.",
+      "metric": "Exit EV",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06",
+        "Q-11"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3d04a9f006b9",
+      "statement": "Exit revenue multiple in Standalone Base case is 9.0x, per audited LBO model.",
+      "metric": "Exit Multiple",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-1051b08ee33b",
+      "statement": "Gross MOIC in Standalone Base case is 1.996x, per audited LBO model.",
+      "metric": "MOIC",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a481590320ea",
+      "statement": "Gross XIRR in Standalone Base case is 14.8%, per audited LBO model.",
+      "metric": "IRR",
+      "source_id": "SRC-MODEL-SUM",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-1d842800b8d9",
+      "statement": "Eligible cash netting cap is $5 million, covenant only.",
+      "metric": "Net Debt",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-162d28f06145",
+      "statement": "Revolver commitment is $7.5 million.",
+      "metric": "Revolver Capacity",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-36e05943c63e",
+      "statement": "DDTL commitment is $10 million.",
+      "metric": "DDTL Availability",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3ce374ca1aa5",
+      "statement": "Financing fees and OID total $1.4 million to be amortized over 24 quarters.",
+      "metric": "Capex",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-14"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-c3df31e10be4",
+      "statement": "Opening equity after transaction expense is $69.6 million, derived from initial equity of $74.0 million less buyer transaction expenses of $4.4 million.",
+      "metric": "Sponsor Equity",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-99eded6ab04b",
+      "statement": "Exit date is March 31, 2031, on an exact LTM basis.",
+      "metric": "Exit Horizon",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-73835d28b92b",
+      "statement": "Standalone Base platform growth rate is 7% for FY2026.",
+      "metric": "Revenue Growth",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-597759d509ac",
+      "statement": "Standalone Downside scenario models Firm EBITDA margin of 14.5% in Year 1 (FY2026E).",
+      "metric": "EBITDA Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a69b4d5a8a06",
+      "statement": "Standalone Downside scenario models gross margin of 35.5% in Year 1 (FY2026E).",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-37cb2880e0cf",
+      "statement": "Standalone Downside scenario models Days Sales Outstanding (DSO) of 67 days in Year 1 (FY2026E).",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-9b029ae36a23",
+      "statement": "Standalone Downside scenario assumes exit multiple of 8.0x EBITDA.",
+      "metric": "Exit Multiple",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-18a32a13a2cd",
+      "statement": "Standalone Upside scenario models opening gross margin of 38.2%.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ebe2315d4114",
+      "statement": "Standalone Upside scenario models opening Firm EBITDA margin of 16.0%.",
+      "metric": "EBITDA Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-77418c65e681",
+      "statement": "Standalone Upside scenario models opening DSO of 62 days.",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-82050fcdf1b9",
+      "statement": "Standalone Upside scenario models exit multiple of 9.5x.",
+      "metric": "Exit Multiple",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-7cb36c81bb65",
+      "statement": "LBO model assumes combined risk Firm EBITDA margin of 14.5% in FY2026.",
+      "metric": "EBITDA Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-1cf111d245a5",
+      "statement": "LBO model assumes combined risk gross margin of 35.5% in FY2026.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-37277e2cdc40",
+      "statement": "LBO model assumes combined risk platform growth rate of 7.0% in FY2026.",
+      "metric": "Revenue Growth",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-18cd348ac548",
+      "statement": "LBO model assumes combined risk Days Sales Outstanding (DSO) of 68 days in FY2026.",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-890e66ab255d",
+      "statement": "Net income for FY2025A was $5.73 million, reflecting continued growth.",
+      "metric": "Net Income",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-8fa9ddc2e4b4",
+      "statement": "Net working capital (current assets minus current liabilities) for FY2025A was approximately $27.8 million.",
+      "metric": "Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-40ffa1d9ee58",
+      "statement": "Operating cash flow was $4.78m in FY2025 per the LBO model.",
+      "metric": "Operating Cash Flow",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f04695d3ed84",
+      "statement": "Operating cash flow was $5.32m in FY2026 per the LBO model.",
+      "metric": "Operating Cash Flow",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-51f7a2a4d336",
+      "statement": "Operating cash flow was $5.83m in FY2027 per the LBO model.",
+      "metric": "Operating Cash Flow",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-870333f7bd61",
+      "statement": "Capital expenditure was $0.8m in FY2025 per the LBO model.",
+      "metric": "Capex",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-14"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-2c2f44ab8453",
+      "statement": "Monthly management accounts show revenue of $4.26 million in January 2023.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d56e00c1c061",
+      "statement": "Monthly management accounts show revenue of $6.882 million in December 2025.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3541a488be1f",
+      "statement": "LBO model assumes a gross margin of 34.2% during the initial months of the historical monthly projection.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4aef6da7b171",
+      "statement": "LBO model assumes a gross margin of 35.0% during the second batch of months in the historical monthly projection.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-0e00eb694896",
+      "statement": "LBO model assumes a gross margin of 35.9% during the third batch of months in the historical monthly projection.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-68adc6f52667",
+      "statement": "LBO model assumes an EBITDA margin of 13.2% during the initial months of the historical monthly projection.",
+      "metric": "EBITDA Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-0b99a805a88b",
+      "statement": "Riverton Advanced Materials - Decatur (RIV-DEC) generated $5.624m in 2025 revenue from EHS Compliance services.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-be3669de6b9a",
+      "statement": "Metro Utility - North (MET-N) generated $3.2m in 2025 revenue from Field Inspection services.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3ef33df694c3",
+      "statement": "State Infrastructure Department (STA-01) generated $2.8m in 2025 revenue from Permitting & Advisory services.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a2bbb97d9934",
+      "statement": "MedCore Hospital System (MED-01) generated $2.3m in 2025 revenue from Industrial Hygiene services.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a81cf9610163",
+      "statement": "RIV-CORP (Riverton Corporate EHS) represents 2.58% of revenue, the largest single customer in the dataset.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3824518d5f2f",
+      "statement": "BIO-01 (BioHealth Laboratories) represents 2.30% of revenue, the second-largest single customer.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-76c02bc6b35f",
+      "statement": "APX-01 (Apex Manufacturing - Main) represents 2.16% of revenue, the third-largest single customer.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-23996ad232b5",
+      "statement": "Top six customers shown in Customer_Data ledger with revenue concentrations ranging from 1.27% to 2.58%.",
+      "metric": "Customer Count",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-02cc3f25d741",
+      "statement": "Riverton Metals - Milltown (RIV-MIL, Riverton Industrial Group) represents 1.76% of customer concentration.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-13afeecbcfe6",
+      "statement": "Riverton Chemicals - East (RIV-CHEM, Riverton Industrial Group) represents 1.62% of customer concentration.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-6276a6c00ed5",
+      "statement": "Riverton Logistics Hub (RIV-LOG, Riverton Industrial Group) represents 1.35% of customer concentration.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-5b267d8b68b0",
+      "statement": "Riverton West Services (RIV-WST, Riverton Industrial Group) represents 1.26% of customer concentration.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-63dc55468736",
+      "statement": "Northfield Foods Account 1 (SM-001) has a concentration metric of 1.25, the highest among the sampled customer accounts.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-94403319c74c",
+      "statement": "Northfield Foods Account 1 (SM-001) and Cedar Municipal Account 3 (SM-003) have 60-day payment terms, longer than the 30-day standard terms observed in other accounts.",
+      "metric": "Customer Contract Terms",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-03",
+        "Q-05"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-358b152dc013",
+      "statement": "Most sampled customer accounts (PRE-01, PRE-02, SM-002, SM-004) have standard 30-day payment terms.",
+      "metric": "Customer Contract Terms",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-03",
+        "Q-05"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-670278a403af",
+      "statement": "Oak Ridge Manufacturing (SM-005) has a concentration coefficient of 1.20, representing the highest concentration weight in the customer ledger sample.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f01e355c82ce",
+      "statement": "Pioneer Components 2 (Account 28) represents 92.65% concentration, classified as Repeat customer in Permitting & Advisory serving Municipal and public sector in Southeast region.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-c703d1c79044",
+      "statement": "Evergreen Chemicals 2 (Account 29) represents 91.45% concentration, classified as Project customer in EHS Compliance serving Industrial manufacturing in Midwest region, with 60-day payment terms.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-7eb4819aca7c",
+      "statement": "Redwood Utilities 2 (Account 30) represents 90.25% concentration, classified as Recurring customer in Industrial Hygiene serving Healthcare and life sciences in Southeast region, with 30-day payment terms.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-53b8abb8ac7f",
+      "statement": "Project RIV-DEC-P1 achieved 30.72% gross margin in FY2025A.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-420a7adfbde6",
+      "statement": "Project RIV-DEC-P1 had $0.404m expected recurring revenue in FY2025A.",
+      "metric": "Recurring Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-2a52ff7ca481",
+      "statement": "Multiple Riverton Industrial Group project contracts specify 30-60 days payment terms across Industrial Hygiene, EHS Compliance, and Field Inspection service lines.",
+      "metric": "Customer Contract Terms",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-03",
+        "Q-05"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-af9b6080634e",
+      "statement": "BioHealth Laboratories (BIO-01) account represents 36.47% of project ledger value under Central PSA as of 2026-03-01.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-af973878c9a4",
+      "statement": "BioHealth Laboratories (BIO-01) recurring contract terms are 30-60 days.",
+      "metric": "Customer Contract Terms",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-03",
+        "Q-05"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-5bbeab84745c",
+      "statement": "Employee schedule as of December 31, 2025 shows 5 active employees across multiple offices and service lines.",
+      "metric": "Headcount",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ce5233722c0d",
+      "statement": "Longest-tenured employee (E0001) has 9+ years tenure as of December 31, 2025 (hired February 2016).",
+      "metric": "Team Tenure",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-64b230b53a28",
+      "statement": "Five sampled employees originate from four distinct acquisitions: Northstar, Delta, Meridian, and Summit.",
+      "metric": "Acquisition Count",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-12",
+        "Q-13"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4b4dcbb75d84",
+      "statement": "HRIS extract shows 7 active employees (E0059\u2013E0065) across Louisville, Nashville, Raleigh, Charlotte, Cincinnati, Columbus, and Knoxville locations.",
+      "metric": "Headcount",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3445345f1bb1",
+      "statement": "Employee hire dates range from 2019-12-01 (E0059) to 2024-05-01 (E0064), indicating tenure span of approximately 4.5 years.",
+      "metric": "Team Tenure",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3bc73b5ea04a",
+      "statement": "HRIS employee records show at least 8 active staff members across multiple locations and functions (IDs E0165\u2013E0171) as of the model date.",
+      "metric": "Headcount",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-5ebac118ec6e",
+      "statement": "HRIS employee roster (KS-DL-1.2) contains 8 active staff records visible in this fragment (E0265\u2013E0271), spanning Corporate, Sales, Finance, HR, IT, and Technical functions across Midwest and Southeast regions.",
+      "metric": "Headcount",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-cd9f2e4a9695",
+      "statement": "Employee roster extract from HRIS system shows 8 staff members across multiple legacy entities (Summit, Legacy Alderstone, Northstar, Delta, Meridian, Chicago, Detroit) with hire dates ranging from 2015 to 2025.",
+      "metric": "Headcount",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-9e6744682d06",
+      "statement": "The LBO model employee roster fragment shows 9 active employees across multiple legacy platforms (Summit, Legacy Alderstone, Northstar, Delta, Meridian) with hire dates ranging from 2015 to 2025.",
+      "metric": "Headcount",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ec2928eff631",
+      "statement": "Keystone LBO model captures 7 named technical, permitting, project management, corporate, sales, and finance staff members across Midwest and Southeast regions as of the model opening date (2026-03-05).",
+      "metric": "Headcount",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-8465b646b727",
+      "statement": "Earliest employee tenure recorded is 2015-03-01 (employee E0374, Project Management Field Inspection role, 9+ years tenure as of model date 2026-03-05).",
+      "metric": "Team Tenure",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a9845fda25d8",
+      "statement": "Keystone LBO model employee register contains 7 active staff members across multiple locations and functions, with tenure ranging from 2015 to 2025, representing organizational structure at model build date.",
+      "metric": "Headcount",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a8b95d108f92",
+      "statement": "HRIS extract shows 7 individual employees (E0411\u2013E0417) with active status in the Keystone model snapshot as of 2026-03-05.",
+      "metric": "Headcount",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-13",
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d19bb72da7d1",
+      "statement": "Median employee tenure is approximately 5 years, calculated from hire dates ranging from 2019-04-01 (E0411) to 2025-10-01 (E0417).",
+      "metric": "Team Tenure",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-19"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f066ab3d8a30",
+      "statement": "Total accounts receivable of $0.878mm as of December 31, 2025 across six invoices with weighted average age of 52.1 days indicates baseline DSO before collections.",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d5e6457a32f5",
+      "statement": "Total accounts receivable balance as of December 31, 2025 across all billing accounts is $0.878 million.",
+      "metric": "Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d83e7ecccd5b",
+      "statement": "Apex Manufacturing (parent-level aggregation across APX-01 and APX-02) represents the largest customer concentration at $0.364 million or 22.6% of December 31, 2025 accounts receivable.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-1e26958ba97b",
+      "statement": "Unbilled work-in-progress (WIP) across five active projects totals approximately $0.74 million as of the observation period, with amounts ranging from $0.076 million to $0.126 million per project.",
+      "metric": "Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3566a78793a5",
+      "statement": "WIP collectibility status shows 4 of 5 projects rated 'High' and 1 rated 'Review', with 80% of WIP having customer approval not required and all items showing 'Approved' or 'Pending' PO/change order status.",
+      "metric": "Revenue Quality",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-09"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-abbe27863c28",
+      "statement": "Average age of unbilled WIP across the five projects is 60.6 days, indicating aging of service delivery not yet billed.",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d71e11a91856",
+      "statement": "QoE accepted founder/executive compensation add-back of $0.35m at market replacement cost.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-dda755d10b4b",
+      "statement": "QoE accepted transaction-readiness and professional fees add-back of $0.25m for recurring audit/compliance retained.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4cc5b2f0d5c9",
+      "statement": "Firm view integration and systems costs add-back is $0.2m with $0.10m recurring cost retained by Firm.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f103f03249da",
+      "statement": "Revenue and WIP quality reserve reduces reported EBITDA by $0.2m in FY2028 due to firm conservatism.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-60483cf4ad05",
+      "statement": "Customer and project run-rate reserve reduces reported EBITDA by $0.15m in FY2028 due to firm conservatism.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ad292dbeedf3",
+      "statement": "Incremental finance and reporting cost reduces reported EBITDA by $0.05m in FY2028 as a recurring post-close cost.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f5bd1c2eab4b",
+      "statement": "Seller equity value is $97.8 million.",
+      "metric": "Equity Value",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d5013a8bc5e4",
+      "statement": "Seller net debt and debt-like items total $10.2 million.",
+      "metric": "Net Debt",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3864c76bdb28",
+      "statement": "Opening net working capital position includes unbilled WIP of $4.9m, deferred revenue of $0.9m, and prepaids of $0.9m.",
+      "metric": "Net Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-6bb5f6f875d3",
+      "statement": "Opening enterprise value framework includes $42.8m first-lien term loan debt and $69.6m equity value.",
+      "metric": "Enterprise Value",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06",
+        "Q-11"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-1c9c5e32a126",
+      "statement": "Opening sponsor equity is $69.6m.",
+      "metric": "Sponsor Equity",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a6e1b394be07",
+      "statement": "FY2026E revenue is forecasted at $82.1 million per the seller operating model.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-249b8b466b08",
+      "statement": "FY2025A management-adjusted EBITDA was $12.7 million per seller-defined EBITDA calculation.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-862f0c13aa18",
+      "statement": "FY2026E management-adjusted EBITDA is forecasted at $15.0 million per seller-defined EBITDA calculation.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-dce22c0ff5b3",
+      "statement": "Normalized net working capital allocated in purchase accounting is $8.4 mm with fair value equal to tax basis carryover.",
+      "metric": "Net Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-6b5ff99cbcad",
+      "statement": "Total annual intangible amortization and add-back in LBO model is approximately $3 mm, representing deductions that would be added back to EBITDA.",
+      "metric": "EBITDA Add-back",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06",
+        "Q-07"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-391d2d86ae6e",
+      "statement": "Q2 2026 standalone base revenue is $19.795 million.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4c0819d202be",
+      "statement": "Q2 2026 standalone base gross margin is 36.2%.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ab5b9f4f7687",
+      "statement": "Q2 2026 standalone base firm EBITDA is $3.088 million.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-37eed7488ebb",
+      "statement": "Model assumes Days Sales Outstanding of 64 days in early forecast periods.",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-7ab695be7857",
+      "statement": "Model assumes Days Sales Outstanding improves to 60 days by FY2030.",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-36a586eee49e",
+      "statement": "Model projects zero covenant add-backs throughout the forecast period.",
+      "metric": "EBITDA Add-back",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06",
+        "Q-07"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-c2175865315d",
+      "statement": "LBO model Scenario_Drivers sheet specifies covenant limit of 4.25x for initial periods.",
+      "metric": "Covenant Threshold",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17",
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-0655b5427b67",
+      "statement": "LBO model Scenario_Drivers sheet specifies covenant limit declining to 4.0x in later FY2025 periods.",
+      "metric": "Covenant Threshold",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17",
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-74c8dd5f8268",
+      "statement": "LBO model Scenario_Drivers sheet specifies covenant limit declining to 3.5x by later periods.",
+      "metric": "Covenant Threshold",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17",
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-fd1f71cc6fca",
+      "statement": "LBO model Scenario_Drivers sheet specifies SOFR declining to 3.0% in final modeled periods.",
+      "metric": "Interest Coverage",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a538ecbc5ea3",
+      "statement": "Core PPA amortization is modeled at $0.75 million per period.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ce4ad70089b3",
+      "statement": "Standalone Downside scenario models opening revenue of $19.24 million.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-bc903e2669af",
+      "statement": "Standalone Downside scenario models opening gross margin of 35.5%.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ffc4add142c2",
+      "statement": "Standalone Downside scenario models opening Firm EBITDA of $2.7898 million, derived from revenue, gross margin, and PPA amortization assumptions.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f9bafaff0bc9",
+      "statement": "The LBO model specifies a covenant limit (leverage ratio) starting at 4.25x and stepping down to 3.5x by period 16.",
+      "metric": "Covenant Threshold",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17",
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-54377a17e03e",
+      "statement": "Modeled DSO in initial periods of the Keystone LBO projection is 62 days.",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-58aca7b61ef2",
+      "statement": "Modeled DSO in later periods of the Keystone LBO projection declines to 58 days.",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-04455f6f01a9",
+      "statement": "The LBO model assumes zero one-time charges and zero covenant add-backs across all forecast periods.",
+      "metric": "Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3f9bf557d645",
+      "statement": "Core PPA amortization is modeled as a consistent $0.75mm add-back across all periods in the Keystone LBO model.",
+      "metric": "EBITDA Add-back",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06",
+        "Q-07"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a375cf839594",
+      "statement": "Standalone upside revenue is modeled at $20.0725mm for the first modeled period in the Keystone LBO scenario.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-c5ec60bfa793",
+      "statement": "Standalone upside gross margin is modeled at 36.5% in the first period of the Keystone LBO scenario.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-fef9d43ae717",
+      "statement": "Firm EBITDA is modeled at $3.2116mm for the first modeled period under the Standalone Upside scenario in the Keystone LBO model.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4f5bbe4c6997",
+      "statement": "Accounts payable is modeled at 5.5% of annualized revenue in the LBO scenario.",
+      "metric": "Net Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-43c42408e46a",
+      "statement": "Accruals are modeled at 7.5% of annualized revenue in the LBO scenario.",
+      "metric": "Net Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-96e86e55b373",
+      "statement": "Deferred revenue is modeled at 1.2% of annualized revenue in the LBO scenario.",
+      "metric": "Net Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-e005d5952321",
+      "statement": "Capital expenditure is modeled at 1.6% of revenue in the LBO scenario.",
+      "metric": "Capex",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-14"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-820131d9c79a",
+      "statement": "Acquisition Base Revenue is modeled at $19.795 million in the first modeled period.",
+      "metric": "Revenue",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-04"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-e179dd7f72d9",
+      "statement": "Acquisition Base Gross Margin is modeled at 36.2% in the opening period.",
+      "metric": "Gross Margin",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-2d648e2c17ee",
+      "statement": "LBO model scenario drivers assume a covenant limit of 4.25x for FY2026E.",
+      "metric": "Covenant Threshold",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17",
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-324060d118fe",
+      "statement": "LBO model scenario drivers assume a covenant limit of 4.0x for FY2027E.",
+      "metric": "Covenant Threshold",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17",
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-2ab5e3acac37",
+      "statement": "LBO model scenario drivers assume a covenant limit of 3.75x for FY2028E.",
+      "metric": "Covenant Threshold",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17",
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d2297411409a",
+      "statement": "LBO model scenario drivers assume a covenant limit of 3.5x for FY2029E and beyond.",
+      "metric": "Covenant Threshold",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17",
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-fdce418618ab",
+      "statement": "Firm EBITDA for FY2025A is $3.09m per LBO model Scenario_Drivers sheet.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-cb2a5520847f",
+      "statement": "Firm EBITDA for FY2030E is $5.54m per LBO model Scenario_Drivers sheet, representing projected growth.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-abfec5f15bda",
+      "statement": "One-time charges of $1.0m are projected for FY2027E in the Scenario_Drivers model.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-fc954c671f3d",
+      "statement": "Days Sales Outstanding (DSO) is modeled at 64 days for FY2025A, declining to 60 days by FY2030E.",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-71744ece7595",
+      "statement": "DDTL draw modeled at $6 million in one scenario and $4 million in another scenario within LBO model.",
+      "metric": "DDTL Availability",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-e954ba3342fb",
+      "statement": "Sponsor equity contribution modeled at $5 million in LBO model scenario.",
+      "metric": "Sponsor Equity",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-fe28fd59e59d",
+      "statement": "Deferred revenue is modeled at 1.2% of annualized revenue in the Keystone LBO model Scenario_Drivers sheet.",
+      "metric": "Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-284db58da366",
+      "statement": "Accounts payable is modeled at 5.5% of annualized revenue in the Keystone LBO model Scenario_Drivers sheet.",
+      "metric": "Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-11a5f9b7c02b",
+      "statement": "Accruals are modeled at 7.5% of annualized revenue in the Keystone LBO model Scenario_Drivers sheet.",
+      "metric": "Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-26fb8e346441",
+      "statement": "Covenant add-backs at opening are $0 million.",
+      "metric": "EBITDA Add-back",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06",
+        "Q-07"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-386acd281465",
+      "statement": "Days Sales Outstanding (DSO) at opening is 68 days.",
+      "metric": "DSO",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a3503fb30799",
+      "statement": "Work-in-progress (WIP) as a percentage of annualized revenue is 7.8% at opening.",
+      "metric": "Working Capital",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-dc28bde6115e",
+      "statement": "Acquisition EV is $8.4mm in the LBO model scenario drivers.",
+      "metric": "Enterprise Value",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-c4a57bb41009",
+      "statement": "Acquisition fees are modeled at $0.4mm in the LBO scenario.",
+      "metric": "EBITDA Add-back",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06",
+        "Q-07"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-bae2b83cbf15",
+      "statement": "Acquired intangibles are valued at $3mm in the LBO model.",
+      "metric": "Enterprise Value",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-124d83efc44e",
+      "statement": "Acquired goodwill is recorded at $5.75mm in the LBO model.",
+      "metric": "Enterprise Value",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-6d1371bfbc9a",
+      "statement": "The LBO model specifies a forced revolver target of $4.78 million at a specific scenario point.",
+      "metric": "Revolver Capacity",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-06c50a6d4297",
+      "statement": "Model covenant limits step down from 4.75x in early years to 3.5x in later periods, reflecting deleveraging trajectory.",
+      "metric": "Leverage",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-f9f86a0d1701",
+      "statement": "Revolver facility has a commitment of $7.5m with zero opening draw, maturing September 30, 2031, priced at SOFR + 5.00%, with no amortization.",
+      "metric": "Revolver Capacity",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-e081788771e1",
+      "statement": "DDTL facility has a commitment of $10.0m with zero opening draw, maturing March 31, 2032, priced at SOFR + 5.75% with 1.0% annual amortization after draw.",
+      "metric": "DDTL Availability",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-cc9a5f99b51e",
+      "statement": "Total net leverage covenant threshold is 4.25x through 2027, tested quarterly, with steps down thereafter.",
+      "metric": "Covenant Threshold",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17",
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-9ee1f2c9bc9d",
+      "statement": "LTM reported EBITDA is $9.4m as of the June 30, 2027 compliance certificate reference date.",
+      "metric": "EBITDA",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-bd0ed2570628",
+      "statement": "LTM add-backs total $1.4m, which is subject to a 15% cap of $1.41m.",
+      "metric": "EBITDA Add-back",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06",
+        "Q-07"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3efe31ae8678",
+      "statement": "LTM covenant EBITDA is $10.8m, derived from $9.4m reported EBITDA plus $1.4m add-backs.",
+      "metric": "Covenant EBITDA",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-17"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d98e2cb48104",
+      "statement": "Total net leverage is 4.7x, exceeding the covenant requirement of 4.25x maximum.",
+      "metric": "Leverage",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-067c830505cf",
+      "statement": "In Standalone Base case, modeled exit enterprise value is $165.12m.",
+      "metric": "Exit EV",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06",
+        "Q-11"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-78db4380a34a",
+      "statement": "In Standalone Base case, modeled gross multiple on invested capital (MOIC) is 1.996x.",
+      "metric": "MOIC",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-3cb33d0fac14",
+      "statement": "An amendment contribution of $7.5 million was made to sponsor equity.",
+      "metric": "Sponsor Equity",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ed8f82678130",
+      "statement": "Standalone Downside scenario projects a MOIC of 1.28x.",
+      "metric": "MOIC",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4d62cb623d34",
+      "statement": "Standalone Upside scenario projects a MOIC of 2.43x.",
+      "metric": "MOIC",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-5d1bb806b27e",
+      "statement": "Acquisition Base scenario projects a MOIC of 2.08x.",
+      "metric": "MOIC",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d1b7d3b20a37",
+      "statement": "Combined Risk scenario projects a MOIC of 1.50x.",
+      "metric": "MOIC",
+      "source_id": "SRC-MODEL",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-04ac8829c89f",
+      "statement": "The IC approves acquisition of Alderstone at $108.0m enterprise value as of the investment date.",
+      "metric": "Enterprise Value",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-06",
+        "Q-11"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-a9b59800a86b",
+      "statement": "The acquisition is funded with $62.0m of sponsor cash equity at opening.",
+      "metric": "Sponsor Equity",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-1e693a3b7b7f",
+      "statement": "The acquisition is funded with $12.0m of seller rollover equity at opening.",
+      "metric": "Seller Rollover",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-09ed6abcb621",
+      "statement": "The acquisition is funded with $42.8m of first-lien opening debt.",
+      "metric": "First-Lien Debt",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-47551f83a093",
+      "statement": "Sponsor capital deployed in Standalone Base case is $62.0m.",
+      "metric": "Sponsor Equity",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-1451912bb588",
+      "statement": "Gross MOIC in Standalone Base case is 2.00x.",
+      "metric": "MOIC",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-554d9db59119",
+      "statement": "Gross XIRR in Standalone Base case is 14.8%.",
+      "metric": "IRR",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-643d79d4d39c",
+      "statement": "The IC memo attests that the Firm prices the Riverton transaction on $11.4m EBITDA, not seller or covenant EBITDA.",
+      "metric": "EBITDA",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-01",
+        "Q-06",
+        "Q-17"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-dda486e0114e",
+      "statement": "The IC memo attests that the investment must work at a 9.0x exit multiple as a condition of approval.",
+      "metric": "Exit Multiple",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-926a22eeba25",
+      "statement": "The IC memo attests that a $2.0m integration program is funded and governed as a condition precedent to deal approval.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-06",
+        "Q-13"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-50eda64c7b75",
+      "statement": "Ultimate-parent customer concentration is 18.2%, materially above the seller's 7.6% account-level figure for Riverton.",
+      "metric": "Customer Concentration",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-01",
+        "Q-02"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-80061a22ba0b",
+      "statement": "IC accepted the material customer concentration risk conditional on ultimate-parent (18.2%) basis reporting, monthly monitoring, pre-closing reference call, and change-of-control notice.",
+      "metric": "IC Conditions",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-15",
+        "Q-17",
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-d8a55aaa54a5",
+      "statement": "Alderstone has acquired four companies without fully integrating billing, project accounting and customer data; integration failure risk could affect EBITDA and cash.",
+      "metric": "Systems Integration Risk",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-11",
+        "Q-12"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-e63195955856",
+      "statement": "Integration program remaining budget is $2.0m with dedicated integration leader to be appointed.",
+      "metric": "EBITDA Adjustment",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-06",
+        "Q-13"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4c29d3b004fc",
+      "statement": "A $4.0m board-designated integration and liquidity capacity will be preserved.",
+      "metric": "Revolver Capacity",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-ab2093412167",
+      "statement": "IC Committee concluded that integration risk is acceptable with governance controls, but central risk is customer disruption and working-capital absorption from execution failure.",
+      "metric": "Integration Risk",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-11",
+        "Q-12"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-5593e3c42d1e",
+      "statement": "The Investment Committee voted 4 Approve and 1 Reject on Project Keystone, with approval granted subject to all stated conditions.",
+      "metric": "IC Vote",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-17"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-e9e499c1da22",
+      "statement": "Firm entry multiple of 9.5x is characterized by dissenting IC member as providing inadequate return compensation relative to identified risks.",
+      "metric": "Entry Multiple",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-06"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-4fbb15ee4cf4",
+      "statement": "IC memo condition: Enterprise Value shall not exceed $108.0m.",
+      "metric": "Enterprise Value",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-06",
+        "Q-11"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-2725d0635b50",
+      "statement": "IC memo condition: Sponsor initial cash equity of at least $62.0m.",
+      "metric": "Sponsor Equity",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-089e5c992dab",
+      "statement": "IC memo condition: First-lien debt no greater than $42.8m.",
+      "metric": "First-Lien Debt",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-10"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-db9567215128",
+      "statement": "IC memo condition: Normalized NWC target of $8.4m, with unsupported aged WIP excluded.",
+      "metric": "Net Working Capital Target",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-08"
+      ],
+      "rule": "R1+R2"
+    },
+    {
+      "claim_id": "ks-99b6b0ca4e9c",
+      "statement": "IC memo condition: $4.0m board-designated integration and liquidity capacity preserved.",
+      "metric": "Revolver Capacity",
+      "source_id": "SRC-IC",
+      "question_ids": [
+        "Q-18"
+      ],
+      "rule": "R1+R2"
+    }
+  ],
+  "q_coverage": {
+    "Q-01": 58,
+    "Q-02": 42,
+    "Q-03": 8,
+    "Q-04": 28,
+    "Q-05": 8,
+    "Q-06": 91,
+    "Q-07": 7,
+    "Q-08": 33,
+    "Q-09": 3,
+    "Q-10": 28,
+    "Q-11": 11,
+    "Q-12": 8,
+    "Q-13": 23,
+    "Q-14": 4,
+    "Q-15": 2,
+    "Q-16": 0,
+    "Q-17": 14,
+    "Q-18": 19,
+    "Q-19": 29,
+    "Q-20": 0
+  }
+}

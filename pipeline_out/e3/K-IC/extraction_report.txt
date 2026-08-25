@@ -1,0 +1,64 @@
+E3 Extraction Report — K-IC
+==================================================
+  Deal        : keystone
+  Manifest    : K-IC
+  Sources     : 11
+  Chunks      : 423
+  Raw claims  : 418
+  Admitted    : 296
+  Rejected    : 62
+  Conflicts   : 0
+
+Admitted by metric:
+   40  Customer Concentration
+   20  Revenue
+   18  EBITDA Adjustment
+   17  EBITDA
+   16  Headcount
+   13  Gross Margin
+   12  DSO
+   11  Team Tenure
+    9  Enterprise Value
+    9  Working Capital
+    9  Sponsor Equity
+    9  Covenant Threshold
+    7  MOIC
+    6  Customer Contract Terms
+    6  Exit Multiple
+    6  Net Working Capital
+    6  EBITDA Add-back
+    5  EBITDA Margin
+    5  Revolver Capacity
+    4  Acquisition Count
+    4  Gross Debt
+    4  Recurring Revenue
+    4  Capex
+    4  First-Lien Debt
+    4  DDTL Availability
+    3  Seller Rollover
+    3  Net Debt
+    3  Revenue Growth
+    3  Leverage
+    3  Operating Cash Flow
+    2  Customer Retention
+    2  Systems Integration Risk
+    2  Key Person Risk
+    2  Integration Risk
+    2  Contract Terms
+    2  Revenue Quality
+    2  Adjustment Supportability
+    2  Net Working Capital Target
+    2  Entry Multiple
+    2  Exit EV
+    2  IRR
+    1  Active Billing Accounts
+    1  Gross Profit
+    1  Net Working Capital Adjustment
+    1  Exit Horizon
+    1  Net Income
+    1  Customer Count
+    1  Equity Value
+    1  Interest Coverage
+    1  Covenant EBITDA
+    1  IC Conditions
+    1  IC Vote

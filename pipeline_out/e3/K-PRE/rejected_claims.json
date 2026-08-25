@@ -1,0 +1,492 @@
+[
+  {
+    "claim_id": "ks-8077957f960b",
+    "metric": "Recurring Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Scheduled or recurring programs revenue is $28.1m in FY2025E, representing 38% o"
+  },
+  {
+    "claim_id": "ks-74a476fa57c8",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Total revenue is projected at $74.0m in FY2025E, composed of recurring programs "
+  },
+  {
+    "claim_id": "ks-f8be3e3a2b82",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Management forecasts FY2025E revenue of $74.0m."
+  },
+  {
+    "claim_id": "ks-4478171710cf",
+    "metric": "EBITDA Margin",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Seller-adjusted EBITDA margin for FY2025E is 17.2%."
+  },
+  {
+    "claim_id": "ks-526603fe6943",
+    "metric": "EBITDA",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Seller-defined adjusted EBITDA for FY2025E is $12.7m."
+  },
+  {
+    "claim_id": "ks-da333f571e89",
+    "metric": "Recurring Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Revenue from recurring or repeat activity represents 72% of total revenue (38% s"
+  },
+  {
+    "claim_id": "ks-4d5906f485e1",
+    "metric": "Customer Concentration",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Largest billing account represents 7.6% of revenue; certain billing accounts may"
+  },
+  {
+    "claim_id": "ks-f8be3e3a2b82",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Management expects FY2025E revenue of $74.0m for Alderstone Compliance & Technic"
+  },
+  {
+    "claim_id": "ks-526603fe6943",
+    "metric": "EBITDA",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Seller-adjusted EBITDA for FY2025E is expected at $12.7m."
+  },
+  {
+    "claim_id": "ks-4478171710cf",
+    "metric": "EBITDA Margin",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Seller-adjusted EBITDA margin for FY2025E is 17.2%, derived from $12.7m EBITDA \u00f7"
+  },
+  {
+    "claim_id": "ks-a3d6f1989246",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Industrial manufacturing end market is projected to generate $22.9m revenue in F"
+  },
+  {
+    "claim_id": "ks-13df5b4ff64c",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Infrastructure and utilities end market is projected to generate $17.8m revenue "
+  },
+  {
+    "claim_id": "ks-74a476fa57c8",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Total projected revenue for FY2025E is $74.0m across all end markets."
+  },
+  {
+    "claim_id": "ks-74a476fa57c8",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Total projected revenue across all service lines in FY2025 is $74.0m."
+  },
+  {
+    "claim_id": "ks-08a33bedd93d",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Environmental, health and safety compliance revenue is projected at $30.3m (41% "
+  },
+  {
+    "claim_id": "ks-851b84df7258",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Industrial hygiene and workplace testing revenue is projected at $20.0m (27% of "
+  },
+  {
+    "claim_id": "ks-660db1aa651a",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Field inspection and asset integrity revenue is projected at $14.1m (19% of tota"
+  },
+  {
+    "claim_id": "ks-feede7d2e448",
+    "metric": "Customer Concentration",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "The largest billing account represents 7.6% of revenue in FY2025E, measured at t"
+  },
+  {
+    "claim_id": "ks-7025130731fe",
+    "metric": "Customer Concentration",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "The top five billing accounts represent 21.4% of revenue in FY2025E, measured at"
+  },
+  {
+    "claim_id": "ks-a073cbcd71a0",
+    "metric": "Customer Concentration",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "The top ten billing accounts represent 31.5% of revenue in FY2025E, measured at "
+  },
+  {
+    "claim_id": "ks-a5e3ef6769f9",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2023A'"
+    ],
+    "statement": "FY2023A Revenue was $56.8 million."
+  },
+  {
+    "claim_id": "ks-b573add3c1ce",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2024A'"
+    ],
+    "statement": "FY2024A Revenue was $65.4 million."
+  },
+  {
+    "claim_id": "ks-74a476fa57c8",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "FY2025E Revenue is projected at $74.0 million."
+  },
+  {
+    "claim_id": "ks-ff105bd0f52d",
+    "metric": "Revenue Growth",
+    "errors": [
+      "unrecognized period: 'FY2024A'"
+    ],
+    "statement": "FY2024A Revenue growth was 15.1%."
+  },
+  {
+    "claim_id": "ks-2721189a50de",
+    "metric": "EBITDA",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Reported EBITDA for FY2025E is $10.2 million."
+  },
+  {
+    "claim_id": "ks-57cffbec2406",
+    "metric": "EBITDA Adjustment",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Total management adjustments to EBITDA for FY2025E amount to $2.5 million, compr"
+  },
+  {
+    "claim_id": "ks-5cd8221739b2",
+    "metric": "EBITDA",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Seller-adjusted EBITDA for FY2025E is $12.7 million."
+  },
+  {
+    "claim_id": "ks-74a476fa57c8",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Management forecasts FY2025E revenue of $74.0 million."
+  },
+  {
+    "claim_id": "ks-90470008efc5",
+    "metric": "Revenue Growth",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Management forecasts FY2025E revenue growth of 13.1%."
+  },
+  {
+    "claim_id": "ks-c42d68d7ef0c",
+    "metric": "EBITDA",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Management forecasts FY2025E seller-adjusted EBITDA of $12.7 million."
+  },
+  {
+    "claim_id": "ks-f282d3ad9499",
+    "metric": "EBITDA Margin",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Management forecasts FY2025E EBITDA margin of 17.2%."
+  },
+  {
+    "claim_id": "ks-db28f1a5c55f",
+    "metric": "EBITDA",
+    "errors": [
+      "unrecognized period: 'FY2023A'"
+    ],
+    "statement": "Reported EBITDA for FY2023A was $7.5m."
+  },
+  {
+    "claim_id": "ks-3b85d21c93f3",
+    "metric": "EBITDA",
+    "errors": [
+      "unrecognized period: 'FY2024A'"
+    ],
+    "statement": "Reported EBITDA for FY2024A was $8.8m."
+  },
+  {
+    "claim_id": "ks-f7ba92acb0bd",
+    "metric": "Net Income",
+    "errors": [
+      "unrecognized period: 'FY2023A'"
+    ],
+    "statement": "Net income for FY2023A was $4.18m."
+  },
+  {
+    "claim_id": "ks-787108f25705",
+    "metric": "Net Income",
+    "errors": [
+      "unrecognized period: 'FY2024A'"
+    ],
+    "statement": "Net income for FY2024A was $4.92m."
+  },
+  {
+    "claim_id": "ks-1a4000f7b258",
+    "metric": "Operating Cash Flow",
+    "errors": [
+      "unrecognized period: 'FY2023A'"
+    ],
+    "statement": "Operating cash flow for FY2023A was $4.78m."
+  },
+  {
+    "claim_id": "ks-8ce52255a3f9",
+    "metric": "Operating Cash Flow",
+    "errors": [
+      "unrecognized period: 'FY2024A'"
+    ],
+    "statement": "Operating cash flow for FY2024A was $5.32m."
+  },
+  {
+    "claim_id": "ks-8a4c55a03d48",
+    "metric": "Contract Terms",
+    "errors": [
+      "unrecognized period: 'FY2024'"
+    ],
+    "statement": "Customer SM-034-P1 (Cobalt Industries 2, Industrial Hygiene) has a contract paym"
+  },
+  {
+    "claim_id": "ks-f2130217b6d9",
+    "metric": "Customer Concentration",
+    "errors": [
+      "invalid epistemic_class: 'context'"
+    ],
+    "statement": "Diligence inquiry identifies that customer concentration may be understated when"
+  },
+  {
+    "claim_id": "ks-cb75ae5cddd5",
+    "metric": "Recurring Revenue",
+    "errors": [
+      "invalid epistemic_class: 'context'"
+    ],
+    "statement": "Seller has claimed 72% of revenue is recurring or repeat work; diligence is test"
+  },
+  {
+    "claim_id": "ks-d97e2edbf8e5",
+    "metric": "EBITDA Adjustment",
+    "errors": [
+      "invalid epistemic_class: 'context'"
+    ],
+    "statement": "Diligence is assessing whether EBITDA adjustments are implemented, supportable, "
+  },
+  {
+    "claim_id": "ks-a93ab4dcde32",
+    "metric": "Adjustment Supportability",
+    "errors": [
+      "invalid epistemic_class: 'context'"
+    ],
+    "statement": "Diligence inquiry identifies open questions regarding support for pricing and ut"
+  },
+  {
+    "claim_id": "ks-4366b3c549e1",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2023A'",
+      "invalid epistemic_class: 'context'"
+    ],
+    "statement": "The Firm model covers FY2023A historical results as part of its scope."
+  },
+  {
+    "claim_id": "ks-31a56214ecce",
+    "metric": "Revenue",
+    "errors": [
+      "unrecognized period: 'FY2024A'",
+      "invalid epistemic_class: 'context'"
+    ],
+    "statement": "The Firm model covers FY2024A historical results as part of its scope."
+  },
+  {
+    "claim_id": "ks-71a6ccb93a36",
+    "metric": "Revenue",
+    "errors": [
+      "invalid epistemic_class: 'context'"
+    ],
+    "statement": "The Firm model covers FY2025A historical results as part of its scope."
+  },
+  {
+    "claim_id": "ks-ed4df1f4066a",
+    "metric": "Exit Horizon",
+    "errors": [
+      "invalid epistemic_class: 'context'"
+    ],
+    "statement": "The Firm model includes quarterly projections through March 31, 2031, establishi"
+  },
+  {
+    "claim_id": "ks-7911788a6ccd",
+    "metric": "EBITDA Margin",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Standalone Upside case models Firm EBITDA margin of 16.0% in FY2025E."
+  },
+  {
+    "claim_id": "ks-910f34e35582",
+    "metric": "DSO",
+    "errors": [
+      "unrecognized period: 'FY2025E'"
+    ],
+    "statement": "Standalone Upside case models DSO of 62 days in FY2025E."
+  },
+  {
+    "claim_id": "ks-32ae1749034b",
+    "metric": "Net Income",
+    "errors": [
+      "unrecognized period: 'FY2023A'"
+    ],
+    "statement": "Net income for FY2023A was $4.18m."
+  },
+  {
+    "claim_id": "ks-cc651e85d908",
+    "metric": "Net Income",
+    "errors": [
+      "unrecognized period: 'FY2024A'"
+    ],
+    "statement": "Net income for FY2024A was $4.92m."
+  },
+  {
+    "claim_id": "ks-32ae1749034b",
+    "metric": "Net Income",
+    "errors": [
+      "unrecognized period: 'FY2023A'"
+    ],
+    "statement": "Net income for FY2023A was $4.18 million."
+  },
+  {
+    "claim_id": "ks-cc651e85d908",
+    "metric": "Net Income",
+    "errors": [
+      "unrecognized period: 'FY2024A'"
+    ],
+    "statement": "Net income for FY2024A was $4.92 million."
+  },
+  {
+    "claim_id": "ks-a98d6bf7e940",
+    "metric": "Operating Cash Flow",
+    "errors": [
+      "unrecognized period: 'FY2026A'"
+    ],
+    "statement": "Operating cash flow was $5.32m in FY2026A per LBO model."
+  },
+  {
+    "claim_id": "ks-ca4ee2bb6b61",
+    "metric": "Operating Cash Flow",
+    "errors": [
+      "unrecognized period: 'FY2027A'"
+    ],
+    "statement": "Operating cash flow was $5.83m in FY2027A per LBO model."
+  },
+  {
+    "claim_id": "ks-9558daefea23",
+    "metric": "Utilization",
+    "errors": [
+      "unknown metric: 'Utilization'"
+    ],
+    "statement": "Average recorded utilization across visible billable staff (E0001\u2013E0004) is appr"
+  },
+  {
+    "claim_id": "ks-887acda589df",
+    "metric": "Goodwill",
+    "errors": [
+      "unknown metric: 'Goodwill'"
+    ],
+    "statement": "Opening balance sheet goodwill balance of $71m recorded as part of PPA allocatio"
+  },
+  {
+    "claim_id": "ks-646c29cebb32",
+    "metric": "Gross Margin",
+    "errors": [
+      "unrecognized period: 'Q1 2031'"
+    ],
+    "statement": "Keystone standalone gross margin projected to improve to 37.7% by Q1 2031 under "
+  },
+  {
+    "claim_id": "ks-d2a5a39864a3",
+    "metric": "Cash floor",
+    "errors": [
+      "unknown metric: 'Cash floor'"
+    ],
+    "statement": "LBO model scenario assumes minimum cash floor of $2.2 million in one projection "
+  },
+  {
+    "claim_id": "ks-9ee1f2c9bc9d",
+    "metric": "EBITDA",
+    "errors": [
+      "derived claim missing derivation field"
+    ],
+    "statement": "LTM reported EBITDA is $9.4m, as stated in the June 30, 2027 Debt Covenants comp"
+  },
+  {
+    "claim_id": "ks-60e00143e284",
+    "metric": "Exit LTM Revenue",
+    "errors": [
+      "unknown metric: 'Exit LTM Revenue'"
+    ],
+    "statement": "Standalone Base case models Exit LTM Revenue of $105.5m (derived from model outp"
+  },
+  {
+    "claim_id": "ks-5d7f12f3826a",
+    "metric": "Exit LTM Firm EBITDA",
+    "errors": [
+      "unknown metric: 'Exit LTM Firm EBITDA'"
+    ],
+    "statement": "Standalone Base case models Exit LTM Firm EBITDA of $18.3m."
+  }
+]

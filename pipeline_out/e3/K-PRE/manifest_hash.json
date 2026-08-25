@@ -1,0 +1,18 @@
+{
+  "manifest_id": "K-PRE",
+  "deal": "keystone",
+  "sources": [
+    "SRC-CIM",
+    "SRC-DR",
+    "SRC-IA",
+    "SRC-QL",
+    "SRC-QOE",
+    "SRC-MODEL-SUM",
+    "SRC-MODEL",
+    "SRC-MODEL",
+    "SRC-MODEL",
+    "SRC-MODEL"
+  ],
+  "admitted_count": 254,
+  "e3_claims_sha256": "7333723f21ca51b8bf338f13e662c8c9d03bb449dfd35537582fae576b00e164"
+}

@@ -1,0 +1,60 @@
+E3 Extraction Report — K-PRE
+==================================================
+  Deal        : keystone
+  Manifest    : K-PRE
+  Sources     : 10
+  Chunks      : 412
+  Raw claims  : 377
+  Admitted    : 254
+  Rejected    : 61
+  Conflicts   : 0
+
+Admitted by metric:
+   33  Customer Concentration
+   29  Revenue
+   18  EBITDA Adjustment
+   14  EBITDA
+   10  Gross Margin
+   10  Team Tenure
+   10  DSO
+    9  Headcount
+    7  Recurring Revenue
+    7  Covenant Threshold
+    6  EBITDA Margin
+    6  Enterprise Value
+    6  Sponsor Equity
+    6  Working Capital
+    5  Gross Debt
+    5  Capex
+    5  EBITDA Add-back
+    5  DDTL Availability
+    5  Revolver Capacity
+    4  Customer Retention
+    4  Customer Count
+    4  Exit Multiple
+    4  Net Working Capital
+    4  Revenue Growth
+    3  Acquisition Count
+    3  Customer Contract Terms
+    3  Contract Terms
+    3  Net Debt
+    2  Active Billing Accounts
+    2  Net Income
+    2  Seller Rollover
+    2  First-Lien Debt
+    2  MOIC
+    2  Leverage
+    1  Systems Integration Risk
+    1  Key Person Risk
+    1  Integration Risk
+    1  Gross Profit
+    1  Revenue Quality
+    1  Adjustment Supportability
+    1  Net Working Capital Target
+    1  Net Working Capital Adjustment
+    1  Earnings Quality Risk
+    1  Exit Horizon
+    1  Operating Cash Flow
+    1  Equity Value
+    1  DPO
+    1  Covenant EBITDA

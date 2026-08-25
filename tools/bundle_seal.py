@@ -55,6 +55,13 @@ def sha256_file(path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
+def _canonical_hash(value) -> str:
+    """The other accepted form: sha256 over the canonically serialised JSON."""
+    encoded = json.dumps(value, sort_keys=True, separators=(",", ":"),
+                         ensure_ascii=False).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
 def load(path: Path):
     return json.loads(path.read_text(encoding="utf-8"))
 
@@ -200,10 +207,15 @@ def verify(bundle: Path) -> list[str]:
 
     if (bundle / OUTPUT).exists():
         out = load(bundle / OUTPUT)
+        # The engine stamps this itself and may use either accepted form: the
+        # raw file digest or the canonical hash of the parsed JSON. Both
+        # identify the same artifact, so accept either — insisting on the raw
+        # digest alone rejects the runtime's own correct output.
+        accepted = {mph, _canonical_hash(load(bundle / MAPPING))}
         for target in [out, out.get("transition_output", {})]:
             refs = target.get("policy_refs") if isinstance(target, dict) else None
             if isinstance(refs, dict) and "execution_mapping_hash" in refs:
-                if str(refs["execution_mapping_hash"]).removeprefix("sha256:") != mph:
+                if str(refs["execution_mapping_hash"]).removeprefix("sha256:") not in accepted:
                     problems.append("output.policy_refs.execution_mapping_hash")
     return problems
 

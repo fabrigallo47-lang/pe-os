@@ -123,7 +123,6 @@ def assemble(bundle_dir: Path, bundle: dict, event_src: Path,
 
     # ── 4-6. canonical copies ────────────────────────────────────────────────
     for src, name in ((EXEC_GRAPH_SRC, "execution_graph_v7.json"),
-                      (event_src, "event_ebitda_correction.json"),
                       (POLICY_MATERIALITY, "keystone_materiality_policy_v0.json"),
                       (POLICY_AUTHORITY, "keystone_authority_matrix_v0.json")):
         if not src.exists():
@@ -135,6 +134,22 @@ def assemble(bundle_dir: Path, bundle: dict, event_src: Path,
     _w(bundle_dir / "admission_manifest_v7.json", bundle["manifest"])
     written.append("admission_manifest_v7.json")
     say("admission_manifest_v7.json")
+
+    # The correction event names its trigger by stable claim id, which is a
+    # content hash. An event written for one manifest cannot apply to another,
+    # so derive it from the bundle being assembled rather than copying a file.
+    from tools.make_event import build_event
+    try:
+        event = build_event(bundle_dir, "CP-EBITDA-FIRM", 12.2)
+        _w(bundle_dir / "event_ebitda_correction.json", event)
+        say(f"event_ebitda_correction.json (trigger {event['trigger_claim_ids'][0]})")
+    except ValueError as exc:
+        if event_src and event_src.exists():
+            shutil.copyfile(event_src, bundle_dir / "event_ebitda_correction.json")
+            say(f"event non derivabile ({exc}) — copiato {event_src.name}")
+        else:
+            raise
+    written.append("event_ebitda_correction.json")
 
     # ── 7. Seal the INPUTS before running the engine.
     # The engine stamps policy_refs with the hashes of the files it actually

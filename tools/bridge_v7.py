@@ -591,8 +591,13 @@ def _normalize_claim_for_schema(c: dict) -> dict:
         "epistemic_class": c.get("epistemic_class", "asserted"),
         "period": period,
         "perimeter": perimeter,
-        "ground_truth_flag": c.get("epistemic_class") == "attested",
-        "validation_only": False,
+        # ground_truth_flag marks a benchmark answer-key row, NOT a well-attested
+        # claim. Deriving it from epistemic_class == "attested" labelled the most
+        # authoritative claims as answer key, which both misstates their nature
+        # and trips ANSWER_KEY_OR_VALIDATION_LEAKAGE on admission. Carry whatever
+        # the source declared; the extractor sets both False for real claims.
+        "ground_truth_flag": bool(c.get("ground_truth_flag", False)),
+        "validation_only": bool(c.get("validation_only", False)),
     }
     # Carry extra fields that downstream code may read
     for k, v in c.items():

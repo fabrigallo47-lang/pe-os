@@ -187,13 +187,18 @@ class DealGraph:
     # ── Public: build ──────────────────────────────────────────────────────────
 
     def add_claim(self, claim: dict, idx: int) -> str:
-        c_id = _cid(idx)
+        # Keep the claim's own ordinal id when it has one. Re-indexing by
+        # position renames claims whenever the admitted subset differs from the
+        # extraction (claim:0012 became claim:0010 once 296 claims narrowed to
+        # 257), which breaks lineage reconciliation against claims.json.
+        c_id = str(claim.get("ordinal_id") or claim.get("id") or _cid(idx))
 
         self._upsert(c_id,
             type      = CLAIM,
             value     = claim.get("value", ""),
             unit      = claim.get("unit", ""),
-            epistemic = claim.get("epistemic", "asserted"),
+            epistemic = claim.get("epistemic")
+                        or claim.get("epistemic_class", "asserted"),
             direction = claim.get("direction", "context"),
             statement = claim.get("statement", ""),
             locator   = claim.get("locator", ""),

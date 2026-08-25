@@ -93,14 +93,18 @@ def assemble(bundle_dir: Path, bundle: dict, event_src: Path,
     say = (lambda m: print(f"   {m}")) if verbose else (lambda m: None)
     written: list[str] = []
 
-    # ── 1. claims.json ───────────────────────────────────────────────────────
-    claims = bundle["current_graph"].get("claims", [])
+    # ── 1. claims.json — the whole extraction, not the admitted subset ───────
+    # The validator reads claims.json as the extraction record: its id set must
+    # equal graph.json's claim nodes and the identity_migration_map, while
+    # current_graph.claims holds the admitted subset that resolves back into it.
+    extraction = json.loads((bundle_dir / "extraction_graph.json").read_text(encoding="utf-8"))
+    claims = [n for n in extraction.get("nodes", []) if n.get("type") == "claim"]
     _w(bundle_dir / "claims.json", claims)
     written.append("claims.json")
-    say(f"claims.json ({len(claims)} claim ammessi)")
+    admitted = len(bundle["current_graph"].get("claims", []))
+    say(f"claims.json ({len(claims)} claim estratti, {admitted} ammessi nel Current)")
 
     # ── 2. graph.json — same extraction the claims came from ─────────────────
-    extraction = json.loads((bundle_dir / "extraction_graph.json").read_text(encoding="utf-8"))
     dg = build_from_extraction(claims, extraction, bundle.get("_deal", "keystone"))
     graph = dg.to_json()
     if "links" in graph and "edges" not in graph:

@@ -1,0 +1,41 @@
+{
+  "event_id": "EV-KS-EBITDA-001",
+  "event": "CLAIM_CORRECTION:INPUT_REVISION — Firm underwritten EBITDA revised upward at IC gate",
+  "event_type": "claim_correction",
+  "event_status": "SYNTHETIC_TEST_EVENT",
+  "deal": "PROJECT-KEYSTONE",
+  "company": "Alderstone",
+  "effective_date": "2026-03-10",
+  "known_at": "2026-03-10T00:00:00Z",
+  "source": "IC Memo 2026-03-10",
+  "author": "IC",
+  "authority_required": "IC_MEMO",
+  "note": "IC Memo 2026-03-10: firm underwritten EBITDA corrected from $11.4m to $12.2m (QoE v2 conclusion and covenant add-backs). Only the claim is corrected; CP-EBITDA-FIRM and the model nodes follow by propagation.",
+  "source_ids": [
+    "IC-MEMO-2026-03-10"
+  ],
+  "trigger_claim_ids": [
+    "ks-987d2d468a39"
+  ],
+  "mutations": [
+    {
+      "operation": "CORRECT",
+      "object_type": "CLAIM",
+      "object_id": "ks-987d2d468a39",
+      "field": "value",
+      "from": 11.4,
+      "to": 12.2,
+      "unit": "$m",
+      "definition_id": null,
+      "period": "2026-03-10",
+      "perimeter": "Riverton Group"
+    }
+  ],
+  "propagation_expected": {
+    "chain": [
+      "CLAIM ks-987d2d468a39: 11.4 → 12.2",
+      "→ CP-EBITDA-FIRM (support route re-evaluated)",
+      "→ bound model nodes recomputed by the execution mapping"
+    ]
+  }
+}

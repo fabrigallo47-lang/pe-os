@@ -1,4 +1,9 @@
 #!/usr/bin/env python3
+# ─────────────────────────────────────────────────────────────────────────────
+# VENDORED COPY of tools/extract_v2.py — do not edit here.
+# Refresh with:  cp tools/extract_v2.py vercel/api/_extract_v2.py
+# The Vercel bundle ships only vercel/, so it cannot import from tools/.
+# ─────────────────────────────────────────────────────────────────────────────
 """
 extract_v2.py — E3 extraction pipeline for PANTA.
 

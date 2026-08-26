@@ -118,24 +118,42 @@ def _handle_extract(payload: dict) -> dict:
     if not key:
         return {"error": "No API key — paste your Anthropic key in the key field"}
 
-    deal_context = (
-        f"Deal: {deal}. Extract all factual claims relevant to investment analysis. "
-        "Apply epistemic typing: asserted=seller/mgmt claim; observed=directly measured; "
-        "attested=third-party cert; derived=computed. Include period and perimeter on every claim."
-    )
-    user_msg = f"DEAL CONTEXT:\n{deal_context}\n\nARTIFACT:\n{text[:80_000]}"
-
     import time
-    t0     = time.time()
-    raw    = call_api(SYSTEM_PROMPT, user_msg, key)
-    claims = parse_json(raw)
-    graph  = claims_to_graph(claims)
+    filename = (payload.get("filename") or "upload.md").strip()
+
+    # extract_v2 pipeline (L1-L4): deterministic chunking and locators, one
+    # schema-constrained tool_use call per chunk, deterministic validation and
+    # assembly. The single-call free-form path below is kept only as a fallback
+    # so an upload still returns something if the pipeline cannot start.
+    pipeline_info: dict | None = None
+    claims = None
+    t0 = time.time()
+    try:
+        from _extract_flow import run_extraction
+        res = run_extraction(text, filename, deal, key)
+        if res.get("error"):
+            raise RuntimeError(res["error"])
+        claims = res["claims"]
+        pipeline_info = res["pipeline"]
+    except Exception:
+        pipeline_info = {"extractor": "legacy_single_call",
+                         "fallback_reason": traceback.format_exc()[-300:]}
+        deal_context = (
+            f"Deal: {deal}. Extract all factual claims relevant to investment analysis. "
+            "Apply epistemic typing: asserted=seller/mgmt claim; observed=directly measured; "
+            "attested=third-party cert; derived=computed. Include period and perimeter on every claim."
+        )
+        user_msg = f"DEAL CONTEXT:\n{deal_context}\n\nARTIFACT:\n{text[:80_000]}"
+        claims = parse_json(call_api(SYSTEM_PROMPT, user_msg, key))
+
+    graph   = claims_to_graph(claims)
     elapsed = round(time.time() - t0, 2)
 
     dg        = build_from_extraction(claims, graph, deal)
     analytics = _build_analytics(dg)
 
-    result: dict = {"claims": claims, "graph": graph, "analytics": analytics, "elapsed": elapsed}
+    result: dict = {"claims": claims, "graph": graph, "analytics": analytics,
+                    "elapsed": elapsed, "pipeline": pipeline_info}
 
     if BLOB_TOKEN:
         try:

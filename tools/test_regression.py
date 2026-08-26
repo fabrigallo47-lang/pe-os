@@ -348,13 +348,83 @@ def test_resolver() -> None:
     check("sovra-vincolato => HALTED", r.halted, r.status)
 
 
+# ── 8. Sheet classifier: stability by construction ───────────────────────────
+# The model answers two questions layout cannot: what kind of sheet this is, and
+# which headers are periods. Stability must not depend on the model behaving —
+# a fingerprint that has been answered is never asked again.
+
+def test_classifier() -> None:
+    print("\n8. Classificatore dei fogli: stabilità per costruzione")
+    from openpyxl import Workbook
+    from tools.sheet_classifier import (fingerprint_sheet, veto, SHEET_KINDS,
+                                        save_cache, load_cache)
+
+    def sheet(vals):
+        wb = Workbook(); ws = wb.active; ws.title = "M"
+        for ref, v in vals.items():
+            ws[ref] = v
+        return ws
+
+    base = {"A1": "Line", "B1": "FY2025A", "A2": "Revenue", "B2": 74.0,
+            "A3": "EBITDA", "B3": 11.4}
+    ws = sheet(base)
+    fp_a, _ = fingerprint_sheet(ws)
+    check("impronta stabile fra due letture", fp_a == fingerprint_sheet(ws)[0])
+
+    # numbers are shape, not content: the cache must survive a re-forecast
+    ws2 = sheet({**base, "B2": 999.0, "B3": 222.0})
+    check("numeri diversi non invalidano la cache",
+          fingerprint_sheet(ws2)[0] == fp_a)
+
+    # a renamed line item is a different question
+    ws3 = sheet({**base, "A2": "Turnover"})
+    check("etichetta cambiata => impronta diversa",
+          fingerprint_sheet(ws3)[0] != fp_a)
+
+    # the veto: structure overrules the model, never the other way round
+    check("model_sheet senza header viene respinto",
+          veto("model_sheet", {"dims": [2, 2], "grid": ["nn", "nn"]})[0] == "unknown")
+    check("record_table troppo corta viene respinta",
+          veto("record_table", {"dims": [3, 4], "grid": ["tttt"]})[0] == "unknown")
+    check("un tipo fuori enum viene respinto",
+          veto("qualsiasi_cosa", {"dims": [9, 4], "grid": ["tttt"]})[0] == "unknown")
+    check("un model_sheet ben formato passa",
+          veto("model_sheet", {"dims": [3, 3], "grid": ["ttt", "tnf"]})[0] == "model_sheet")
+    check("'unknown' è fra i tipi ammessi", "unknown" in SHEET_KINDS)
+
+    import tempfile
+    with tempfile.TemporaryDirectory() as td:
+        cp = Path(td) / "c.json"
+        save_cache({fp_a: {"sheet": "M", "kind": "model_sheet",
+                           "period_headers": {"P1": "sequence"}, "reason": "r"}}, cp)
+        back = load_cache(cp)
+        check("la cache sopravvive al round-trip",
+              back.get(fp_a, {}).get("kind") == "model_sheet")
+
+    # a judgment must lift the pessimistic default, never demote a positive one
+    from tools.sheet_semantics import analyse_sheet
+    fr = sheet({"A1": "Line", "B1": "P1", "C1": "P2",
+                "A2": "Besoin brut", "B2": 10, "C2": 12,
+                "A3": "Stock", "B3": 5, "C3": 6})
+    without = analyse_sheet(fr)
+    with_j = analyse_sheet(fr, {"kind": "model_sheet",
+                                "period_headers": {"P1": "sequence", "P2": "sequence"}})
+    check("senza giudizio il vocabolario ignoto non è un periodo",
+          all(p.period_kind is None for p in without.proposals))
+    check("col giudizio P1/P2 diventano periodi",
+          any(p.period_kind == "sequence" for p in with_j.proposals))
+    check("il giudizio alza la confidenza invece di abbassarla",
+          max((p.confidence for p in with_j.proposals), default=0) >=
+          max((p.confidence for p in without.proposals), default=0))
+
+
 def main() -> int:
     print("=" * 62)
     print("REGRESSION SUITE — 2026-08-25 audit")
     print("=" * 62)
     for t in (test_cascade, test_benchmark_field, test_deal_profile,
               test_grounding_gate, test_minigraph, test_excel,
-              test_resolver):
+              test_resolver, test_classifier):
         t()
     print()
     print("=" * 62)

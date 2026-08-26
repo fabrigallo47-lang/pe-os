@@ -297,12 +297,22 @@ def classify_sheet(ws, label_col: int | None, header_row: int | None,
     return "record_table"
 
 
-def analyse_sheet(ws) -> SheetReport:
+def analyse_sheet(ws, judgment: dict | None = None) -> SheetReport:
     orientation, label_col, header_row = infer_orientation(ws)
     unit_cols = find_unit_columns(ws)
     from openpyxl.utils import column_index_from_string
     label_idx = column_index_from_string(label_col) if label_col else None
     kind = classify_sheet(ws, label_idx, header_row)
+    # A cached model judgment resolves what layout alone cannot: whether this is
+    # a model or a table of records, and which headers are periods. It only ever
+    # replaces "record_table", the pessimistic default — it is not allowed to
+    # demote a sheet the deterministic layer positively recognised.
+    model_periods: dict[str, str] = {}
+    if judgment:
+        model_periods = judgment.get("period_headers") or {}
+        jk = judgment.get("kind")
+        if jk in ("model_sheet", "record_table", "scalar_block") and kind == "record_table":
+            kind = jk
     report = SheetReport(sheet=ws.title.upper(), orientation=orientation,
                          label_column=label_col, header_row=header_row, kind=kind)
 
@@ -353,6 +363,9 @@ def analyse_sheet(ws) -> SheetReport:
                 issues.append("nessuna etichetta trovata né a sinistra né sopra")
 
             period_kind = classify_period(col_header)
+            if period_kind is None and col_header in model_periods:
+                # vocabulary the parser has never met — P1, T1, "Anno 1"
+                period_kind = model_periods[col_header]
             if declared_unit:
                 # The sheet says what the unit is; nothing should override that.
                 unit, unit_source = declared_unit, "unit_column"
@@ -383,14 +396,26 @@ def analyse_sheet(ws) -> SheetReport:
     return report
 
 
-def analyse_workbook(path: Path) -> list[SheetReport]:
+def load_judgments(cache_path: Path | None) -> dict[str, dict]:
+    """Judgments keyed by sheet name, from the classifier's durable cache."""
+    if not cache_path or not cache_path.exists():
+        return {}
+    try:
+        js = json.loads(cache_path.read_text(encoding="utf-8")).get("judgments", {})
+    except Exception:
+        return {}
+    return {v.get("sheet", "").upper(): v for v in js.values() if v.get("sheet")}
+
+
+def analyse_workbook(path: Path, judgments: dict[str, dict] | None = None) -> list[SheetReport]:
     try:
         import openpyxl
     except ImportError:
         sys.exit("serve openpyxl")
     # data_only=False so formula cells are visible as formulas, not stale values.
     wb = openpyxl.load_workbook(str(path), data_only=False)
-    return [analyse_sheet(ws) for ws in wb]
+    judgments = judgments or {}
+    return [analyse_sheet(ws, judgments.get(ws.title.upper())) for ws in wb]
 
 
 def main() -> int:
@@ -398,9 +423,11 @@ def main() -> int:
     ap.add_argument("--workbook", type=Path, required=True)
     ap.add_argument("--out", type=Path)
     ap.add_argument("--show", type=int, default=6, help="righe da mostrare per foglio")
+    ap.add_argument("--judgments", type=Path, default=None,
+                    help="cache di sheet_classifier (vault/policy/sheet_classifications.json)")
     a = ap.parse_args()
 
-    reports = analyse_workbook(a.workbook)
+    reports = analyse_workbook(a.workbook, load_judgments(a.judgments))
     total = sum(len(r.proposals) for r in reports)
     conf = sum(len(r.confident) for r in reports)
 

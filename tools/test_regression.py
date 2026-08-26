@@ -392,6 +392,15 @@ def test_classifier() -> None:
           veto("model_sheet", {"dims": [3, 3], "grid": ["ttt", "tnf"]})[0] == "model_sheet")
     check("'unknown' è fra i tipi ammessi", "unknown" in SHEET_KINDS)
 
+    # deal scoping is optional and must not invalidate what came before it
+    fp_ks, _ = fingerprint_sheet(ws, deal="keystone")
+    fp_as, _ = fingerprint_sheet(ws, deal="astrelia")
+    check("senza slug l'impronta resta quella di prima",
+          fingerprint_sheet(ws)[0] == fp_a)
+    check("lo slug cambia l'impronta", fp_ks != fp_a)
+    check("due deal non condividono il giudizio", fp_ks != fp_as)
+    check("lo stesso deal e' stabile", fp_ks == fingerprint_sheet(ws, deal="keystone")[0])
+
     import tempfile
     with tempfile.TemporaryDirectory() as td:
         cp = Path(td) / "c.json"

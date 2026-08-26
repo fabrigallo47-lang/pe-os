@@ -78,8 +78,21 @@ def _cell_shape(v: Any) -> str:
     return "t"
 
 
-def fingerprint_sheet(ws, probe_rows: int = 25, probe_cols: int = 12) -> tuple[str, dict]:
-    """(digest, the canonical structure it was computed from)."""
+def fingerprint_sheet(ws, probe_rows: int = 25, probe_cols: int = 12,
+                      deal: str | None = None) -> tuple[str, dict]:
+    """
+    (digest, the canonical structure it was computed from).
+
+    `deal` scopes the judgment. Left out, the fingerprint is purely structural,
+    so five identically laid out scenario sheets — or two funds using the same
+    template — share one judgment. That is usually right, because the question
+    is about shape, not about whose numbers are in it.
+
+    Pass a slug when a deal must not inherit a judgment made while looking at
+    another one. The key is omitted entirely when absent rather than written as
+    null, so fingerprints taken before this existed stay valid and their cached
+    judgments keep hitting.
+    """
     max_r = min(ws.max_row, probe_rows)
     max_c = min(ws.max_column, probe_cols)
 
@@ -106,6 +119,8 @@ def fingerprint_sheet(ws, probe_rows: int = 25, probe_cols: int = 12) -> tuple[s
         "grid": grid,
         "texts": texts,
     }
+    if deal:
+        canonical["deal"] = deal
     blob = json.dumps(canonical, sort_keys=True, separators=(",", ":"),
                       ensure_ascii=False)
     return hashlib.sha256(blob.encode()).hexdigest()[:16], canonical
@@ -251,14 +266,15 @@ def classify_with_model(canonical: dict, api_key: str) -> tuple[str, dict, str]:
 # ── orchestration ────────────────────────────────────────────────────────────
 
 def classify_workbook(path: Path, api_key: str | None,
-                      cache_path: Path = CACHE) -> list[Judgment]:
+                      cache_path: Path = CACHE,
+                      deal: str | None = None) -> list[Judgment]:
     import openpyxl
     wb = openpyxl.load_workbook(str(path), data_only=False)
     cache = load_cache(cache_path)
     out: list[Judgment] = []
 
     for ws in wb:
-        fp, canonical = fingerprint_sheet(ws)
+        fp, canonical = fingerprint_sheet(ws, deal=deal)
         hit = cache.get(fp)
         if hit:
             out.append(Judgment(sheet=ws.title.upper(), fingerprint=fp,
@@ -284,7 +300,10 @@ def classify_workbook(path: Path, api_key: str | None,
         out.append(j)
         cache[fp] = {"sheet": j.sheet, "kind": j.kind,
                      "period_headers": j.period_headers, "reason": j.reason,
-                     "vetoed": j.vetoed, "decided_at": j.decided_at}
+                     "vetoed": j.vetoed, "decided_at": j.decided_at,
+                     # recorded so the scope of a judgment is visible, not
+                     # inferred from whether it happens to be reused
+                     "deal": deal or None}
 
     save_cache(cache, cache_path)
     return out
@@ -363,7 +382,7 @@ def classify_workbook_from(wb, api_key, cache_path):
     cache = load_cache(cache_path)
     out = []
     for ws in wb:
-        fp, canonical = fingerprint_sheet(ws)
+        fp, canonical = fingerprint_sheet(ws, deal=deal)
         hit = cache.get(fp)
         if hit:
             out.append(Judgment(ws.title.upper(), fp, hit["kind"],
@@ -379,6 +398,10 @@ def main() -> int:
     ap = argparse.ArgumentParser(description="Classify sheets, stably")
     ap.add_argument("--workbook", type=Path)
     ap.add_argument("--cache", type=Path, default=CACHE)
+    ap.add_argument("--deal", default=None,
+                    help="slug del deal: restringe il giudizio a questo deal. "
+                         "Omesso, il giudizio è puramente strutturale e "
+                         "condiviso da qualunque foglio con la stessa forma.")
     ap.add_argument("--selftest", action="store_true")
     a = ap.parse_args()
 
@@ -388,9 +411,10 @@ def main() -> int:
         ap.error("serve --workbook, oppure --selftest")
 
     key = os.environ.get("ANTHROPIC_API_KEY", "")
-    js = classify_workbook(a.workbook, key or None, a.cache)
+    js = classify_workbook(a.workbook, key or None, a.cache, a.deal)
 
-    print(f"[sheet_classifier] {a.workbook.name}   cache: {a.cache}")
+    scope = f"deal={a.deal}" if a.deal else "strutturale (nessun deal)"
+    print(f"[sheet_classifier] {a.workbook.name}   cache: {a.cache}   ambito: {scope}")
     counts: dict[str, int] = {}
     for j in js:
         counts[j.source] = counts.get(j.source, 0) + 1

@@ -32,3 +32,6 @@ AI_HARNESS.md
 .env
 *.key
 .env*
+
+# Report lasciati da check_all.py del kit PANTA (derivati, non nostri)
+independent_validation_report*

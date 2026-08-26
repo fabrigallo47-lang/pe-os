@@ -129,6 +129,38 @@ def _is_text(v: Any) -> bool:
     return isinstance(v, str) and bool(v.strip()) and not v.startswith("=")
 
 
+# Models date their columns with real dates, not strings, so a header row of
+# datetimes was being skipped entirely by a text-only scan.
+def _is_header_like(v: Any) -> bool:
+    from datetime import datetime, date
+    return _is_text(v) or isinstance(v, (datetime, date))
+
+
+def _header_text(v: Any) -> str:
+    from datetime import datetime, date
+    if isinstance(v, (datetime, date)):
+        return v.strftime("%Y-%m-%d")
+    return str(v).strip()
+
+
+# A column that holds units for the whole sheet ($mm, %, x, days) is not a
+# label column. Locally "$mm" and "Revenue" are both text to the left of a
+# value; only this sheet-wide fact separates them.
+_UNIT_TOKEN = re.compile(r"^\s*(\$?(mm|m|k|bn)|%|x|days|ratio|units?|#)\s*$", re.I)
+
+
+def find_unit_columns(ws, probe_rows: int = 60) -> set[int]:
+    max_r = min(ws.max_row, probe_rows)
+    max_c = min(ws.max_column, 20)
+    found = set()
+    for c in range(1, max_c + 1):
+        vals = [ws.cell(row=r, column=c).value for r in range(1, max_r + 1)]
+        texts = [v for v in vals if _is_text(v)]
+        if len(texts) >= 3 and sum(1 for t in texts if _UNIT_TOKEN.match(t)) / len(texts) >= 0.6:
+            found.add(c)
+    return found
+
+
 def infer_orientation(ws, probe_rows: int = 30, probe_cols: int = 20) -> tuple[str, str | None, int | None]:
     """
     Measure where the labels are instead of assuming.
@@ -141,18 +173,27 @@ def infer_orientation(ws, probe_rows: int = 30, probe_cols: int = 20) -> tuple[s
     if max_r < 2 or max_c < 2:
         return "unclear", None, None
 
-    def text_share_col(c: int) -> float:
+    # A title cell is text and nothing else; a header spans the sheet. Requiring
+    # coverage as well as text share is what separates "Project Keystone" in A1
+    # from the real dated header on row 3.
+    min_span = max(3, int(max_c * 0.5))
+
+    def score_col(c: int) -> tuple[float, int]:
         vals = [ws.cell(row=r, column=c).value for r in range(1, max_r + 1)]
         seen = [v for v in vals if v is not None]
-        return (sum(1 for v in seen if _is_text(v)) / len(seen)) if seen else 0.0
+        share = (sum(1 for v in seen if _is_text(v)) / len(seen)) if seen else 0.0
+        return share, len(seen)
 
-    def text_share_row(r: int) -> float:
+    def score_row(r: int) -> tuple[float, int]:
         vals = [ws.cell(row=r, column=c).value for c in range(1, max_c + 1)]
         seen = [v for v in vals if v is not None]
-        return (sum(1 for v in seen if _is_text(v)) / len(seen)) if seen else 0.0
+        share = (sum(1 for v in seen if _is_header_like(v)) / len(seen)) if seen else 0.0
+        return share, len(seen)
 
-    label_col = next((c for c in range(1, max_c + 1) if text_share_col(c) >= 0.7), None)
-    header_row = next((r for r in range(1, max_r + 1) if text_share_row(r) >= 0.7), None)
+    label_col = next((c for c in range(1, max_c + 1)
+                      if score_col(c)[0] >= 0.7 and score_col(c)[1] >= 3), None)
+    header_row = next((r for r in range(1, max_r + 1)
+                       if score_row(r)[0] >= 0.7 and score_row(r)[1] >= min_span), None)
 
     from openpyxl.utils import get_column_letter
     if label_col and header_row:
@@ -174,10 +215,14 @@ def _col_is_blank(ws, col: int, max_row: int) -> bool:
                for r in range(1, max_row + 1))
 
 
-def _scan_left(ws, row: int, col: int, limit: int = 12) -> tuple[str, str]:
-    """Nearest label to the left, stopping at the block boundary."""
+def _scan_left(ws, row: int, col: int, limit: int = 12,
+               unit_cols: set[int] | None = None) -> tuple[str, str]:
+    """Nearest label to the left, skipping unit columns, stopping at the block."""
     max_row = min(ws.max_row, 200)
+    unit_cols = unit_cols or set()
     for c in range(col - 1, max(1, col - limit) - 1, -1):
+        if c in unit_cols:
+            continue
         # A fully empty column separates blocks: a label beyond it belongs to
         # a different table and must not be borrowed.
         if _col_is_blank(ws, c, max_row):
@@ -201,13 +246,14 @@ def _scan_up(ws, row: int, col: int, limit: int = 12) -> tuple[str, str]:
         if _row_is_blank(ws, r, max_col):
             return "", ""
         v = ws.cell(row=r, column=col).value
-        if _is_text(v):
-            return v.strip(), ws.cell(row=r, column=col).coordinate
+        if _is_header_like(v):
+            return _header_text(v), ws.cell(row=r, column=col).coordinate
     return "", ""
 
 
 def analyse_sheet(ws) -> SheetReport:
     orientation, label_col, header_row = infer_orientation(ws)
+    unit_cols = find_unit_columns(ws)
     report = SheetReport(sheet=ws.title.upper(), orientation=orientation,
                          label_column=label_col, header_row=header_row)
 
@@ -221,8 +267,29 @@ def analyse_sheet(ws) -> SheetReport:
             if _is_text(v) and not is_formula:
                 continue
 
-            row_label, row_src = _scan_left(ws, cell.row, cell.column)
+            if cell.column in unit_cols:
+                continue      # a unit cell is metadata about its row, not a quantity
+            if header_row and cell.row <= header_row:
+                continue      # the header row describes the sheet, it is not data
+            row_label, row_src = _scan_left(ws, cell.row, cell.column,
+                                            unit_cols=unit_cols)
+            declared_unit = ""
+            for uc in sorted(unit_cols, reverse=True):
+                if uc < cell.column:
+                    uv = ws.cell(row=cell.row, column=uc).value
+                    if _is_text(uv):
+                        declared_unit = uv.strip()
+                        break
             col_header, col_src = _scan_up(ws, cell.row, cell.column)
+            if not col_header and header_row:
+                # A sheet-wide header row governs every block beneath it. The
+                # local upward scan stops at the blank rows that merely space
+                # sections apart, which is right between two tables and wrong
+                # here — this is the sheet-level fact that settles it.
+                hv = ws.cell(row=header_row, column=cell.column).value
+                if _is_header_like(hv):
+                    col_header = _header_text(hv)
+                    col_src = ws.cell(row=header_row, column=cell.column).coordinate
 
             evidence = [c for c in (row_src, col_src) if c]
             issues: list[str] = []
@@ -230,7 +297,11 @@ def analyse_sheet(ws) -> SheetReport:
                 issues.append("nessuna etichetta trovata né a sinistra né sopra")
 
             period_kind = classify_period(col_header)
-            unit, unit_source = infer_unit(row_label, cell.number_format)
+            if declared_unit:
+                # The sheet says what the unit is; nothing should override that.
+                unit, unit_source = declared_unit, "unit_column"
+            else:
+                unit, unit_source = infer_unit(row_label, cell.number_format)
 
             # Confidence is built from what was actually found, so a reader can
             # see why a proposal is weak rather than trusting a bare number.
@@ -241,7 +312,7 @@ def analyse_sheet(ws) -> SheetReport:
                 confidence += 0.25
             if period_kind:
                 confidence += 0.10
-            if unit_source == "number_format":
+            if unit_source in ("number_format", "unit_column"):
                 confidence += 0.10
             confidence = round(min(confidence, 1.0), 2)
 

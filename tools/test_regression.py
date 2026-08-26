@@ -282,12 +282,79 @@ def test_excel() -> None:
     check("unità: '(x)' letto come multiplo", infer_unit("Net leverage (x)", "General")[0] == "x")
 
 
+# ── 7. Binding resolver (L3) ─────────────────────────────────────────────────
+# Meaning is resolved over the whole deal, not cell by cell. On an
+# over-constrained system the resolver must halt and offer a relaxation, never
+# pick a winner itself.
+
+def test_resolver() -> None:
+    print("\n7. Resolver dei binding: vincoli globali, stop su sovra-vincolo")
+    from tools.binding_resolver import Concept, Binding, resolve, granularity_of, norm_unit
+
+    check("granularita: fine trimestre riconosciuta",
+          granularity_of("2026-06-30") == "quarter")
+    check("granularita: FY riconosciuto", granularity_of("FY2025A") == "fiscal_year")
+    check("unita: $mm e $m sono la stessa cosa", norm_unit("$mm") == norm_unit("$m"))
+
+    concepts = {
+        "C-REV": Concept("C-REV", "Revenue", unit="$mm", granularity="quarter",
+                         form="derived"),
+        "C-IN":  Concept("C-IN", "Opening cash", unit="$mm", granularity="point",
+                         form="input"),
+    }
+    source = {"cells": {
+        "S!C5":  {"kind": "formula", "value": "=A1+A2", "precedents": ["S!A1", "S!A2"]},
+        "S!C9":  {"kind": "number",  "value": 3.0, "precedents": []},
+        "S!C7":  {"kind": "formula", "value": "=S!C7+1", "precedents": ["S!C7"]},
+    }}
+
+    # a clean binding is admitted
+    ok = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SB", "$mm", 0.9)],
+                 concepts, source)
+    check("un binding coerente viene ammesso",
+          len(ok.admitted) == 1 and not ok.violations, ok.status)
+
+    # annual cell must not bind to a quarterly concept
+    r = resolve([Binding("C-REV", "S!C5", "FY2025A", "SB", "$mm", 0.9)], concepts, source)
+    check("una serie annuale non si lega a un concetto trimestrale",
+          any(v.code == "PERIOD_ALIGNMENT" for v in r.violations))
+
+    # a declared input must not be produced by a formula
+    r = resolve([Binding("C-IN", "S!C5", "2026-03-31", "SB", "$mm", 0.9)], concepts, source)
+    check("un input dichiarato non puo' essere calcolato",
+          any(v.code == "PRECEDENT_SHAPE" for v in r.violations))
+
+    # unit mismatch is caught even at high confidence
+    r = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SB", "%", 0.99)], concepts, source)
+    check("unita incoerente scartata anche ad alta confidenza",
+          any(v.code == "UNIT_COHERENCE" for v in r.violations))
+
+    # self-reference
+    r = resolve([Binding("C-REV", "S!C7", "2026-06-30", "SB", "$mm", 0.9)], concepts, source)
+    check("una cella che si legge da sola viene rifiutata",
+          any(v.code == "NO_SELF_REFERENCE" for v in r.violations))
+
+    # two cells competing for the same slot: halt, do not choose
+    r = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SB", "$mm", 0.9),
+                 Binding("C-REV", "S!C9", "2026-06-30", "SB", "$mm", 0.9)],
+                concepts, source)
+    dup = [v for v in r.violations if v.code == "UNIQUE_BINDING"]
+    check("due candidati per lo stesso slot sono un conflitto", len(dup) == 1)
+    check("il resolver non ne sceglie uno da solo", len(r.admitted) == 0)
+    check("emette comunque una proposta laterale",
+          bool(dup and dup[0].relaxation), str(dup[0].relaxation.get("kind") if dup else None))
+    check("la proposta riporta il margine, non solo il vincitore",
+          dup[0].relaxation.get("margin") == 0.0)
+    check("sovra-vincolato => HALTED", r.halted, r.status)
+
+
 def main() -> int:
     print("=" * 62)
     print("REGRESSION SUITE — 2026-08-25 audit")
     print("=" * 62)
     for t in (test_cascade, test_benchmark_field, test_deal_profile,
-              test_grounding_gate, test_minigraph, test_excel):
+              test_grounding_gate, test_minigraph, test_excel,
+              test_resolver):
         t()
     print()
     print("=" * 62)

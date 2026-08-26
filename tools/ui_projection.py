@@ -219,8 +219,74 @@ def load_events(deal: str, limit: int = 200) -> list[dict]:
     return out[-limit:]
 
 
+def build_events(claims: list[dict], event: dict | None,
+                 grounding: list[dict] | None = None) -> dict:
+    """
+    S11-S13: the arriving change, built from a real extracted claim.
+
+    The UI's two "pending review" buttons are hard-coded in its render.js as
+    data-open-scene="earnings" and "concentration", and are not generated from
+    the projection. So rather than edit their code, real content is supplied
+    under the keys it already looks for.
+
+    The fields a change-arrival needs — source_passage, locator, definition,
+    period, perimeter — are exactly the fields extract_v2 puts on a claim. The
+    two are the same object seen from different ends, which is why this reads
+    as a mapping and not a construction.
+    """
+    by_id = {c.get("claim_id"): c for c in claims}
+    scenes: dict[str, dict] = {}
+
+    def scene(key: str, claim: dict, label: str, why: str) -> dict:
+        return {
+            "event_id": f"EVENT-{key.upper()}-LIVE",
+            "type": "SOURCE_TREATMENT",
+            "label": label,
+            "source_title": claim.get("source_id", "—"),
+            "source_passage": claim.get("statement", ""),
+            "locator": claim.get("locator", ""),
+            "definition": claim.get("metric") or claim.get("definition_id") or "—",
+            "period": claim.get("period") or claim.get("period_iso") or "—",
+            "perimeter": claim.get("perimeter", "—"),
+            "proposed_position": why,
+            "scene_id": key,
+            "synthetic": False,
+            "claim_id": claim.get("claim_id"),
+            "epistemic_class": claim.get("epistemic_class"),
+            "provenance": "compiler",
+        }
+
+    # earnings: the claim the correction event actually targets
+    if event and event.get("trigger_claim_ids"):
+        cid = event["trigger_claim_ids"][0]
+        c = by_id.get(cid)
+        if c:
+            mut = (event.get("mutations") or [{}])[0]
+            scenes["earnings"] = scene(
+                "earnings", c,
+                event.get("event") or "Correzione del claim di earnings",
+                f"Correzione proposta: {mut.get('from')} → {mut.get('to')} "
+                f"{mut.get('unit','')}. {event.get('note','')}".strip())
+
+    # concentration: a claim the grounding gate refuses to admit unchecked
+    for f in (grounding or []):
+        if not f.get("blocking"):
+            continue
+        c = by_id.get(f.get("claim_id"))
+        if not c:
+            continue
+        scenes["concentration"] = scene(
+            "concentration", c,
+            f"Grounding: {f.get('code')}",
+            f"Il gate blocca questo claim: {f.get('detail','')}")
+        break
+
+    return scenes
+
+
 def build_projection(bundle: dict, deal: str = "keystone",
-                     scaffold: dict | None = None) -> dict:
+                     scaffold: dict | None = None,
+                     grounding: list[dict] | None = None) -> dict:
     """
     bundle: {current_graph, execution_mapping, admission_manifest, transition_output}
     scaffold: the package fixture, used only for product structures we do not own.
@@ -256,6 +322,7 @@ def build_projection(bundle: dict, deal: str = "keystone",
     scaffold = scaffold or {}
     sd = scaffold.get("deal", {})
 
+    live_events = build_events(claims, bundle.get("event"), grounding)
     routes = cg.get("support_routes", [])
     foundations = build_foundations(positions, routes, spine)
     unknowns = build_unknowns(spine)
@@ -301,7 +368,7 @@ def build_projection(bundle: dict, deal: str = "keystone",
         ),
         "fund": scaffold.get("fund", {}),
         "deal": deal_obj,
-        "events": scaffold.get("events", {}),
+        "events": live_events or scaffold.get("events", {}),
         "screens": {
             "S02_deal_command": "compiler",
             "S04_object_aperture": "compiler",
@@ -316,7 +383,7 @@ def build_projection(bundle: dict, deal: str = "keystone",
             "S07_shadow_ic": "package_fixture (contradictions vuote nel vault)",
             "S08_scenario_lab": "runtime (Anto)",
             "S09_artifacts": "package_fixture",
-            "S11_change_arrival": "package_fixture",
+            "S11_change_arrival": "compiler" if live_events else "package_fixture",
             "S15_action_frontier": "package_fixture",
             "S16_decision_room": "runtime (Anto)",
             "S17_execution_room": "runtime (Anto)",
@@ -337,7 +404,7 @@ def build_projection(bundle: dict, deal: str = "keystone",
             "decisionRoom": "package_fixture",
             "executionRoom": "package_fixture",
             "replay": "package_fixture",
-            "events": "package_fixture",
+            "events": "compiler" if live_events else "package_fixture",
         },
         "compiler": {
             "claims": len(claims),

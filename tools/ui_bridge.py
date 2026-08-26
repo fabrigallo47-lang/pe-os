@@ -53,6 +53,7 @@ BUNDLE_FILES = {
     "transition_output": "transition_output.json",
     "candidate_graph": "candidate_graph.json",
     "event": "event_ebitda_correction.json",
+    "grounding": "grounding_review.json",
 }
 
 
@@ -99,8 +100,10 @@ class Bundle:
             {"current_graph": self.parts["current_graph"],
              "execution_mapping": self.parts.get("execution_mapping", {}),
              "admission_manifest": self.parts.get("admission_manifest", {}),
-             "transition_output": self.parts.get("transition_output")},
-            deal=self.deal, scaffold=self.scaffold)
+             "transition_output": self.parts.get("transition_output"),
+             "event": self.parts.get("event")},
+            deal=self.deal, scaffold=self.scaffold,
+            grounding=(self.parts.get("grounding") or {}).get("review_queue"))
         return {
             "frontend_projection": proj,
             # the bundle travels alongside so nothing is lost to the projection

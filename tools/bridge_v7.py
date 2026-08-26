@@ -370,7 +370,14 @@ def _enrich_claims(extraction: dict) -> list[dict]:
         c["temporal_class"] = _temporal_class(c, c["period_iso"])
         c["known_at"] = _known_at(c)
         c["effective_date"] = c["period_iso"] if _is_iso(c["period_iso"]) else None
-        c["stable_id"] = stable_claim_id(c)
+        # Keep the id the extractor already assigned. Recomputing it here
+        # produced a second hash domain: bridge_v7 lowercases the metric and
+        # reads `period` where extract_v2 uses `period_iso`, so the same claim
+        # became ks-5747898178af upstream and ks-05ec154f2a67 here. Nothing
+        # crossed that boundary — the grounding review queue could not be joined
+        # to the Current graph at all, 0 of 257 admitted claims matching any of
+        # its 241 findings. Identity belongs to whoever established it.
+        c["stable_id"] = c.get("stable_id") or stable_claim_id(c)
         c["ordinal_id"] = n["id"]
         c["epistemic_class"] = c.get("epistemic", "asserted")
         enriched.append(c)

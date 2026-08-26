@@ -233,12 +233,61 @@ def test_minigraph() -> None:
           "minigraph" in (ROOT / "tools" / "graph_store.py").read_text())
 
 
+
+
+# ── 6. Excel compiler: cycles and cell semantics ─────────────────────────────
+# extract_v3 reads formulas rather than cached values, and sheet_semantics must
+# never borrow a header across a block boundary — that produced a confident
+# wrong period on a table that carries none.
+
+def test_excel() -> None:
+    print("\n6. Excel: solver ciclico e semantica delle celle")
+    from tools.extract_v3 import (solve_component, strongly_connected_components,
+                                  parse_cell_node)
+
+    check("parse_cell_node riconosce una cella vera",
+          parse_cell_node("'[M.XLSX]Cashflow'!B3") == ("CASHFLOW", "B3"))
+    check("parse_cell_node scarta un nodo di espressione",
+          parse_cell_node("'[M.XLSX]Cashflow'!B3))") is None)
+
+    succ = {"a": {"b"}, "b": {"c"}, "c": {"a"}, "d": {"a"}}
+    comps = [sorted(c) for c in strongly_connected_components(
+        ["a", "b", "c", "d"], succ) if len(c) > 1]
+    check("Tarjan trova il ciclo a->b->c->a", comps == [["a", "b", "c"]], str(comps))
+
+    # revolver loop with the draw binding, same closed form as the self-test
+    e, t, r, m, n = 2.85, 42.8, 0.085 / 4, 1.0, 2.5
+
+    def ev(cell, v):
+        if cell == "I": return r * (t + v["R"])
+        if cell == "C": return e - v["I"] - n
+        if cell == "R": return max(0.0, m - v["C"])
+        raise KeyError(cell)
+
+    rep = solve_component(["I", "C", "R"], ev, tolerance=1e-10, max_iter=500)
+    want_i = r * (t + m - e + n) / (1 - r)
+    check("punto fisso converge", rep.converged, f"{rep.iterations} iterazioni")
+    check("converge al valore in forma chiusa",
+          abs(rep.values["I"] - want_i) < 1e-6,
+          f"{rep.values['I']:.6f} vs {want_i:.6f}")
+    check("un componente non convergente non viene spacciato per risolto",
+          not solve_component(["x"], lambda c, v: v["x"] + 1.0,
+                              tolerance=1e-12, max_iter=5).converged)
+
+    from tools.sheet_semantics import classify_period, infer_unit
+    check("periodo: FY2025A riconosciuto", classify_period("FY2025A") == "fiscal_year")
+    check("periodo: 'Value' non è un periodo", classify_period("Value") is None)
+    check("unità: number_format batte l'etichetta",
+          infer_unit("Revenue", "0.0%") == ("%", "number_format"))
+    check("unità: '(x)' letto come multiplo", infer_unit("Net leverage (x)", "General")[0] == "x")
+
+
 def main() -> int:
     print("=" * 62)
     print("REGRESSION SUITE — 2026-08-25 audit")
     print("=" * 62)
     for t in (test_cascade, test_benchmark_field, test_deal_profile,
-              test_grounding_gate, test_minigraph):
+              test_grounding_gate, test_minigraph, test_excel):
         t()
     print()
     print("=" * 62)

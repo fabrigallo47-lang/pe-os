@@ -80,6 +80,7 @@ class Bundle:
         if "current_graph" not in self.parts:
             raise SystemExit(f"bundle incompleto in {path}: manca current_graph.json")
         self.missing = missing
+        self.last_ingest: dict | None = None
 
     @property
     def case_id(self) -> str:
@@ -231,6 +232,23 @@ class Handler(BaseHTTPRequestHandler):
             self._json(HTTPStatus.OK, b.admit(m.group(2)))
             return
 
+        if path == "/api/v1/ingest":
+            src = Path(body.get("path", "")).expanduser()
+            if not src.exists():
+                self._json(HTTPStatus.BAD_REQUEST,
+                           {"error": f"file non trovato: {src}"})
+                return
+            from tools.ingest_service import ingest
+            concepts = body.get("concepts")
+            res = ingest(src, self.bundle.deal,
+                         Path(concepts).expanduser() if concepts else None)
+            # Heavy payloads stay on disk; the response reports what was built.
+            res.pop("cells", None)
+            res.pop("e3", None)
+            self.bundle.last_ingest = res
+            self._json(HTTPStatus.OK, res)
+            return
+
         if re.match(r"^/api/v1/cases/([^/]+)/settle$", path):
             # Settlement is a human act on the runtime side. Recorded, not granted.
             self._json(HTTPStatus.ACCEPTED, {
@@ -251,6 +269,8 @@ def main() -> int:
                     default=ROOT / "pipeline_out" / "e3" / "K-IC" / "adapter_alpha")
     ap.add_argument("--port", type=int, default=4178)
     ap.add_argument("--deal", default="keystone")
+    ap.add_argument("--no-scaffold", action="store_true",
+                    help="niente fixture: mostra solo ciò che produciamo davvero")
     ap.add_argument("--scaffold", type=Path,
                     default=ROOT / "ui" / "fixtures" / "normalized"
                             / "frontend_projection_v17.json",
@@ -261,7 +281,8 @@ def main() -> int:
     if not UI_APP.exists():
         raise SystemExit(f"UI non trovata in {UI_APP}")
 
-    Handler.bundle = Bundle(a.bundle, deal=a.deal, scaffold_path=a.scaffold)
+    Handler.bundle = Bundle(a.bundle, deal=a.deal,
+                            scaffold_path=None if a.no_scaffold else a.scaffold)
     b = Handler.bundle
     cg = b.parts["current_graph"]
 

@@ -284,6 +284,62 @@ def build_events(claims: list[dict], event: dict | None,
     return scenes
 
 
+SCENARIOS = [
+    ("base",     "Standalone Base",     "MN-BASE-MOIC",          "MN-BASE-IRR"),
+    ("downside", "Standalone Downside", "MN-DOWN-MOIC",          "MN-DOWN-IRR"),
+    ("acq",      "Acquisition Base",    "MN-ACQ-MOIC",           "MN-ACQ-IRR"),
+    ("combined", "Combined Risk",       "MN-COMBINED-RISK-MOIC", "MN-COMBINED-RISK-IRR"),
+]
+
+
+def build_scenario_lab(model_nodes: list[dict]) -> dict:
+    """
+    S08 Scenario Lab, from returns the workbook actually computes.
+
+    These figures came out of extract_v3 evaluating the workbook's own formulas
+    — the transcription in keystone_model.py carried none of them, so before
+    that they were all None and this screen had nothing but fixture behind it.
+
+    Units are inconsistent in the source: MOIC appears as both "x" and "RATIO",
+    IRR as "%" and "PERCENT". They are normalised for display and the raw value
+    is kept, because a screen that quietly rewrites a number is worse than one
+    that shows two spellings.
+    """
+    by_id = {m.get("model_node_id"): m for m in model_nodes}
+
+    def num(node_id: str):
+        v = (by_id.get(node_id) or {}).get("value")
+        return v if isinstance(v, (int, float)) else None
+
+    debt = num("MN-DEBT")
+    scenarios = []
+    for key, label, moic_id, irr_id in SCENARIOS:
+        moic, irr = num(moic_id), num(irr_id)
+        if moic is None and irr is None:
+            continue                      # absent, not zero
+        scenarios.append({
+            "id": key,
+            "label": label,
+            "state": "computed",
+            "color": None,
+            "drivers": [],                # driver series are not bound yet
+            "moic": round(moic, 3) if moic is not None else None,
+            "irr": round(irr * 100, 2) if irr is not None else None,
+            "irr_unit": "%",
+            "debt": debt,
+            "markers": [],
+            "sources": {"moic": moic_id, "irr": irr_id},
+            "provenance": "compiler",
+        })
+    return {
+        "selected": scenarios[0]["id"] if scenarios else None,
+        "scenarios": scenarios,
+        "note": (f"{len(scenarios)} scenari con ritorni calcolati dalle formule "
+                 f"del workbook. I driver non sono ancora legati: la colonna "
+                 f"resta vuota invece di essere riempita."),
+    }
+
+
 def build_projection(bundle: dict, deal: str = "keystone",
                      scaffold: dict | None = None,
                      grounding: list[dict] | None = None) -> dict:
@@ -328,6 +384,7 @@ def build_projection(bundle: dict, deal: str = "keystone",
     unknowns = build_unknowns(spine)
     registry_events = load_events(deal)
 
+    scenario_lab = build_scenario_lab(model_nodes)
     rooms = dict(sd.get("rooms", {}))
     rooms["foundations"] = foundations          # S05, real
     rooms["unknowns"] = unknowns                # S06, real
@@ -343,7 +400,8 @@ def build_projection(bundle: dict, deal: str = "keystone",
         # Product structures the compiler does not produce. Carried through so
         # the screens still render, and named as not ours.
         "rooms": rooms,
-        "scenarioLab": sd.get("scenarioLab", {}),
+        "scenarioLab": scenario_lab if scenario_lab["scenarios"]
+                       else sd.get("scenarioLab", {}),
         "decisionRoom": sd.get("decisionRoom", {}),
         "executionRoom": sd.get("executionRoom", {}),
         "replay": sd.get("replay", {}),
@@ -381,7 +439,9 @@ def build_projection(bundle: dict, deal: str = "keystone",
             "S01_fund_command": "package_fixture",
             "S03_work": "package_fixture",
             "S07_shadow_ic": "package_fixture (contradictions vuote nel vault)",
-            "S08_scenario_lab": "runtime (Anto)",
+            "S08_scenario_lab": ("compiler (ritorni dal workbook; branching e "
+                                 "what-if restano runtime)"
+                                 if scenario_lab["scenarios"] else "runtime (Anto)"),
             "S09_artifacts": "package_fixture",
             "S11_change_arrival": "compiler" if live_events else "package_fixture",
             "S15_action_frontier": "package_fixture",
@@ -394,6 +454,7 @@ def build_projection(bundle: dict, deal: str = "keystone",
             "question_spine": "compiler",
             "foundations": "compiler",
             "unknowns": "compiler",
+            "scenarioLab": "compiler" if scenario_lab["scenarios"] else "package_fixture",
             "registry": "compiler",
             "claims": "compiler",
             "case_positions": "compiler",

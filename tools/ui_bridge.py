@@ -35,12 +35,15 @@ import argparse
 import json
 import mimetypes
 import re
+import sys
 from http import HTTPStatus
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 from urllib.parse import urlparse
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))       # run from anywhere, not just the repo root
 UI_APP = ROOT / "ui" / "app"
 
 BUNDLE_FILES = {
@@ -56,8 +59,15 @@ BUNDLE_FILES = {
 class Bundle:
     """The compiler bundle, read once and served as-is."""
 
-    def __init__(self, path: Path):
+    def __init__(self, path: Path, deal: str = "keystone",
+                 scaffold_path: Path | None = None):
         self.path = path
+        self.deal = deal
+        # The package fixture supplies only the product scaffolding the
+        # compiler does not produce; every use of it is labelled in provenance.
+        self.scaffold: dict = {}
+        if scaffold_path and scaffold_path.exists():
+            self.scaffold = json.loads(scaffold_path.read_text(encoding="utf-8"))
         self.parts: dict[str, dict] = {}
         missing = []
         for key, name in BUNDLE_FILES.items():
@@ -75,9 +85,25 @@ class Bundle:
         return self.parts["current_graph"].get("case_id", "UNKNOWN")
 
     def projection(self) -> dict:
-        # Raw bundle: the frontend adapter reads it directly.
+        """
+        A frontend_projection, not the raw bundle.
+
+        engine.js adopts a projection only when it carries fund, deal or events:
+        a raw bundle becomes {compiler, transition} and fails that test, so the
+        UI keeps rendering its fixture while reporting itself connected. The
+        projection is built by ui_projection, which fills what the compiler owns
+        and marks what it does not.
+        """
+        from tools.ui_projection import build_projection
+        proj = build_projection(
+            {"current_graph": self.parts["current_graph"],
+             "execution_mapping": self.parts.get("execution_mapping", {}),
+             "admission_manifest": self.parts.get("admission_manifest", {}),
+             "transition_output": self.parts.get("transition_output")},
+            deal=self.deal, scaffold=self.scaffold)
         return {
-            "case_id": self.case_id,
+            "frontend_projection": proj,
+            # the bundle travels alongside so nothing is lost to the projection
             "current_graph": self.parts["current_graph"],
             "execution_mapping": self.parts.get("execution_mapping", {}),
             "admission_manifest": self.parts.get("admission_manifest", {}),
@@ -221,12 +247,18 @@ def main() -> int:
     ap.add_argument("--bundle", type=Path,
                     default=ROOT / "pipeline_out" / "e3" / "K-IC" / "adapter_alpha")
     ap.add_argument("--port", type=int, default=4178)
+    ap.add_argument("--deal", default="keystone")
+    ap.add_argument("--scaffold", type=Path,
+                    default=ROOT / "ui" / "fixtures" / "normalized"
+                            / "frontend_projection_v17.json",
+                    help="fixture del pacchetto, usata solo per le strutture "
+                         "di prodotto che il compilatore non produce")
     a = ap.parse_args()
 
     if not UI_APP.exists():
         raise SystemExit(f"UI non trovata in {UI_APP}")
 
-    Handler.bundle = Bundle(a.bundle)
+    Handler.bundle = Bundle(a.bundle, deal=a.deal, scaffold_path=a.scaffold)
     b = Handler.bundle
     cg = b.parts["current_graph"]
 
@@ -240,6 +272,11 @@ def main() -> int:
     print(f"  model    : {len(cg.get('model_nodes', []))} nodi")
     if b.missing:
         print(f"  assenti  : {', '.join(b.missing)}")
+    proj = b.projection()["frontend_projection"]
+    c = proj["compiler"]
+    print(f"  domande  : {c['questions']} dal vault -> question_spine")
+    print(f"  dalla fixture del pacchetto: rooms, scenarioLab, decisionRoom, "
+          f"executionRoom, replay, fund")
     url = (f"http://127.0.0.1:{a.port}/?mode=connected"
            f"&api=http://127.0.0.1:{a.port}/api/v1")
     print(f"\n  apri: {url}\n")

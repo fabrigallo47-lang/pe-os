@@ -1,0 +1,235 @@
+{
+  "judgments": {
+    "0dfc11205350d95f": {
+      "decided_at": "2026-08-26T13:48:01Z",
+      "kind": "model_sheet",
+      "period_headers": {
+        "FY2025A": "fiscal_year",
+        "FY2026E": "fiscal_year",
+        "FY2027E": "fiscal_year",
+        "FY2028E": "fiscal_year",
+        "FY2029E": "fiscal_year",
+        "FY2030E": "fiscal_year"
+      },
+      "reason": "Foglio di modello finanziario con voci di linea nella colonna sinistra e anni fiscali come intestazioni di colonna da cui derivano valori numerici.",
+      "sheet": "SELLER_MODEL",
+      "vetoed": ""
+    },
+    "1e271373545a4b11": {
+      "decided_at": "2026-08-26T13:48:18Z",
+      "kind": "scalar_block",
+      "period_headers": {},
+      "reason": "Il foglio contiene tabelle di definizioni e valori etichettati (covenant definitions, facility terms, compliance metrics) senza una struttura a periodi multipli; è un blocco di dati descrittivi e valori scalari organizzati per sezioni tematiche.",
+      "sheet": "DEBT_COVENANTS",
+      "vetoed": ""
+    },
+    "23427ddbfcf017f3": {
+      "decided_at": "2026-08-26T13:47:55Z",
+      "kind": "model_sheet",
+      "period_headers": {
+        "Covenant View": "anchor",
+        "Firm View": "anchor",
+        "QoE View": "anchor",
+        "Reported": "anchor",
+        "Seller View": "anchor"
+      },
+      "reason": "Foglio con voci di rettifica elencate verticalmente nella colonna sinistra e multiple prospettive (colonne Reported, Seller View, QoE View, Firm View, Covenant View) distribuite orizzontalmente come assi di periodo/dimensione.",
+      "sheet": "QOE_BRIDGE",
+      "vetoed": ""
+    },
+    "23a693502599ddb4": {
+      "decided_at": "2026-08-26T13:48:13Z",
+      "kind": "model_sheet",
+      "period_headers": {
+        "<date>": "quarter"
+      },
+      "reason": "Foglio di modello finanziario con voci di linea nella colonna sinistra (Revenue, Growth, EBITDA, ecc.) e periodi rappresentati da colonne con date consecutive, tipica struttura di previsione.",
+      "sheet": "ACQ_BASE",
+      "vetoed": ""
+    },
+    "2b0574fca9b0293a": {
+      "decided_at": "2026-08-26T13:48:20Z",
+      "kind": "record_table",
+      "period_headers": {},
+      "reason": "Il foglio presenta una struttura di tabella con righe che rappresentano scenari di caso (Standalone Base, Downside, Upside, Acquisition Base, Combined Risk) e colonne che rappresentano campi di dati finanziari (Exit Revenue, EBITDA, Multiple, MOIC, XIRR, etc.), seguita da una sezione di ownership con righe di dettaglio sottostanti.",
+      "sheet": "OWNERSHIP_RETURNS",
+      "vetoed": ""
+    },
+    "5606da27b7520776": {
+      "decided_at": "2026-08-26T13:47:59Z",
+      "kind": "scalar_block",
+      "period_headers": {},
+      "reason": "Il foglio presenta righe di etichette con colonne di attributi descrittivi e valori associati (Fair Value, Useful Life, Annual Amortization, Tax Basis, Source/Assumption), senza alcun asse temporale o periodo.",
+      "sheet": "PURCHASE_ACCOUNTING",
+      "vetoed": ""
+    },
+    "5d6c934f745ff60c": {
+      "decided_at": "2026-08-26T13:47:51Z",
+      "kind": "record_table",
+      "period_headers": {},
+      "reason": "Una riga per dipendente con colonne che rappresentano campi attributi (Employee ID, Office, Region, Function, etc.), nessun asse temporale di periodi.",
+      "sheet": "EMPLOYEES",
+      "vetoed": ""
+    },
+    "738d1ddbcf7618a3": {
+      "decided_at": "2026-08-26T13:47:44Z",
+      "kind": "model_sheet",
+      "period_headers": {
+        "FY2023A": "fiscal_year",
+        "FY2024A": "fiscal_year",
+        "FY2025A": "fiscal_year"
+      },
+      "reason": "Il foglio presenta elementi di linea descrittivi nella colonna sinistra (Revenue, COGS, EBITDA, etc.) con periodi fiscali annuali disposti orizzontalmente nelle colonne, seguendo la struttura tipica di un modello finanziario multi-periodo.",
+      "sheet": "HIST_3STMT",
+      "vetoed": ""
+    },
+    "792923018d0385d0": {
+      "decided_at": "2026-08-26T13:48:16Z",
+      "kind": "model_sheet",
+      "period_headers": {
+        "3,10": "point",
+        "3,11": "point",
+        "3,12": "point",
+        "3,3": "point",
+        "3,4": "point",
+        "3,5": "point",
+        "3,6": "point",
+        "3,7": "point",
+        "3,8": "point",
+        "3,9": "point"
+      },
+      "reason": "Il foglio ha voci di linea nella colonna sinistra (Revenue, Growth, Gross margin, ecc.), unità di misura nella seconda colonna, e date ripetute nella riga 3 dalle colonne 3-12, indicando periodi multipli disposti orizzontalmente tipico di un foglio di modello finanziario.",
+      "sheet": "COMBINED_RISK",
+      "vetoed": ""
+    },
+    "7e5000cff64c6895": {
+      "decided_at": "2026-08-26T13:48:11Z",
+      "kind": "model_sheet",
+      "period_headers": {
+        "3,10": "point",
+        "3,11": "point",
+        "3,12": "point",
+        "3,3": "point",
+        "3,4": "point",
+        "3,5": "point",
+        "3,6": "point",
+        "3,7": "point",
+        "3,8": "point",
+        "3,9": "point"
+      },
+      "reason": "Il foglio ha righe etichettate a sinistra (Line Item, Revenue, Growth, etc.) e colonne di date nella testata (riga 3), seguendo il layout classico di un modello finanziario con items per riga e periodi per colonna.",
+      "sheet": "SB_UP",
+      "vetoed": ""
+    },
+    "a68fa9f86dcd400a": {
+      "decided_at": "2026-08-26T13:47:42Z",
+      "kind": "scalar_block",
+      "period_headers": {},
+      "reason": "Il foglio contiene etichette di input finanziario nella colonna sinistra con valori, unità e metadati nelle colonne successive, senza nessun asse temporale o periodale.",
+      "sheet": "INPUTS",
+      "vetoed": ""
+    },
+    "b34150551d09cb91": {
+      "decided_at": "2026-08-26T13:47:50Z",
+      "kind": "record_table",
+      "period_headers": {
+        "2025 Revenue ($mm)": "point"
+      },
+      "reason": "Una riga per record progetto con colonne come campi descrittivi e metriche (ID, Account, Parent, Service Line, Type, Date, Revenue, Margin, WIP, Backlog), struttura tipica di tabella dati flat.",
+      "sheet": "PROJECT_DATA",
+      "vetoed": ""
+    },
+    "ccd0c2cf43b70425": {
+      "decided_at": "2026-08-26T13:48:06Z",
+      "kind": "model_sheet",
+      "period_headers": {},
+      "reason": "Il foglio ha voci di linea nella colonna sinistra (Revenue, Growth, Gross margin, ecc.) con unità di misura nella seconda colonna, e colonne successive contenenti formule, tipico di un modello finanziario, ma le intestazioni di periodo nelle colonne 3-12 non sono leggibili (solo <date>).",
+      "sheet": "SB_BASE",
+      "vetoed": ""
+    },
+    "cff22f37591d3ddd": {
+      "decided_at": "2026-08-26T13:48:04Z",
+      "kind": "model_sheet",
+      "period_headers": {
+        "<date> (col 10)": "point",
+        "<date> (col 11)": "point",
+        "<date> (col 12)": "point",
+        "<date> (col 3)": "point",
+        "<date> (col 4)": "point",
+        "<date> (col 5)": "point",
+        "<date> (col 6)": "point",
+        "<date> (col 7)": "point",
+        "<date> (col 8)": "point",
+        "<date> (col 9)": "point"
+      },
+      "reason": "Il foglio ha linee di driver finanziari (Revenue, Gross margin, EBITDA, etc.) nella colonna sinistra e date come intestazioni di periodo nelle colonne da 3 a 12, con valori numerici organizzati per periodo.",
+      "sheet": "SCENARIO_DRIVERS",
+      "vetoed": ""
+    },
+    "d2c29ada7a1006e5": {
+      "decided_at": "2026-08-26T13:48:09Z",
+      "kind": "model_sheet",
+      "period_headers": {
+        "<date> (col 10)": "point",
+        "<date> (col 11)": "point",
+        "<date> (col 12)": "point",
+        "<date> (col 3)": "point",
+        "<date> (col 4)": "point",
+        "<date> (col 5)": "point",
+        "<date> (col 6)": "point",
+        "<date> (col 7)": "point",
+        "<date> (col 8)": "point",
+        "<date> (col 9)": "point"
+      },
+      "reason": "Foglio con voci di linea nella colonna sinistra, unità nella colonna 2, e periodi (date) come intestazioni colonnari da colonna 3 a 12.",
+      "sheet": "SB_DOWN",
+      "vetoed": ""
+    },
+    "d4cc3fe84e22e234": {
+      "decided_at": "2026-08-26T13:48:22Z",
+      "kind": "scalar_block",
+      "period_headers": {},
+      "reason": "Il foglio contiene una pagina di copertina con blocchi di informazioni etichettate e valori (Transaction Overview, Sponsor Return Summary), senza assi temporali nè righe di dati ripetute, strutturato come labels con valori associati.",
+      "sheet": "COVER",
+      "vetoed": ""
+    },
+    "ec77936db0b42bbb": {
+      "decided_at": "2026-08-26T13:47:48Z",
+      "kind": "record_table",
+      "period_headers": {
+        "2025 Revenue ($mm)": "fiscal_year"
+      },
+      "reason": "Un record per riga con intestazione in r3; colonne sono campi di cliente (ID, nome, mercato, regione, ecc.) senza assi temporali multipli, solo un riferimento all'anno fiscale 2025.",
+      "sheet": "CUSTOMER_DATA",
+      "vetoed": ""
+    },
+    "ed0176fdcfb40c75": {
+      "decided_at": "2026-08-26T13:47:53Z",
+      "kind": "record_table",
+      "period_headers": {},
+      "reason": "Una riga per record (una per fattura), colonne sono campi descrittivi e di calcolo senza asse temporale periodico.",
+      "sheet": "AR_WIP",
+      "vetoed": ""
+    },
+    "f5baf5ee1b7b2a08": {
+      "decided_at": "2026-08-26T13:47:57Z",
+      "kind": "scalar_block",
+      "period_headers": {},
+      "reason": "Il foglio contiene due blocchi di etichette con valori: una tabella Sources & Uses (righe 4-11) con labels a sinistra e importi nelle colonne 6 e 8, e un Opening Balance Sheet (righe 14-25) con asset/liabilities e relativi importi, senza asse dei periodi.",
+      "sheet": "S&U_OPENING",
+      "vetoed": ""
+    },
+    "fef5467f2cbdb212": {
+      "decided_at": "2026-08-26T13:47:46Z",
+      "kind": "model_sheet",
+      "period_headers": {
+        "<date>": "month"
+      },
+      "reason": "Foglio con linee di items sulla sinistra (Revenue, Gross profit, ecc.) e periodi mensili (date) distribuiti orizzontalmente nelle colonne da 3 a 13.",
+      "sheet": "HIST_MONTHLY",
+      "vetoed": ""
+    }
+  },
+  "note": "Judgments keyed by structural fingerprint. A fingerprint that appears here is never sent to a model again.",
+  "schema": "sheet-classifications-1"
+}

@@ -24,7 +24,10 @@ Not by hoping the model is consistent. By making a second run unable to differ:
      structure therefore yields an identical answer by construction, across
      runs, machines and model versions.
   3. Bounded output. tool_use with an enum; the model selects, it does not
-     compose. temperature=0.
+     compose. Note that temperature is not available on this SDK for this model
+     family — OutputConfigParam exposes effort and format only — so sampling
+     cannot be pinned. That is precisely why the cache, not the decoding
+     parameters, carries the stability guarantee.
   4. Structural veto. An answer that contradicts something the deterministic
      layer knows for certain is rejected, not accepted. A model_sheet needs a
      header row; a record_table needs more rows than a handful. The model can
@@ -231,7 +234,6 @@ def classify_with_model(canonical: dict, api_key: str) -> tuple[str, dict, str]:
     resp = client.messages.create(
         model="claude-haiku-4-5-20251001",
         max_tokens=700,
-        temperature=0,                 # the same prompt must give the same answer
         system=SYSTEM,
         tools=[CLASSIFY_TOOL],
         tool_choice={"type": "tool", "name": "classify_sheet"},

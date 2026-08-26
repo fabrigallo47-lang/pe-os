@@ -1,0 +1,43 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "panta://contracts/frontend_transition_projection_v17.schema.json",
+  "title": "PANTA V17 Frontend Transition Projection",
+  "type": "object",
+  "required": ["schema_version", "run_id", "case_id", "prior_state_id", "candidate_state_id", "affected_set", "human_stops", "artifact_change_sets"],
+  "properties": {
+    "schema_version": {"const": "frontend-transition-projection/1.0"},
+    "run_id": {"type": "string"},
+    "case_id": {"type": "string"},
+    "prior_state_id": {"type": ["string", "null"]},
+    "candidate_state_id": {"type": ["string", "null"]},
+    "source_event_id": {"type": ["string", "null"]},
+    "status": {"type": "string"},
+    "affected_set": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["order", "object_id", "label", "disposition", "explanation"],
+        "properties": {
+          "order": {"type": "integer", "minimum": 1},
+          "object_id": {"type": "string"},
+          "label": {"type": "string"},
+          "disposition": {"enum": ["FALLS", "SURVIVES", "RECOMPUTES", "RULE_SWITCH", "HUMAN", "BLOCKED", "UNKNOWN"]},
+          "before": {},
+          "after": {},
+          "explanation": {"type": "string"},
+          "source_trace": {"type": ["string", "null"]}
+        },
+        "additionalProperties": true
+      }
+    },
+    "recomputed_values": {"type": "array"},
+    "unchanged_objects": {"type": "array"},
+    "human_stops": {"type": "array"},
+    "blocked_components": {"type": "array"},
+    "coverage_limits": {"type": "array"},
+    "artifact_change_sets": {"type": "array"},
+    "policy_result": {"type": ["object", "null"]},
+    "replay_hash": {"type": ["string", "null"]}
+  },
+  "additionalProperties": true
+}

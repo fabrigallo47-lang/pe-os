@@ -1,0 +1,133 @@
+{
+  "adapter_version": "v7",
+  "total_claims_in_extraction": 45,
+  "admitted_count": 38,
+  "monitoring_excluded_count": 7,
+  "unbound_claim_count": 7,
+  "case_positions_built": 16,
+  "model_nodes_bound": 12,
+  "model_nodes_total": 74,
+  "identity_migration_map": {
+    "claim:0000": "ks-72cf8cd8df33",
+    "claim:0001": "ks-f5a24b59de3d",
+    "claim:0002": "ks-e6e2f7a492cc",
+    "claim:0003": "ks-a907d73fbd55",
+    "claim:0004": "ks-c27a4b3ea7c4",
+    "claim:0005": "ks-136e10161991",
+    "claim:0006": "ks-c88ac1d17ffb",
+    "claim:0007": "ks-bd0460fd2ea4",
+    "claim:0008": "ks-5b65f33a9b15",
+    "claim:0009": "ks-8c56034a363a",
+    "claim:0010": "ks-85c18340b507",
+    "claim:0011": "ks-41c79954bd44",
+    "claim:0012": "ks-52398e6c3b26",
+    "claim:0013": "ks-3aa2ae49331a",
+    "claim:0014": "ks-360e69ed391d",
+    "claim:0015": "ks-c6ef8a952784",
+    "claim:0016": "ks-fe3f8a05b423",
+    "claim:0017": "ks-a1d287e9a678",
+    "claim:0018": "ks-d3adc96c2437",
+    "claim:0019": "ks-82c8e9e073b7",
+    "claim:0020": "ks-d05784add7a0",
+    "claim:0021": "ks-faed9c29f74e",
+    "claim:0022": "ks-f824671ec679",
+    "claim:0023": "ks-2b465005c7de",
+    "claim:0024": "ks-1c9a2b000e47",
+    "claim:0025": "ks-3bbae265c0a0",
+    "claim:0026": "ks-fb5a3eec57b9",
+    "claim:0027": "ks-3ec709b72b75",
+    "claim:0028": "ks-42ef8bffe263",
+    "claim:0029": "ks-2f32d36d918d",
+    "claim:0030": "ks-c827bbccf932",
+    "claim:0031": "ks-d07268a7d8b0",
+    "claim:0032": "ks-0380c5ad5e90",
+    "claim:0033": "ks-5b5bb4b6b00c",
+    "claim:0034": "ks-ee34d2b882ac",
+    "claim:0035": "ks-ca0f49e733ce",
+    "claim:0036": "ks-548ff06b3d50",
+    "claim:0037": "ks-b2027fb1b383",
+    "claim:0038": "ks-e0294f82f523",
+    "claim:0039": "ks-03c536917720",
+    "claim:0040": "ks-2fd651b6d787",
+    "claim:0041": "ks-61961c3e0eec",
+    "claim:0042": "ks-1d911ee78bff",
+    "claim:0043": "ks-d49f6b0abd29",
+    "claim:0044": "ks-25da437984c8"
+  },
+  "unbound_claims": [
+    {
+      "stable_id": "ks-bd0460fd2ea4",
+      "metric": "Active Billing Accounts",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-5b65f33a9b15",
+      "metric": "Acquisition Count",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-360e69ed391d",
+      "metric": "Customer Contract Terms",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-faed9c29f74e",
+      "metric": "Earnings Quality Risk",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-ca0f49e733ce",
+      "metric": "IC Conditions",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-548ff06b3d50",
+      "metric": "IC Vote",
+      "reason": "no CP mapping for metric"
+    },
+    {
+      "stable_id": "ks-b2027fb1b383",
+      "metric": "Decision Coherence",
+      "reason": "no CP mapping for metric"
+    }
+  ],
+  "monitoring_excluded": [
+    {
+      "stable_id": "ks-e0294f82f523",
+      "metric": "Acquisition Integration",
+      "period": "2026-04-01"
+    },
+    {
+      "stable_id": "ks-03c536917720",
+      "metric": "Project Unify Status",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-2fd651b6d787",
+      "metric": "High-Severity Defects",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-61961c3e0eec",
+      "metric": "Manual Review Rate",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-1d911ee78bff",
+      "metric": "WIP",
+      "period": "2026-11-30"
+    },
+    {
+      "stable_id": "ks-d49f6b0abd29",
+      "metric": "WIP",
+      "period": "2026-12-31"
+    },
+    {
+      "stable_id": "ks-25da437984c8",
+      "metric": "DSO",
+      "period": "2026-11-30"
+    }
+  ],
+  "coverage_limits": [],
+  "validation_errors": []
+}

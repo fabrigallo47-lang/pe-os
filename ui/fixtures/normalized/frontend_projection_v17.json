@@ -1,0 +1,2166 @@
+{
+  "schema_version": "frontend-projection/1.0",
+  "package_version": "17.0.0",
+  "disclosure": "All company, person, policy and event data in the demo is synthetic. Backend reference files are included separately and are not silently treated as correct frontend state.",
+  "fund": {
+    "id": "FUND-HARBOR",
+    "name": "Harbor Private Capital",
+    "date": "26 Aug 2026",
+    "situations": [
+      {
+        "id": "SIT-KEYSTONE",
+        "case_id": "PROJECT-KEYSTONE",
+        "company": "Alderstone",
+        "project": "Project Keystone",
+        "lifecycle": "Active pursuit",
+        "action_class": "authority_decision",
+        "title": "Offer basis must be renewed",
+        "why_now": "Customer parent exposure moved financing capacity and the current offer is no longer supported.",
+        "objective": "Determine whether the $108m offer remains defensible.",
+        "required_action": "Review the material exception and choose the offer treatment.",
+        "authority_verb": "approve_offer",
+        "owner": "A. Rossi",
+        "deadline": "Today · 14:00",
+        "capital": "$108.0m",
+        "evidence": "Derived + attested",
+        "status": "open",
+        "priority_reasons": [
+          "$108m capital at stake",
+          "Authority deadline today",
+          "Current offer is stale"
+        ],
+        "missions": [
+          {
+            "label": "Recompute financing case",
+            "state": "complete",
+            "progress": 100
+          },
+          {
+            "label": "Read seven contracts",
+            "state": "running",
+            "progress": 42
+          }
+        ],
+        "position": {
+          "x": 59,
+          "y": 42,
+          "size": 88,
+          "halo": "contested"
+        }
+      },
+      {
+        "id": "SIT-NORTHSTAR",
+        "case_id": "PROJECT-NORTHSTAR",
+        "company": "Northstar Systems",
+        "project": "Project Northstar",
+        "lifecycle": "Active pursuit",
+        "action_class": "professional_review",
+        "title": "ARR bridge needs reviewer sign-off",
+        "why_now": "The latest cohort file changes normalized retention but not the base valuation.",
+        "objective": "Sign the ARR and retention treatment.",
+        "required_action": "Review prepared treatment.",
+        "authority_verb": "advise",
+        "owner": "L. Chen",
+        "deadline": "Tomorrow",
+        "capital": "$36.0m",
+        "evidence": "Observed",
+        "status": "open",
+        "priority_reasons": [
+          "Evidence newly observed",
+          "Model branch waiting"
+        ],
+        "missions": [
+          {
+            "label": "Cohort reconstruction",
+            "state": "waiting",
+            "progress": 82
+          }
+        ],
+        "position": {
+          "x": 27,
+          "y": 58,
+          "size": 58,
+          "halo": "review"
+        }
+      },
+      {
+        "id": "SIT-MERIDIAN",
+        "case_id": "PROJECT-MERIDIAN",
+        "company": "Meridian Health",
+        "project": "Project Meridian",
+        "lifecycle": "Owned investment",
+        "action_class": "notification",
+        "title": "Runway is below the approved intervention line",
+        "why_now": "Hiring remained ahead of plan while collections slipped by 19 days.",
+        "objective": "Prepare the next board intervention.",
+        "required_action": "Inspect variance diagnosis.",
+        "authority_verb": "recommend",
+        "owner": "J. Morgan",
+        "deadline": "Friday",
+        "capital": "$18.4m",
+        "evidence": "Observed",
+        "status": "active",
+        "priority_reasons": [
+          "Liquidity threshold crossed",
+          "Board in 4 days"
+        ],
+        "missions": [
+          {
+            "label": "Variance diagnosis",
+            "state": "complete",
+            "progress": 100
+          }
+        ],
+        "position": {
+          "x": 76,
+          "y": 69,
+          "size": 52,
+          "halo": "blocked"
+        }
+      },
+      {
+        "id": "SIT-SCOUT",
+        "case_id": "PROJECT-SCOUT",
+        "company": "Scout Search",
+        "project": "Scout pilot",
+        "lifecycle": "Active pursuit",
+        "action_class": "professional_review",
+        "title": "Next-best work is customer references",
+        "why_now": "Commercial uncertainty dominates the remaining decision variance.",
+        "objective": "Close the highest-value unknown.",
+        "required_action": "Approve the reference-call plan.",
+        "authority_verb": "advise",
+        "owner": "Search lead",
+        "deadline": "This week",
+        "capital": "$6.5m",
+        "evidence": "Inferred",
+        "status": "open",
+        "priority_reasons": [
+          "Highest value of information",
+          "Low closure cost"
+        ],
+        "missions": [
+          {
+            "label": "Reference list preparation",
+            "state": "running",
+            "progress": 64
+          }
+        ],
+        "position": {
+          "x": 42,
+          "y": 78,
+          "size": 40,
+          "halo": "unknown"
+        }
+      }
+    ],
+    "morning_delta": [
+      {
+        "id": "DELTA-1",
+        "kind": "material",
+        "label": "Keystone offer basis became stale",
+        "detail": "18.2% parent exposure activated a financing exception.",
+        "case_id": "PROJECT-KEYSTONE"
+      },
+      {
+        "id": "DELTA-2",
+        "kind": "review",
+        "label": "Northstar cohort treatment is ready",
+        "detail": "Reviewer sign-off is the only remaining blocker.",
+        "case_id": "PROJECT-NORTHSTAR"
+      },
+      {
+        "id": "DELTA-3",
+        "kind": "monitor",
+        "label": "Meridian runway crossed the intervention line",
+        "detail": "Board action now ranks above routine monitoring.",
+        "case_id": "PROJECT-MERIDIAN"
+      },
+      {
+        "id": "DELTA-4",
+        "kind": "work",
+        "label": "Scout next-best work changed",
+        "detail": "Customer references now dominate decision value.",
+        "case_id": "PROJECT-SCOUT"
+      }
+    ]
+  },
+  "deal": {
+    "case_id": "PROJECT-KEYSTONE",
+    "objective": {
+      "verb": "defend",
+      "target": "the $108m offer",
+      "statement": "Determine whether the $108m offer remains defensible on verified earnings and customer risk.",
+      "deadline": "10 Mar 2026 · 09:00",
+      "status": "active"
+    },
+    "branches": {
+      "approved": "Final IC · 10 Mar 2026",
+      "current": "Concentration review · 5 Feb 2026",
+      "working": "Working Branch 17"
+    },
+    "morning_delta": {
+      "label": "Customer concentration basis changed",
+      "from": "7.6% account view",
+      "to": "18.2% ultimate-parent view",
+      "source": "VDR customer master"
+    },
+    "next_best_work": {
+      "id": "NBW-CONTRACTS",
+      "label": "Read the seven Riverton contracts",
+      "reason": "Highest decision value ÷ closure cost",
+      "owner": "A. Rossi",
+      "duration": "4h",
+      "unlocks": "Customer durability treatment and offer authority"
+    },
+    "command_suggestions": [
+      "What changed since the last review?",
+      "What does the deal rest on?",
+      "Show every unresolved risk accepted by IC",
+      "Which artifact is stale?",
+      "What should we do next?"
+    ],
+    "rooms": {
+      "foundations": {
+        "title": "What the deal rests on",
+        "subtitle": "Minimal support sets for the current investment case.",
+        "sets": [
+          {
+            "id": "FND-EARNINGS",
+            "label": "Underwritten earnings",
+            "strength": "contested",
+            "economic": "$5.4m ceiling sensitivity",
+            "members": [
+              "QoE EBITDA $11.9m",
+              "Firm reserve to $11.4m",
+              "$0.5m initiatives rejected"
+            ],
+            "question_id": "UQ-EARNINGS"
+          },
+          {
+            "id": "FND-REVENUE",
+            "label": "Revenue durability",
+            "strength": "weak",
+            "economic": "18.2% parent exposure",
+            "members": [
+              "Seven accounts aggregate to Riverton",
+              "No minimum-volume guarantee",
+              "Multi-site tenure supports partial durability"
+            ],
+            "question_id": "UQ-REVENUE"
+          },
+          {
+            "id": "FND-CASH",
+            "label": "Cash conversion",
+            "strength": "contested",
+            "economic": "$0.7m closing delta",
+            "members": [
+              "QoE NWC target $8.4m",
+              "Seller target $7.7m",
+              "Billing controls remain fragmented"
+            ],
+            "question_id": "UQ-CASH"
+          },
+          {
+            "id": "FND-INTEGRATION",
+            "label": "Integration execution",
+            "strength": "accepted-risk",
+            "economic": "$2.0m funded plan",
+            "members": [
+              "Commercial integration exists",
+              "Systems remain fragmented",
+              "IC accepted risk under conditions"
+            ],
+            "question_id": "UQ-INTEGRATION"
+          }
+        ]
+      },
+      "unknowns": {
+        "title": "Everything we still do not know",
+        "subtitle": "Ordered by expected decision value, not document order.",
+        "items": [
+          {
+            "id": "UNK-CONTRACTS",
+            "rank": 1,
+            "label": "Can Riverton reduce volume without penalty?",
+            "value": "Very high",
+            "closure": "Read 7 contracts · 4h",
+            "owner": "A. Rossi",
+            "question_id": "UQ-REVENUE"
+          },
+          {
+            "id": "UNK-RETENTION",
+            "rank": 2,
+            "label": "Would a 20% Riverton reduction be operationally absorbable?",
+            "value": "High",
+            "closure": "2 reference calls · 1 day",
+            "owner": "Commercial",
+            "question_id": "UQ-REVENUE"
+          },
+          {
+            "id": "UNK-INTEGRATION",
+            "rank": 3,
+            "label": "Can Project Unify cut over without billing disruption?",
+            "value": "High",
+            "closure": "Operator review · 6h",
+            "owner": "J. Morgan",
+            "question_id": "UQ-INTEGRATION"
+          },
+          {
+            "id": "UNK-WIP",
+            "rank": 4,
+            "label": "How much aged WIP is collectible?",
+            "value": "Medium",
+            "closure": "Invoice sample · 3h",
+            "owner": "L. Chen",
+            "question_id": "UQ-CASH"
+          },
+          {
+            "id": "UNK-LENDER",
+            "rank": 5,
+            "label": "Will the lender accept the concentration-adjusted case?",
+            "value": "Medium",
+            "closure": "Lender call · 30m",
+            "owner": "R. Diaz",
+            "question_id": "UQ-FINANCING"
+          }
+        ]
+      },
+      "shadowIC": {
+        "title": "Shadow IC",
+        "subtitle": "The strongest case for and against the investment, continuously maintained.",
+        "theses": [
+          {
+            "id": "SIC-FOR",
+            "side": "FOR",
+            "label": "Durable compliance demand and multi-site relationships",
+            "strength": "strong",
+            "basis": [
+              "72% recurring/repeat activity",
+              "600+ billing accounts",
+              "Riverton spans years, facilities and service lines"
+            ]
+          },
+          {
+            "id": "SIC-AGAINST",
+            "side": "AGAINST",
+            "label": "Concentration and integration risks are under-compensated",
+            "strength": "strong",
+            "basis": [
+              "18.2% ultimate-parent exposure",
+              "No minimum-volume guarantees",
+              "Systems fragmented across four acquisitions"
+            ]
+          },
+          {
+            "id": "SIC-RETURNS",
+            "side": "FOR",
+            "label": "Base returns remain acceptable with disciplined entry and deleveraging",
+            "strength": "contested",
+            "basis": [
+              "2.00x MOIC",
+              "14.8% IRR",
+              "9.0x exit multiple"
+            ]
+          },
+          {
+            "id": "SIC-DISSENT",
+            "side": "AGAINST",
+            "label": "9.5x entry multiple does not compensate unresolved risk",
+            "strength": "recorded-dissent",
+            "basis": [
+              "IC vote 4-1",
+              "Thirteen approval conditions",
+              "Risk accepted but unresolved"
+            ]
+          }
+        ],
+        "verdict": "Proceed only under the stated conditions; customer concentration and integration remain contested-but-accepted."
+      }
+    },
+    "scenarioLab": {
+      "selected": "base",
+      "scenarios": [
+        {
+          "id": "base",
+          "label": "Standalone Base",
+          "state": "CURRENT",
+          "color": "cyan",
+          "drivers": [
+            "Revenue growth 7%",
+            "EBITDA margin 16%",
+            "DSO 64 days",
+            "Exit 9.0x"
+          ],
+          "moic": "2.00x",
+          "irr": "14.8%",
+          "debt": "$42.8m",
+          "markers": [
+            "IC basis",
+            "No acquisitions"
+          ]
+        },
+        {
+          "id": "downside",
+          "label": "Standalone Downside",
+          "state": "SCENARIO",
+          "color": "violet",
+          "drivers": [
+            "Lower growth",
+            "Margin compression",
+            "Slower cash conversion",
+            "Exit 7.5x"
+          ],
+          "moic": "1.28x",
+          "irr": "5.1%",
+          "debt": "$42.8m",
+          "markers": [
+            "Covenant pressure",
+            "No promotion"
+          ]
+        },
+        {
+          "id": "upside",
+          "label": "Standalone Upside",
+          "state": "SCENARIO",
+          "color": "violet",
+          "drivers": [
+            "Stronger utilization",
+            "Faster collections",
+            "Exit 10.0x"
+          ],
+          "moic": "2.43x",
+          "irr": "19.5%",
+          "debt": "$42.8m",
+          "markers": [
+            "Operating upside"
+          ]
+        },
+        {
+          "id": "acquisition",
+          "label": "Acquisition Base",
+          "state": "SCENARIO",
+          "color": "violet",
+          "drivers": [
+            "Sentinel + second add-on",
+            "Integration spend",
+            "Exit 9.5x"
+          ],
+          "moic": "2.08x",
+          "irr": "16.0%",
+          "debt": "$42.8m",
+          "markers": [
+            "Funding required",
+            "Integration condition"
+          ]
+        }
+      ]
+    },
+    "decisionRoom": {
+      "request_id": "AR-OFFER-001",
+      "verb": "approve_offer",
+      "title": "Set the maximum offer treatment after the concentration exception",
+      "deadline": "Today · 14:00",
+      "holder": "M. Alvarez · Deal Partner",
+      "rule": "Offer changes above $1m require partner authority.",
+      "evidence_for": [
+        "Multi-site tenure and service breadth",
+        "Base case retains Riverton",
+        "No immediate covenant breach"
+      ],
+      "evidence_against": [
+        "18.2% ultimate-parent exposure",
+        "No minimum-volume guarantee",
+        "Financing step-down reduces debt capacity"
+      ],
+      "courses": [
+        {
+          "id": "COURSE-A",
+          "label": "Hold $108.0m",
+          "economics": "17.7% IRR · higher sponsor equity",
+          "conditions": [
+            "Lender accepts exception",
+            "Contract review clean"
+          ],
+          "policy": "ESCALATION RISK",
+          "recommended": false
+        },
+        {
+          "id": "COURSE-B",
+          "label": "Reset ceiling to $105.15m",
+          "economics": "Restores financing discipline",
+          "conditions": [
+            "Update offer and IC memo"
+          ],
+          "policy": "WITHIN PARTNER AUTHORITY",
+          "recommended": false
+        },
+        {
+          "id": "COURSE-C",
+          "label": "Defer offer",
+          "economics": "Preserves optionality; timing risk",
+          "conditions": [
+            "Finish contracts and lender call"
+          ],
+          "policy": "PERMITTED",
+          "recommended": false
+        }
+      ]
+    },
+    "executionRoom": {
+      "type": "Offer delivery",
+      "recipient": "Hawthorne Capital Markets",
+      "sender": "M. Alvarez",
+      "document": "Indicative Offer Letter · v8",
+      "subject": "Project Keystone — revised indicative offer",
+      "message": "Following completion of the customer concentration review, Harbor is prepared to proceed at an enterprise value of $105.15m, subject to the existing diligence and financing conditions.",
+      "attachments": [
+        "Offer Letter v8.pdf",
+        "Concentration analysis.pdf"
+      ],
+      "checks": [
+        "Authority record effective",
+        "Offer version checksum matched",
+        "Recipient permitted",
+        "Conditions attached"
+      ],
+      "externality": "No message leaves the system in demo mode."
+    },
+    "replay": {
+      "snapshots": [
+        {
+          "id": "seller",
+          "date": "27 Oct 2025",
+          "label": "Seller materials",
+          "known": [
+            "Revenue $74.0m",
+            "Seller EBITDA $12.7m",
+            "Largest customer 7.6% by account"
+          ],
+          "believed": [
+            "Attractive recurring platform"
+          ],
+          "approved": [],
+          "open": [
+            "Earnings quality",
+            "Parent concentration",
+            "Integration"
+          ]
+        },
+        {
+          "id": "firm-initial",
+          "date": "12 Jan 2026",
+          "label": "Firm initial case",
+          "known": [
+            "Reported EBITDA $10.2m",
+            "Systems fragmented"
+          ],
+          "believed": [
+            "Earnings lower quality than advertised",
+            "Integration risk material"
+          ],
+          "approved": [],
+          "open": [
+            "QoE treatment",
+            "Contract durability",
+            "NWC"
+          ]
+        },
+        {
+          "id": "post-qoe",
+          "date": "22 Jan 2026",
+          "label": "Post-QoE case",
+          "known": [
+            "QoE EBITDA $11.9m",
+            "NWC target $8.4m"
+          ],
+          "believed": [
+            "Firm EBITDA should be $11.4m"
+          ],
+          "approved": [],
+          "open": [
+            "Customer parent mapping",
+            "Offer ceiling"
+          ]
+        },
+        {
+          "id": "post-cdd",
+          "date": "5 Feb 2026",
+          "label": "Concentration review",
+          "known": [
+            "Riverton exposure 18.2%",
+            "No minimum-volume guarantee"
+          ],
+          "believed": [
+            "Risk real but base case retained"
+          ],
+          "approved": [],
+          "open": [
+            "Partner offer treatment",
+            "Seven contracts"
+          ]
+        },
+        {
+          "id": "final-ic",
+          "date": "10 Mar 2026",
+          "label": "Final IC",
+          "known": [
+            "All core diligence findings"
+          ],
+          "believed": [
+            "Deal works only under conditions"
+          ],
+          "approved": [
+            "$108m EV",
+            "4-1 vote",
+            "13 conditions"
+          ],
+          "open": [
+            "Execution of conditions",
+            "Integration monitoring"
+          ]
+        },
+        {
+          "id": "monitoring",
+          "date": "31 Dec 2026",
+          "label": "Monitoring signal",
+          "known": [
+            "Project Unify yellow",
+            "17 high-severity defects",
+            "WIP $6.4m"
+          ],
+          "believed": [
+            "Accepted integration risk is materializing"
+          ],
+          "approved": [
+            "Original IC remains historical"
+          ],
+          "open": [
+            "Intervention decision"
+          ]
+        }
+      ]
+    },
+    "name": "Project Keystone",
+    "company": "Alderstone Compliance & Technical Services",
+    "question_spine": [
+      {
+        "id": "UQ-EARNINGS",
+        "label": "What earnings can we underwrite?",
+        "workstream": "Financial",
+        "owner": "L. Chen",
+        "origin": {
+          "entry_type": "Playbook",
+          "source_type": "Domain standard",
+          "label": "Buyout underwriting standard",
+          "source_ids": [
+            "Q-06",
+            "Q-07"
+          ],
+          "binding": "Required before gate"
+        },
+        "question_ids": [
+          "Q-06",
+          "Q-07"
+        ],
+        "position_ids": [
+          "CP-007",
+          "CP-008",
+          "CP-009",
+          "CP-010",
+          "CP-011"
+        ],
+        "model_node_ids": [
+          "MN-QOE-EBITDA",
+          "MN-FIRM-EBITDA",
+          "MN-COV-EBITDA",
+          "MN-DEBT",
+          "MN-SPONSOR-EQUITY",
+          "MN-BASE-IRR"
+        ],
+        "scene_id": "earnings",
+        "versions": {
+          "seller": {
+            "strength": "assumed",
+            "view": "Seller presents $12.7m adjusted EBITDA.",
+            "trend": "new",
+            "cause": "Seller CIM",
+            "since": "27 Oct 2025",
+            "open_work": 2,
+            "economic_weight": "$12.7m seller basis",
+            "display_strength": "Assumed"
+          },
+          "firm-initial": {
+            "strength": "contested",
+            "view": "QoE reference is $11.9m; Firm treatment remains open.",
+            "trend": "down",
+            "cause": "Firm initial assessment",
+            "since": "12 Jan 2026",
+            "open_work": 2,
+            "economic_weight": "$5.4m ceiling sensitivity",
+            "display_strength": "Contested"
+          },
+          "post-qoe": {
+            "strength": "supported",
+            "view": "Firm-underwritten EBITDA is $11.4m.",
+            "trend": "up",
+            "cause": "QoE report and Firm model",
+            "since": "22 Jan 2026",
+            "open_work": 1,
+            "economic_weight": "$11.4m Firm basis",
+            "display_strength": "Supported"
+          },
+          "final-ic": {
+            "strength": "supported",
+            "view": "IC prices the deal on $11.4m Firm EBITDA.",
+            "trend": "flat",
+            "cause": "Final IC memorandum",
+            "since": "10 Mar 2026",
+            "open_work": 0,
+            "economic_weight": "$11.4m Firm basis",
+            "display_strength": "Supported"
+          },
+          "post-cdd": {
+            "strength": "supported",
+            "view": "Firm-underwritten EBITDA is $11.4m.",
+            "trend": "up",
+            "cause": "QoE report and Firm model",
+            "since": "22 Jan 2026",
+            "open_work": 1,
+            "economic_weight": "$11.4m Firm basis",
+            "display_strength": "Supported"
+          }
+        },
+        "priority_reasons": [
+          "$5.4m ceiling sensitivity",
+          "required before IC",
+          "one reviewer decision"
+        ],
+        "necessity": "Required before IC",
+        "gate_ids": [
+          "GATE-IC"
+        ],
+        "work_plan": [
+          {
+            "id": "W-E1",
+            "label": "Adopt the Firm earnings treatment",
+            "method": "Financial review",
+            "owner": "L. Chen",
+            "external": "Independent financial diligence",
+            "status": "Needs your decision",
+            "origin": "Prepared from the case",
+            "deadline": "Today"
+          },
+          {
+            "id": "W-E2",
+            "label": "Rebuild debt and returns on $11.4m",
+            "method": "Model update",
+            "owner": "A. Rossi",
+            "external": null,
+            "status": "Prepared",
+            "origin": "System-prepared",
+            "deadline": "After treatment"
+          },
+          {
+            "id": "W-E3",
+            "label": "Update the IC earnings section",
+            "method": "Memo change set",
+            "owner": "A. Rossi",
+            "external": null,
+            "status": "Prepared",
+            "origin": "System-prepared",
+            "deadline": "Before IC"
+          }
+        ]
+      },
+      {
+        "id": "UQ-REVENUE",
+        "label": "How durable is customer revenue?",
+        "workstream": "Commercial",
+        "owner": "A. Rossi",
+        "origin": {
+          "entry_type": "Triggered",
+          "source_type": "Evidence found",
+          "label": "Parent relationships found in customer data",
+          "source_ids": [
+            "CL-005",
+            "CL-011"
+          ],
+          "binding": "Required before gate"
+        },
+        "question_ids": [
+          "Q-01",
+          "Q-02",
+          "Q-03",
+          "Q-04",
+          "Q-05"
+        ],
+        "position_ids": [
+          "CP-003",
+          "CP-004",
+          "CP-005"
+        ],
+        "model_node_ids": [
+          "MN-CONCENTRATION",
+          "MN-DOWN-GROWTH",
+          "MN-DOWN-IRR"
+        ],
+        "scene_id": "concentration",
+        "versions": {
+          "seller": {
+            "strength": "assumed",
+            "view": "Seller reports 7.6% concentration by billing account.",
+            "trend": "new",
+            "cause": "Seller CIM",
+            "since": "27 Oct 2025",
+            "open_work": 4,
+            "economic_weight": "7.6% account exposure",
+            "display_strength": "Assumed"
+          },
+          "firm-initial": {
+            "strength": "contested",
+            "view": "Seven accounts may resolve to one parent; durability is untested.",
+            "trend": "down",
+            "cause": "Customer master review",
+            "since": "12 Jan 2026",
+            "open_work": 4,
+            "economic_weight": "18.2% parent exposure",
+            "display_strength": "Contested"
+          },
+          "post-qoe": {
+            "strength": "contested",
+            "view": "Parent concentration is 18.2%; contract durability remains open.",
+            "trend": "flat",
+            "cause": "VDR customer schedule",
+            "since": "22 Jan 2026",
+            "open_work": 3,
+            "economic_weight": "Downside-case driver",
+            "display_strength": "Contested"
+          },
+          "final-ic": {
+            "strength": "accepted-unresolved",
+            "view": "Riverton remains in base case with conditions and monitoring.",
+            "trend": "up",
+            "cause": "Final IC decision",
+            "since": "10 Mar 2026",
+            "open_work": 2,
+            "economic_weight": "18.2% revenue exposure",
+            "display_strength": "Accepted risk"
+          },
+          "post-cdd": {
+            "strength": "contested",
+            "view": "Riverton is 18.2% of revenue at ultimate-parent level; durability remains open.",
+            "trend": "down",
+            "cause": "CDD v2 and registry extract",
+            "since": "5 Feb 2026",
+            "open_work": 2,
+            "economic_weight": "$2.85m financing sensitivity",
+            "display_strength": "Contested"
+          }
+        },
+        "priority_reasons": [
+          "18.2% ultimate-parent exposure",
+          "financing treatment affected",
+          "contracts and two calls remain"
+        ],
+        "necessity": "Required before IC",
+        "gate_ids": [
+          "GATE-IC"
+        ],
+        "work_plan": [
+          {
+            "id": "W-R1",
+            "label": "Confirm ultimate-parent mapping",
+            "method": "Entity resolution",
+            "owner": "A. Rossi",
+            "external": "R. Patel",
+            "status": "Needs your decision",
+            "origin": "Triggered by evidence",
+            "deadline": "Today"
+          },
+          {
+            "id": "W-R2",
+            "label": "Read the seven Riverton contracts",
+            "method": "Contract review",
+            "owner": "Contract Agent",
+            "external": "Legal adviser",
+            "status": "Not started",
+            "origin": "Prepared from the case",
+            "deadline": "Before partner review"
+          },
+          {
+            "id": "W-R3",
+            "label": "Run two customer reference calls",
+            "method": "Customer diligence",
+            "owner": "A. Rossi",
+            "external": "CDD adviser",
+            "status": "Not started",
+            "origin": "Directed by M. Alvarez",
+            "deadline": "Before IC"
+          }
+        ]
+      },
+      {
+        "id": "UQ-CASH",
+        "label": "Can earnings convert into cash?",
+        "workstream": "Financial",
+        "owner": "L. Chen",
+        "origin": {
+          "entry_type": "Playbook",
+          "source_type": "Domain standard",
+          "label": "Buyout cash-conversion standard",
+          "source_ids": [
+            "Q-08",
+            "Q-09",
+            "Q-10"
+          ],
+          "binding": "Advisory"
+        },
+        "question_ids": [
+          "Q-08",
+          "Q-09",
+          "Q-10"
+        ],
+        "position_ids": [
+          "CP-012",
+          "CP-013"
+        ],
+        "model_node_ids": [
+          "MN-DOWN-DSO",
+          "MN-DOWN-WIP"
+        ],
+        "versions": {
+          "seller": {
+            "strength": "assumed",
+            "view": "Seller proposes $7.7m normalized working capital.",
+            "trend": "new",
+            "cause": "Seller materials",
+            "since": "27 Oct 2025",
+            "open_work": 3,
+            "economic_weight": "$7.7m seller target",
+            "display_strength": "Assumed"
+          },
+          "firm-initial": {
+            "strength": "contested",
+            "view": "WIP and billing controls require reconciliation.",
+            "trend": "down",
+            "cause": "Firm initial assessment",
+            "since": "12 Jan 2026",
+            "open_work": 3,
+            "economic_weight": "$0.7m closing delta",
+            "display_strength": "Contested"
+          },
+          "post-qoe": {
+            "strength": "supported",
+            "view": "Firm uses an $8.4m normalized NWC target.",
+            "trend": "up",
+            "cause": "QoE report",
+            "since": "22 Jan 2026",
+            "open_work": 1,
+            "economic_weight": "$8.4m NWC target",
+            "display_strength": "Supported"
+          },
+          "final-ic": {
+            "strength": "accepted-unresolved",
+            "view": "Cash conversion risk is accepted with monthly controls.",
+            "trend": "flat",
+            "cause": "Final IC memorandum",
+            "since": "10 Mar 2026",
+            "open_work": 1,
+            "economic_weight": "WIP and DSO risk",
+            "display_strength": "Accepted risk"
+          },
+          "post-cdd": {
+            "strength": "supported",
+            "view": "Firm uses an $8.4m normalized NWC target.",
+            "trend": "up",
+            "cause": "QoE report",
+            "since": "22 Jan 2026",
+            "open_work": 1,
+            "economic_weight": "$8.4m NWC target",
+            "display_strength": "Supported"
+          }
+        },
+        "priority_reasons": [
+          "$0.7m closing adjustment",
+          "billing controls remain open"
+        ],
+        "necessity": "Required before signing",
+        "gate_ids": [
+          "GATE-SIGN"
+        ],
+        "work_plan": [
+          {
+            "id": "W-C1",
+            "label": "Reconcile aged WIP and billing cut-off",
+            "method": "Financial analysis",
+            "owner": "L. Chen",
+            "external": "Independent financial diligence",
+            "status": "In progress",
+            "origin": "Playbook",
+            "deadline": "Before signing"
+          }
+        ]
+      },
+      {
+        "id": "UQ-INTEGRATION",
+        "label": "Can management execute the integration plan?",
+        "workstream": "Operational",
+        "owner": "J. Morgan",
+        "origin": {
+          "entry_type": "Directed",
+          "source_type": "Named person / committee",
+          "label": "M. Alvarez · partner review · 12 Jan",
+          "source_ids": [
+            "Q-11",
+            "Q-12",
+            "Q-13",
+            "Q-14"
+          ],
+          "binding": "Advisory"
+        },
+        "question_ids": [
+          "Q-11",
+          "Q-12",
+          "Q-13",
+          "Q-14"
+        ],
+        "position_ids": [
+          "CP-015",
+          "CP-016",
+          "CP-028",
+          "CP-029"
+        ],
+        "model_node_ids": [
+          "MN-COMBINED-RISK-INTEGRATION-SPEND",
+          "MN-COMBINED-RISK-EBITDA-MARGIN"
+        ],
+        "versions": {
+          "seller": {
+            "strength": "assumed",
+            "view": "Seller describes four acquisitions as integrated.",
+            "trend": "new",
+            "cause": "Seller CIM",
+            "since": "27 Oct 2025",
+            "open_work": 4,
+            "economic_weight": "Value-creation dependency",
+            "display_strength": "Assumed"
+          },
+          "firm-initial": {
+            "strength": "contested",
+            "view": "Commercial integration exists; systems integration is incomplete.",
+            "trend": "down",
+            "cause": "Firm initial assessment",
+            "since": "12 Jan 2026",
+            "open_work": 4,
+            "economic_weight": "$2.0m funded plan",
+            "display_strength": "Contested"
+          },
+          "post-qoe": {
+            "strength": "contested",
+            "view": "Execution remains conditional on governance, budget and leadership.",
+            "trend": "flat",
+            "cause": "Firm model and diligence",
+            "since": "22 Jan 2026",
+            "open_work": 3,
+            "economic_weight": "$2.0m integration budget",
+            "display_strength": "Contested"
+          },
+          "final-ic": {
+            "strength": "accepted-unresolved",
+            "view": "IC accepts execution risk subject to thirteen conditions.",
+            "trend": "up",
+            "cause": "Final IC memorandum",
+            "since": "10 Mar 2026",
+            "open_work": 2,
+            "economic_weight": "Combined-risk case",
+            "display_strength": "Accepted risk"
+          },
+          "post-cdd": {
+            "strength": "contested",
+            "view": "Execution remains conditional on governance, budget and leadership.",
+            "trend": "flat",
+            "cause": "Firm model and diligence",
+            "since": "22 Jan 2026",
+            "open_work": 3,
+            "economic_weight": "$2.0m integration budget",
+            "display_strength": "Contested"
+          }
+        },
+        "priority_reasons": [
+          "$2.0m funded plan",
+          "partner-directed execution risk"
+        ],
+        "necessity": "Advisory before IC",
+        "gate_ids": [
+          "GATE-IC"
+        ],
+        "work_plan": [
+          {
+            "id": "W-I1",
+            "label": "Review systems map with operating expert",
+            "method": "Operator call",
+            "owner": "J. Morgan",
+            "external": "Operating adviser",
+            "status": "In progress",
+            "origin": "Directed by M. Alvarez",
+            "deadline": "Before IC"
+          },
+          {
+            "id": "W-I2",
+            "label": "Validate integration leadership and budget",
+            "method": "Management diligence",
+            "owner": "J. Morgan",
+            "external": "Alderstone management",
+            "status": "Not started",
+            "origin": "Prepared from the case",
+            "deadline": "Before signing"
+          }
+        ]
+      },
+      {
+        "id": "UQ-FINANCING",
+        "label": "What financing survives the downside?",
+        "workstream": "Financing",
+        "owner": "R. Diaz",
+        "origin": {
+          "entry_type": "Playbook",
+          "source_type": "Domain standard",
+          "label": "Leveraged acquisition standard",
+          "source_ids": [
+            "Q-17",
+            "Q-18"
+          ],
+          "binding": "Required before gate"
+        },
+        "question_ids": [
+          "Q-17",
+          "Q-18"
+        ],
+        "position_ids": [
+          "CP-011",
+          "CP-018",
+          "CP-020"
+        ],
+        "model_node_ids": [
+          "MN-COV-EBITDA",
+          "MN-DEBT",
+          "MN-DOWN-MOIC",
+          "MN-DOWN-IRR"
+        ],
+        "versions": {
+          "seller": {
+            "strength": "open",
+            "view": "Seller materials do not establish covenant definitions.",
+            "trend": "new",
+            "cause": "Seller materials",
+            "since": "27 Oct 2025",
+            "open_work": 2,
+            "economic_weight": "Opening leverage",
+            "display_strength": "Open"
+          },
+          "firm-initial": {
+            "strength": "open",
+            "view": "Debt capacity and covenant basis remain under review.",
+            "trend": "flat",
+            "cause": "Firm initial assessment",
+            "since": "12 Jan 2026",
+            "open_work": 2,
+            "economic_weight": "$42.8m opening debt",
+            "display_strength": "Open"
+          },
+          "post-qoe": {
+            "strength": "supported",
+            "view": "Firm debt is $42.8m; covenant EBITDA remains separate.",
+            "trend": "up",
+            "cause": "Firm model",
+            "since": "22 Jan 2026",
+            "open_work": 1,
+            "economic_weight": "$42.8m opening debt",
+            "display_strength": "Supported"
+          },
+          "final-ic": {
+            "strength": "supported",
+            "view": "Downside retains positive equity value at 1.28x MOIC.",
+            "trend": "flat",
+            "cause": "Final IC memorandum",
+            "since": "10 Mar 2026",
+            "open_work": 0,
+            "economic_weight": "1.28x downside MOIC",
+            "display_strength": "Supported"
+          },
+          "post-cdd": {
+            "strength": "supported",
+            "view": "The concentration step limits underwriting leverage to 3.75x.",
+            "trend": "down",
+            "cause": "Financing grid applied",
+            "since": "5 Feb 2026",
+            "open_work": 1,
+            "economic_weight": "$42.75m supported debt",
+            "display_strength": "Supported"
+          }
+        },
+        "priority_reasons": [
+          "$42.8m opening debt",
+          "covenant basis follows an independent definition"
+        ],
+        "necessity": "Required before IC",
+        "gate_ids": [
+          "GATE-IC"
+        ],
+        "work_plan": [
+          {
+            "id": "W-F1",
+            "label": "Confirm leverage and covenant definitions",
+            "method": "Financing review",
+            "owner": "R. Diaz",
+            "external": "Lead lender",
+            "status": "In progress",
+            "origin": "Playbook",
+            "deadline": "Before IC"
+          }
+        ]
+      },
+      {
+        "id": "UQ-PRICE",
+        "label": "What price and returns can we defend?",
+        "workstream": "Model & Valuation",
+        "owner": "M. Alvarez",
+        "origin": {
+          "entry_type": "Directed",
+          "source_type": "Named person / committee",
+          "label": "Investment Committee · 10 Mar 2026",
+          "source_ids": [
+            "CP-001",
+            "CP-019",
+            "CP-021",
+            "CP-022"
+          ],
+          "binding": "Required before gate"
+        },
+        "question_ids": [],
+        "position_ids": [
+          "CP-001",
+          "CP-019",
+          "CP-021",
+          "CP-022"
+        ],
+        "model_node_ids": [
+          "MN-EV",
+          "MN-BASE-MOIC",
+          "MN-BASE-IRR"
+        ],
+        "versions": {
+          "seller": {
+            "strength": "assumed",
+            "view": "Seller seeks a premium platform valuation.",
+            "trend": "new",
+            "cause": "Seller materials",
+            "since": "27 Oct 2025",
+            "open_work": 2,
+            "economic_weight": "$108.0m EV",
+            "display_strength": "Assumed"
+          },
+          "firm-initial": {
+            "strength": "contested",
+            "view": "Price support depends on the final earnings basis.",
+            "trend": "down",
+            "cause": "Firm initial assessment",
+            "since": "12 Jan 2026",
+            "open_work": 2,
+            "economic_weight": "$108.0m current offer",
+            "display_strength": "Contested"
+          },
+          "post-qoe": {
+            "strength": "contested",
+            "view": "Revised economics require a partner decision.",
+            "trend": "down",
+            "cause": "Post-QoE working case",
+            "since": "22 Jan 2026",
+            "open_work": 1,
+            "economic_weight": "$5.4m ceiling gap",
+            "display_strength": "Contested"
+          },
+          "final-ic": {
+            "strength": "supported",
+            "view": "IC approves no more than $108.0m with conditions.",
+            "trend": "up",
+            "cause": "Final IC decision",
+            "since": "10 Mar 2026",
+            "open_work": 0,
+            "economic_weight": "2.00x / 14.8% base",
+            "display_strength": "Supported"
+          },
+          "post-cdd": {
+            "strength": "contested",
+            "view": "The $108.0m indicative offer is above the revised supported ceiling.",
+            "trend": "down",
+            "cause": "Concentration financing rule",
+            "since": "5 Feb 2026",
+            "open_work": 1,
+            "economic_weight": "$2.85m offer gap",
+            "display_strength": "Contested"
+          }
+        },
+        "priority_reasons": [
+          "2.00x / 14.8% base case",
+          "reserved price authority"
+        ],
+        "necessity": "Required before IC",
+        "gate_ids": [
+          "GATE-IC"
+        ],
+        "work_plan": [
+          {
+            "id": "W-P1",
+            "label": "Resolve price against the latest supported ceiling",
+            "method": "Partner decision",
+            "owner": "M. Alvarez",
+            "external": null,
+            "status": "Awaiting upstream work",
+            "origin": "IC-mandated",
+            "deadline": "At IC"
+          }
+        ]
+      },
+      {
+        "id": "UQ-CLOSING",
+        "label": "What must be true before closing?",
+        "workstream": "Legal & Governance",
+        "owner": "A. Rossi",
+        "origin": {
+          "entry_type": "Playbook",
+          "source_type": "Domain standard",
+          "label": "Control-buyout closing standard",
+          "source_ids": [
+            "Q-15",
+            "Q-16",
+            "Q-19",
+            "Q-20"
+          ],
+          "binding": "Advisory"
+        },
+        "question_ids": [
+          "Q-15",
+          "Q-16",
+          "Q-19",
+          "Q-20"
+        ],
+        "position_ids": [
+          "CP-024",
+          "CP-025",
+          "CP-026"
+        ],
+        "model_node_ids": [],
+        "versions": {
+          "seller": {
+            "strength": "open",
+            "view": "Closing conditions have not been defined.",
+            "trend": "new",
+            "cause": "Seller materials",
+            "since": "27 Oct 2025",
+            "open_work": 4,
+            "economic_weight": "Closing certainty",
+            "display_strength": "Open"
+          },
+          "firm-initial": {
+            "strength": "open",
+            "view": "Contract notices, lease reset and retention remain open.",
+            "trend": "flat",
+            "cause": "Diligence question list",
+            "since": "12 Jan 2026",
+            "open_work": 4,
+            "economic_weight": "Four closing conditions",
+            "display_strength": "Open"
+          },
+          "post-qoe": {
+            "strength": "open",
+            "view": "Material closing conditions remain outstanding.",
+            "trend": "flat",
+            "cause": "Current diligence state",
+            "since": "22 Jan 2026",
+            "open_work": 4,
+            "economic_weight": "Four closing conditions",
+            "display_strength": "Open"
+          },
+          "final-ic": {
+            "strength": "accepted-unresolved",
+            "view": "IC approves subject to thirteen explicit conditions.",
+            "trend": "up",
+            "cause": "Final IC decision",
+            "since": "10 Mar 2026",
+            "open_work": 3,
+            "economic_weight": "13 IC conditions",
+            "display_strength": "Accepted risk"
+          },
+          "post-cdd": {
+            "strength": "open",
+            "view": "Material closing conditions remain outstanding.",
+            "trend": "flat",
+            "cause": "Current diligence state",
+            "since": "22 Jan 2026",
+            "open_work": 4,
+            "economic_weight": "Four closing conditions",
+            "display_strength": "Open"
+          }
+        },
+        "priority_reasons": [
+          "13 explicit IC conditions",
+          "several third-party confirmations"
+        ],
+        "necessity": "Required before signing",
+        "gate_ids": [
+          "GATE-SIGN"
+        ],
+        "work_plan": [
+          {
+            "id": "W-L1",
+            "label": "Confirm notices and closing conditions",
+            "method": "Legal diligence",
+            "owner": "A. Rossi",
+            "external": "Legal adviser",
+            "status": "Not started",
+            "origin": "Playbook",
+            "deadline": "Before signing"
+          }
+        ]
+      },
+      {
+        "id": "UQ-COMBINED",
+        "label": "Is the combined risk acceptable?",
+        "workstream": "Investment Committee",
+        "owner": "M. Alvarez",
+        "origin": {
+          "entry_type": "Triggered",
+          "source_type": "Evidence found",
+          "label": "Customer and integration risks became correlated",
+          "source_ids": [
+            "CL-049",
+            "CP-027"
+          ],
+          "binding": "Advisory"
+        },
+        "question_ids": [],
+        "position_ids": [
+          "CP-027"
+        ],
+        "model_node_ids": [
+          "MN-COMBINED-RISK-MOIC",
+          "MN-COMBINED-RISK-IRR"
+        ],
+        "versions": {
+          "seller": {
+            "strength": "open",
+            "view": "Combined customer and integration risk is not in scope yet.",
+            "trend": "new",
+            "cause": "Seller materials",
+            "since": "27 Oct 2025",
+            "open_work": 0,
+            "economic_weight": "Not in scope yet",
+            "display_strength": "Open"
+          },
+          "firm-initial": {
+            "strength": "open",
+            "view": "The risks are being evaluated separately.",
+            "trend": "flat",
+            "cause": "Firm initial assessment",
+            "since": "12 Jan 2026",
+            "open_work": 1,
+            "economic_weight": "Combined-risk exposure",
+            "display_strength": "Open"
+          },
+          "post-qoe": {
+            "strength": "contested",
+            "view": "Correlated downside is plausible but not the base case.",
+            "trend": "down",
+            "cause": "Diligence synthesis",
+            "since": "22 Jan 2026",
+            "open_work": 1,
+            "economic_weight": "1.50x / 8.7% combined case",
+            "display_strength": "Contested"
+          },
+          "final-ic": {
+            "strength": "accepted-unresolved",
+            "view": "Majority accepts with conditions; one member dissents.",
+            "trend": "flat",
+            "cause": "Final IC decision",
+            "since": "10 Mar 2026",
+            "open_work": 0,
+            "economic_weight": "Recorded dissent",
+            "display_strength": "Accepted risk"
+          },
+          "post-cdd": {
+            "strength": "contested",
+            "view": "Customer concentration and execution risks now interact in the downside case.",
+            "trend": "down",
+            "cause": "Cross-workstream synthesis",
+            "since": "5 Feb 2026",
+            "open_work": 1,
+            "economic_weight": "Not directly quantified",
+            "display_strength": "Contested"
+          }
+        },
+        "priority_reasons": [
+          "not directly quantified",
+          "requires IC judgment on correlated risk"
+        ],
+        "necessity": "Advisory before IC",
+        "gate_ids": [
+          "GATE-IC"
+        ],
+        "work_plan": [
+          {
+            "id": "W-X1",
+            "label": "Frame the combined customer and integration downside",
+            "method": "IC synthesis",
+            "owner": "M. Alvarez",
+            "external": null,
+            "status": "In progress",
+            "origin": "Shadow IC",
+            "deadline": "Before IC"
+          }
+        ]
+      }
+    ],
+    "artifacts": [
+      {
+        "id": "ART-MODEL",
+        "type": "Excel model",
+        "title": "Keystone LBO model",
+        "current_version": "W13",
+        "status": "current",
+        "owner": "A. Rossi",
+        "trace_ids": [
+          "MN-FIRM-EBITDA",
+          "MN-DEBT",
+          "MN-SPONSOR-EQUITY",
+          "MN-BASE-IRR"
+        ],
+        "versions": [
+          {
+            "version": "W11",
+            "date": "27 Oct 2025",
+            "cause": "Seller model ingested",
+            "status": "frozen"
+          },
+          {
+            "version": "W12",
+            "date": "12 Jan 2026",
+            "cause": "Firm initial case",
+            "status": "frozen"
+          },
+          {
+            "version": "W13",
+            "date": "22 Jan 2026",
+            "cause": "QoE and customer mapping prepared",
+            "status": "current"
+          }
+        ]
+      },
+      {
+        "id": "ART-MEMO",
+        "type": "IC memo",
+        "title": "Project Keystone IC memorandum",
+        "current_version": "Draft 4",
+        "status": "current",
+        "owner": "A. Rossi",
+        "trace_ids": [
+          "CP-001",
+          "CP-004",
+          "CP-008"
+        ],
+        "versions": [
+          {
+            "version": "Draft 1",
+            "date": "12 Jan 2026",
+            "cause": "Initial assessment",
+            "status": "frozen"
+          },
+          {
+            "version": "Draft 3",
+            "date": "22 Jan 2026",
+            "cause": "Post-QoE case",
+            "status": "frozen"
+          },
+          {
+            "version": "Draft 4",
+            "date": "10 Mar 2026",
+            "cause": "IC circulation draft",
+            "status": "current"
+          }
+        ]
+      },
+      {
+        "id": "ART-OFFER",
+        "type": "Offer letter",
+        "title": "Indicative offer letter",
+        "current_version": "7 Jan 2026",
+        "status": "current",
+        "owner": "M. Alvarez",
+        "trace_ids": [
+          "MN-EV",
+          "SRC-OFFER-V15"
+        ],
+        "versions": [
+          {
+            "version": "7 Jan 2026",
+            "date": "7 Jan 2026",
+            "cause": "Indicative offer submitted",
+            "status": "current"
+          }
+        ]
+      },
+      {
+        "id": "ART-TRACKER",
+        "type": "Diligence tracker",
+        "title": "Keystone diligence plan",
+        "current_version": "Plan 4",
+        "status": "current",
+        "owner": "A. Rossi",
+        "trace_ids": [
+          "Q-03",
+          "Q-05",
+          "Q-06",
+          "Q-07"
+        ],
+        "versions": [
+          {
+            "version": "Plan 1",
+            "date": "12 Jan 2026",
+            "cause": "Question plan opened",
+            "status": "frozen"
+          },
+          {
+            "version": "Plan 4",
+            "date": "22 Jan 2026",
+            "cause": "QoE and customer work added",
+            "status": "current"
+          }
+        ]
+      },
+      {
+        "id": "ART-QOE",
+        "type": "Diligence report",
+        "title": "QoE report v3",
+        "current_version": "v3",
+        "status": "source",
+        "owner": "Independent financial diligence",
+        "trace_ids": [
+          "SRC-QOE-ADDBACK"
+        ],
+        "versions": [
+          {
+            "version": "v3",
+            "date": "22 Jan 2026",
+            "cause": "Received by email",
+            "status": "source"
+          }
+        ]
+      },
+      {
+        "id": "ART-CDD",
+        "type": "CDD deck",
+        "title": "CDD deck v2",
+        "current_version": "v2",
+        "status": "source",
+        "owner": "R. Patel",
+        "trace_ids": [
+          "SRC-CIM-CONC",
+          "SRC-DR-RIV"
+        ],
+        "versions": [
+          {
+            "version": "v2",
+            "date": "22 Jan 2026",
+            "cause": "Received from adviser",
+            "status": "source"
+          }
+        ]
+      }
+    ],
+    "versions": [
+      {
+        "id": "seller",
+        "label": "Seller materials",
+        "date": "27 Oct 2025",
+        "cause": "CIM and seller model received"
+      },
+      {
+        "id": "firm-initial",
+        "label": "Firm initial case",
+        "date": "12 Jan 2026",
+        "cause": "Initial assessment and question spine opened"
+      },
+      {
+        "id": "post-qoe",
+        "label": "Post-QoE case",
+        "date": "22 Jan 2026",
+        "cause": "QoE treatment accepted"
+      },
+      {
+        "id": "post-cdd",
+        "label": "Concentration review",
+        "date": "5 Feb 2026",
+        "cause": "Ultimate-parent mapping and financing treatment adopted"
+      },
+      {
+        "id": "final-ic",
+        "label": "Final IC",
+        "date": "10 Mar 2026",
+        "cause": "IC approved with conditions"
+      }
+    ],
+    "people": [
+      {
+        "id": "TEAM-FIRM",
+        "initials": "FT",
+        "name": "Firm investment team",
+        "role": "Underwriting and model",
+        "period": "12 Jan–10 Mar 2026",
+        "owned": "Initial case, model and IC memo",
+        "settled": "Firm earnings and price basis",
+        "source_backed": true,
+        "side": "inside",
+        "group": "Investment team"
+      },
+      {
+        "id": "ADVISER-QOE",
+        "initials": "FD",
+        "name": "Independent financial diligence",
+        "role": "QoE provider",
+        "period": "22 Jan 2026",
+        "owned": "Historical earnings and working capital",
+        "settled": "QoE-normalized EBITDA",
+        "source_backed": true,
+        "side": "advisor",
+        "group": "Financial adviser"
+      },
+      {
+        "id": "SELLER",
+        "initials": "HC",
+        "name": "Hawthorne Capital Markets",
+        "role": "Sponsor adviser",
+        "period": "27 Oct 2025 onward",
+        "owned": "Seller materials and data room",
+        "settled": "External case delivery",
+        "source_backed": true,
+        "side": "counterparty",
+        "group": "Seller adviser"
+      },
+      {
+        "id": "IC",
+        "initials": "IC",
+        "name": "Investment Committee",
+        "role": "Institutional authority",
+        "period": "10 Mar 2026",
+        "owned": "Risk acceptance and price",
+        "settled": "Final IC decision",
+        "source_backed": true,
+        "side": "authority",
+        "group": "Institutional authority"
+      },
+      {
+        "id": "A-ROSSI",
+        "initials": "AR",
+        "name": "A. Rossi",
+        "role": "Associate · demo persona",
+        "period": "Current workflow",
+        "owned": "Model, diligence and routing",
+        "settled": "Professional review",
+        "source_backed": false,
+        "simulated_persona": true,
+        "side": "inside",
+        "group": "Investment team"
+      },
+      {
+        "id": "M-ALVAREZ",
+        "initials": "MA",
+        "name": "M. Alvarez",
+        "role": "Deal Partner · demo persona",
+        "period": "Current workflow",
+        "owned": "Case treatment and authority",
+        "settled": "Material decision",
+        "source_backed": false,
+        "simulated_persona": true,
+        "side": "inside",
+        "group": "Investment team"
+      },
+      {
+        "id": "L-CHEN",
+        "initials": "LC",
+        "name": "L. Chen",
+        "role": "Financial diligence lead · demo persona",
+        "period": "Jan–Mar 2026",
+        "owned": "Earnings and working capital",
+        "settled": "QoE treatment",
+        "source_backed": false,
+        "simulated_persona": true,
+        "side": "inside",
+        "group": "Diligence lead"
+      },
+      {
+        "id": "R-PATEL",
+        "initials": "RP",
+        "name": "R. Patel",
+        "role": "CDD adviser · demo recipient",
+        "period": "Jan–Mar 2026",
+        "owned": "Customer mapping and references",
+        "settled": "External evidence",
+        "source_backed": false,
+        "simulated_persona": true,
+        "side": "advisor",
+        "group": "Commercial adviser"
+      },
+      {
+        "id": "MGMT",
+        "initials": "AM",
+        "name": "Alderstone management",
+        "role": "Target management",
+        "period": "Oct 2025 onward",
+        "owned": "Company materials and management responses",
+        "settled": "External case inputs",
+        "source_backed": true,
+        "side": "counterparty",
+        "group": "Management"
+      },
+      {
+        "id": "LENDER",
+        "initials": "LB",
+        "name": "Lead lender",
+        "role": "Financing counterparty",
+        "period": "Jan–Mar 2026",
+        "owned": "Indicative leverage and covenant terms",
+        "settled": "Financing parameters",
+        "source_backed": false,
+        "simulated_persona": true,
+        "side": "advisor",
+        "group": "Lender"
+      }
+    ],
+    "journal": [
+      {
+        "id": "J-ORIG",
+        "phase": "Origination",
+        "events": [
+          {
+            "id": "J-001",
+            "date": "Sep 2025 · synthetic",
+            "title": "Alderstone entered the sourcing pipeline.",
+            "detail": "Direct industrial-services opportunity identified.",
+            "people": [
+              "M-ALVAREZ",
+              "A-ROSSI"
+            ],
+            "object_ids": [
+              "UQ-PRICE"
+            ],
+            "kind": "origin",
+            "synthetic": true
+          },
+          {
+            "id": "J-002",
+            "date": "3 Oct 2025 · synthetic",
+            "title": "First management introduction completed.",
+            "detail": "Management shared the initial company overview.",
+            "people": [
+              "A-ROSSI",
+              "MGMT"
+            ],
+            "object_ids": [
+              "UQ-INTEGRATION"
+            ],
+            "kind": "meeting",
+            "synthetic": true
+          },
+          {
+            "id": "J-003",
+            "date": "6 Oct 2025 · synthetic",
+            "title": "Bilateral process formally opened.",
+            "detail": "Hawthorne outlined timing and access.",
+            "people": [
+              "SELLER",
+              "A-ROSSI"
+            ],
+            "object_ids": [
+              "ART-CDD"
+            ],
+            "kind": "process",
+            "synthetic": true
+          }
+        ]
+      },
+      {
+        "id": "J-NDA",
+        "phase": "NDA & access",
+        "events": [
+          {
+            "id": "J-004",
+            "date": "14 Oct 2025 · synthetic",
+            "title": "NDA executed.",
+            "detail": "Confidential information exchange authorized.",
+            "people": [
+              "A-ROSSI",
+              "SELLER"
+            ],
+            "object_ids": [
+              "ART-CDD"
+            ],
+            "kind": "legal",
+            "synthetic": true
+          },
+          {
+            "id": "J-005",
+            "date": "20 Oct 2025 · synthetic",
+            "title": "Virtual data room access granted.",
+            "detail": "Seller materials became available.",
+            "people": [
+              "SELLER",
+              "TEAM-FIRM"
+            ],
+            "object_ids": [
+              "ART-CDD"
+            ],
+            "kind": "access",
+            "synthetic": true
+          }
+        ]
+      },
+      {
+        "id": "J-ADV",
+        "phase": "Adviser process",
+        "events": [
+          {
+            "id": "J-006",
+            "date": "5 Nov 2025 · synthetic",
+            "title": "Financial diligence provider engaged.",
+            "detail": "Scope covered earnings and working capital.",
+            "people": [
+              "TEAM-FIRM",
+              "ADVISER-QOE"
+            ],
+            "object_ids": [
+              "UQ-EARNINGS",
+              "UQ-CASH"
+            ],
+            "kind": "engagement",
+            "synthetic": true
+          },
+          {
+            "id": "J-007",
+            "date": "9 Nov 2025 · synthetic",
+            "title": "Commercial diligence workstream opened.",
+            "detail": "Customer mapping and references were commissioned.",
+            "people": [
+              "A-ROSSI",
+              "R-PATEL"
+            ],
+            "object_ids": [
+              "UQ-REVENUE"
+            ],
+            "kind": "engagement",
+            "synthetic": true
+          }
+        ]
+      },
+      {
+        "id": "J-MAT",
+        "phase": "Materials",
+        "events": [
+          {
+            "id": "J-008",
+            "date": "27 Oct 2025",
+            "title": "Seller CIM and model received.",
+            "detail": "The seller case established the first earnings and concentration bases.",
+            "people": [
+              "SELLER",
+              "TEAM-FIRM"
+            ],
+            "object_ids": [
+              "SRC-CIM-CONC",
+              "ART-MODEL"
+            ],
+            "kind": "source"
+          },
+          {
+            "id": "J-009",
+            "date": "12 Jan 2026",
+            "title": "Firm initial case opened.",
+            "detail": "The question spine and initial diligence plan were created.",
+            "people": [
+              "A-ROSSI",
+              "M-ALVAREZ"
+            ],
+            "object_ids": [
+              "UQ-EARNINGS",
+              "UQ-REVENUE",
+              "ART-TRACKER"
+            ],
+            "kind": "case-version"
+          },
+          {
+            "id": "J-010",
+            "date": "12 Jan 2026",
+            "title": "Indicative offer recorded.",
+            "detail": "$108.0m EV subject to diligence, financing and IC.",
+            "people": [
+              "M-ALVAREZ"
+            ],
+            "object_ids": [
+              "ART-OFFER"
+            ],
+            "kind": "artifact"
+          }
+        ]
+      },
+      {
+        "id": "J-DIL",
+        "phase": "Diligence",
+        "events": [
+          {
+            "id": "J-011",
+            "date": "22 Jan 2026 · 07:36",
+            "title": "QoE v3 arrived.",
+            "detail": "One earnings treatment required a professional ruling.",
+            "people": [
+              "ADVISER-QOE",
+              "L-CHEN"
+            ],
+            "object_ids": [
+              "SRC-QOE-ADDBACK",
+              "UQ-EARNINGS"
+            ],
+            "kind": "source"
+          },
+          {
+            "id": "J-012",
+            "date": "22 Jan 2026 · 07:41",
+            "title": "CDD v2 and registry extract arrived.",
+            "detail": "Seven billing accounts resolved to Riverton.",
+            "people": [
+              "R-PATEL",
+              "A-ROSSI"
+            ],
+            "object_ids": [
+              "SRC-DR-RIV",
+              "UQ-REVENUE"
+            ],
+            "kind": "source"
+          },
+          {
+            "id": "J-013",
+            "date": "22 Jan 2026 · 09:00",
+            "title": "Customer durability question reformulated.",
+            "detail": "Account concentration and contractual durability were separated.",
+            "people": [
+              "A-ROSSI"
+            ],
+            "object_ids": [
+              "UQ-REVENUE"
+            ],
+            "kind": "question"
+          },
+          {
+            "id": "J-014",
+            "date": "2 Mar 2026",
+            "title": "Partner review directed more integration work.",
+            "detail": "Operator validation became a directed requirement.",
+            "people": [
+              "M-ALVAREZ",
+              "A-ROSSI"
+            ],
+            "object_ids": [
+              "UQ-INTEGRATION"
+            ],
+            "kind": "direction"
+          }
+        ]
+      },
+      {
+        "id": "J-IC",
+        "phase": "Investment Committee",
+        "events": [
+          {
+            "id": "J-015",
+            "date": "6 Mar 2026",
+            "title": "IC pre-read circulated.",
+            "detail": "The current case and open conditions were distributed.",
+            "people": [
+              "A-ROSSI",
+              "IC"
+            ],
+            "object_ids": [
+              "ART-MEMO"
+            ],
+            "kind": "artifact"
+          },
+          {
+            "id": "J-016",
+            "date": "10 Mar 2026",
+            "title": "Investment Committee approved with conditions.",
+            "detail": "The decision basis was frozen with dissent and conditions.",
+            "people": [
+              "IC",
+              "M-ALVAREZ"
+            ],
+            "object_ids": [
+              "UQ-PRICE",
+              "ART-MEMO"
+            ],
+            "kind": "authority"
+          }
+        ]
+      },
+      {
+        "id": "J-EXEC",
+        "phase": "Execution",
+        "events": [
+          {
+            "id": "J-017",
+            "date": "11 Mar 2026 · synthetic",
+            "title": "Signing workstream opened.",
+            "detail": "Closing conditions and notices were assigned.",
+            "people": [
+              "A-ROSSI",
+              "TEAM-FIRM"
+            ],
+            "object_ids": [
+              "UQ-CLOSING"
+            ],
+            "kind": "process",
+            "synthetic": true
+          }
+        ]
+      }
+    ]
+  },
+  "events": {
+    "earnings": {
+      "event_id": "EVENT-EARNINGS-V17",
+      "type": "SOURCE_TREATMENT",
+      "label": "QoE earnings basis requires firm treatment",
+      "source_title": "QoE Report v3",
+      "source_passage": "The QoE firm supports normalized EBITDA of $11.9m but does not accept $0.5m of forward pricing and utilization initiatives as historical earnings.",
+      "locator": "QoE Report · Earnings bridge · p.18",
+      "definition": "QoE-normalized EBITDA",
+      "period": "FY2025",
+      "perimeter": "Alderstone standalone",
+      "proposed_position": "The Firm underwrites EBITDA at $11.4m, excluding unrealized initiatives and applying reserves for customer and integration risk.",
+      "scene_id": "earnings",
+      "synthetic": false
+    },
+    "concentration": {
+      "event_id": "EVENT-CONCENTRATION-V17",
+      "type": "MATERIAL_EXCEPTION",
+      "label": "Customer master resolves seven accounts to Riverton",
+      "source_title": "VDR Customer Master",
+      "source_passage": "Seven billing accounts across six facilities share the same ultimate parent: Riverton Industrial Group. Aggregated exposure is 18.2% of FY2025 revenue.",
+      "locator": "VDR · Customer Master · rows 118–124",
+      "definition": "Ultimate-parent revenue concentration",
+      "period": "FY2025",
+      "perimeter": "Riverton parent group",
+      "proposed_position": "Riverton is a major concentration risk; retain it in base case only with downside reduction and explicit offer/financing treatment.",
+      "scene_id": "concentration",
+      "synthetic": false
+    }
+  }
+}

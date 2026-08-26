@@ -1,0 +1,244 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.example/schemas/canonical-investment-case-1.1.0.json",
+  "title": "PANTA Canonical Investment Case",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "case_id",
+    "claims",
+    "case_positions",
+    "model_nodes",
+    "position_dependencies",
+    "claim_position_edges",
+    "position_model_bindings",
+    "support_routes",
+    "coverage_gaps"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "1.1.0"
+    },
+    "case_id": {
+      "type": "string"
+    },
+    "claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "benchmark_validation_claims": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claim"
+      }
+    },
+    "case_positions": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/position"
+      }
+    },
+    "model_nodes": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/model_node"
+      }
+    },
+    "position_dependencies": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/position_edge"
+      }
+    },
+    "claim_position_edges": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/claim_position_edge"
+      }
+    },
+    "position_model_bindings": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/position_model_binding"
+      }
+    }
+  },
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "required": [
+        "claim_id",
+        "statement",
+        "source_id",
+        "locator",
+        "epistemic_class",
+        "period",
+        "perimeter",
+        "ground_truth_flag",
+        "validation_only"
+      ],
+      "properties": {
+        "claim_id": {
+          "type": "string"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "source_id": {
+          "type": "string"
+        },
+        "locator": {
+          "type": "string"
+        },
+        "epistemic_class": {
+          "enum": [
+            "asserted",
+            "observed",
+            "derived",
+            "attested"
+          ]
+        },
+        "period": {
+          "type": "string",
+          "minLength": 1
+        },
+        "perimeter": {
+          "type": "string",
+          "minLength": 1
+        },
+        "ground_truth_flag": {
+          "type": "boolean"
+        },
+        "validation_only": {
+          "type": "boolean"
+        }
+      }
+    },
+    "position": {
+      "type": "object",
+      "required": [
+        "position_id",
+        "statement",
+        "epistemic_status_at_ic",
+        "decision_status_at_ic",
+        "freshness_status_at_ic",
+        "outcome_status_at_ic",
+        "model_binding_status"
+      ],
+      "properties": {
+        "position_id": {
+          "type": "string"
+        },
+        "statement": {
+          "type": "string"
+        },
+        "epistemic_status_at_ic": {
+          "enum": [
+            "ESTABLISHED",
+            "CONTESTED",
+            "OPEN",
+            "UNEXAMINED"
+          ]
+        },
+        "decision_status_at_ic": {
+          "enum": [
+            "ACCEPTED",
+            "ACCEPTED_WITH_CONDITIONS",
+            "REJECTED",
+            "PENDING"
+          ]
+        },
+        "freshness_status_at_ic": {
+          "enum": [
+            "CURRENT",
+            "STALE"
+          ]
+        },
+        "outcome_status_at_ic": {
+          "enum": [
+            "NOT_TESTED",
+            "HELD",
+            "PARTIALLY_HELD",
+            "FALSIFIED",
+            "MATERIALIZED",
+            "RECOVERED_AFTER_FAILURE"
+          ]
+        }
+      }
+    },
+    "model_node": {
+      "type": "object",
+      "required": [
+        "model_node_id",
+        "name",
+        "kind",
+        "period",
+        "perimeter"
+      ],
+      "properties": {
+        "model_node_id": {
+          "type": "string"
+        },
+        "period": {
+          "type": "string",
+          "minLength": 1
+        },
+        "perimeter": {
+          "type": "string",
+          "minLength": 1
+        }
+      }
+    },
+    "position_edge": {
+      "type": "object",
+      "required": [
+        "edge_id",
+        "from_position_id",
+        "to_position_id",
+        "relation_type",
+        "semantic_role",
+        "traversal_rule"
+      ],
+      "properties": {
+        "relation_type": {
+          "enum": [
+            "SUPPORTS",
+            "CONTRADICTS",
+            "DERIVES_FROM",
+            "DRIVES",
+            "CONDITIONS"
+          ]
+        }
+      }
+    },
+    "claim_position_edge": {
+      "type": "object",
+      "required": [
+        "edge_id",
+        "claim_id",
+        "position_id",
+        "relation_type"
+      ],
+      "properties": {
+        "relation_type": {
+          "enum": [
+            "SUPPORTS",
+            "CONTRADICTS"
+          ]
+        }
+      }
+    },
+    "position_model_binding": {
+      "type": "object",
+      "required": [
+        "binding_id",
+        "position_id",
+        "model_node_id",
+        "binding_type",
+        "status"
+      ]
+    }
+  }
+}

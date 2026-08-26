@@ -1,0 +1,173 @@
+{
+  "schema_version": "frontend-transition-projection/1.0",
+  "run_id": "RUN-EARNINGS-V17",
+  "case_id": "PROJECT-KEYSTONE",
+  "prior_state_id": "firm-initial",
+  "candidate_state_id": "candidate-earnings-v17",
+  "source_event_id": "EVENT-EARNINGS-V17",
+  "status": "PARTIAL_SETTLEMENT",
+  "affected_set": [
+    {
+      "order": 1,
+      "object_id": "MN-FIRM-EBITDA",
+      "label": "Underwritten EBITDA",
+      "disposition": "RECOMPUTES",
+      "before": "$11.9m",
+      "after": "$11.4m",
+      "explanation": "Firm valuation basis",
+      "source_trace": null
+    },
+    {
+      "order": 2,
+      "object_id": "MN-DEBT",
+      "label": "Debt capacity",
+      "disposition": "RECOMPUTES",
+      "before": "$45.0m",
+      "after": "$42.8m",
+      "explanation": "Supported leverage",
+      "source_trace": null
+    },
+    {
+      "order": 3,
+      "object_id": "MN-SPONSOR-EQUITY",
+      "label": "Sponsor equity",
+      "disposition": "RECOMPUTES",
+      "before": "$59.8m",
+      "after": "$62.0m",
+      "explanation": "Sources and uses",
+      "source_trace": null
+    },
+    {
+      "order": 4,
+      "object_id": "MN-BASE-IRR",
+      "label": "Base IRR",
+      "disposition": "RECOMPUTES",
+      "before": "20.6%",
+      "after": "18.8%",
+      "explanation": "Current-offer economics",
+      "source_trace": null
+    },
+    {
+      "order": 5,
+      "object_id": "CP-022",
+      "label": "Supported ceiling",
+      "disposition": "RECOMPUTES",
+      "before": "$108.0m",
+      "after": "$102.6m",
+      "explanation": "Revised working case",
+      "source_trace": null
+    },
+    {
+      "order": 6,
+      "object_id": "MN-COV-EBITDA",
+      "label": "Covenant EBITDA",
+      "disposition": "SURVIVES",
+      "before": "$12.2m",
+      "after": "$12.2m",
+      "explanation": "Separate credit-agreement definition",
+      "source_trace": null
+    }
+  ],
+  "recomputed_values": [
+    {
+      "object_id": "MN-FIRM-EBITDA",
+      "label": "Underwritten EBITDA",
+      "before": "$11.9m",
+      "after": "$11.4m"
+    },
+    {
+      "object_id": "MN-DEBT",
+      "label": "Debt capacity",
+      "before": "$45.0m",
+      "after": "$42.8m"
+    },
+    {
+      "object_id": "MN-SPONSOR-EQUITY",
+      "label": "Sponsor equity",
+      "before": "$59.8m",
+      "after": "$62.0m"
+    },
+    {
+      "object_id": "MN-BASE-IRR",
+      "label": "Base IRR",
+      "before": "20.6%",
+      "after": "18.8%"
+    },
+    {
+      "object_id": "CP-022",
+      "label": "Supported ceiling",
+      "before": "$108.0m",
+      "after": "$102.6m"
+    }
+  ],
+  "unchanged_objects": [
+    {
+      "object_id": "MN-COV-EBITDA",
+      "label": "Covenant EBITDA",
+      "reason": "Independent definition or support route remains valid."
+    }
+  ],
+  "human_stops": [],
+  "policy_result": {
+    "materiality": "MATERIAL",
+    "authority_required": false,
+    "policy_version": "keystone-policy-demo-v1"
+  },
+  "artifact_change_sets": [
+    {
+      "artifact_id": "ART-MODEL",
+      "title": "Keystone LBO — Working",
+      "version_before": "W13",
+      "version_after": "W14",
+      "changes": [
+        {
+          "sheet": "QoE_Bridge",
+          "cell": "E19",
+          "label": "Firm EBITDA",
+          "before": "$11.9m",
+          "after": "$11.4m",
+          "trace_id": "MN-FIRM-EBITDA"
+        },
+        {
+          "sheet": "Inputs",
+          "cell": "B9",
+          "label": "Opening debt",
+          "before": "$45.0m",
+          "after": "$42.8m",
+          "trace_id": "MN-DEBT"
+        },
+        {
+          "sheet": "Inputs",
+          "cell": "B8",
+          "label": "Sponsor equity",
+          "before": "$59.8m",
+          "after": "$62.0m",
+          "trace_id": "MN-SPONSOR-EQUITY"
+        },
+        {
+          "sheet": "Ownership_Returns",
+          "cell": "L4",
+          "label": "Base IRR",
+          "before": "20.6%",
+          "after": "18.8%",
+          "trace_id": "MN-BASE-IRR"
+        }
+      ],
+      "passage_before": null,
+      "passage_after": null,
+      "status": "PREPARED"
+    },
+    {
+      "artifact_id": "ART-MEMO",
+      "title": "Initial IC memorandum",
+      "version_before": "Draft 4",
+      "version_after": "Draft 5",
+      "changes": [],
+      "passage_before": "We underwrite the transaction on $11.9m of normalized EBITDA and support an enterprise value of up to $108.0m.",
+      "passage_after": "We underwrite the transaction on $11.4m of Firm EBITDA, with debt and returns updated to the accepted earnings basis.",
+      "status": "PREPARED"
+    }
+  ],
+  "replay_hash": "sha256:demo-earnings-v17",
+  "coverage_limits": []
+}

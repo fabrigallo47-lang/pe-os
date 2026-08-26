@@ -1,0 +1,439 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.example/schemas/state-transition-execution-mapping-1.1.json",
+  "title": "PANTA State Transition Execution Mapping",
+  "description": "Runtime compiler output that supplies executable direction and solver configuration without changing the canonical ontology.",
+  "type": "object",
+  "required": [
+    "mapping_version",
+    "canonical_graph_hash",
+    "model_nodes",
+    "directed_model_edges",
+    "position_model_directions",
+    "formulas",
+    "rule_switches",
+    "inverse_solver_configs",
+    "model_controls",
+    "cyclic_component_solver_configs",
+    "coverage_limits"
+  ],
+  "properties": {
+    "mapping_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "canonical_graph_hash": {
+      "$ref": "#/$defs/hash"
+    },
+    "model_nodes": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "model_node_id",
+          "unit",
+          "period",
+          "perimeter"
+        ],
+        "properties": {
+          "model_node_id": {
+            "type": "string"
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "period": {
+            "type": "string"
+          },
+          "perimeter": {
+            "type": "string"
+          },
+          "computational_form": {
+            "enum": [
+              "DIRECT_INPUT",
+              "DIRECT_FORMULA",
+              "RULE_SWITCH",
+              "NUMERICAL_CYCLE",
+              "INVERSE_SOLVE",
+              "MODEL_CONTROL",
+              "MONITOR_ONLY"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "directed_model_edges": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "edge_id",
+          "from_model_node_id",
+          "to_model_node_id",
+          "formula_or_function_ref"
+        ],
+        "properties": {
+          "edge_id": {
+            "type": "string"
+          },
+          "from_model_node_id": {
+            "type": "string"
+          },
+          "to_model_node_id": {
+            "type": "string"
+          },
+          "formula_or_function_ref": {
+            "type": "string"
+          },
+          "control_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "position_model_directions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "binding_id",
+          "position_id",
+          "model_node_id",
+          "direction"
+        ],
+        "properties": {
+          "binding_id": {
+            "type": "string"
+          },
+          "position_id": {
+            "type": "string"
+          },
+          "model_node_id": {
+            "type": "string"
+          },
+          "direction": {
+            "enum": [
+              "POSITION_DRIVES_MODEL",
+              "MODEL_DERIVES_POSITION",
+              "MODEL_VALIDATES_POSITION",
+              "MONITOR_ONLY"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "formulas": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "formula_id",
+          "input_ids",
+          "output_id",
+          "expression_or_function_ref"
+        ],
+        "properties": {
+          "formula_id": {
+            "type": "string"
+          },
+          "input_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "output_id": {
+            "type": "string"
+          },
+          "expression_or_function_ref": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "rule_switches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "rule_switch_id",
+          "selector_input_ids",
+          "branches",
+          "source_ref"
+        ],
+        "properties": {
+          "rule_switch_id": {
+            "type": "string"
+          },
+          "selector_input_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "branches": {
+            "type": "array",
+            "minItems": 2,
+            "items": {
+              "type": "object",
+              "required": [
+                "branch_id",
+                "condition"
+              ],
+              "properties": {
+                "branch_id": {
+                  "type": "string"
+                },
+                "condition": {
+                  "type": "string"
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "source_ref": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "inverse_solver_configs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "solver_id",
+          "objective",
+          "decision_variable_ids",
+          "constraints",
+          "method",
+          "initialization",
+          "admissible_bounds",
+          "absolute_residual_tolerance",
+          "relative_residual_tolerance",
+          "maximum_iterations",
+          "uniqueness_condition",
+          "invariant_control_ids"
+        ],
+        "properties": {
+          "solver_id": {
+            "type": "string"
+          },
+          "objective": {
+            "type": "object",
+            "required": [
+              "sense",
+              "variable_id"
+            ],
+            "properties": {
+              "sense": {
+                "enum": [
+                  "MAXIMIZE",
+                  "MINIMIZE"
+                ]
+              },
+              "variable_id": {
+                "type": "string"
+              }
+            },
+            "additionalProperties": true
+          },
+          "decision_variable_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "constraints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "constraint_id",
+                "expression_or_function_ref",
+                "source_ref"
+              ],
+              "properties": {
+                "constraint_id": {
+                  "type": "string"
+                },
+                "expression_or_function_ref": {
+                  "type": "string"
+                },
+                "source_ref": {
+                  "type": "string",
+                  "minLength": 1
+                }
+              },
+              "additionalProperties": true
+            }
+          },
+          "method": {
+            "type": "string"
+          },
+          "initialization": {},
+          "admissible_bounds": {
+            "type": "object"
+          },
+          "absolute_residual_tolerance": {
+            "type": "string"
+          },
+          "relative_residual_tolerance": {
+            "type": "string"
+          },
+          "maximum_iterations": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "uniqueness_condition": {
+            "type": "string"
+          },
+          "invariant_control_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "model_controls": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "control_id",
+          "scope_ids",
+          "pass_condition"
+        ],
+        "properties": {
+          "control_id": {
+            "type": "string"
+          },
+          "scope_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "pass_condition": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "cyclic_component_solver_configs": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "component_id",
+          "component_type",
+          "member_ids",
+          "method",
+          "initialization",
+          "admissible_bounds",
+          "absolute_residual_tolerance",
+          "relative_residual_tolerance",
+          "maximum_iterations",
+          "uniqueness_condition",
+          "invariant_control_ids"
+        ],
+        "properties": {
+          "component_id": {
+            "type": "string"
+          },
+          "component_type": {
+            "enum": [
+              "NUMERICAL_SCC",
+              "QUALITATIVE_SCC",
+              "MIXED_SCC"
+            ]
+          },
+          "member_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "method": {
+            "type": "string"
+          },
+          "initialization": {
+            "type": "object"
+          },
+          "admissible_bounds": {
+            "type": "object"
+          },
+          "absolute_residual_tolerance": {
+            "type": "string"
+          },
+          "relative_residual_tolerance": {
+            "type": "string"
+          },
+          "maximum_iterations": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "uniqueness_condition": {
+            "type": "string"
+          },
+          "invariant_control_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "coverage_limits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "limit_id",
+          "reason_code",
+          "scope_ids"
+        ],
+        "properties": {
+          "limit_id": {
+            "type": "string"
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "scope_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    }
+  },
+  "additionalProperties": true
+}

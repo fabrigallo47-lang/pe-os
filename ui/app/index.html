@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover" />
+  <meta name="color-scheme" content="dark" />
+  <meta name="description" content="PANTA Deal World V17 — integration-ready investment decision system frontend handoff." />
+  <title>PANTA · Deal World V17</title>
+  <link rel="icon" href="data:," />
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <noscript><div class="fatal">PANTA V17 requires JavaScript.</div></noscript>
+  <div id="app" aria-live="polite"></div>
+  <aside id="drawer" class="object-drawer" aria-label="Object Aperture"></aside>
+  <div id="modal" class="modal-root" aria-live="polite"></div>
+  <div id="toast" class="toast" role="status"></div>
+  <div id="demo-caption" class="demo-caption" aria-live="polite"></div>
+  <div id="demo-cursor" class="demo-cursor" aria-hidden="true"></div>
+  <section id="selftest" class="selftest-panel" aria-label="V17 self test"></section>
+
+  <script src="data/v16_case_bundle.js"></script>
+  <script src="data/v17_fixture.js"></script>
+  <script src="src/projection_adapter.js"></script>
+  <script src="src/integration.js"></script>
+  <script src="src/engine.js"></script>
+  <script src="src/render.js"></script>
+  <script src="src/selftest.js"></script>
+  <script src="src/demo_controller.js"></script>
+</body>
+</html>

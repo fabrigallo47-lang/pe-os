@@ -1,0 +1,116 @@
+{
+  "case_id": "PROJECT-KEYSTONE",
+  "snapshots": [
+    {
+      "id": "seller",
+      "date": "27 Oct 2025",
+      "label": "Seller materials",
+      "known": [
+        "Revenue $74.0m",
+        "Seller EBITDA $12.7m",
+        "Largest customer 7.6% by account"
+      ],
+      "believed": [
+        "Attractive recurring platform"
+      ],
+      "approved": [],
+      "open": [
+        "Earnings quality",
+        "Parent concentration",
+        "Integration"
+      ]
+    },
+    {
+      "id": "firm-initial",
+      "date": "12 Jan 2026",
+      "label": "Firm initial case",
+      "known": [
+        "Reported EBITDA $10.2m",
+        "Systems fragmented"
+      ],
+      "believed": [
+        "Earnings lower quality than advertised",
+        "Integration risk material"
+      ],
+      "approved": [],
+      "open": [
+        "QoE treatment",
+        "Contract durability",
+        "NWC"
+      ]
+    },
+    {
+      "id": "post-qoe",
+      "date": "22 Jan 2026",
+      "label": "Post-QoE case",
+      "known": [
+        "QoE EBITDA $11.9m",
+        "NWC target $8.4m"
+      ],
+      "believed": [
+        "Firm EBITDA should be $11.4m"
+      ],
+      "approved": [],
+      "open": [
+        "Customer parent mapping",
+        "Offer ceiling"
+      ]
+    },
+    {
+      "id": "post-cdd",
+      "date": "5 Feb 2026",
+      "label": "Concentration review",
+      "known": [
+        "Riverton exposure 18.2%",
+        "No minimum-volume guarantee"
+      ],
+      "believed": [
+        "Risk real but base case retained"
+      ],
+      "approved": [],
+      "open": [
+        "Partner offer treatment",
+        "Seven contracts"
+      ]
+    },
+    {
+      "id": "final-ic",
+      "date": "10 Mar 2026",
+      "label": "Final IC",
+      "known": [
+        "All core diligence findings"
+      ],
+      "believed": [
+        "Deal works only under conditions"
+      ],
+      "approved": [
+        "$108m EV",
+        "4-1 vote",
+        "13 conditions"
+      ],
+      "open": [
+        "Execution of conditions",
+        "Integration monitoring"
+      ]
+    },
+    {
+      "id": "monitoring",
+      "date": "31 Dec 2026",
+      "label": "Monitoring signal",
+      "known": [
+        "Project Unify yellow",
+        "17 high-severity defects",
+        "WIP $6.4m"
+      ],
+      "believed": [
+        "Accepted integration risk is materializing"
+      ],
+      "approved": [
+        "Original IC remains historical"
+      ],
+      "open": [
+        "Intervention decision"
+      ]
+    }
+  ]
+}

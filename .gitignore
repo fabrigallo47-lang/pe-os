@@ -35,3 +35,8 @@ AI_HARNESS.md
 
 # Report lasciati da check_all.py del kit PANTA (derivati, non nostri)
 independent_validation_report*
+
+# UI V17: consegna di design, pesante e non nostra da versionare
+ui/demo/
+ui/references/
+ui/legacy/

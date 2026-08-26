@@ -1,0 +1,21 @@
+{
+  "version": "17.0.0",
+  "owners": {
+    "Fabri": {
+      "owns": ["native source decoding", "semantic compiler", "Current Live Case", "execution mapping", "admission manifest", "proposed/admitted event payloads"],
+      "does_not_own": ["Candidate", "financial propagation", "policy evaluation", "human stops", "settlement"]
+    },
+    "Anto": {
+      "owns": ["State Transition Engine", "financial execution", "rule switches and solvers", "materiality and authority evaluation", "Candidate", "human stops", "settlement", "replay hash"],
+      "does_not_own": ["source interpretation", "Case Position formation from raw documents", "frontend business inference"]
+    },
+    "Alex": {
+      "owns": ["investment-domain constitution", "product experience", "demo sequence", "domain correctness", "judgment boundaries", "acceptance of UX projection"],
+      "does_not_own": ["silent manual patching of compiler output", "duplicating the transition runtime"]
+    },
+    "V17 frontend": {
+      "owns": ["projection", "navigation", "interaction", "local demo fixtures", "API adapter"],
+      "does_not_own": ["source extraction", "semantic adjudication", "financial computation", "institutional adoption"]
+    }
+  }
+}

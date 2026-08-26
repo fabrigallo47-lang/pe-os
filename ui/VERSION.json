@@ -1,0 +1,10 @@
+{
+  "name": "PANTA Deal World V17 — Integration Ready",
+  "version": "17.0.0",
+  "date": "2026-08-26",
+  "status": "FRONTEND_HANDOFF_COMPLETE",
+  "predecessor": "PANTA Deal World V16 — Connected Case",
+  "entrypoint": "app/index.html",
+  "connected_entrypoint": "START_PANTA.command",
+  "demo_video": "demo/PANTA_V17_PRODUCT_DEMO.mp4"
+}

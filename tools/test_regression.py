@@ -309,34 +309,34 @@ def test_resolver() -> None:
     }}
 
     # a clean binding is admitted
-    ok = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SB", "$mm", 0.9)],
+    ok = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SB", "", "$mm", 0.9)],
                  concepts, source)
     check("un binding coerente viene ammesso",
           len(ok.admitted) == 1 and not ok.violations, ok.status)
 
     # annual cell must not bind to a quarterly concept
-    r = resolve([Binding("C-REV", "S!C5", "FY2025A", "SB", "$mm", 0.9)], concepts, source)
+    r = resolve([Binding("C-REV", "S!C5", "FY2025A", "SB", "", "$mm", 0.9)], concepts, source)
     check("una serie annuale non si lega a un concetto trimestrale",
           any(v.code == "PERIOD_ALIGNMENT" for v in r.violations))
 
     # a declared input must not be produced by a formula
-    r = resolve([Binding("C-IN", "S!C5", "2026-03-31", "SB", "$mm", 0.9)], concepts, source)
+    r = resolve([Binding("C-IN", "S!C5", "2026-03-31", "SB", "", "$mm", 0.9)], concepts, source)
     check("un input dichiarato non puo' essere calcolato",
           any(v.code == "PRECEDENT_SHAPE" for v in r.violations))
 
     # unit mismatch is caught even at high confidence
-    r = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SB", "%", 0.99)], concepts, source)
+    r = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SB", "", "%", 0.99)], concepts, source)
     check("unita incoerente scartata anche ad alta confidenza",
           any(v.code == "UNIT_COHERENCE" for v in r.violations))
 
     # self-reference
-    r = resolve([Binding("C-REV", "S!C7", "2026-06-30", "SB", "$mm", 0.9)], concepts, source)
+    r = resolve([Binding("C-REV", "S!C7", "2026-06-30", "SB", "", "$mm", 0.9)], concepts, source)
     check("una cella che si legge da sola viene rifiutata",
           any(v.code == "NO_SELF_REFERENCE" for v in r.violations))
 
     # two cells competing for the same slot: halt, do not choose
-    r = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SB", "$mm", 0.9),
-                 Binding("C-REV", "S!C9", "2026-06-30", "SB", "$mm", 0.9)],
+    r = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SB", "", "$mm", 0.9),
+                 Binding("C-REV", "S!C9", "2026-06-30", "SB", "", "$mm", 0.9)],
                 concepts, source)
     dup = [v for v in r.violations if v.code == "UNIQUE_BINDING"]
     check("due candidati per lo stesso slot sono un conflitto", len(dup) == 1)
@@ -346,6 +346,22 @@ def test_resolver() -> None:
     check("la proposta riporta il margine, non solo il vincitore",
           dup[0].relaxation.get("margin") == 0.0)
     check("sovra-vincolato => HALTED", r.halted, r.status)
+
+    # the same line item repeated once per scenario block is not a conflict
+    two = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SD", unit="$mm", confidence=0.9,
+                           section="Standalone Base"),
+                   Binding("C-REV", "S!C9", "2026-06-30", "SD", unit="$mm",
+                           confidence=0.9, section="Standalone Downside")],
+                  concepts, source)
+    check("blocchi di scenario diversi non collidono",
+          len(two.admitted) == 2 and not two.violations, two.status)
+    same = resolve([Binding("C-REV", "S!C5", "2026-06-30", "SD", unit="$mm",
+                            confidence=0.9, section="Standalone Base"),
+                    Binding("C-REV", "S!C9", "2026-06-30", "SD", unit="$mm",
+                            confidence=0.9, section="Standalone Base")],
+                   concepts, source)
+    check("nello stesso blocco resta un conflitto",
+          any(v.code == "UNIQUE_BINDING" for v in same.violations))
 
 
 # ── 8. Sheet classifier: stability by construction ───────────────────────────

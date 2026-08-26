@@ -65,7 +65,8 @@ class Binding:
     concept_id: str
     locator: str                   # SHEET!REF
     period: str = ""
-    scenario: str = ""
+    scenario: str = ""             # sheet
+    section: str = ""              # block within the sheet
     unit: str = ""
     confidence: float = 0.0
     evidence: list[str] = field(default_factory=list)
@@ -199,19 +200,23 @@ def resolve(bindings: list[Binding],
             survivors.append(b)
 
     # C1 — uniqueness, decided across the whole set rather than per cell
-    slots: dict[tuple[str, str, str], list[Binding]] = defaultdict(list)
+    # Keyed by section as well as sheet. Scenario_Drivers repeats every line
+    # item once per scenario block, so keying on the sheet alone collapsed five
+    # distinct series into one slot and reported them as a conflict.
+    slots: dict[tuple[str, str, str, str], list[Binding]] = defaultdict(list)
     for b in survivors:
-        slots[(b.concept_id, b.period, b.scenario)].append(b)
+        slots[(b.concept_id, b.period, b.scenario, b.section)].append(b)
 
     admitted: list[Binding] = []
-    for (cid, period, scenario), group in slots.items():
+    for (cid, period, scenario, section), group in slots.items():
         if len(group) == 1:
             admitted.append(group[0])
             continue
         ranked = sorted(group, key=lambda x: -x.confidence)
         violations.append(Violation(
             "UNIQUE_BINDING",
-            f"{cid} @ {period or '—'}/{scenario or '—'} ha {len(group)} celle candidate",
+            f"{cid} @ {period or '—'}/{scenario or '—'}"
+            f"{'/' + section if section else ''} ha {len(group)} celle candidate",
             [b.locator for b in group], cid,
             relaxation={
                 "kind": "prefer_highest_confidence",
@@ -253,6 +258,7 @@ def bindings_from_semantics(path: Path, concepts: dict[str, Concept],
             out.append(Binding(
                 concept_id=cid, locator=p["cell"],
                 period=p.get("col_header", ""), scenario=sheet.get("sheet", ""),
+                section=p.get("section", ""),
                 unit=p.get("unit", ""), confidence=p.get("confidence", 0.0),
                 evidence=p.get("evidence", []),
             ))

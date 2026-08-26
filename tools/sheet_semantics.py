@@ -98,6 +98,7 @@ class ConceptProposal:
     unit_source: str = ""
     period_kind: str | None = None
     is_formula: bool = False
+    section: str = ""              # nearest section heading above this cell
     confidence: float = 0.0
     evidence: list[str] = field(default_factory=list)   # cells the label came from
     issues: list[str] = field(default_factory=list)
@@ -297,11 +298,37 @@ def classify_sheet(ws, label_col: int | None, header_row: int | None,
     return "record_table"
 
 
+def find_sections(ws, label_col: int | None, max_row: int = 400) -> list[tuple[int, str]]:
+    """
+    Section headings: a row where only the label column carries text.
+
+    Scenario_Drivers uses them to separate Standalone Base from Downside and
+    the rest, so the same line item appears once per scenario. SB_Base uses them
+    for Operating Model and Cash Flow Statement, which are categories rather
+    than scenarios. This does not try to tell those apart — it records which
+    section a cell sits in and lets the resolver key on it.
+    """
+    if not label_col:
+        return []
+    out: list[tuple[int, str]] = []
+    last_col = min(ws.max_column, 12)
+    for r in range(1, min(ws.max_row, max_row) + 1):
+        head = ws.cell(row=r, column=label_col).value
+        if not _is_text(head):
+            continue
+        rest = [ws.cell(row=r, column=c).value
+                for c in range(label_col + 1, last_col + 1)]
+        if all(v is None for v in rest):
+            out.append((r, str(head).strip()))
+    return out
+
+
 def analyse_sheet(ws, judgment: dict | None = None) -> SheetReport:
     orientation, label_col, header_row = infer_orientation(ws)
     unit_cols = find_unit_columns(ws)
     from openpyxl.utils import column_index_from_string
     label_idx = column_index_from_string(label_col) if label_col else None
+    sections = find_sections(ws, label_idx)
     kind = classify_sheet(ws, label_idx, header_row)
     # A cached model judgment resolves what layout alone cannot: whether this is
     # a model or a table of records, and which headers are periods. It only ever
@@ -385,12 +412,19 @@ def analyse_sheet(ws, judgment: dict | None = None) -> SheetReport:
                 confidence += 0.10
             confidence = round(min(confidence, 1.0), 2)
 
+            section = ""
+            for start, title in sections:
+                if start <= cell.row:
+                    section = title
+                else:
+                    break
+
             concept = " · ".join(p for p in (row_label, col_header) if p) or "?"
             report.proposals.append(ConceptProposal(
                 cell=f"{ws.title.upper()}!{cell.coordinate}",
                 concept=concept, row_label=row_label, col_header=col_header,
                 unit=unit, unit_source=unit_source, period_kind=period_kind,
-                is_formula=is_formula, confidence=confidence,
+                is_formula=is_formula, confidence=confidence, section=section,
                 evidence=evidence, issues=issues,
             ))
     return report

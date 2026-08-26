@@ -34,6 +34,7 @@ import json
 import re
 import sys
 from dataclasses import dataclass, field, asdict
+from datetime import datetime, date
 from pathlib import Path
 from typing import Any
 
@@ -112,6 +113,7 @@ class SheetReport:
     orientation: str                      # labels_left | labels_top | unclear
     label_column: str | None = None
     header_row: int | None = None
+    kind: str = "unknown"          # model_sheet | record_table | unknown
     proposals: list[ConceptProposal] = field(default_factory=list)
 
     @property
@@ -251,11 +253,58 @@ def _scan_up(ws, row: int, col: int, limit: int = 12) -> tuple[str, str]:
     return "", ""
 
 
+def classify_sheet(ws, label_col: int | None, header_row: int | None,
+                   probe_cols: int = 24) -> str:
+    """
+    Tell a model sheet from a record table by what the columns are.
+
+    In a model the columns are periods: SB_Base runs quarter-end dates across
+    row 3. In a record table they are fields: Employees runs Name, Location,
+    Hire date. That is the distinction that matters downstream, because a
+    period column binds to a concept over time while a field column does not.
+
+    Uniqueness of the label column was tried first and does not survive contact
+    with real workbooks: an employee roster has perfectly unique ids in column A
+    and is emphatically not a model, while Scenario_Drivers repeats "Revenue"
+    once per scenario block and emphatically is one.
+    """
+    if not header_row:
+        return "unknown"
+    headers = [ws.cell(row=header_row, column=c).value
+               for c in range(1, min(ws.max_column, probe_cols) + 1)]
+    seen = [h for h in headers if h is not None]
+    if len(seen) < 3:
+        return "unknown"
+    periodish = sum(1 for h in seen
+                    if isinstance(h, (datetime, date)) or classify_period(str(h)))
+    if periodish / len(seen) >= 0.5:
+        return "model_sheet"
+
+    # Everything else is treated as a record table, which discards the
+    # left-hand text rather than trusting it.
+    #
+    # This is deliberately the pessimistic branch. Four classifiers were tried
+    # and each traded one error for another: label-column uniqueness calls an
+    # employee roster a model because its ids are unique; requiring positive
+    # evidence to demote lets a flat data table come back 100% confident with
+    # field values passing as concept labels. Only this direction fails by
+    # losing coverage instead of inventing meaning.
+    #
+    # The cost is real and measured: a French model heading its columns P1, P2
+    # lands here and drops to zero, because period vocabulary is unbounded and
+    # this recognises only what it has met. That is the boundary of what layout
+    # alone can decide.
+    return "record_table"
+
+
 def analyse_sheet(ws) -> SheetReport:
     orientation, label_col, header_row = infer_orientation(ws)
     unit_cols = find_unit_columns(ws)
+    from openpyxl.utils import column_index_from_string
+    label_idx = column_index_from_string(label_col) if label_col else None
+    kind = classify_sheet(ws, label_idx, header_row)
     report = SheetReport(sheet=ws.title.upper(), orientation=orientation,
-                         label_column=label_col, header_row=header_row)
+                         label_column=label_col, header_row=header_row, kind=kind)
 
     for row in ws.iter_rows():
         for cell in row:
@@ -293,6 +342,13 @@ def analyse_sheet(ws) -> SheetReport:
 
             evidence = [c for c in (row_src, col_src) if c]
             issues: list[str] = []
+            if kind == "record_table" and row_label:
+                # The column header names the field; the value to the left is
+                # another field of the same record, not a label for this one.
+                row_label, row_src = "", ""
+                evidence = [c for c in (col_src,) if c]
+                issues.append("tabella di record: la voce a sinistra è un altro campo, "
+                              "non un'etichetta")
             if not row_label and not col_header:
                 issues.append("nessuna etichetta trovata né a sinistra né sopra")
 
@@ -350,7 +406,7 @@ def main() -> int:
 
     print(f"[sheet_semantics] {a.workbook.name}")
     for r in reports:
-        print(f"\n  {r.sheet}  ({r.orientation}"
+        print(f"\n  {r.sheet}  ({r.kind}, {r.orientation}"
               f"{', etichette in ' + r.label_column if r.label_column else ''}"
               f"{', header riga ' + str(r.header_row) if r.header_row else ''})")
         print(f"    proposte {len(r.proposals)} · sicure {len(r.confident)} · da rivedere {len(r.review)}")

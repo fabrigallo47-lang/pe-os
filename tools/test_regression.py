@@ -442,6 +442,107 @@ def test_classifier() -> None:
           max((p.confidence for p in with_j.proposals), default=0) >=
           max((p.confidence for p in without.proposals), default=0))
 
+    # A record table identifies its values by (record key, field). Without the
+    # key a cell is only "some Gross MOIC" and cannot be bound to anything.
+    rt = sheet({"A1": "Case", "B1": "Sponsor Invested", "C1": "Gross MOIC",
+                "A2": "Base", "B2": 62, "C2": 1.99,
+                "A3": "Downside", "B3": 62, "C3": 1.28,
+                "A4": "Upside", "B4": 62, "C4": 2.43})
+    rep = analyse_sheet(rt, {"kind": "record_table"})
+    by_cell = {p.cell.split("!")[1]: p for p in rep.proposals}
+    check("la tabella di record porta la chiave di riga",
+          by_cell["C2"].record_key == "Base" and by_cell["C3"].record_key == "Downside")
+    check("la chiave non viene scambiata per un'etichetta di riga",
+          all(not p.row_label for p in rep.proposals))
+    check("chiave + campo identificano la cella: proposta sicura",
+          not by_cell["C2"].needs_review)
+    check("l'unità viene dall'intestazione di campo, non dalla riga",
+          by_cell["C2"].unit == "x")
+    check("la chiave è nell'evidenza",
+          "A2" in by_cell["C2"].evidence and "C1" in by_cell["C2"].evidence)
+
+
+# ── 9. The live store and the projection built from it ───────────────────────
+# The projection served to the UI used to blend a bundle, the vault and the
+# package fixture, so "is this real?" had to be answered section by section.
+# These pin the property that replaced that: what is not in the store is not on
+# screen, and an empty store produces an empty deal rather than a demo one.
+
+def test_live() -> None:
+    print("\n9. Store live: a schermo solo ciò che è stato estratto")
+    import tempfile
+    from tools import live_store as ls
+    from tools import live_projection as lp
+
+    with tempfile.TemporaryDirectory() as td:
+        original, ls.LIVE = ls.LIVE, Path(td)
+        try:
+            st = ls.LiveStore("t")
+            check("uno store nuovo è vuoto", st.is_empty)
+
+            proj = lp.build(st)
+            check("store vuoto => nessuno scenario",
+                  "scenarioLab" in proj["deal"] and
+                  not proj["deal"]["scenarioLab"]["scenarios"])
+            check("store vuoto => nessuna room piena",
+                  not proj["deal"]["rooms"]["foundations"]["sets"])
+            check("store vuoto => ogni schermata è dichiarata assente",
+                  len(proj["absent_views"]) == len(lp.SCREEN_VIEWS))
+            check("lo scheletro ha tutte le chiavi che la UI legge",
+                  all(k in proj["deal"] for k in _skel_keys()))
+
+            src = Path(td) / "wb.xlsx"
+            src.write_bytes(b"not really a workbook, only its digest matters here")
+            st.add_workbook(src, {
+                "L1_source_graph": {"cells": 12},
+                "bindings": [{"concept_id": "C-GROSS-MOIC", "locator": "R!K4",
+                              "period": "", "scenario": "Base", "section": "",
+                              "unit": "x", "confidence": 0.8, "value": 2.0}],
+                "records": [{"record": "Base", "fields": {
+                    "moic": {"concept_id": "C-GROSS-MOIC", "value": 2.0,
+                             "unit": "x", "locator": "R!K4"},
+                    "irr": {"concept_id": "C-GROSS-XIRR", "value": 0.15,
+                            "unit": "%", "locator": "R!L4"}}}],
+            })
+            proj = lp.build(st)
+            lab = proj["deal"]["scenarioLab"]
+            check("un record diventa uno scenario", len(lab["scenarios"]) == 1)
+            s = lab["scenarios"][0]
+            check("il MOIC arriva intatto", s["moic"] == 2.0)
+            check("l'IRR è convertito in punti percentuali una volta sola",
+                  s["irr"] == 15.0)
+            check("ogni cifra porta la cella da cui viene",
+                  all(f["locator"] for f in s["fields"]))
+            check("lo scenario non è più dichiarato assente",
+                  "scenario" not in proj["absent_views"])
+            check("le schermate che nessun ingest alimenta restano assenti",
+                  "foundations" in proj["absent_views"])
+
+            # A second ingest of the same workbook must not double the case.
+            st.add_workbook(src, {"L1_source_graph": {"cells": 12},
+                                  "bindings": [], "records": [
+                {"record": "Base", "fields": {"moic": {
+                    "concept_id": "C-GROSS-MOIC", "value": 2.5, "unit": "x",
+                    "locator": "R!K4"}}}]})
+            proj = lp.build(st)
+            check("re-ingerire lo stesso caso lo sostituisce, non lo duplica",
+                  len(proj["deal"]["scenarioLab"]["scenarios"]) == 1 and
+                  proj["deal"]["scenarioLab"]["scenarios"][0]["moic"] == 2.5)
+            check("la stessa sorgente resta una riga sola",
+                  len(st.manifest["sources"]) == 1)
+
+            st.reset()
+            check("reset riporta lo store a vuoto", ls.LiveStore("t").is_empty)
+        finally:
+            ls.LIVE = original
+
+
+def _skel_keys() -> list[str]:
+    """The keys V17's views read off `deal` without checking they exist."""
+    return ["objective", "branches", "morning_delta", "next_best_work",
+            "command_suggestions", "rooms", "scenarioLab", "decisionRoom",
+            "executionRoom", "replay", "registry", "case_id"]
+
 
 def main() -> int:
     print("=" * 62)
@@ -449,7 +550,7 @@ def main() -> int:
     print("=" * 62)
     for t in (test_cascade, test_benchmark_field, test_deal_profile,
               test_grounding_gate, test_minigraph, test_excel,
-              test_resolver, test_classifier):
+              test_resolver, test_classifier, test_live):
         t()
     print()
     print("=" * 62)

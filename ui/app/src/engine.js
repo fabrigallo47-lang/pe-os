@@ -68,6 +68,14 @@
   const stopTimer=()=>{if(timer)clearTimeout(timer);timer=null};
   const persistHistory=()=>storage.set('panta-v17-history',state.history);
 
+  // Personas belong to the demo. With the fixture stripped there is no
+  // A. Rossi, so an act is attributed to the role that performed it —
+  // inventing a name for a real registry entry is how a record stops
+  // being a record.
+  const actorName=()=>window.PantaLive?.stripped
+    ?(state.role==='partner'?'Partner':'Associate')
+    :(state.role==='partner'?'M. Alvarez':'A. Rossi');
+
   function record(kind,label,detail,objectId,actor='PANTA',extra={}){
     const event={id:`REG-${String(state.history.length+1).padStart(3,'0')}`,kind,actor,time:new Date().toISOString().slice(11,16),label,detail,object_id:objectId||null,...extra};
     state.history.push(event);persistHistory();return event;
@@ -77,6 +85,15 @@
     if(!projection||typeof projection!=='object')return false;
     for(const key of ['fund','deal','events']){
       if(projection[key]&&typeof projection[key]==='object')F[key]=projection[key];
+    }
+    // Which screens the projection could not fill, and why. render.js shows the
+    // reason in place of the screen, so an absence reads as an absence.
+    if(window.PantaLive&&projection.absent_views)window.PantaLive.setAbsent(projection.absent_views,projection.available_views);
+    if(window.PantaLive){window.PantaLive.extraction=projection.extraction||null;window.PantaLive.sources=projection.sources||[];window.PantaLive.disclosure=projection.disclosure||'';}
+    // The registry is the ingest log, not a demo script: replace it rather than
+    // appending real events to fixture ones.
+    if(window.PantaLive?.stripped&&projection.deal?.registry){
+      state.history=clone(projection.deal.registry);persistHistory();
     }
     return Boolean(projection.fund||projection.deal||projection.events);
   }
@@ -97,11 +114,11 @@
     }
   }
 
-  function setRole(role){if(!['associate','partner'].includes(role))return;patch({role});record('VIEW','Role projection changed',`The same state is now projected for ${role}.`,'ROLE',role==='partner'?'M. Alvarez':'A. Rossi')}
+  function setRole(role){if(!['associate','partner'].includes(role))return;patch({role});record('VIEW','Role projection changed',`The same state is now projected for ${role}.`,'ROLE',actorName())}
   function setLens(lens){patch({lens});}
   function setScale(scale){patch({scale,view:scale==='fund'?'fund-command':'deal-command',selectedRoom:null});}
   function openFund(){patch({scale:'fund',view:'fund-command',selectedRoom:null,activeScene:null,flowPhase:'idle'});}
-  function openDeal(caseId='PROJECT-KEYSTONE'){if(caseId!=='PROJECT-KEYSTONE'){showToast('Only Project Keystone is connected in this handoff package.');return;}patch({scale:'deal',view:'deal-command',selectedRoom:null,activeScene:null,flowPhase:'idle'});record('VIEW','Deal World opened','Project Keystone selected from Fund Command.',caseId,state.role==='partner'?'M. Alvarez':'A. Rossi');}
+  function openDeal(caseId='PROJECT-KEYSTONE'){if(caseId!=='PROJECT-KEYSTONE'){showToast('Only Project Keystone is connected in this handoff package.');return;}patch({scale:'deal',view:'deal-command',selectedRoom:null,activeScene:null,flowPhase:'idle'});record('VIEW','Deal World opened','Project Keystone selected from Fund Command.',caseId,actorName());}
   function navigate(view){patch({view,selectedRoom:['foundations','unknowns','shadow-ic','registry'].includes(view)?view:null});}
   function setSituation(id){patch({selectedSituationId:id});}
   function setQuestion(id,open=true){patch({selectedQuestionId:id,...(open?{drawer:'question',drawerId:id,drawerTab:'basis'}:{})});}
@@ -115,17 +132,32 @@
   function toggleActionRail(){patch({actionRailOpen:!state.actionRailOpen});}
   function showToast(message){patch({toast:message});setTimeout(()=>{if(state.toast===message)patch({toast:null})},1800)}
 
+  // The palette is a list of objects you can jump to. In the demo those are the
+  // fixture's; with the fixture stripped they have to be the ones an ingest
+  // actually produced, or the search finds things that are not there.
+  function commandIndex(){
+    if(!window.PantaLive?.stripped){
+      return [
+        {id:'UQ-EARNINGS',type:'Question',label:'What earnings can we underwrite?',view:'deal-command'},
+        {id:'FND-REVENUE',type:'Foundation',label:'Revenue durability support set',view:'foundations'},
+        {id:'UNK-CONTRACTS',type:'Unknown',label:'Can Riverton reduce volume without penalty?',view:'unknowns'},
+        {id:'SIC-DISSENT',type:'Shadow IC',label:'Recorded dissent on multiple and risk',view:'shadow-ic'},
+        {id:'ART-MEMO',type:'Artifact',label:'Project Keystone IC memorandum',view:'artifacts'},
+        {id:'REG-003',type:'Registry',label:'Morning Delta prepared',view:'registry'},
+        {id:'final-ic',type:'Replay',label:'Final IC snapshot',view:'replay'}
+      ];
+    }
+    const out=[];
+    (F.deal?.scenarioLab?.scenarios||[]).forEach(s=>out.push({id:s.id,type:'Scenario',label:`${s.label} · ${s.moic??'—'}x`,view:'scenario'}));
+    (F.deal?.rooms?.foundations?.sets||[]).forEach(s=>out.push({id:s.id,type:'Foundation',label:s.label,view:'foundations'}));
+    (F.deal?.rooms?.unknowns?.items||[]).forEach(u=>out.push({id:u.id,type:'Unknown',label:u.label,view:'unknowns'}));
+    (state.history||[]).forEach(ev=>out.push({id:ev.id,type:'Registry',label:ev.label,view:'registry'}));
+    return out;
+  }
+
   function command(query){
     const clean=(query||'').trim();
-    const all=[
-      {id:'UQ-EARNINGS',type:'Question',label:'What earnings can we underwrite?',view:'deal-command'},
-      {id:'FND-REVENUE',type:'Foundation',label:'Revenue durability support set',view:'foundations'},
-      {id:'UNK-CONTRACTS',type:'Unknown',label:'Can Riverton reduce volume without penalty?',view:'unknowns'},
-      {id:'SIC-DISSENT',type:'Shadow IC',label:'Recorded dissent on multiple and risk',view:'shadow-ic'},
-      {id:'ART-MEMO',type:'Artifact',label:'Project Keystone IC memorandum',view:'artifacts'},
-      {id:'REG-003',type:'Registry',label:'Morning Delta prepared',view:'registry'},
-      {id:'final-ic',type:'Replay',label:'Final IC snapshot',view:'replay'}
-    ];
+    const all=commandIndex();
     const terms=clean.toLowerCase().split(/\s+/).filter(Boolean);
     const results=(terms.length?all.filter(item=>terms.every(t=>(item.label+' '+item.type).toLowerCase().includes(t))):all).slice(0,5);
     patch({commandQuery:clean,commandResults:results,commandOpen:true});
@@ -142,16 +174,16 @@
     if(!F.events[id])return;
     stopTimer();
     patch({scale:'deal',view:'change',activeScene:id,flowPhase:'arrival',transitionResult:null,transitionIndex:-1,transitionError:null,selectedChangeSets:[],selectedCourseId:null,decisionAttested:false,executionStatus:'draft',settled:null});
-    record('SOURCE','Material source opened',F.events[id].label,F.events[id].event_id,state.role==='partner'?'M. Alvarez':'A. Rossi');
+    record('SOURCE','Material source opened',F.events[id].label,F.events[id].event_id,actorName());
   }
-  function reviewSource(){if(state.flowPhase!=='arrival')return;patch({flowPhase:'evidence'});record('REVIEW','Source review started','Exact passage, definition, period and perimeter opened.',F.events[state.activeScene].event_id,state.role==='partner'?'M. Alvarez':'A. Rossi');}
+  function reviewSource(){if(state.flowPhase!=='arrival')return;patch({flowPhase:'evidence'});record('REVIEW','Source review started','Exact passage, definition, period and perimeter opened.',F.events[state.activeScene].event_id,actorName());}
   function prepareTreatment(){if(!['evidence','arrival'].includes(state.flowPhase))return;patch({flowPhase:'treatment'});}
 
   async function confirmTreatment(){
     if(state.flowPhase!=='treatment')return;
     const id=state.activeScene;const event=F.events[id];
     patch({flowPhase:'impact',transitionError:null,transitionIndex:-1});
-    record('ADMISSION','Professional treatment admitted',event.proposed_position,event.event_id,state.role==='partner'?'M. Alvarez':'A. Rossi');
+    record('ADMISSION','Professional treatment admitted',event.proposed_position,event.event_id,actorName());
     try{
       const result=await window.PantaIntegration.admitEvent(F.deal.case_id,event.event_id);
       state.transitionRun+=1;
@@ -195,7 +227,7 @@
     if(!state.selectedCourseId){showToast('Select a course of action first.');return;}
     const course=F.deal.decisionRoom.courses.find(x=>x.id===state.selectedCourseId);
     patch({decisionAttested:true,view:'execution',flowPhase:'execution'});
-    record('AUTHORITY','Offer authority attested',course.label,F.deal.decisionRoom.request_id,'M. Alvarez',{authority_verb:'approve_offer'});
+    record('AUTHORITY','Offer authority attested',course.label,F.deal.decisionRoom.request_id,actorName(),{authority_verb:'approve_offer'});
   }
   async function executeExternal(){
     if(!state.decisionAttested)return;
@@ -211,7 +243,7 @@
 
   function addComment(objectId,text,mention){
     const clean=(text||'').trim();if(!clean)return false;
-    const comment={id:`C-${Date.now()}`,author:state.role==='partner'?'M. Alvarez':'A. Rossi',text:clean,mention:mention||null,time:new Date().toISOString().slice(11,16)};
+    const comment={id:`C-${Date.now()}`,author:actorName(),text:clean,mention:mention||null,time:new Date().toISOString().slice(11,16)};
     state.comments[objectId]=state.comments[objectId]||[];state.comments[objectId].push(comment);storage.set('panta-v17-comments',state.comments);
     record('COMMENT','Comment attached',mention?`Routed to ${mention}.`:'Stored on the object.',objectId,comment.author);emit();return true;
   }

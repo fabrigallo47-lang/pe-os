@@ -1,10 +1,22 @@
 #!/usr/bin/env python3
 """
-ui_bridge — serve a real compiler bundle to the PANTA V17 frontend.
+ui_bridge — serve real extraction output to the PANTA V17 frontend.
 
 The V17 package ships a mock server that answers from fixtures. This answers the
-same API from an actual bundle produced by adapter_alpha, so the UI shows the
-deal we compiled rather than a rehearsal of it.
+same API from work we actually did, in one of two modes:
+
+  live (default)  the store the extractor writes to. Nothing else is readable
+                  from here, so no screen can show a number no ingest produced.
+  --bundle        a compilation done earlier, with the package fixture filling
+                  the product structures the compiler does not produce. Every
+                  such use is labelled in the projection's provenance map.
+
+Live is the default because "is this real?" should not be a question you have to
+answer per section.
+
+    python3 tools/ui_bridge.py --reset
+    curl -s localhost:4178/api/v1/ingest -H 'content-type: application/json' \\
+         -d '{"path": "~/Downloads/keystone_lbo_model_working.xlsx"}'
 
 Nothing is transformed on the way out. app/src/projection_adapter.js exposes
 frontendProjectionFromBackend(), which accepts a raw compiler bundle and reads
@@ -26,7 +38,6 @@ the PANTA engine produced when the bundle was built — it does not compute a
 disposition, and /settle records the request without deciding it, because
 settlement is not ours to grant.
 
-    python3 tools/ui_bridge.py --bundle pipeline_out/e3/K-IC/adapter_alpha
     open 'http://127.0.0.1:4178/?mode=connected&api=http://127.0.0.1:4178/api/v1'
 """
 from __future__ import annotations
@@ -141,9 +152,76 @@ class Bundle:
         return {"event_id": event_id, "transition_output": out}
 
 
+class Live:
+    """
+    The other thing this server can serve: the live store, and only that.
+
+    A Bundle answers from a compilation that already happened; this answers from
+    what the extractor has produced in this session. It exposes the same API, so
+    the UI cannot tell the difference — but it can never show a number that no
+    ingest put there, because there is nowhere else for it to read from.
+    """
+
+    def __init__(self, deal: str = "keystone"):
+        from tools.live_store import LiveStore
+        self.deal = deal
+        self.store = LiveStore(deal)
+        self.last_ingest: dict | None = None
+
+    @property
+    def case_id(self) -> str:
+        return "PROJECT-KEYSTONE"
+
+    def reload(self) -> None:
+        from tools.live_store import LiveStore
+        self.store = LiveStore(self.deal)
+
+    def projection(self) -> dict:
+        from tools import live_projection
+        self.reload()
+        return {"frontend_projection": live_projection.build(self.store)}
+
+    def pending_events(self) -> dict:
+        """
+        What an ingest proposes, never what it decided.
+
+        Admission is a human act, so an extracted finding leaves here as a
+        proposal with its source attached and nothing more.
+        """
+        from tools import live_projection
+        self.reload()
+        proj = live_projection.build(self.store)
+        return {"events": [{
+            "event_id": e["event_id"], "event": e["type"], "status": "PROPOSED",
+            "source_ids": [e["source_title"]],
+            "trigger_claim_ids": [e["claim_id"]] if e.get("claim_id") else [],
+            "mutations": [], "note": e["proposed_position"],
+        } for e in proj["events"].values()]}
+
+    def admit(self, event_id: str) -> dict:
+        # There is no transition engine on this side, and inventing a
+        # disposition would be exactly the adjudication we do not do.
+        return {"event_id": event_id, "status": "NOT_ADMITTED",
+                "reason": "il motore di transizione è del runtime; il "
+                          "compilatore propone, non ammette"}
+
+    def ingest(self, src: Path, concepts: Path | None) -> dict:
+        from tools.ingest_service import ingest as run
+        res = run(src, self.deal, concepts, self.store)
+        res.pop("cells", None)
+        res.pop("e3", None)
+        self.last_ingest = res
+        return res
+
+    def reset(self) -> dict:
+        self.store.reset()
+        return {"status": "RESET", "deal": self.deal,
+                "note": "lo store è vuoto: la UI ora mostra un deal senza fonti"}
+
+
 class Handler(BaseHTTPRequestHandler):
     server_version = "PANTA-ui-bridge/1.0"
-    bundle: Bundle
+    bundle: Bundle | Live
 
     def log_message(self, fmt, *args):
         pass                                  # quiet; the console is for results
@@ -191,8 +269,9 @@ class Handler(BaseHTTPRequestHandler):
                 "package_version": "17.0.0",
                 "case_ids": [b.case_id],
                 "capabilities": ["projection", "admit_event", "settle", "replay"],
-                "served_from": str(b.path),
-                "bundle_incomplete": b.missing,
+                "served_from": str(getattr(b, "path", "live store")),
+                "bundle_incomplete": getattr(b, "missing", []),
+                "source": "live" if isinstance(b, Live) else "bundle",
             })
             return
 
@@ -238,15 +317,26 @@ class Handler(BaseHTTPRequestHandler):
                 self._json(HTTPStatus.BAD_REQUEST,
                            {"error": f"file non trovato: {src}"})
                 return
-            from tools.ingest_service import ingest
             concepts = body.get("concepts")
-            res = ingest(src, self.bundle.deal,
-                         Path(concepts).expanduser() if concepts else None)
+            cp = Path(concepts).expanduser() if concepts else None
+            if isinstance(b, Live):
+                self._json(HTTPStatus.OK, b.ingest(src, cp))
+                return
+            from tools.ingest_service import ingest
+            res = ingest(src, b.deal, cp)
             # Heavy payloads stay on disk; the response reports what was built.
             res.pop("cells", None)
             res.pop("e3", None)
-            self.bundle.last_ingest = res
+            b.last_ingest = res
             self._json(HTTPStatus.OK, res)
+            return
+
+        if path == "/api/v1/reset":
+            if not isinstance(b, Live):
+                self._json(HTTPStatus.CONFLICT,
+                           {"error": "in modalità bundle non c'è nulla da azzerare"})
+                return
+            self._json(HTTPStatus.OK, b.reset())
             return
 
         if re.match(r"^/api/v1/cases/([^/]+)/settle$", path):
@@ -264,47 +354,77 @@ class Handler(BaseHTTPRequestHandler):
 
 
 def main() -> int:
-    ap = argparse.ArgumentParser(description="Serve a real bundle to the V17 UI")
-    ap.add_argument("--bundle", type=Path,
-                    default=ROOT / "pipeline_out" / "e3" / "K-IC" / "adapter_alpha")
+    ap = argparse.ArgumentParser(description="Serve real extraction output to the V17 UI")
+    ap.add_argument("--bundle", type=Path, default=None,
+                    help="modalità bundle: serve una compilazione già fatta "
+                         "invece dello store dell'estrattore")
     ap.add_argument("--port", type=int, default=4178)
     ap.add_argument("--deal", default="keystone")
-    ap.add_argument("--no-scaffold", action="store_true",
-                    help="niente fixture: mostra solo ciò che produciamo davvero")
+    ap.add_argument("--reset", action="store_true",
+                    help="azzera lo store prima di partire: la UI parte da zero")
     ap.add_argument("--scaffold", type=Path,
                     default=ROOT / "ui" / "fixtures" / "normalized"
                             / "frontend_projection_v17.json",
-                    help="fixture del pacchetto, usata solo per le strutture "
-                         "di prodotto che il compilatore non produce")
+                    help="modalità bundle soltanto: fixture del pacchetto per le "
+                         "strutture di prodotto che il compilatore non produce")
+    ap.add_argument("--no-scaffold", action="store_true",
+                    help="modalità bundle: niente fixture")
     a = ap.parse_args()
 
     if not UI_APP.exists():
         raise SystemExit(f"UI non trovata in {UI_APP}")
 
-    Handler.bundle = Bundle(a.bundle, deal=a.deal,
-                            scaffold_path=None if a.no_scaffold else a.scaffold)
-    b = Handler.bundle
-    cg = b.parts["current_graph"]
-
-    print("=" * 62)
-    print("PANTA V17 — bundle reale")
-    print("=" * 62)
-    print(f"  bundle   : {a.bundle}")
-    print(f"  case_id  : {b.case_id}")
-    print(f"  claims   : {len(cg.get('claims', []))}")
-    print(f"  positions: {len(cg.get('case_positions', []))}")
-    print(f"  model    : {len(cg.get('model_nodes', []))} nodi")
-    if b.missing:
-        print(f"  assenti  : {', '.join(b.missing)}")
-    proj = b.projection()["frontend_projection"]
-    c = proj["compiler"]
-    print(f"  domande  : {c['questions']} dal vault -> question_spine")
-    print(f"  dalla fixture del pacchetto: rooms, scenarioLab, decisionRoom, "
-          f"executionRoom, replay, fund")
     url = (f"http://127.0.0.1:{a.port}/?mode=connected"
            f"&api=http://127.0.0.1:{a.port}/api/v1")
-    print(f"\n  apri: {url}\n")
 
+    if a.bundle:
+        Handler.bundle = Bundle(a.bundle, deal=a.deal,
+                                scaffold_path=None if a.no_scaffold else a.scaffold)
+        b = Handler.bundle
+        cg = b.parts["current_graph"]
+        print("=" * 62)
+        print("PANTA V17 — modalità bundle")
+        print("=" * 62)
+        print(f"  bundle   : {a.bundle}")
+        print(f"  case_id  : {b.case_id}")
+        print(f"  claims   : {len(cg.get('claims', []))}")
+        print(f"  positions: {len(cg.get('case_positions', []))}")
+        print(f"  model    : {len(cg.get('model_nodes', []))} nodi")
+        if b.missing:
+            print(f"  assenti  : {', '.join(b.missing)}")
+    else:
+        Handler.bundle = Live(deal=a.deal)
+        b = Handler.bundle
+        if a.reset:
+            b.reset()
+        s = b.store.summary()
+        print("=" * 62)
+        print("PANTA V17 — solo estrazione")
+        print("=" * 62)
+        print(f"  store    : {b.store.dir}")
+        if b.store.is_empty:
+            print("  vuoto: la UI mostrerà un deal senza fonti, che è il quadro")
+            print("  corretto di non aver ancora estratto nulla.")
+        else:
+            for src in b.store.manifest["sources"]:
+                print(f"  {src['kind']:9} {src['source'][:46]:48} {src['ingested_at']}")
+            print(f"  {s['claims']} claim · {s['bindings']} binding · "
+                  f"{s['records']} record · {s['cells']} celle")
+        # Said here rather than discovered on the first ingest: a workbook needs
+        # no model call, a document needs one, and knowing which half of the
+        # pipeline can run is worth more before you try than after.
+        import os
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            print("  documenti : estrazione attiva (ANTHROPIC_API_KEY presente)")
+        else:
+            print("  documenti : NON estraibili — ANTHROPIC_API_KEY non impostata.")
+            print("              i workbook funzionano comunque: L1-L3 è locale.")
+        print("\n  ingest:")
+        print(f"    curl -s localhost:{a.port}/api/v1/ingest -H 'content-type: "
+              f"application/json' \\")
+        print(f"      -d '{{\"path\":\"~/Downloads/....pdf\"}}'")
+
+    print(f"\n  apri: {url}\n")
     ThreadingHTTPServer(("127.0.0.1", a.port), Handler).serve_forever()
     return 0
 

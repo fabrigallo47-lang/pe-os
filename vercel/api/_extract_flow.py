@@ -76,8 +76,16 @@ def e3_to_claims(e3: dict) -> list[dict]:
 
 
 def run_extraction(text: str, filename: str, deal: str, api_key: str,
-                   chunk_words: int = CHUNK_WORDS) -> dict:
-    """Run L1-L4 over one document's text. Returns claims + diagnostics."""
+                   chunk_words: int = CHUNK_WORDS,
+                   source_path: "Path | None" = None) -> dict:
+    """
+    Run L1-L4 over one document. Returns claims + diagnostics.
+
+    An upload arrives as text and is written to a temp file, because L1 chunks
+    from disk. A caller that already has the file — the local ingest does —
+    passes source_path instead: a PDF is not its own text, and re-encoding one
+    through a string produces a file parse_source cannot open.
+    """
     try:
         import anthropic
     except ImportError:
@@ -92,8 +100,11 @@ def run_extraction(text: str, filename: str, deal: str, api_key: str,
     stem = Path(filename).stem or "upload"
     t0 = time.time()
     with tempfile.TemporaryDirectory() as td:
-        src = Path(td) / f"{stem}{suffix}"
-        src.write_text(text, encoding="utf-8")
+        if source_path is not None:
+            src = Path(source_path)
+        else:
+            src = Path(td) / f"{stem}{suffix}"
+            src.write_text(text, encoding="utf-8")
         chunks = parse_source(src, max_words=chunk_words)
         record = _source_record(src)
 
@@ -102,6 +113,7 @@ def run_extraction(text: str, filename: str, deal: str, api_key: str,
             chunks = chunks[:MAX_CHUNKS]
 
         raw: list = []
+        failures: list[str] = []
         if chunks:
             with ThreadPoolExecutor(max_workers=MAX_WORKERS) as pool:
                 futures = {
@@ -111,9 +123,13 @@ def run_extraction(text: str, filename: str, deal: str, api_key: str,
                 for fut in as_completed(futures):
                     try:
                         raw.extend(fut.result())
-                    except Exception:
+                    except Exception as exc:
                         # A single chunk failing must not lose the rest of the
-                        # document; it shows up as a lower claim count.
+                        # document. But failures have to be counted: when every
+                        # chunk fails — a bad key, a rate limit — the result is
+                        # zero claims, which is indistinguishable from a document
+                        # that says nothing unless the count says otherwise.
+                        failures.append(f"{futures[fut].chunk_id}: {exc}"[:200])
                         continue
 
     # validate() never raises and never returns None: it records problems on
@@ -133,6 +149,8 @@ def run_extraction(text: str, filename: str, deal: str, api_key: str,
             "chunks": len(chunks),
             "chunk_words": chunk_words,
             "raw_claims": len(raw),
+            "chunks_failed": len(failures),
+            "chunk_errors": failures[:5],
             "admitted": len(claims),
             "invalid": len(invalid),
             "rejected": getattr(graph, "rejected_count", 0),

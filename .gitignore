@@ -40,3 +40,8 @@ independent_validation_report*
 ui/demo/
 ui/references/
 ui/legacy/
+
+# Derived by ingest, safe to delete: the live staging store and the cache of
+# computed cell values (keyed by the workbook's content digest).
+pipeline_out/live/
+pipeline_out/cellvalues/

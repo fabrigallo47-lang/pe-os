@@ -94,6 +94,7 @@ class ConceptProposal:
     concept: str                   # human-readable name
     row_label: str = ""
     col_header: str = ""
+    record_key: str = ""           # record tables: which row this value belongs to
     unit: str = ""
     unit_source: str = ""
     period_kind: str | None = None
@@ -379,14 +380,28 @@ def analyse_sheet(ws, judgment: dict | None = None) -> SheetReport:
 
             evidence = [c for c in (row_src, col_src) if c]
             issues: list[str] = []
-            if kind == "record_table" and row_label:
+            record_key, key_src = "", ""
+            if kind == "record_table":
                 # The column header names the field; the value to the left is
                 # another field of the same record, not a label for this one.
-                row_label, row_src = "", ""
-                evidence = [c for c in (col_src,) if c]
-                issues.append("tabella di record: la voce a sinistra è un altro campo, "
-                              "non un'etichetta")
-            if not row_label and not col_header:
+                # But a record table does identify its values — by which record
+                # they belong to. That is the key column, read directly rather
+                # than by scanning leftwards, since the nearest text to the left
+                # is usually just the previous field.
+                if row_label:
+                    row_label, row_src = "", ""
+                    evidence = [c for c in (col_src,) if c]
+                if label_col:
+                    kc = ws[f"{label_col}1"].column
+                    kv = ws.cell(row=cell.row, column=kc).value
+                    if _is_text(kv):
+                        record_key = kv.strip()
+                        key_src = ws.cell(row=cell.row, column=kc).coordinate
+                        evidence = [c for c in (key_src, col_src) if c]
+                if not record_key:
+                    issues.append("tabella di record: nessuna chiave di record "
+                                  "nella colonna a sinistra")
+            if not record_key and not row_label and not col_header:
                 issues.append("nessuna etichetta trovata né a sinistra né sopra")
 
             period_kind = classify_period(col_header)
@@ -397,12 +412,18 @@ def analyse_sheet(ws, judgment: dict | None = None) -> SheetReport:
                 # The sheet says what the unit is; nothing should override that.
                 unit, unit_source = declared_unit, "unit_column"
             else:
-                unit, unit_source = infer_unit(row_label, cell.number_format)
+                # The unit hint lives in whatever names the quantity: the row
+                # label on a model sheet, the field header on a record table.
+                unit, unit_source = infer_unit(
+                    col_header if record_key else row_label, cell.number_format)
 
             # Confidence is built from what was actually found, so a reader can
             # see why a proposal is weak rather than trusting a bare number.
             confidence = 0.0
-            if row_label:
+            if row_label or record_key:
+                # A record key identifies a value exactly as well as a row label
+                # does: in both cases the pair (this, column header) names the
+                # cell without reference to where it sits.
                 confidence += 0.55
             if col_header:
                 confidence += 0.25
@@ -419,10 +440,12 @@ def analyse_sheet(ws, judgment: dict | None = None) -> SheetReport:
                 else:
                     break
 
-            concept = " · ".join(p for p in (row_label, col_header) if p) or "?"
+            concept = " · ".join(p for p in (record_key, row_label, col_header)
+                                 if p) or "?"
             report.proposals.append(ConceptProposal(
                 cell=f"{ws.title.upper()}!{cell.coordinate}",
                 concept=concept, row_label=row_label, col_header=col_header,
+                record_key=record_key,
                 unit=unit, unit_source=unit_source, period_kind=period_kind,
                 is_formula=is_formula, confidence=confidence, section=section,
                 evidence=evidence, issues=issues,

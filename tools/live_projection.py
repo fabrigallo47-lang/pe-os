@@ -90,6 +90,10 @@ def _unknowns_from_grounding(grounding: dict) -> dict:
             "value": "blocking" if f.get("blocking") else "review",
             "closure": f.get("code", ""),
             "owner": "—",
+            # The view keys its click target and subtitle off question_id. What
+            # a finding is about here is the claim it was raised on, so that is
+            # what goes there rather than a question id we do not have.
+            "question_id": f.get("claim_id", ""),
             "claim_id": f.get("claim_id"),
             "locator": f.get("locator"),
             "provenance": "extraction",

@@ -414,10 +414,13 @@ def main() -> int:
         # no model call, a document needs one, and knowing which half of the
         # pipeline can run is worth more before you try than after.
         import os
+        from tools.ingest_service import _key_from_env_file
         if os.environ.get("ANTHROPIC_API_KEY"):
-            print("  documenti : estrazione attiva (ANTHROPIC_API_KEY presente)")
+            print("  documenti : estrazione attiva (chiave dall'ambiente)")
+        elif _key_from_env_file():
+            print("  documenti : estrazione attiva (chiave da .env.local)")
         else:
-            print("  documenti : NON estraibili — ANTHROPIC_API_KEY non impostata.")
+            print("  documenti : NON estraibili — nessuna ANTHROPIC_API_KEY.")
             print("              i workbook funzionano comunque: L1-L3 è locale.")
         print("\n  ingest:")
         print(f"    curl -s localhost:{a.port}/api/v1/ingest -H 'content-type: "

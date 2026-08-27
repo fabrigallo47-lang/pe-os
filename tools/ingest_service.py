@@ -198,6 +198,43 @@ def ingest_workbook(path: Path, deal: str = "keystone",
 
 # ── document ─────────────────────────────────────────────────────────────────
 
+def _key_from_env_file() -> str:
+    """
+    The API key from .env.local, if the environment does not already carry one.
+
+    Read locally and used locally. Policy row 3 covers the model call itself;
+    reading the key from a gitignored file next to the code is the same act as
+    exporting it, minus having to remember to. A redacted placeholder is not a
+    key — treat it as absent rather than sending it and getting a 401 that looks
+    like a pipeline failure.
+    """
+    f = ROOT / ".env.local"
+    if not f.exists():
+        return ""
+    for line in f.read_text(encoding="utf-8").splitlines():
+        if not line.startswith("ANTHROPIC_API_KEY"):
+            continue
+        val = line.split("=", 1)[1].strip().strip('"').strip("'")
+        return val if val.startswith("sk-ant-") else ""
+    return ""
+
+
+def _document_text(path: Path) -> str:
+    """
+    The document's full text, for grounding claims back against it.
+
+    Built from the same chunker the extraction used, so what the gate checks
+    against is what the model was shown — not a second reading of the file that
+    might differ from the first.
+    """
+    try:
+        sys.path.insert(0, str(ROOT / "vercel" / "api"))
+        from _extract_v2 import parse_source
+        return "\n".join(ch.body for ch in parse_source(path))
+    except Exception:
+        return ""
+
+
 def ingest_document(path: Path, deal: str = "keystone",
                     api_key: str | None = None) -> dict:
     """extract_v2 L1-L4 over one document."""
@@ -205,12 +242,12 @@ def ingest_document(path: Path, deal: str = "keystone",
     sys.path.insert(0, str(ROOT / "vercel" / "api"))
     from _extract_flow import run_extraction
 
-    key = api_key or os.environ.get("ANTHROPIC_API_KEY", "")
+    key = api_key or os.environ.get("ANTHROPIC_API_KEY", "") or _key_from_env_file()
     if not key:
         return {"kind": "document", "source": path.name,
                 "error": "ANTHROPIC_API_KEY non impostata: nessuna estrazione",
-                "fix": "export ANTHROPIC_API_KEY=... e riavvia il bridge; "
-                       "i workbook non ne hanno bisogno, L1-L3 è tutto locale"}
+                "fix": "mettila in .env.local o esportala; i workbook non ne "
+                       "hanno bisogno, L1-L3 è tutto locale"}
 
     t0 = time.time()
     # The file is already on disk here, so hand it over directly: chunking a PDF
@@ -228,7 +265,11 @@ def ingest_document(path: Path, deal: str = "keystone",
         with tempfile.NamedTemporaryFile("w", suffix=".json", delete=False) as f:
             json.dump(e3, f, ensure_ascii=False)
             tmp = Path(f.name)
-        rep = gate_run(tmp, deal)
+        # The gate resolves a locator by filename, and extract_v2's locators are
+        # page ranges. We have the document open right here, so hand the text
+        # over instead of letting the gate fail to find it and report every
+        # claim as unverifiable.
+        rep = gate_run(tmp, deal, sources={path.name: _document_text(path)})
         tmp.unlink(missing_ok=True)
         grounding = {k: v for k, v in rep.items() if k != "review_queue"}
         grounding["review_queue"] = rep.get("review_queue", [])

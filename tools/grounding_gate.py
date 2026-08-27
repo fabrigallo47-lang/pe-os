@@ -29,11 +29,15 @@ review queue saying what could not be verified and why, for a human to ground.
 Checks
 ------
   G1 PERIMETER_IS_COUNTERPARTY  perimeter names a declared counterparty
-  G2 PERIMETER_OFF_VOCABULARY   perimeter outside the deal's declared vocabulary
+  G2 PERIMETER_OFF_VOCABULARY   perimeter names a known entity but describes a
+                                scope the deal has not declared
+  G2b PERIMETER_UNANCHORED      perimeter names no entity the deal knows
   G3 PERIMETER_MISSING          perimeter absent/'unknown' on a valued claim
   G4 VALUE_NOT_IN_SOURCE        numeric value does not appear in the cited source
   G4b DERIVATION_MISSING        epistemic_class=derived with no inspectable derivation
   G5 ENTITY_NOT_IN_SOURCE       statement names an entity absent from the source
+  G6 SOURCE_NOT_RESOLVED        the cited source could not be located, so G4/G5
+                                did not run — an unchecked claim, not a bad one
 
 Usage
 -----
@@ -78,7 +82,27 @@ def _source_file(locator: str) -> Path | None:
 _source_cache: dict[str, str] = {}
 
 
-def _source_text(locator: str) -> str:
+def _source_text(locator: str, claim: dict | None = None,
+                 sources: dict[str, str] | None = None) -> str:
+    """
+    The text a claim cites, or "" when it cannot be found.
+
+    Two locator vocabularies are in use and only one of them carries a filename.
+    A vault claim cites 'memo.md::## Heading'; extract_v2 cites 'p3:w250-291' —
+    a page and word range, with the document named on the claim instead. Reading
+    only the first form meant every PDF-extracted claim resolved to no text, so
+    G4 and G5 quietly did not run on exactly the claims that most needed them.
+
+    `sources` lets a caller that already holds the document — the ingest just
+    read it — hand the text over by name rather than have this go looking.
+    """
+    if sources and claim:
+        for key in (claim.get("source_doc"), claim.get("source_id")):
+            if key and key in sources:
+                return sources[key]
+        if len(sources) == 1:
+            # One document was ingested and this claim came out of it.
+            return next(iter(sources.values()))
     p = _source_file(locator)
     if p is None:
         return ""
@@ -132,7 +156,8 @@ def _number_in_text(value, text: str) -> bool:
 
 # ── checks ───────────────────────────────────────────────────────────────────
 
-def check_claim(claim: dict, profile: DealProfile) -> list[dict]:
+def check_claim(claim: dict, profile: DealProfile,
+                sources: dict[str, str] | None = None) -> list[dict]:
     findings: list[dict] = []
     perim = (claim.get("perimeter") or "").strip()
     stmt = claim.get("statement") or ""
@@ -159,11 +184,31 @@ def check_claim(claim: dict, profile: DealProfile) -> list[dict]:
             break
 
     # G2 — perimeter outside declared vocabulary
+    #
+    # The check was written for an extractor that emitted a label from a closed
+    # set; extract_v2 writes a description. Comparing a description to six exact
+    # strings makes every claim fail identically, and a queue where everything
+    # is flagged the same way carries no information.
+    #
+    # So the two situations are separated. A perimeter that names an entity the
+    # deal knows describes a scope of something real, and the open question is
+    # whether that scope is one we underwrite — a review item. A perimeter that
+    # names nothing the deal knows leaves it undetermined what the figure is
+    # even a measure of. Neither is decided here; they are reported apart
+    # because they ask the reviewer different questions.
     if perim and perim.lower() != "unknown" and profile.perimeter_vocabulary:
         if not any(perim.lower() == v.lower() for v in profile.perimeter_vocabulary):
-            add("PERIMETER_OFF_VOCABULARY",
-                f"{perim!r} is not in the declared perimeter vocabulary "
-                f"({len(profile.perimeter_vocabulary)} entries).")
+            anchors = [a for a in profile.entity_aliases if a.lower() in perim.lower()]
+            if anchors:
+                add("PERIMETER_OFF_VOCABULARY",
+                    f"{perim!r} names {anchors[0]!r} but is not one of the "
+                    f"{len(profile.perimeter_vocabulary)} declared perimeters: "
+                    f"the scope is described, not yet recognised.")
+            else:
+                add("PERIMETER_UNANCHORED",
+                    f"{perim!r} names no entity this deal knows "
+                    f"({', '.join(profile.entity_aliases) or 'none declared'}): "
+                    f"what the figure measures is undetermined.")
 
     # G3 — missing perimeter on a claim that carries a value
     if (not perim or perim.lower() == "unknown") and value not in (None, ""):
@@ -171,7 +216,7 @@ def check_claim(claim: dict, profile: DealProfile) -> list[dict]:
             "valued claim has no economic perimeter — scope is undetermined.")
 
     # G4 / G5 — grounding against the cited source
-    text = _source_text(locator)
+    text = _source_text(locator, claim, sources)
     is_derived = (claim.get("epistemic_class") or "").strip().lower() == "derived"
     if is_derived:
         # A derived value is computed, so it correctly does not appear verbatim in
@@ -181,8 +226,13 @@ def check_claim(claim: dict, profile: DealProfile) -> list[dict]:
                 "epistemic_class=derived without an inspectable derivation.")
     elif text:
         if not _number_in_text(value, text):
+            # The source may have come from a file or been handed in by the
+            # caller; name whichever it was rather than assuming a path exists.
+            p = _source_file(locator)
+            where = p.name if p else (claim.get("source_doc")
+                                      or claim.get("source_id") or "the cited source")
             add("VALUE_NOT_IN_SOURCE",
-                f"value {value!r} does not appear in {_source_file(locator).name}.")
+                f"value {value!r} does not appear in {where}.")
         # entity mentioned in the statement but absent from the cited document
         for name in profile.counterparty_entities:
             if name.lower() in stmt.lower() and name.lower() not in text.lower():
@@ -190,12 +240,18 @@ def check_claim(claim: dict, profile: DealProfile) -> list[dict]:
                     f"statement names {name!r}, absent from the cited source.")
                 break
     elif locator:
-        add("ENTITY_NOT_IN_SOURCE", f"cited source not found for locator {locator!r}.")
+        # Not an entity finding. "I looked and it was not there" and "I could
+        # not look" are different facts about a claim, and reporting the second
+        # as the first tells the reviewer something false about the evidence.
+        add("SOURCE_NOT_RESOLVED",
+            f"cited source not found for locator {locator!r}: value and entity "
+            f"could not be checked against it.")
 
     return findings
 
 
-def run(claims_path: Path, deal: str) -> dict:
+def run(claims_path: Path, deal: str,
+        sources: dict[str, str] | None = None) -> dict:
     raw = json.loads(claims_path.read_text(encoding="utf-8"))
     claims = raw.get("claims", raw) if isinstance(raw, dict) else raw
     profile = load_profile(deal)
@@ -219,7 +275,7 @@ def run(claims_path: Path, deal: str) -> dict:
 
     all_findings: list[dict] = []
     for c in claims:
-        all_findings.extend(check_claim(c, profile))
+        all_findings.extend(check_claim(c, profile, sources))
 
     by_code: dict[str, int] = {}
     for f in all_findings:

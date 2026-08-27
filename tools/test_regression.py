@@ -537,6 +537,54 @@ def test_live() -> None:
             ls.LIVE = original
 
 
+# ── 10. The gate on claims whose locator it cannot resolve ───────────────────
+# extract_v2 cites 'p3:w250-291'; the gate resolved locators by filename only,
+# so every PDF-extracted claim produced no source text — and the failure to look
+# was reported under ENTITY_NOT_IN_SOURCE, the code for having looked and found
+# nothing. G4 and G5 silently did not run on 31 of 31 claims.
+
+def test_gate_sources() -> None:
+    print("\n10. Gate: 'non ho potuto controllare' non è 'ho controllato'")
+    prof = DealProfile("t", {
+        "entity_aliases": ["Alderstone"],
+        "counterparty_entities": {"Riverton": "customer"},
+        "perimeter_vocabulary": ["Alderstone standalone"],
+    })
+
+    claim = {"claim_id": "c1", "statement": "Alderstone FY2025 EBITDA is $12.7m.",
+             "perimeter": "Alderstone standalone", "locator": "p3:w250-291",
+             "value": 12.7, "source_doc": "story.pdf"}
+
+    codes = {f["code"] for f in gg.check_claim(claim, prof)}
+    check("locator irrisolvibile => SOURCE_NOT_RESOLVED, non ENTITY_NOT_IN_SOURCE",
+          "SOURCE_NOT_RESOLVED" in codes and "ENTITY_NOT_IN_SOURCE" not in codes)
+    check("un claim non controllabile non è bloccante",
+          not any(f["blocking"] for f in gg.check_claim(claim, prof)))
+
+    src = {"story.pdf": "Alderstone FY2025 adjusted EBITDA is $12.7m."}
+    codes = {f["code"] for f in gg.check_claim(claim, prof, src)}
+    check("col testo della sorgente il controllo gira davvero", not codes)
+
+    bad = {**claim, "value": 99.9}
+    codes = {f["code"] for f in gg.check_claim(bad, prof, src)}
+    check("un valore assente dalla sorgente ora viene visto",
+          "VALUE_NOT_IN_SOURCE" in codes)
+
+    # G2 split: a described scope and an unidentifiable one ask different
+    # questions, and reporting both the same way made the queue uninformative.
+    anch = {**claim, "perimeter": "Alderstone consolidated revenue"}
+    check("perimetro ancorato a un'entità nota => OFF_VOCABULARY",
+          "PERIMETER_OFF_VOCABULARY" in
+          {f["code"] for f in gg.check_claim(anch, prof, src)})
+    unan = {**claim, "perimeter": "Days sales outstanding"}
+    check("perimetro che non nomina nulla di noto => UNANCHORED",
+          "PERIMETER_UNANCHORED" in
+          {f["code"] for f in gg.check_claim(unan, prof, src)})
+    cp = {**claim, "perimeter": "Riverton account revenue"}
+    check("un perimetro che nomina una controparte resta bloccante",
+          any(f["blocking"] for f in gg.check_claim(cp, prof, src)))
+
+
 def _skel_keys() -> list[str]:
     """The keys V17's views read off `deal` without checking they exist."""
     return ["objective", "branches", "morning_delta", "next_best_work",
@@ -550,7 +598,7 @@ def main() -> int:
     print("=" * 62)
     for t in (test_cascade, test_benchmark_field, test_deal_profile,
               test_grounding_gate, test_minigraph, test_excel,
-              test_resolver, test_classifier, test_live):
+              test_resolver, test_classifier, test_live, test_gate_sources):
         t()
     print()
     print("=" * 62)

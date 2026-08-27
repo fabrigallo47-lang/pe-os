@@ -1,0 +1,1 @@
+PANTA V7 bundle — generato da tools/bundle_assemble.py

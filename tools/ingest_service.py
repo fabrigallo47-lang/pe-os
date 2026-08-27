@@ -103,6 +103,27 @@ def _candidates(reports, concepts, binding_resolver):
     return cands
 
 
+def _annotate_reach(records: list[dict], engine) -> None:
+    """
+    Say, per extracted figure, whether anything in the model can move it.
+
+    A number the workbook computes and a number someone pasted look identical
+    once they are both a value with a locator. The difference decides whether a
+    what-if control means anything, so it is recorded at extraction time rather
+    than discovered when a control turns out to be inert.
+    """
+    for rec in records:
+        derivable = 0
+        for f in rec.get("fields", {}).values():
+            r = engine.reachability(f.get("locator", ""))
+            f["reach"] = {"derivable": r.derivable, "role": r.role,
+                          "reason": r.reason, "drivers": r.drivers[:12],
+                          "driver_count": len(r.drivers)}
+            derivable += bool(r.derivable)
+        rec["derivable_fields"] = derivable
+        rec["field_count"] = len(rec.get("fields", {}))
+
+
 def _records(bindings: list[dict], concepts_doc: dict) -> list[dict]:
     """
     Admitted bindings from record tables, regrouped into the records they came
@@ -164,12 +185,21 @@ def ingest_workbook(path: Path, deal: str = "keystone",
                          "confidence": b.confidence,
                          "value": values.get(b.locator)} for b in res.admitted]
         records = _records(bindings_out, concepts_doc)
+        # Structure only: reachability needs the precedent graph, not the
+        # formula compiler, so this costs nothing next to L1 itself.
+        from tools.cell_engine import CellEngine
+        engine = CellEngine(path, graph.to_json()["cells"], None, path.name.lower())
+        _annotate_reach(records, engine)
+        eng_report = engine.report()
         resolution = {"admitted": len(res.admitted),
                       "violations": len(res.violations),
                       "status": res.status,
                       "candidates": len(cands),
                       "concepts_declared": len(concepts),
-                      "values_computed": bool(values)}
+                      "values_computed": bool(values),
+                      "inputs": eng_report["inputs"],
+                      "isolated_numbers": eng_report["isolated_numbers"],
+                      "edges_through_ranges": eng_report["edges_through_ranges"]}
 
     return {
         "kind": "workbook",

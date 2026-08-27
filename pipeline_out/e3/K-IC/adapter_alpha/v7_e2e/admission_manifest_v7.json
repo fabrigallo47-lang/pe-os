@@ -3,7 +3,7 @@
   "case_id": "PROJECT-KEYSTONE",
   "as_of_known_at": "2026-08-24T00:00:00Z",
   "source_graph_hash": "sha256:170715cfb9c3dc2aa4d1634188ad19398229cd698b259fcc829e099c46f1dc77",
-  "execution_graph_hash": "sha256:0d95813dcd0ec39005df0dee5d1050b948939e9255e89d8c47415d9889a8bbab",
+  "execution_graph_hash": "sha256:253515896d1d51ba1ba9479fc463916affaff2676c5cac9006ffae9d260fb9c0",
   "mapping_version_ref": "v7",
   "policy_refs": {
     "materiality": "vault/policy/keystone_materiality_policy_v0.json",
@@ -54,6 +54,6 @@
   "temporal_class_filter": "underwriting",
   "underwriting_cutoff": "2026-03-10",
   "known_at_cutoff": "2026-03-10T23:59:59Z",
-  "generated_at": "2026-08-25T16:49:04Z",
+  "generated_at": "2026-08-27T07:43:40Z",
   "compiler": "tools/bridge_v7.py"
 }

@@ -6,7 +6,7 @@
   "unbound_claim_count": 6,
   "case_positions_built": 22,
   "model_nodes_bound": 15,
-  "model_nodes_total": 74,
+  "model_nodes_total": 75,
   "identity_migration_map": {
     "claim:0000": "ks-72cf8cd8df33",
     "claim:0001": "ks-f5a24b59de3d",

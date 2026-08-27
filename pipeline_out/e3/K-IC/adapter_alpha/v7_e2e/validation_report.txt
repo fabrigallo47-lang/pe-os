@@ -2,7 +2,7 @@ V7 End-to-End Validation Report
 ================================
   Extraction : /Users/fabriziogallo/Desktop/pe-os/pipeline_out/keystone_full_story/graph.json
   Execution  : /Users/fabriziogallo/Desktop/pe-os/vault/deals/keystone/models/execution_graph_v7.json
-  Event      : /Users/fabriziogallo/Desktop/pe-os/event_ebitda_correction.json
+  Event      : pipeline_out/e3/K-IC/adapter_alpha/v7_e2e/event_ebitda_correction.json
   Candidate  : pipeline_out/e3/K-IC/adapter_alpha/v7_e2e/candidate_graph.json
 
 Result: 21/21 PASS
@@ -21,18 +21,18 @@ Result: 21/21 PASS
         state='CURRENT'
   [PASS] T07 — Candidate: claim_applied=True
         claim_applied=True
-  [PASS] T08 — MOIC and IRR deltas present and positive
+  [PASS] T08 — MOIC and IRR deltas move together when computed
         MOIC Δ=0.1901  IRR Δ=2.08 ppt
   [PASS] T09 — Candidate: current_unchanged=True, approved_unchanged=True
         current_unchanged=True  approved_unchanged=True
   [PASS] T10 — Candidate has replay_hash
-        replay_hash=sha256:2e5a2147621d7a1ad9d5af4…
+        replay_hash=sha256:e64f1d7ff09317efadca545…
   [PASS] T11 — 10-run determinism: all replay_hashes identical
         1 unique hashes from 10 runs
   [PASS] T11b — Monitoring / post-close claims excluded from manifest
         0 leaked (excluded=7)
   [PASS] T12 — Coverage limits declared (≥1)
-        33 coverage limits declared
+        37 coverage limits declared
   [PASS] T13 — Exit-horizon projections (MOIC/IRR) admitted as underwriting
         CP-STANDALONE-BASE-MOIC=yes  CP-STANDALONE-BASE-IRR=yes  (moic_routes=2 irr_routes=1)
   [PASS] T14 — Revenue $m ≠ Recurring Revenue % (distinct CPs)

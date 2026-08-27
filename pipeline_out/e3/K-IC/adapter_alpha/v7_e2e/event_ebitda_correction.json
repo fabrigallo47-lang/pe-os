@@ -15,31 +15,31 @@
     "IC-MEMO-2026-03-10"
   ],
   "trigger_claim_ids": [
-    "ks-643d79d4d39c"
+    "ks-41c79954bd44"
   ],
   "metric": "ebitda",
   "from_value": 11.4,
   "to_value": 12.2,
   "unit": "$m",
-  "period": "2026-03-10",
-  "perimeter": "Riverton Group",
+  "period": "2025-12-31",
+  "perimeter": "Alderstone standalone",
   "mutations": [
     {
       "operation": "CORRECT",
       "object_type": "CLAIM",
-      "object_id": "ks-643d79d4d39c",
+      "object_id": "ks-41c79954bd44",
       "field": "value",
       "from": 11.4,
       "to": 12.2,
       "unit": "$m",
       "definition_id": null,
-      "period": "2026-03-10",
-      "perimeter": "Riverton Group"
+      "period": "2025-12-31",
+      "perimeter": "Alderstone standalone"
     }
   ],
   "propagation_expected": {
     "chain": [
-      "CLAIM ks-643d79d4d39c: 11.4 → 12.2",
+      "CLAIM ks-41c79954bd44: 11.4 → 12.2",
       "→ CP-EBITDA-FIRM (support route re-evaluated)",
       "→ bound model nodes recomputed by the execution mapping"
     ]

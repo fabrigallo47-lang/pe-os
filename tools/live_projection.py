@@ -141,10 +141,19 @@ def _scenario_lab(model: dict) -> dict | None:
             v = _field(rec, key)
             if v is None:
                 continue
+            reach = (rec.get("fields", {}).get(key) or {}).get("reach") or {}
             fields.append({
                 "label": label, "unit": unit,
                 "value": round(v * 100, 2) if unit == "%" else round(v, 3),
                 "locator": loc.get(key, ""),
+                # Whether a what-if on this figure could do anything. A field
+                # the workbook pastes rather than computes gets no control,
+                # because a control that cannot move its number is worse than
+                # no control at all.
+                "derivable": bool(reach.get("derivable")),
+                "reach_role": reach.get("role", "unknown"),
+                "reach_reason": reach.get("reason", ""),
+                "drivers": reach.get("drivers", []),
             })
         scenarios.append({
             "id": _slug(rec["record"]), "label": rec["record"],
@@ -158,10 +167,20 @@ def _scenario_lab(model: dict) -> dict | None:
         })
     if not scenarios:
         return None
+    derivable = sum(1 for s in scenarios for f in s["fields"] if f["derivable"])
+    total = sum(len(s["fields"]) for s in scenarios)
+    if derivable:
+        note = (f"{len(scenarios)} casi dalla tabella dei ritorni. "
+                f"{derivable} campi su {total} sono calcolati dal modello e "
+                f"rispondono a un what-if; gli altri sono valori incollati.")
+    else:
+        note = (f"{len(scenarios)} casi dalla tabella dei ritorni. "
+                f"Nessuno dei {total} campi è calcolato dal workbook: sono tutti "
+                f"valori incollati, quindi nessun input del modello può muoverli "
+                f"e non viene offerto alcun comando what-if.")
     return {"selected": scenarios[0]["id"], "scenarios": scenarios,
-            "note": (f"{len(scenarios)} casi letti dalla tabella dei ritorni del "
-                     f"workbook, ciascuno con la cella da cui viene ogni campo. "
-                     f"I driver non sono legati e restano vuoti.")}
+            "derivable_fields": derivable, "total_fields": total,
+            "whatif_available": bool(derivable), "note": note}
 
 
 def _arrivals(claims: list[dict], grounding: dict) -> dict:

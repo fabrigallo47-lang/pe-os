@@ -585,6 +585,87 @@ def test_gate_sources() -> None:
           any(f["blocking"] for f in gg.check_claim(cp, prof, src)))
 
 
+# ── 11. The cell engine: what-if, range edges, honest verification ───────────
+# L1 records a SUM's precedent as the range it sums. Walking precedents then
+# reaches the string "SHEET!C17:C19", finds no cell with that key, and stops —
+# so every dependency path through an aggregate was invisible. On this workbook
+# expanding ranges recovered 6,910 edges and took one input's reach from 900
+# cells to 4,280.
+
+def test_cell_engine() -> None:
+    print("\n11. Motore delle celle: what-if, archi dei range, verifica onesta")
+    import tempfile
+    from tools.cell_engine import CellEngine, expand_range
+
+    check("un range si espande nelle sue celle",
+          expand_range("S!C17:C19") == ["S!C17", "S!C18", "S!C19"])
+    check("i simboli di ancoraggio non contano",
+          expand_range("S!$C$17:$D$18") == ["S!C17", "S!C18", "S!D17", "S!D18"])
+    check("una cella singola non è un range", expand_range("S!C17") is None)
+    check("una colonna intera non viene espansa",
+          expand_range("S!A1:XFD1048576") is None)
+
+    import openpyxl
+    with tempfile.TemporaryDirectory() as td:
+        p = Path(td) / "m.xlsx"
+        wb = openpyxl.Workbook()
+        ws = wb.active
+        ws.title = "M"
+        ws["A1"], ws["A2"], ws["A3"] = 10, 20, 30      # inputs
+        ws["B1"] = "=SUM(A1:A3)"                        # the aggregate that broke
+        ws["B2"] = "=B1*2"                              # only reachable through it
+        ws["C1"] = 99                                   # nobody computes, nobody reads
+        wb.save(p)
+
+        eng = CellEngine.build(p, verify=True)
+
+        check("la catena attraversa l'aggregato",
+              "M!B2" in eng.dependents("M!A1"),
+              f"{sorted(eng.dependents('M!A1'))}")
+        check("i precedenti transitivi risalgono attraverso il range",
+              {"M!A1", "M!A2", "M!A3", "M!B1"} <= eng.precedents("M!B2"))
+
+        r = eng.reachability("M!B2")
+        check("un derivato è raggiungibile e nomina i suoi driver",
+              r.derivable and set(r.drivers) == {"M!A1", "M!A2", "M!A3"})
+        check("un input è settabile ma non derivabile",
+              eng.reachability("M!A1").role == "input"
+              and not eng.reachability("M!A1").derivable)
+        check("un numero che nessuno calcola e nessuno legge è isolato",
+              eng.reachability("M!C1").role == "isolated")
+        check("una cella inesistente non è raggiungibile",
+              eng.reachability("M!Z9").role == "missing")
+
+        res = eng.set_value("M!A1", 40, watch=["M!B1", "M!B2", "M!C1"])
+        check("cambiare un input propaga attraverso la SUM",
+              res.changed.get("M!B1", (None, None))[1] == 90
+              and res.changed.get("M!B2", (None, None))[1] == 180,
+              str(res.changed))
+        check("una cella fuori dal cono non viene toccata",
+              "M!C1" not in res.changed and any("M!C1" in u for u in res.unreachable))
+
+        eng.reset()
+        check("reset riporta il workbook ai valori originali",
+              eng.value("M!B1") == 60 and not eng.overrides)
+
+        res = eng.set_value("M!B1", 999)
+        check("scrivere su una cella con formula viene rifiutato",
+              not res.changed and any("è una formula" in s for s in res.skipped))
+
+        # This workbook was written by openpyxl, so it carries no cached values.
+        check("senza valori in cache il verdetto non è 'verificato'",
+              eng.verification.verdict == "UNVERIFIABLE_NO_CACHE",
+              eng.verification.verdict)
+
+        st = CellEngine.structure(p)
+        check("in sola struttura la raggiungibilità funziona",
+              st.reachability("M!B2").derivable)
+        check("in sola struttura il ricalcolo si dichiara indisponibile",
+              not st.can_evaluate
+              and any("sola struttura" in s
+                      for s in st.set_value("M!A1", 1).skipped))
+
+
 def _skel_keys() -> list[str]:
     """The keys V17's views read off `deal` without checking they exist."""
     return ["objective", "branches", "morning_delta", "next_best_work",
@@ -598,7 +679,8 @@ def main() -> int:
     print("=" * 62)
     for t in (test_cascade, test_benchmark_field, test_deal_profile,
               test_grounding_gate, test_minigraph, test_excel,
-              test_resolver, test_classifier, test_live, test_gate_sources):
+              test_resolver, test_classifier, test_live, test_gate_sources,
+              test_cell_engine):
         t()
     print()
     print("=" * 62)

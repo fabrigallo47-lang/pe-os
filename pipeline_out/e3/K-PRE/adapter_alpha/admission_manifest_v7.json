@@ -2,8 +2,8 @@
   "manifest_version": "1.0",
   "case_id": "PROJECT-KEYSTONE",
   "as_of_known_at": "2026-08-24T00:00:00Z",
-  "source_graph_hash": "sha256:366ed4ef3b9b19d91c0d057f1134fcdce76a4e1d01403c52bfef6d4a746f8b8b",
-  "execution_graph_hash": "sha256:253515896d1d51ba1ba9479fc463916affaff2676c5cac9006ffae9d260fb9c0",
+  "source_graph_hash": "3abf3ce7a034abd298e6d377078a19b92049dd4a6de95269c7e0b625c8105d51",
+  "execution_graph_hash": "7bdcdd638e9d0969dc3a2c93fc4faa316b3abb247f5e8bdad929507d76fcc024",
   "mapping_version_ref": "v7",
   "policy_refs": {
     "materiality": "vault/policy/keystone_materiality_policy_v0.json",

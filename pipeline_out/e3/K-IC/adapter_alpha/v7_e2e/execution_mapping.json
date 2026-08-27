@@ -2,12 +2,12 @@
   "mapping_version": "v7",
   "deal": "PROJECT-KEYSTONE",
   "company": "Alderstone",
-  "canonical_graph_hash": "sha256:3b7a3ab73441922031496ed434772d68d175383e7a23cef38510a52c963aafd8",
+  "canonical_graph_hash": "sha256:c23f1517bb7aabf559042cd96264cc6606e8a0804a16d7f277fa569b30d71dca",
   "provenance": {
     "extraction_hash": "sha256:170715cfb9c3dc2aa4d1634188ad19398229cd698b259fcc829e099c46f1dc77",
-    "execution_graph_hash": "sha256:0d95813dcd0ec39005df0dee5d1050b948939e9255e89d8c47415d9889a8bbab",
-    "canonical_current_hash": "sha256:3b7a3ab73441922031496ed434772d68d175383e7a23cef38510a52c963aafd8",
-    "admission_manifest_hash": "sha256:bf75e8ecebad498277e26885e41d31c348f8a4277150122d8b9c467050132a4e"
+    "execution_graph_hash": "sha256:253515896d1d51ba1ba9479fc463916affaff2676c5cac9006ffae9d260fb9c0",
+    "canonical_current_hash": "sha256:c23f1517bb7aabf559042cd96264cc6606e8a0804a16d7f277fa569b30d71dca",
+    "admission_manifest_hash": "sha256:63bb1f2b76b24a559f0f7dbd8d69335f743d6e5ae2dc5e49618b56998c40874b"
   },
   "lbo_runtime_module": "tools/keystone_model.py",
   "lbo_runtime_entrypoint": "propagate_claim",
@@ -47,7 +47,7 @@
       "unit": "MM_USD",
       "period": "OPENING",
       "effective_date": "2026-03-10",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "attested",
       "initial_value": 12.0,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs!B7",
@@ -61,7 +61,7 @@
       "unit": "MM_USD",
       "period": "OPENING",
       "effective_date": "2026-03-10",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "attested",
       "initial_value": 62.0,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs!B8 / S&U_Opening!E21",
@@ -80,7 +80,7 @@
       "unit": "MM_USD",
       "period": "OPENING",
       "effective_date": "2026-03-10",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "attested",
       "initial_value": 42.8,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs!B9",
@@ -108,11 +108,11 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "attested",
       "initial_value": 11.4,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs!B11",
-      "formula_id": "F-FIRM-EBITDA-OPENING",
+      "formula_id": null,
       "directed_deps": []
     },
     {
@@ -122,7 +122,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "attested",
       "initial_value": 12.2,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs!B12",
@@ -154,7 +154,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "attested",
       "initial_value": 0.0,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C8:V8 (one-time charges)",
@@ -168,7 +168,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "attested",
       "initial_value": 0.0,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C9:V9 (covenant addbacks)",
@@ -196,11 +196,11 @@
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": "DATED_CASH_FLOW_VECTOR",
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C5:V5",
-      "formula_id": "F-REVENUE-FROM-DRIVERS",
+      "formula_id": null,
       "directed_deps": []
     },
     {
@@ -210,7 +210,7 @@
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": "DATED_CASH_FLOW_VECTOR",
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C7:V7",
@@ -226,7 +226,7 @@
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "derived",
       "initial_value": "DATED_CASH_FLOW_VECTOR",
       "workbook_ref": "keystone_lbo_model_working.xlsx:SB_Base!C14:V14",
@@ -244,7 +244,7 @@
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": "DATED_CASH_FLOW_VECTOR",
       "workbook_ref": "keystone_lbo_model_working.xlsx:SB_Base!C22:V22",
@@ -263,7 +263,7 @@
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": "DATED_CASH_FLOW_VECTOR",
       "workbook_ref": "keystone_lbo_model_working.xlsx:SB_Base!C52:V52",
@@ -282,7 +282,7 @@
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": "DATED_CASH_FLOW_VECTOR",
       "workbook_ref": "keystone_lbo_model_working.xlsx:SB_Base!C78:V78",
@@ -299,7 +299,7 @@
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": "DATED_CASH_FLOW_VECTOR",
       "workbook_ref": "keystone_lbo_model_working.xlsx:SB_Base!C76:V76",
@@ -316,7 +316,7 @@
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": "DATED_CASH_FLOW_VECTOR",
       "workbook_ref": "keystone_lbo_model_working.xlsx:SB_Base!C77:V77",
@@ -332,7 +332,7 @@
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": "DATED_CASH_FLOW_VECTOR",
       "workbook_ref": "keystone_lbo_model_working.xlsx:SB_Base!C67:V67",
@@ -350,7 +350,7 @@
       "unit": "RATIO",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": "DATED_CASH_FLOW_VECTOR",
       "workbook_ref": "keystone_lbo_model_working.xlsx:SB_Base (covenant leverage rows)",
@@ -370,7 +370,7 @@
       "unit": "MM_USD",
       "period": "OPENING",
       "effective_date": "2026-03-10",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs (leverage and covenant terms)",
@@ -387,9 +387,9 @@
       "unit": "MM_USD",
       "period": "2031-03-31",
       "effective_date": "2031-03-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 165.120480014433,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!E4",
       "formula_id": "F-EXIT-EV",
       "directed_deps": [
@@ -404,9 +404,9 @@
       "unit": "MM_USD",
       "period": "2031-03-31",
       "effective_date": "2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 3.254489316778837,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!F4",
       "formula_id": "F-EXIT-NET-DEBT",
       "directed_deps": [
@@ -423,9 +423,9 @@
       "unit": "MM_USD",
       "period": "2031-03-31",
       "effective_date": "2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 161.8659906976542,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!G4",
       "formula_id": "F-EXIT-EQUITY",
       "directed_deps": [
@@ -440,7 +440,7 @@
       "unit": "RATIO",
       "period": "2031-03-31",
       "effective_date": "2031-03-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": 9.0,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs!B46",
@@ -454,14 +454,31 @@
       "unit": "RATIO",
       "period": "2031-03-31",
       "effective_date": "2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 1.995993307860681,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!K4",
       "formula_id": "F-GROSS-MOIC",
       "directed_deps": [
         "MN-EXIT-EQUITY",
         "MN-SPONSOR-EQUITY"
+      ]
+    },
+    {
+      "model_node_id": "MN-SPONSOR-CF-VECTOR",
+      "label": "Sponsor cash-flow vector (entry outflow to exit proceeds)",
+      "computational_form": "DIRECT_FORMULA",
+      "unit": "MM_USD",
+      "period": "2026-06-30/2031-03-31",
+      "effective_date": "2026-03-10",
+      "perimeter": "deal_level",
+      "epistemic_class": "derived",
+      "initial_value": "DATED_CASH_FLOW_VECTOR",
+      "workbook_ref": "keystone_lbo_model_working.xlsx:OR!L3:L4",
+      "formula_id": "F-SPONSOR-CF-VECTOR",
+      "directed_deps": [
+        "MN-SPONSOR-EQUITY",
+        "MN-EXIT-EQUITY"
       ]
     },
     {
@@ -471,9 +488,9 @@
       "unit": "PERCENT",
       "period": "2026-03-10/2031-03-31",
       "effective_date": "2026-03-10/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 0.148150819261086,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!L4",
       "formula_id": "F-GROSS-XIRR",
       "directed_deps": [
@@ -488,9 +505,9 @@
       "unit": "RATIO",
       "period": "2031-03-31",
       "effective_date": "2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 1.282805657568091,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!K5",
       "formula_id": "F-GROSS-MOIC",
       "directed_deps": [
@@ -505,9 +522,9 @@
       "unit": "PERCENT",
       "period": "2026-03-10/2031-03-31",
       "effective_date": "2026-03-10/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 0.051042618678963,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!L5",
       "formula_id": "F-GROSS-XIRR",
       "directed_deps": [
@@ -522,9 +539,9 @@
       "unit": "RATIO",
       "period": "2031-03-31",
       "effective_date": "2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 2.078161923558329,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!K7",
       "formula_id": "F-GROSS-MOIC",
       "directed_deps": [
@@ -539,9 +556,9 @@
       "unit": "PERCENT",
       "period": "2026-03-10/2031-03-31",
       "effective_date": "2026-03-10/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 0.160397705317409,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!L7",
       "formula_id": "F-GROSS-XIRR",
       "directed_deps": [
@@ -556,9 +573,9 @@
       "unit": "RATIO",
       "period": "2031-03-31",
       "effective_date": "2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 1.502009933084345,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!K8",
       "formula_id": "F-GROSS-MOIC",
       "directed_deps": [
@@ -573,9 +590,9 @@
       "unit": "PERCENT",
       "period": "2026-03-10/2031-03-31",
       "effective_date": "2026-03-10/2031-03-31",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
-      "initial_value": null,
+      "initial_value": 0.087275519780985,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!L8",
       "formula_id": "F-GROSS-XIRR",
       "directed_deps": [
@@ -590,7 +607,7 @@
       "unit": "MM_USD",
       "period": "2026-03-10",
       "effective_date": "2026-03-10",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns (goal-seek on EV)",
@@ -607,7 +624,7 @@
       "unit": "BOOL",
       "period": "2026-03-10",
       "effective_date": "2026-03-10",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:S&U_Opening (balance check)",
@@ -626,7 +643,7 @@
       "unit": "BOOL",
       "period": "2026-03-10",
       "effective_date": "2026-03-10",
-      "perimeter": "deal level",
+      "perimeter": "deal_level",
       "epistemic_class": "derived",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:S&U_Opening!BS_check",
@@ -645,7 +662,7 @@
       "unit": "BOOL",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "derived",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:SB_Base (BS check rows)",
@@ -663,7 +680,7 @@
       "unit": "BOOL",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "derived",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:SB_Down (BS check rows)",
@@ -681,7 +698,7 @@
       "unit": "BOOL",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "derived",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Acq_Base (BS check rows)",
@@ -699,7 +716,7 @@
       "unit": "BOOL",
       "period": "2026-06-30/2031-03-31",
       "effective_date": "2026-06-30/2031-03-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "derived",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Combined_Risk (BS check rows)",
@@ -717,7 +734,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (row 5 YoY)",
@@ -731,7 +748,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C7 / C5",
@@ -745,7 +762,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": 64,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C10:V10",
@@ -759,7 +776,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": 0.067,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C11:V11",
@@ -773,7 +790,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": 0.016,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C16:V16",
@@ -787,7 +804,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (down row)",
@@ -801,7 +818,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (down row)",
@@ -815,7 +832,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (down row)",
@@ -829,7 +846,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (down row)",
@@ -843,7 +860,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (down row)",
@@ -857,7 +874,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": 7.5,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs!B47",
@@ -871,7 +888,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (up row)",
@@ -885,7 +902,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (up row)",
@@ -899,7 +916,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (up row)",
@@ -913,7 +930,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (up row)",
@@ -927,7 +944,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (up row)",
@@ -941,7 +958,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": 10.0,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs!B48",
@@ -955,7 +972,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (acq row)",
@@ -969,7 +986,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (acq row)",
@@ -983,7 +1000,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (acq row)",
@@ -997,7 +1014,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (acq row)",
@@ -1011,7 +1028,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (acq row)",
@@ -1025,7 +1042,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": 9.5,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs!B49",
@@ -1039,7 +1056,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (combined row)",
@@ -1053,7 +1070,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (combined row)",
@@ -1067,7 +1084,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (combined row)",
@@ -1081,7 +1098,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (combined row)",
@@ -1095,7 +1112,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (combined row)",
@@ -1109,7 +1126,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": 8.0,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Inputs!B50",
@@ -1123,7 +1140,7 @@
       "unit": "RATIO",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers (combined row)",
@@ -1137,7 +1154,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:CIM / management accounts",
@@ -1151,7 +1168,7 @@
       "unit": "MM_USD",
       "period": "2025-12-31",
       "effective_date": "2025-12-31",
-      "perimeter": "Alderstone standalone",
+      "perimeter": "Alderstone_standalone",
       "epistemic_class": "asserted",
       "initial_value": null,
       "workbook_ref": "keystone_lbo_model_working.xlsx:QoE report",
@@ -1161,18 +1178,10 @@
   ],
   "directed_model_edges": [
     {
-      "edge_id": "E-REV-EBITDA",
-      "from_model_node_id": "MN-REVENUE",
+      "edge_id": "E-EBITDA-QUARTERLY",
+      "from_model_node_id": "MN-FIRM-EBITDA",
       "to_model_node_id": "MN-QUARTERLY-FIRM-EBITDA",
       "formula_or_function_ref": "F-QUARTERLY-FIRM-EBITDA",
-      "control_ids": [],
-      "scenario": null
-    },
-    {
-      "edge_id": "E-REV-FIRM-EBITDA",
-      "from_model_node_id": "MN-REVENUE",
-      "to_model_node_id": "MN-FIRM-EBITDA",
-      "formula_or_function_ref": "F-FIRM-EBITDA-OPENING",
       "control_ids": [],
       "scenario": null
     },
@@ -1636,6 +1645,27 @@
   ],
   "formulas": [
     {
+      "formula_id": "F-QUARTERLY-FIRM-EBITDA",
+      "description": "Quarterly firm EBITDA from Scenario_Drivers!C7:V7",
+      "input_ids": [
+        "MN-FIRM-EBITDA"
+      ],
+      "output_id": "MN-QUARTERLY-FIRM-EBITDA",
+      "expression_or_function_ref": "firm_ebitda / 4",
+      "operand_bindings": {
+        "firm_ebitda": "MN-FIRM-EBITDA"
+      },
+      "evaluation_type": "ARITHMETIC",
+      "workbook_cell_ref": "keystone_lbo_model_working.xlsx:Scenario_Drivers!C7:V7",
+      "unit": "MM_USD",
+      "period": "2026-06-30/2031-03-31",
+      "perimeter": "Alderstone_standalone",
+      "scenario": "standalone_base",
+      "source_ref": "keystone_model.py:SB_EBITDA",
+      "variable_binding": {},
+      "tolerances": {}
+    },
+    {
       "formula_id": "F-COV-EBITDA-OPENING",
       "description": "Opening covenant EBITDA = firm_ebitda + rent_norm + integration_addback",
       "input_ids": [
@@ -1697,8 +1727,16 @@
         "MN-DEBT"
       ],
       "output_id": "MN-QUARTERLY-INTEREST",
-      "expression_or_function_ref": "_interest_expense",
-      "evaluation_type": "PYTHON_FUNCTION",
+      "expression_or_function_ref": "(term_loan + ddtl + revolver) * quarterly_rate",
+      "operand_bindings": {
+        "term_loan": "MN-QUARTERLY-TERM-LOAN",
+        "ddtl": "MN-QUARTERLY-DDTL",
+        "revolver": "MN-QUARTERLY-REVOLVER"
+      },
+      "fixture_parameters": {
+        "quarterly_rate": "blended quarterly cash interest rate"
+      },
+      "evaluation_type": "ARITHMETIC",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:SB_Base!C22:V22",
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
@@ -1727,11 +1765,15 @@
       "input_ids": [
         "MN-QUARTERLY-FIRM-EBITDA",
         "MN-QUARTERLY-INTEREST",
-        "MN-NWC",
-        "MN-REVENUE"
+        "MN-NWC"
       ],
       "output_id": "MN-QUARTERLY-CFO",
-      "expression_or_function_ref": "net_income + total_da + fee_amort + deferred_tax_adj - delta_nwc",
+      "expression_or_function_ref": "ebitda - interest - delta_nwc",
+      "operand_bindings": {
+        "ebitda": "MN-QUARTERLY-FIRM-EBITDA",
+        "interest": "MN-QUARTERLY-INTEREST",
+        "delta_nwc": "MN-NWC"
+      },
       "evaluation_type": "DATED_VECTOR_ARITHMETIC",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:SB_Base!C52:V52",
       "unit": "MM_USD",
@@ -1760,8 +1802,15 @@
         "MN-QUARTERLY-DDTL"
       ],
       "output_id": "MN-QUARTERLY-REVOLVER",
-      "expression_or_function_ref": "_revolver_draw_repay",
-      "evaluation_type": "PYTHON_FUNCTION",
+      "expression_or_function_ref": "MAX(0, min_cash - (cash + cfo))",
+      "operand_bindings": {
+        "cash": "MN-QUARTERLY-CASH",
+        "cfo": "MN-QUARTERLY-CFO"
+      },
+      "fixture_parameters": {
+        "min_cash": "minimum operating cash balance covenant"
+      },
+      "evaluation_type": "ARITHMETIC",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:SB_Base!C59:V59,C60:V60",
       "unit": "MM_USD",
       "period": "2026-06-30/2031-03-31",
@@ -1791,6 +1840,13 @@
       ],
       "output_id": "MN-QUARTERLY-TERM-LOAN",
       "expression_or_function_ref": "max(0, max(0, beg_term - min(term_amort_q, beg_term)) + ecf_sweep)",
+      "operand_bindings": {
+        "beg_term": "MN-DEBT",
+        "ecf_sweep": "MN-QUARTERLY-CFO"
+      },
+      "fixture_parameters": {
+        "term_amort_q": "scheduled quarterly term-loan amortisation"
+      },
       "evaluation_type": "DATED_VECTOR_ARITHMETIC",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:SB_Base!C76:V76",
       "unit": "MM_USD",
@@ -1815,6 +1871,13 @@
       ],
       "output_id": "MN-QUARTERLY-DDTL",
       "expression_or_function_ref": "max(0, beg_ddtl + ddtl_draw_q + ddtl_amort_q)",
+      "operand_bindings": {
+        "beg_ddtl": "MN-DEBT"
+      },
+      "fixture_parameters": {
+        "ddtl_draw_q": "scheduled DDTL draw",
+        "ddtl_amort_q": "scheduled DDTL amortisation"
+      },
       "evaluation_type": "DATED_VECTOR_ARITHMETIC",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:SB_Base!C77:V77",
       "unit": "MM_USD",
@@ -1841,6 +1904,14 @@
       ],
       "output_id": "MN-QUARTERLY-CASH",
       "expression_or_function_ref": "beg_cash + cfo + cfi + cff",
+      "operand_bindings": {
+        "beg_cash": "MN-OPENING-CASH",
+        "cfo": "MN-QUARTERLY-CFO",
+        "cff": "MN-QUARTERLY-REVOLVER"
+      },
+      "fixture_parameters": {
+        "cfi": "quarterly investing cash flow (capex)"
+      },
       "evaluation_type": "DATED_VECTOR_ARITHMETIC",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:SB_Base!C67:V67",
       "unit": "MM_USD",
@@ -1926,6 +1997,15 @@
       ],
       "output_id": "MN-SPONSOR-EQUITY",
       "expression_or_function_ref": "ev - term_loan - seller_rollover + financing_fees + buyer_tx_expenses",
+      "operand_bindings": {
+        "ev": "MN-EV",
+        "term_loan": "MN-DEBT",
+        "seller_rollover": "MN-ROLLOVER"
+      },
+      "fixture_parameters": {
+        "financing_fees": "financing fees at close",
+        "buyer_tx_expenses": "buyer transaction expenses"
+      },
       "evaluation_type": "ARITHMETIC",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:S&U_Opening!E21",
       "unit": "MM_USD",
@@ -2029,6 +2109,14 @@
       ],
       "output_id": "MN-BASE-MOIC",
       "expression_or_function_ref": "(exit_equity * (1 - mip_vested) * sponsor_pre_mip_pct) / sponsor_invested",
+      "operand_bindings": {
+        "exit_equity": "MN-EXIT-EQUITY",
+        "sponsor_invested": "MN-SPONSOR-EQUITY"
+      },
+      "fixture_parameters": {
+        "mip_vested": "vested MIP share at exit",
+        "sponsor_pre_mip_pct": "sponsor pre-MIP ownership"
+      },
       "evaluation_type": "ARITHMETIC",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!K4",
       "unit": "RATIO",
@@ -2047,15 +2135,42 @@
       }
     },
     {
+      "formula_id": "F-SPONSOR-CF-VECTOR",
+      "description": "Sponsor dated cash flows: entry equity out, exit equity in",
+      "input_ids": [
+        "MN-SPONSOR-EQUITY",
+        "MN-EXIT-EQUITY"
+      ],
+      "output_id": "MN-SPONSOR-CF-VECTOR",
+      "expression_or_function_ref": "BUILD_DATED_CASH_FLOW_VECTOR",
+      "dated_cash_flow_spec": {
+        "total_invested_input_id": "MN-SPONSOR-EQUITY",
+        "exit_proceeds_input_id": "MN-EXIT-EQUITY",
+        "entry_date": "2026-03-10",
+        "exit_date": "2031-03-31"
+      },
+      "evaluation_type": "BUILD_DATED_CASH_FLOW_VECTOR",
+      "workbook_cell_ref": "keystone_lbo_model_working.xlsx:OR!L3:L4",
+      "unit": "MM_USD",
+      "period": "2026-06-30/2031-03-31",
+      "perimeter": "deal_level",
+      "scenario": "standalone_base",
+      "source_ref": "keystone_model.py:sponsor_cash_flows",
+      "variable_binding": {},
+      "tolerances": {}
+    },
+    {
       "formula_id": "F-GROSS-XIRR",
       "description": "gross_xirr = XIRR([-sponsor_invested, 0..., +sponsor_proceeds], [entry_date, ..., exit_date]). Newton-Raphson, ACT/365. OR!L4.",
       "input_ids": [
-        "MN-EXIT-EQUITY",
-        "MN-SPONSOR-EQUITY"
+        "MN-SPONSOR-CF-VECTOR"
       ],
       "output_id": "MN-BASE-IRR",
-      "expression_or_function_ref": "_xirr",
-      "evaluation_type": "PYTHON_FUNCTION",
+      "expression_or_function_ref": "XIRR(sponsor_cf_vector)",
+      "operand_bindings": {
+        "sponsor_cf_vector": "MN-SPONSOR-CF-VECTOR"
+      },
+      "evaluation_type": "XIRR",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:Ownership_Returns!L4",
       "unit": "PERCENT",
       "period": "2026-03-10/2031-03-31",
@@ -2105,7 +2220,14 @@
         "MN-OPENING-CASH"
       ],
       "output_id": "MN-CHECK-SOURCES-USES",
-      "expression_or_function_ref": "abs(uses - sources) < 0.001  where uses = ev + financing_fees + buyer_tx_expenses, sources = term_loan + rollover + sponsor_equity",
+      "expression_or_function_ref": "abs((ev + opening_cash) - (debt + rollover + sponsor_equity)) < 0.001",
+      "operand_bindings": {
+        "ev": "MN-EV",
+        "opening_cash": "MN-OPENING-CASH",
+        "debt": "MN-DEBT",
+        "rollover": "MN-ROLLOVER",
+        "sponsor_equity": "MN-SPONSOR-EQUITY"
+      },
       "evaluation_type": "ARITHMETIC",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:S&U_Opening (balance check)",
       "unit": "BOOL",
@@ -2135,7 +2257,15 @@
         "MN-ROLLOVER"
       ],
       "output_id": "MN-CHECK-OPENING-BS",
-      "expression_or_function_ref": "abs(total_assets - (total_liabilities + total_equity)) < 0.001",
+      "expression_or_function_ref": "abs(total_assets - (debt + sponsor_equity + rollover)) < 0.001",
+      "operand_bindings": {
+        "debt": "MN-DEBT",
+        "sponsor_equity": "MN-SPONSOR-EQUITY",
+        "rollover": "MN-ROLLOVER"
+      },
+      "fixture_parameters": {
+        "total_assets": "opening total assets"
+      },
       "evaluation_type": "ARITHMETIC",
       "workbook_cell_ref": "keystone_lbo_model_working.xlsx:S&U_Opening!BS_check",
       "unit": "BOOL",
@@ -2185,11 +2315,13 @@
       "description": "Determines revolver draw/repay each quarter based on cash position relative to floor and optional forced target. SB_Base!C59/D59, C60/D60.",
       "selector_input_ids": [
         "MN-QUARTERLY-CFO",
-        "MN-QUARTERLY-CASH",
-        "Scenario_Drivers!C29:V29",
-        "Scenario_Drivers!C30:V30",
-        "Scenario_Drivers!C31:V31"
+        "MN-QUARTERLY-CASH"
       ],
+      "selector_fixtures": {
+        "cash_floor": "Scenario_Drivers!C29:V29",
+        "forced_target": "Scenario_Drivers!C30:V30",
+        "repay_all": "Scenario_Drivers!C31:V31"
+      },
       "branches": [
         {
           "branch_id": "RS-REV-FORCED",
@@ -2227,8 +2359,7 @@
       "description": "Annual excess cash flow sweep — fires Dec-31 quarters only. Rate determined by net leverage tier. SB_Base!E63/I63/M63/Q63/U63.",
       "selector_input_ids": [
         "MN-NET-LEVERAGE",
-        "MN-QUARTERLY-CASH",
-        "Scenario_Drivers!C29:V29"
+        "MN-QUARTERLY-CASH"
       ],
       "branches": [
         {
@@ -2332,148 +2463,8 @@
       ]
     }
   ],
-  "cyclic_component_solver_configs": [
-    {
-      "component_id": "SCC-CASHFLOW-INTEREST-REVOLVER",
-      "description": "Cash Flow ↔ Interest ↔ Revolver cyclic dependency. Cash interest drives CFO; CFO + prior cash determines revolver need; revolver balance drives interest. Resolved per-quarter by fixed-point iteration.",
-      "member_ids": [
-        "MN-QUARTERLY-CFO",
-        "MN-QUARTERLY-INTEREST",
-        "MN-QUARTERLY-REVOLVER"
-      ],
-      "equations": [
-        {
-          "eq_id": "EQ-INTEREST",
-          "description": "Cash interest = f(term_avg, revolver_beg, ddtl_avg, sofr, spreads)",
-          "formula_ref": "F-INTEREST-EXPENSE",
-          "inputs": [
-            "MN-QUARTERLY-TERM-LOAN[prior]",
-            "MN-QUARTERLY-REVOLVER[iteration]",
-            "MN-QUARTERLY-DDTL[prior]"
-          ],
-          "output": "MN-QUARTERLY-INTEREST"
-        },
-        {
-          "eq_id": "EQ-CFO",
-          "description": "CFO = net_income + D&A + fee_amort + deferred_tax - delta_NWC",
-          "formula_ref": "F-CFO",
-          "inputs": [
-            "MN-QUARTERLY-FIRM-EBITDA",
-            "MN-QUARTERLY-INTEREST[iteration]",
-            "MN-NWC",
-            "MN-REVENUE"
-          ],
-          "output": "MN-QUARTERLY-CFO"
-        },
-        {
-          "eq_id": "EQ-REVOLVER",
-          "description": "Revolver draw/repay = f(CFO, prior_cash, cash_floor, rule_switch)",
-          "formula_ref": "F-REVOLVER-DRAW-REPAY",
-          "rule_switch_ref": "RS-REVOLVER-DRAW",
-          "inputs": [
-            "MN-QUARTERLY-CFO[iteration]",
-            "MN-QUARTERLY-CASH[prior]"
-          ],
-          "output": "MN-QUARTERLY-REVOLVER"
-        }
-      ],
-      "component_type": "NUMERICAL_SCC",
-      "method": "FIXED_POINT_ITERATION",
-      "initialization": {
-        "MN-QUARTERLY-REVOLVER": "prior_period_revolver_balance",
-        "MN-QUARTERLY-INTEREST": 0.0
-      },
-      "admissible_bounds": {
-        "MN-QUARTERLY-REVOLVER": {
-          "lower": 0.0,
-          "upper": 7.5,
-          "unit": "$mm"
-        },
-        "MN-QUARTERLY-INTEREST": {
-          "lower": -50.0,
-          "upper": 0.0,
-          "unit": "$mm"
-        }
-      },
-      "absolute_residual_tolerance": "1e-4",
-      "relative_residual_tolerance": "1e-8",
-      "maximum_iterations": 150,
-      "convergence_condition": "max(|revolver[k+1] - revolver[k]|) < absolute_residual_tolerance",
-      "uniqueness_condition": "Interest is monotonically increasing in revolver balance (higher revolver → more interest → lower CFO → more revolver need). Fixed point exists and is unique given bounded revolver commitment.",
-      "invariant_control_ids": [
-        "MN-CHECK-SB-BASE-BS"
-      ],
-      "no_solution_behavior": "EMIT_PARTIAL_SETTLEMENT: report convergence_delta and last-iteration values; flag node as UNRESOLVED",
-      "multiple_solution_behavior": "NOT_POSSIBLE (see uniqueness_condition)",
-      "source_ref": "keystone_model.py:_run_quarter():L658-707"
-    }
-  ],
-  "inverse_solver_configs": [
-    {
-      "solver_id": "INV-SUPPORTED-PRICE",
-      "description": "Find the maximum entry enterprise value (EV) such that the sponsor achieves at least 14% gross IRR AND at least 2.0× gross MOIC in the Standalone Base scenario. Reports binding constraint.",
-      "decision_variable_ids": [
-        "MN-EV"
-      ],
-      "objective": {
-        "sense": "MAXIMIZE",
-        "variable_id": "MN-EV",
-        "unit": "MM_USD"
-      },
-      "constraints": [
-        {
-          "constraint_id": "IRR_FLOOR",
-          "expression_or_function_ref": "MN-BASE-IRR >= 0.14",
-          "unit": "decimal_rate",
-          "display_equivalent": "14% gross IRR floor",
-          "source_ref": "fund_lens_keystone: minimum gross IRR 14%; IC mandate"
-        },
-        {
-          "constraint_id": "MOIC_FLOOR",
-          "expression_or_function_ref": "MN-BASE-MOIC >= 2.0",
-          "unit": "x",
-          "display_equivalent": "2.0× gross MOIC floor",
-          "source_ref": "fund_lens_keystone: minimum gross MOIC 2.0×; IC mandate"
-        },
-        {
-          "constraint_id": "FINANCING_FEASIBLE",
-          "expression_or_function_ref": "MN-DEBT-CAPACITY >= MN-DEBT",
-          "unit": "MM_USD",
-          "source_ref": "credit agreement leverage covenant at close"
-        }
-      ],
-      "initialization": {
-        "MN-EV": 108.0
-      },
-      "admissible_bounds": {
-        "lower": {
-          "value": 0.0,
-          "unit": "MM_USD"
-        },
-        "upper": {
-          "value": 300.0,
-          "unit": "MM_USD",
-          "note": "3× current underwritten EV 108"
-        }
-      },
-      "absolute_residual_tolerance": "0.01",
-      "relative_residual_tolerance": "1e-6",
-      "maximum_iterations": 50,
-      "method": "bisection over run_lbo(ev_override=MN-EV)",
-      "uniqueness_condition": "IRR and MOIC are strictly decreasing in EV; feasible set is a closed interval [0, max_ev]; solution unique at max_ev",
-      "invariant_control_ids": [
-        "CTRL-SOURCES-USES-BALANCE"
-      ],
-      "financing_branch_ids": [
-        "RS-REVOLVER-DRAW",
-        "RS-ECF-SWEEP"
-      ],
-      "binding_constraint_output": true,
-      "no_solution_behavior": "EMIT_INFEASIBLE: report which constraint(s) are binding at EV=0 and at EV=upper_bound; do not select a value arbitrarily",
-      "multiple_solution_behavior": "NOT_POSSIBLE: both IRR and MOIC are strictly decreasing in EV; solution is unique at max_ev",
-      "source_ref": "keystone_model.py:run_lbo() + _compute_returns()"
-    }
-  ],
+  "cyclic_component_solver_configs": [],
+  "inverse_solver_configs": [],
   "model_controls": [
     {
       "control_id": "CTRL-SOURCES-USES-BALANCE",
@@ -2919,6 +2910,42 @@
       "resolution": "PARTIAL_SETTLEMENT"
     },
     {
+      "limit_id": "CL-CYCLIC-SOLVER-NOT-COMPILED",
+      "description": "The cash-flow / interest / revolver cycle is modelled (cyclic_component_models) but not emitted as an executable cyclic_component_solver_config: PANTA requires every name on an equation's right-hand side to be a component member id, while member ids must resolve to model nodes, and our node ids contain hyphens. Quarterly interest, CFO and revolver therefore do not converge inside the runtime.",
+      "affected_nodes": [
+        "MN-QUARTERLY-CFO",
+        "MN-QUARTERLY-INTEREST",
+        "MN-QUARTERLY-REVOLVER"
+      ],
+      "resolution": "confirm the member-symbol convention with the runtime owner",
+      "reason_code": "COVERAGE_LIMIT_DECLARED",
+      "scope_ids": [
+        "MN-QUARTERLY-CFO",
+        "MN-QUARTERLY-INTEREST",
+        "MN-QUARTERLY-REVOLVER"
+      ],
+      "effect": "The cash-flow / interest / revolver cycle is modelled (cyclic_component_models) but not emitted as an executable cyclic_component_solver_config: PANTA requires every name on an equation's right-hand side to be a component member id, while member ids must resolve to model nodes, and our node ids contain hyphens. Quarterly interest, CFO and revolver therefore do not converge inside the runtime."
+    },
+    {
+      "limit_id": "CL-INVERSE-SOLVER-NOT-COMPILED",
+      "description": "The supported-price solve is modelled (inverse_solver_models) but not emitted as an executable inverse_solver_config: its constraints reference MN-BASE-IRR and MN-BASE-MOIC, which depend on an exit bridge the model does not yet compute inside PANTA.",
+      "affected_nodes": [
+        "MN-EV",
+        "MN-SUPPORTED-PRICE",
+        "MN-BASE-IRR",
+        "MN-BASE-MOIC"
+      ],
+      "resolution": "compile the exit bridge into PANTA-executable formulas",
+      "reason_code": "COVERAGE_LIMIT_DECLARED",
+      "scope_ids": [
+        "MN-EV",
+        "MN-SUPPORTED-PRICE",
+        "MN-BASE-IRR",
+        "MN-BASE-MOIC"
+      ],
+      "effect": "The supported-price solve is modelled (inverse_solver_models) but not emitted as an executable inverse_solver_config: its constraints reference MN-BASE-IRR and MN-BASE-MOIC, which depend on an exit bridge the model does not yet compute inside PANTA."
+    },
+    {
       "limit_id": "CL-FINANCING-GRID",
       "description": "Financing grid step-down rule (>15% single-parent exposure) not available in current policy file. RS-FINANCING-GRID branch RS-FG-STANDARD is the only declared branch. MN-DEBT-CAPACITY is conservative until policy_owner confirms.",
       "affected_nodes": [
@@ -2985,6 +3012,26 @@
         "RS-FINANCING-GRID"
       ],
       "effect": "MN-CONCENTRATION has no quantitative workbook binding. RS-FINANCING-GRID cannot fully evaluate the step-down rule."
+    },
+    {
+      "limit_id": "KS-BRIDGE-UNBOUND-CP-STANDALONE-UPSIDE-MOIC-MN-UP-MOIC",
+      "reason_code": "MISSING_EXECUTABLE_DIRECTION",
+      "scope_ids": [
+        "CP-STANDALONE-UPSIDE-MOIC",
+        "MN-UP-MOIC"
+      ],
+      "effect": "CP-STANDALONE-UPSIDE-MOIC has no model node binding for MN-UP-MOIC in execution graph",
+      "resolution": "PARTIAL_SETTLEMENT"
+    },
+    {
+      "limit_id": "KS-BRIDGE-UNBOUND-CP-STANDALONE-UPSIDE-IRR-MN-UP-IRR",
+      "reason_code": "MISSING_EXECUTABLE_DIRECTION",
+      "scope_ids": [
+        "CP-STANDALONE-UPSIDE-IRR",
+        "MN-UP-IRR"
+      ],
+      "effect": "CP-STANDALONE-UPSIDE-IRR has no model node binding for MN-UP-IRR in execution graph",
+      "resolution": "PARTIAL_SETTLEMENT"
     }
   ]
 }

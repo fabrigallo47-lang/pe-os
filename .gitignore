@@ -45,3 +45,24 @@ ui/legacy/
 # computed cell values (keyed by the workbook's content digest).
 pipeline_out/live/
 pipeline_out/cellvalues/
+
+# Proprietary algorithms — not for public repo
+tools/case_compiler_alpha.py
+tools/b0_assembler.py
+tools/model_compiler.py
+tools/model_parser.py
+tools/keystone_model.py
+tools/binding_proposer.py
+tools/binding_resolver.py
+tools/position_model_binder.py
+tools/benchmark_runner.py
+tools/benchmark_extract.py
+tools/grade_keystone.py
+tools/coverage_report.py
+tools/claim_graph.py
+tools/cell_engine.py
+
+# Internal docs — not for sharing without NDA
+docs/ui_audit.md
+vault/policy/keystone_authority_matrix_v0.json
+vault/policy/keystone_materiality_policy_v0.json

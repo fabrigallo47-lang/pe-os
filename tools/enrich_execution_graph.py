@@ -71,10 +71,22 @@ def enrich(graph: dict, cells: dict) -> tuple[dict, list[dict]]:
         if not isinstance(computed, (int, float)):
             continue
         node["value_current"] = computed
-        # provenance travels with the value: a reader must be able to see that
-        # this came from evaluating a formula, not from the transcription
-        node["value_source"] = {"from": "workbook_formula", "cell": loc}
-        filled.append({"node": node_id, "cell": loc, "value": computed})
+        # Provenance travels with the value, and it has to say which of two very
+        # different things happened. "workbook_formula" was written on every
+        # filled node, including the exit bridge — where the cells hold pasted
+        # numbers that no formula produces. A reader trusting that label would
+        # believe the returns were computed by the model. They were typed.
+        cell = cells.get(loc) or {}
+        is_formula = str(cell.get("value", "")).startswith("=") or cell.get("formula")
+        node["value_source"] = {
+            "from": "workbook_formula" if is_formula else "workbook_literal",
+            "cell": loc,
+            "note": "" if is_formula else
+                    "la cella porta un numero, non una formula: il workbook non "
+                    "calcola questo valore",
+        }
+        filled.append({"node": node_id, "cell": loc, "value": computed,
+                       "computed_by_workbook": bool(is_formula)})
 
     if filled:
         # The graph carries a hash of its own content. Filling values without

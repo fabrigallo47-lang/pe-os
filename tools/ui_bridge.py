@@ -167,6 +167,7 @@ class Live:
         self.deal = deal
         self.store = LiveStore(deal)
         self.last_ingest: dict | None = None
+        self._engines: dict[tuple[str, bool], object] = {}
 
     @property
     def case_id(self) -> str:
@@ -215,8 +216,69 @@ class Live:
 
     def reset(self) -> dict:
         self.store.reset()
+        self._engines.clear()
         return {"status": "RESET", "deal": self.deal,
                 "note": "lo store è vuoto: la UI ora mostra un deal senza fonti"}
+
+    # ── what-if ──────────────────────────────────────────────────────────────
+
+    def _engine(self, source: Path, evaluate: bool):
+        """
+        The cell engine for one workbook, kept in the process.
+
+        Compiling the formula model costs about a minute; the structural graph
+        costs a second. Both are cached per workbook, and the structural one is
+        never thrown away when the evaluating one is built, so a question that
+        only needs reachability is never made to wait for the compiler.
+        """
+        from tools.cell_engine import CellEngine
+        key = (str(source), evaluate)
+        if key in self._engines:
+            return self._engines[key]
+        if not evaluate and (str(source), True) in self._engines:
+            return self._engines[(str(source), True)]
+        eng = CellEngine.build(source, evaluate=evaluate, verify=evaluate)
+        self._engines[key] = eng
+        return eng
+
+    def _workbook(self) -> Path | None:
+        for s in reversed(self.store.manifest["sources"]):
+            if s["kind"] == "workbook" and Path(s["path"]).exists():
+                return Path(s["path"])
+        return None
+
+    def whatif(self, body: dict) -> dict:
+        src = self._workbook()
+        if src is None:
+            return {"error": "nessun workbook ingerito: non c'è un modello su "
+                             "cui fare what-if"}
+        updates = {k.upper(): v for k, v in (body.get("set") or {}).items()}
+        watch = [w.upper() for w in (body.get("watch") or [])]
+
+        if not updates:
+            # No assignment: this is a question about the model, not a change to
+            # it, and it is answered without paying for the compiler.
+            eng = self._engine(src, evaluate=False)
+            return {"workbook": src.name, "mode": "reachability",
+                    "reach": [eng.reachability(w).to_json() for w in watch]}
+
+        # Refuse before computing: a target nothing can move is a fact about the
+        # workbook, not a failed run, and it should be said in those terms.
+        struct = self._engine(src, evaluate=False)
+        refused = [struct.reachability(w).to_json() for w in watch
+                   if not struct.reachability(w).derivable]
+        watch = [w for w in watch if struct.reachability(w).derivable]
+
+        eng = self._engine(src, evaluate=True)
+        res = eng.set_values(updates, watch or None)
+        eng.reset()                      # a what-if asks, it does not commit
+        return {"workbook": src.name, "mode": "whatif",
+                "set": updates,
+                "refused": refused,
+                "verification": eng.verification.to_json(),
+                **res.to_json(),
+                "note": "ipotesi non impegnativa: lo stato del workbook è stato "
+                        "ripristinato subito dopo il calcolo"}
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -337,6 +399,17 @@ class Handler(BaseHTTPRequestHandler):
                            {"error": "in modalità bundle non c'è nulla da azzerare"})
                 return
             self._json(HTTPStatus.OK, b.reset())
+            return
+
+        if path == "/api/v1/whatif":
+            if not isinstance(b, Live):
+                self._json(HTTPStatus.CONFLICT,
+                           {"error": "il what-if gira sul workbook ingerito, "
+                                     "non su un bundle compilato"})
+                return
+            res = b.whatif(body)
+            self._json(HTTPStatus.BAD_REQUEST if res.get("error")
+                       else HTTPStatus.OK, res)
             return
 
         if re.match(r"^/api/v1/cases/([^/]+)/settle$", path):

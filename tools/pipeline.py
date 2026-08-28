@@ -43,7 +43,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from tools.extract import SYSTEM_PROMPT, llm_extract, parse_json
-from tools.claim_graph import claims_to_graph
+from vercel.api._claim_graph import claims_to_graph
 from tools.graph_store import DealGraph
 
 

@@ -93,10 +93,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     },
     "settle": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/settle"},
     "replay": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/replay"},
-    "prepareWork": {
-        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/work-items/{work_id}/prepare",
-        "reason": "Connected work-item preparation is not implemented; no draft was created.",
-    },
+    "prepareWork": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/work-items/{work_id}/prepare"},
     "compilerProposals": {
         "status": "UNAVAILABLE", "method": "GET", "path": "/cases/{case_id}/compiler-proposals",
         "reason": "Compiler-proposal projection is not implemented for connected mode.",
@@ -121,6 +118,7 @@ _runs: dict[str, dict] = {}   # run_id → {transition, candidate_graph, case_id
 _inbox_lock = threading.Lock()
 _notes_lock = threading.Lock()
 _source_lock = threading.Lock()
+_work_drafts_lock = threading.Lock()
 _registry_lock = threading.RLock()
 
 
@@ -1091,8 +1089,74 @@ def send_execution_package_unavailable(package_id: str) -> JSONResponse:
 
 
 @v20.post("/cases/{case_id}/work-items/{work_id}/prepare")
-def prepare_work_unavailable(case_id: str, work_id: str) -> JSONResponse:
-    return _capability_unavailable("prepareWork")
+def prepare_work(case_id: str, work_id: str, payload: dict | None = None) -> dict:
+    """Prepare and persist a draft without dispatching work or creating authority."""
+    payload = payload or {}
+    idempotency_key = str(payload.get("idempotency_key") or "").strip()
+    if idempotency_key:
+        identity_seed = f"{case_id}|{work_id}|{idempotency_key}"
+        identity = hashlib.sha256(identity_seed.encode("utf-8")).hexdigest()[:16]
+    else:
+        identity = uuid.uuid4().hex[:16]
+    draft_id = f"DRAFT-{identity.upper()}"
+    drafts_dir = _case_vault_dir(case_id) / "work_drafts"
+    draft_path = drafts_dir / f"work-draft-{identity}.md"
+
+    with _work_drafts_lock:
+        if draft_path.exists():
+            return {
+                "draft": _note_record(draft_path),
+                "message": "Existing draft returned. Nothing was dispatched externally.",
+                "idempotent_replay": True,
+            }
+
+        known_at = _now_iso()
+        metadata = {
+            "type": "work_draft",
+            "id": draft_id,
+            "draft_id": draft_id,
+            "case": case_id,
+            "work_item_id": work_id,
+            "status": "DRAFT",
+            "owner": payload.get("owner"),
+            "object_id": payload.get("object_id"),
+            "actor_id": payload.get("actor_id", "unknown-actor"),
+            "instructions": payload.get("instructions"),
+            "created_at": known_at,
+            "effective_date": payload.get("effective_date") or known_at[:10],
+            "known_at": known_at,
+            "idempotency_key": idempotency_key or None,
+            "synthetic": False,
+            "no_external_effects": True,
+            "written-by": "v20-api",
+        }
+        drafts_dir.mkdir(parents=True, exist_ok=True)
+        with draft_path.open("x", encoding="utf-8") as handle:
+            handle.write(
+                "---\n"
+                + yaml.safe_dump(metadata, sort_keys=False, allow_unicode=True)
+                + "---\n\n"
+                + f"Draft for work item {work_id}. Prepared only; no external dispatch occurred.\n"
+            )
+    return {
+        "draft": metadata,
+        "message": "Draft prepared in PANTA. It was not dispatched externally.",
+        "idempotent_replay": False,
+    }
+
+
+@v20.get("/cases/{case_id}/work-items/{work_id}/drafts")
+def list_work_drafts(case_id: str, work_id: str) -> dict:
+    drafts_dir = _case_vault_dir(case_id) / "work_drafts"
+    if not drafts_dir.exists():
+        return {"drafts": []}
+    drafts = [
+        _note_record(path)
+        for path in sorted(drafts_dir.glob("work-draft-*.md"))
+        if _read_frontmatter(path).get("work_item_id") == work_id
+    ]
+    drafts.sort(key=lambda draft: (str(draft.get("known_at", "")), str(draft.get("draft_id", ""))))
+    return {"drafts": drafts}
 
 
 @v20.get("/cases/{case_id}/compiler-proposals")

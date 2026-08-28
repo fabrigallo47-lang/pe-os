@@ -38,10 +38,12 @@ make setup
 ```
 
 Open `http://127.0.0.1:4191/ui/index.html?mode=connected` and select the
-Keystone case. In **Sources → Ingest**, upload a PDF, `.md` or `.txt` file.
-The V1 extractor runs in the background and stores only a reviewable evidence
-proposal. Go to **Ingestion History** and choose **Admit evidence** to promote
-it into the semantic Current (Sources → Claims → Questions → Case Positions).
+Keystone case. In **Sources → Ingest**, upload a PDF, `.md`, `.txt`, `.xlsx`
+or `.xlsm` file. Narrative sources run through V1; workbooks run through V2,
+which preserves sheet/range locators plus formula and cached-value evidence.
+Either route stores only a reviewable evidence proposal. Go to **Ingestion
+History** and choose **Admit evidence** to promote it into the semantic Current
+(Sources → Claims → Questions → Case Positions).
 Choose **Reject** to retain the extraction audit trail without changing Current.
 Use **Open live graph** in Sources to inspect the parallel semantic graph.
 

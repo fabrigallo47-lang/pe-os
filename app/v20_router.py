@@ -417,6 +417,36 @@ def _load_questions(case_id: str) -> list[dict]:
             out.append(fm)
     return out
 
+
+def _load_projection_events(case_id: str) -> dict[str, dict]:
+    """Project durable vault events into the V20 change-arrival contract."""
+    events_dir = VAULT / "deals" / case_id / "events"
+    if not events_dir.exists():
+        return {}
+    events: dict[str, dict] = {}
+    for md in sorted(events_dir.glob("*.md")):
+        fm = _read_frontmatter(md)
+        event_id = str(fm.get("id") or fm.get("event_id") or "")
+        if not event_id:
+            continue
+        known_at = str(fm.get("known_at") or fm.get("timestamp") or _now_iso())
+        if len(known_at) == 8 and known_at.isdigit():
+            known_at = f"{known_at[:4]}-{known_at[4:6]}-{known_at[6:]}T00:00:00Z"
+        events[event_id] = {
+            "event_id": event_id, "id": event_id,
+            "type": fm.get("type", "institutional_event"),
+            "label": fm.get("label") or f"{fm.get('type', 'Event').replace('_', ' ').title()}: {fm.get('source', event_id)}",
+            "source_title": fm.get("source", "PANTA evidence intake"),
+            "source_version_id": fm.get("proposal_id", fm.get("source", "")),
+            "source_passage": fm.get("detail", "Evidence admitted after professional review."),
+            "locator": fm.get("locator", ""), "definition": fm.get("definition_id", ""),
+            "period": fm.get("period", ""), "perimeter": fm.get("perimeter", ""),
+            "effective_date": str(fm.get("effective_date") or known_at[:10]),
+            "known_at": known_at, "proposed_treatment": fm.get("proposed_treatment", "Run dynamics against the admitted semantic Current."),
+            "proposed_position": fm.get("proposed_position", "Run dynamics against the admitted semantic Current."),
+        }
+    return events
+
 def _enrich_claims(raw: list[dict], bears_on_map: dict) -> list[dict]:
     today = _today()
     out = []
@@ -510,6 +540,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     bears_on_map = _load_bears_on_map()
     claims = _enrich_claims(raw_claims, bears_on_map)
     sources = _build_sources_from_claims(raw_claims)
+    events = _load_projection_events(case_id)
     questions = _load_questions(case_id)
     question_spine = _build_question_spine(questions, claims)
     semantic_graph = _load_json_safe(PIPELINE_OUT / "semantic_current_graph.json")
@@ -529,8 +560,16 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     # All the dates for temporal
     available_dates = sorted(set(
         [c.get("known_at", "")[:10] for c in claims if c.get("known_at")]
+        + [e.get("known_at", "")[:10] for e in events.values() if e.get("known_at")]
         + [today]
     ))
+    snapshots = [{
+        "id": f"STATE-{event_id}", "event_id": event_id,
+        "date": event["effective_date"], "effective_date": event["effective_date"],
+        "known_at": event["known_at"], "label": event["label"],
+        "known": [event["source_title"]], "believed": [], "approved": [], "open": [],
+        "stable_hash": "sha256:" + hashlib.sha256(event_id.encode()).hexdigest(),
+    } for event_id, event in events.items()]
 
     projection = {
         "schema_version": "frontend-projection/20.0",
@@ -540,7 +579,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
             "situations": [],
             "morning_delta": [],
         },
-        "events": {},
+        "events": events,
         "actor_directory": [
             {
                 "participant_id": "partner-001",
@@ -568,7 +607,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
             "replay": {
                 "source": "REGISTRY_EVENTS",
                 "hand_authored_snapshots": False,
-                "snapshots": [],
+                "snapshots": snapshots,
             },
             "claims": claims,
             "question_spine": question_spine,
@@ -809,9 +848,17 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
         source_path = (inbox_dir / filename) if filename else None
         import os as _os
 
-        # For single text/md file: extract just that file and merge new claims in.
-        # For a missing file use the legacy V1 batch entry point.
-        if source_path and source_path.exists() and source_path.suffix.lower() in (".md", ".txt", ".pdf"):
+        # Excel is routed to V2: unlike V1 it chunks a workbook by sheet/range
+        # and retains formula + cached-value provenance. V1 flattens a workbook
+        # to one prompt and therefore truncates non-trivial models.
+        if source_path and source_path.exists() and source_path.suffix.lower() in (".xlsx", ".xlsm"):
+            manifest_label = "SINGLE_V2"
+            run_dir = PIPELINE_OUT / "runs" / job_id
+            cmd = [sys.executable, str(ROOT / "tools" / "extract_v2.py"),
+                   "--source", str(source_path), "--deal", case_id,
+                   "--output", str(run_dir)]
+        # For PDF and narrative files, V1 is the lightweight extraction path.
+        elif source_path and source_path.exists() and source_path.suffix.lower() in (".md", ".txt", ".pdf"):
             manifest_label = "SINGLE"
             run_dir = PIPELINE_OUT / "runs" / job_id
             # Use the proven V1 extractor for the live V20 path.  pipeline.py
@@ -838,8 +885,12 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
             # Extraction produces a proposal.  It must not mutate the admitted
             # corpus or the semantic Current until a professional review admits it.
             if ok:
-                output_dir = (PIPELINE_OUT / "runs" / job_id) if manifest_label == "SINGLE" else (PIPELINE_OUT / manifest_label)
+                output_dir = (PIPELINE_OUT / "runs" / job_id) if manifest_label in {"SINGLE", "SINGLE_V2"} else (PIPELINE_OUT / manifest_label)
+                # V2 writes the manifest under its deterministic SINGLE label;
+                # V1 writes directly to its requested output directory.
                 e3_out = output_dir / "e3_claims.json"
+                if manifest_label == "SINGLE_V2":
+                    e3_out = output_dir / "SINGLE" / "e3_claims.json"
                 v1_out = output_dir / "claims.json"
                 if e3_out.exists() or v1_out.exists():
                     try:
@@ -942,7 +993,9 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     event_id = f"EVIDENCE-ADMITTED-{job_id}"
     event_fm = {"type": "evidence_admitted", "id": event_id, "case": case_id,
                 "source": proposal.get("source_id"), "proposal_id": proposal.get("proposal_id"),
-                "claim_count": len(added), "known_at": _now_iso(),
+                "claim_count": len(added), "known_at": _now_iso(), "effective_date": _today(),
+                "label": f"Admitted evidence: {proposal.get('source_id', 'source')}",
+                "detail": f"{len(added)} new claims admitted after professional review.",
                 "actor": payload.get("actor_id", "professional-review")}
     (events_dir / f"e-{case_id}-evidence-admitted-{job_id}.md").write_text(
         "---\n" + yaml.safe_dump(event_fm, sort_keys=False, allow_unicode=True) + "---\n\n"

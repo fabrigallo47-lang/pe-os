@@ -34,6 +34,8 @@ PY = sys.executable
 
 CIC_DEFAULT = Path.home() / "Downloads" / "PANTA_CIC_v1.1" / \
     "PANTA_Keystone_Canonical_Investment_Case_v1_1"
+HANDOFF_DEFAULT = Path.home() / "Downloads" / "PANTA_STATE_TRANSITION_ENGINE_HANDOFF_V1" / \
+    "PANTA_STATE_TRANSITION_ENGINE_HANDOFF_V1"
 
 
 class Stage:
@@ -69,12 +71,32 @@ def stage_regression() -> Stage:
 
 def stage_v7() -> Stage:
     s = Stage("V7 acceptance")
+    # The acceptance test hashes the freshly compiled execution graph. Build it
+    # first so a clean checkout never compares against a stale local artifact.
+    compile_rc, compile_out = _run([PY, "tools/compiler_v7.py"])
+    if compile_rc:
+        return s.done(False, f"compiler failed: {compile_out[-160:]}")
     rc, out = _run([PY, "tools/test_v7.py"])
     m = re.search(r"(\d+)/(\d+) passed", out)
     if not m:
         return s.done(False, "no result line")
     got, tot = int(m.group(1)), int(m.group(2))
     return s.done(rc == 0 and got == tot, f"{got}/{tot} passed")
+
+
+def stage_anto_conformance() -> Stage:
+    """Run Anto's declared 22-case contract suite when its handoff is present."""
+    s = Stage("Anto transition conformance")
+    suite = HANDOFF_DEFAULT / "benchmark" / "transition_engine_conformance_cases_v1.json"
+    state = HANDOFF_DEFAULT / "canonical" / "PANTA_Keystone_Canonical_Investment_Case_v1.1.json"
+    if not (suite.exists() and state.exists()):
+        return s.done(True, "skipped — Anto handoff not installed")
+    rc, out = _run([PY, "tools/run_conformance.py", "--suite", str(suite), "--state", str(state)])
+    m = re.search(r"(\d+)/(\d+) conformance cases passed", out)
+    if not m:
+        return s.done(False, "no conformance result")
+    got, total = map(int, m.groups())
+    return s.done(rc == 0 and got == total, f"{got}/{total} passed")
 
 
 def stage_e2e() -> Stage:
@@ -135,7 +157,6 @@ def _runtime_bundle() -> Path | None:
         )):
             return candidate
     return None
-
 
 def stage_dynamics_tests() -> Stage:
     s = Stage("Embedded dynamics unit suite")
@@ -266,9 +287,9 @@ def main() -> int:
     print("PE OS — FULL VERIFICATION")
     print(bar)
 
-    stages = [stage_regression(), stage_v7(), stage_e2e(), stage_cascade(),
-              stage_grounding(), stage_dynamics_tests(),
-              stage_dynamics_runtime(), stage_independent(kit)]
+    stages = [stage_regression(), stage_v7(), stage_anto_conformance(), stage_e2e(), stage_cascade(),
+              stage_grounding(), stage_dynamics_tests(), stage_dynamics_runtime(),
+              stage_independent(kit)]
 
     print()
     for s in stages:

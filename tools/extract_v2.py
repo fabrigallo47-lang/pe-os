@@ -558,14 +558,74 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
     return chunks
 
 
+def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
+    """Create reproducible, cell-addressable chunks from an Excel workbook.
+
+    A workbook is not prose: formulas and their cached outputs carry different
+    meanings.  The chunk body keeps both, while the locator names the exact
+    sheet and cell range so a reviewer can verify any extracted claim.
+    """
+    try:
+        import openpyxl
+    except ImportError:
+        sys.exit("openpyxl required for Excel extraction: .venv/bin/pip install openpyxl")
+    try:
+        formulas = openpyxl.load_workbook(path, data_only=False, read_only=True)
+        values = openpyxl.load_workbook(path, data_only=True, read_only=True)
+    except Exception as exc:
+        sys.exit(f"Cannot read workbook {path.name}: {exc}")
+    src = _source_record(path)
+    chunks: list[Chunk] = []
+    for sheet_name in formulas.sheetnames:
+        ws, value_ws = formulas[sheet_name], values[sheet_name]
+        pending: list[str] = []
+        start_row = end_row = None
+        def flush() -> None:
+            nonlocal pending, start_row, end_row
+            if not pending or start_row is None or end_row is None:
+                return
+            body = f"Workbook: {path.name}\nSheet: {sheet_name}\n" + "\n".join(pending)
+            chunks.append(Chunk(
+                chunk_id=_chunk_hash(body),
+                locator=f"{path.name}::{sheet_name}!{start_row}:{end_row}",
+                body=body, source_path=str(path), source_type="xlsx",
+                source_record=src, word_count=len(body.split()),
+            ))
+            pending, start_row, end_row = [], None, None
+        for row_number, (row, cached_row) in enumerate(zip(ws.iter_rows(), value_ws.iter_rows()), start=1):
+            cells: list[str] = []
+            for cell, cached_cell in zip(row, cached_row):
+                raw = cell.value
+                if raw is None:
+                    continue
+                if isinstance(raw, str) and raw.startswith("="):
+                    cells.append(f"{cell.coordinate}=FORMULA({raw}); cached={cached_cell.value!r}")
+                else:
+                    cells.append(f"{cell.coordinate}={raw}")
+            if not cells:
+                continue
+            line = " | ".join(cells)
+            projected = len((" ".join(pending + [line])).split())
+            if pending and projected > max_words:
+                flush()
+            if start_row is None:
+                start_row = row_number
+            end_row = row_number
+            pending.append(line)
+        flush()
+    return chunks
+
+
 def parse_source(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
     suffix = path.suffix.lower()
     if suffix == ".pdf":
         return parse_pdf(path, max_words)
     elif suffix in (".md", ".txt", ".html"):
         return parse_markdown(path, max_words)
+    elif suffix in (".xlsx", ".xlsm"):
+        return parse_xlsx(path, max_words)
     else:
-        sys.exit(f"Unsupported source type: {suffix}. Use .pdf, .md, or .txt")
+        sys.exit(f"Unsupported source type: {suffix}. Use .pdf, .md, .txt, .xlsx, or .xlsm")
 
 
 def load_manifest(manifest: str, deal: str) -> list[Path]:
@@ -574,7 +634,7 @@ def load_manifest(manifest: str, deal: str) -> list[Path]:
     paths = []
     for key in keys:
         # Try stem match in vault/inbox
-        for ext in (".md", ".txt", ".pdf"):
+        for ext in (".md", ".txt", ".pdf", ".xlsx", ".xlsm"):
             candidate = VAULT_INBOX / f"{key}{ext}"
             if candidate.exists():
                 paths.append(candidate)
@@ -936,7 +996,7 @@ def main() -> int:
     src_group = ap.add_mutually_exclusive_group(required=True)
     src_group.add_argument("--manifest", choices=["K-PRE", "K-IC", "K-LIVE", "ALL"],
                            help="Run over all sources in manifest (no temporal leakage)")
-    src_group.add_argument("--source", help="Single source file (.pdf, .md, .txt)")
+    src_group.add_argument("--source", help="Single source file (.pdf, .md, .txt, .xlsx, .xlsm)")
     ap.add_argument("--deal", required=True, help="Deal slug (e.g. keystone)")
     ap.add_argument("--output", default="pipeline_out/e3",
                     help="Output directory (default: pipeline_out/e3)")

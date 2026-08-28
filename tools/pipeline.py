@@ -85,26 +85,38 @@ def _pdf_to_text(path: Path) -> str:
 
 
 def _xlsx_to_text(path: Path) -> str:
-    """Convert xlsx to a plain-text table representation for the LLM."""
+    """Convert a workbook to evidence text without discarding formulas or cell locators."""
     try:
         import openpyxl
-        wb = openpyxl.load_workbook(path, data_only=True)
+        # Formula text identifies a model relationship; cached values identify
+        # the last calculated value. Both are evidence and neither may replace
+        # the other silently.
+        wb = openpyxl.load_workbook(path, data_only=False, read_only=True)
+        cached = openpyxl.load_workbook(path, data_only=True, read_only=True)
         parts: list[str] = []
         for name in wb.sheetnames:
             ws = wb[name]
-            rows = list(ws.iter_rows(values_only=True))
-            if not rows:
+            cached_ws = cached[name]
+            lines: list[str] = []
+            for row, cached_row in zip(ws.iter_rows(), cached_ws.iter_rows()):
+                cells: list[str] = []
+                for cell, cached_cell in zip(row, cached_row):
+                    value = cell.value
+                    if value is None:
+                        continue
+                    if isinstance(value, str) and value.startswith("="):
+                        cached_value = cached_cell.value
+                        cells.append(f"{cell.coordinate}=FORMULA({value}); cached={cached_value!r}")
+                    else:
+                        cells.append(f"{cell.coordinate}={value}")
+                if cells:
+                    lines.append(" | ".join(cells))
+            if not lines:
                 continue
-            # Drop fully-empty rows
-            non_empty = [r for r in rows if any(c is not None for c in r)]
-            if not non_empty:
-                continue
-            lines = ["\t".join("" if c is None else str(c) for c in r)
-                     for r in non_empty]
             parts.append(f"## Sheet: {name}\n" + "\n".join(lines))
         return "\n\n".join(parts)
-    except ImportError:
-        pass
+    except ImportError as exc:
+        raise RuntimeError("Cannot convert workbook. Install openpyxl: .venv/bin/pip install openpyxl") from exc
     # Fallback: xlsx_parser for LBO-style workbooks
     try:
         from tools.xlsx_parser import parse_workbook
@@ -114,17 +126,17 @@ def _xlsx_to_text(path: Path) -> str:
         return "\n".join(lines)
     except Exception:
         pass
-    raise RuntimeError(
-        "Cannot convert xlsx. Install openpyxl: .venv/bin/pip install openpyxl"
-    )
+    raise RuntimeError("Cannot convert workbook; openpyxl could not read it")
 
 
 def file_to_text(path: Path) -> str:
     suffix = path.suffix.lower()
     if suffix == ".pdf":
         return _pdf_to_text(path)
-    if suffix in (".xlsx", ".xls", ".xlsm"):
+    if suffix in (".xlsx", ".xlsm"):
         return _xlsx_to_text(path)
+    if suffix == ".xls":
+        raise RuntimeError("Legacy .xls is not supported; save it as .xlsx before ingesting.")
     # Plaintext formats: md, txt, csv, html, json
     return path.read_text(encoding="utf-8", errors="replace")
 

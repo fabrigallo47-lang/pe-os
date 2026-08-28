@@ -13,6 +13,7 @@ import base64
 import hashlib
 import json
 import logging
+import os
 import re
 import sqlite3
 import subprocess
@@ -47,6 +48,7 @@ from backend.dynamics import (
 )
 
 ROOT = Path(__file__).resolve().parent.parent
+INDEX_DB = Path(os.environ["PEOS_DB"]) if os.environ.get("PEOS_DB") else ROOT / ".index" / "vault.db"
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "ui" / "07_ENGINEERING_CONTRACTS_AND_ADAPTERS" / "adapters"))
 
@@ -1283,17 +1285,77 @@ async def new_session(payload: dict = {}) -> dict:
 
 @v20.get("/search")
 def search(q: str = "", case_id: str = "keystone") -> dict:
-    db_path = ROOT / ".index" / "vault.db"
-    if not db_path.exists():
+    """Search the derived vault index using the V20 command-palette contract."""
+    if not INDEX_DB.exists():
         return {"results": []}
+
+    term = q.strip()
+    pattern = f"%{term}%"
     try:
-        con = sqlite3.connect(str(db_path))
-        rows = con.execute(
-            "SELECT frontmatter, title FROM nodes WHERE title LIKE ? OR frontmatter LIKE ? LIMIT 20",
-            (f"%{q}%", f"%{q}%"),
-        ).fetchall()
-        con.close()
-        return {"results": [{"frontmatter": json.loads(fm), "title": t} for fm, t in rows]}
+        with sqlite3.connect(str(INDEX_DB)) as con:
+            rows = con.execute(
+                """
+                SELECT id, type, title, subject, value, frontmatter
+                FROM nodes
+                WHERE LOWER(COALESCE(deal, '')) = LOWER(?)
+                  AND LOWER(COALESCE(type, '')) IN ('claim', 'question', 'artifact')
+                  AND (
+                    ? = ''
+                    OR COALESCE(id, '') LIKE ? COLLATE NOCASE
+                    OR COALESCE(title, '') LIKE ? COLLATE NOCASE
+                    OR COALESCE(subject, '') LIKE ? COLLATE NOCASE
+                    OR COALESCE(value, '') LIKE ? COLLATE NOCASE
+                    OR COALESCE(frontmatter, '') LIKE ? COLLATE NOCASE
+                  )
+                ORDER BY
+                  CASE LOWER(type) WHEN 'claim' THEN 0 WHEN 'question' THEN 1 ELSE 2 END,
+                  LOWER(COALESCE(title, subject, id)),
+                  id
+                LIMIT 50
+                """,
+                (case_id, term, pattern, pattern, pattern, pattern, pattern),
+            ).fetchall()
+
+        results = []
+        for node_id, node_type, title, subject, value, raw_frontmatter in rows:
+            try:
+                frontmatter = json.loads(raw_frontmatter or "{}")
+            except (TypeError, json.JSONDecodeError):
+                frontmatter = {}
+            normalized_type = str(node_type or "").upper()
+            if normalized_type == "CLAIM":
+                label = subject or frontmatter.get("statement") or title or node_id
+                route = "deal-command"
+            elif normalized_type == "QUESTION":
+                label = frontmatter.get("question") or frontmatter.get("title") or title or node_id
+                route = "deal-command"
+            else:
+                label = frontmatter.get("title") or title or node_id
+                route = "artifacts"
+            search_text = " ".join(
+                str(item)
+                for item in (
+                    node_id,
+                    title,
+                    subject,
+                    value,
+                    frontmatter.get("statement"),
+                    frontmatter.get("question"),
+                    frontmatter.get("bearing"),
+                    frontmatter.get("kind"),
+                )
+                if item not in (None, "")
+            )
+            results.append(
+                {
+                    "id": node_id,
+                    "type": normalized_type,
+                    "label": str(label),
+                    "route": route,
+                    "search_text": search_text,
+                }
+            )
+        return {"results": results}
     except Exception as exc:
         return {"results": [], "error": str(exc)}
 

@@ -94,14 +94,8 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "settle": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/settle"},
     "replay": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/replay"},
     "prepareWork": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/work-items/{work_id}/prepare"},
-    "compilerProposals": {
-        "status": "UNAVAILABLE", "method": "GET", "path": "/cases/{case_id}/compiler-proposals",
-        "reason": "Compiler-proposal projection is not implemented for connected mode.",
-    },
-    "reviewCompilerProposal": {
-        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/compiler-proposals/{kind}/{proposal_id}/review",
-        "reason": "Compiler-proposal review is not implemented; no review was recorded.",
-    },
+    "compilerProposals": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/compiler-proposals"},
+    "reviewCompilerProposal": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/compiler-proposals/{kind}/{proposal_id}/review"},
     "prepareMission": {
         "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/missions/{mission_id}/prepare",
         "reason": "Connected mission preparation is not implemented; no mission was prepared.",
@@ -119,7 +113,16 @@ _inbox_lock = threading.Lock()
 _notes_lock = threading.Lock()
 _source_lock = threading.Lock()
 _work_drafts_lock = threading.Lock()
+_compiler_reviews_lock = threading.Lock()
 _registry_lock = threading.RLock()
+
+_COMPILER_PROPOSAL_COLLECTIONS = {
+    "discrepancy": "discrepancy_candidates",
+    "derivation": "derivations",
+    "hypothesis": "hypotheses",
+    "spine": "spine_change_proposals",
+}
+_COMPILER_REVIEW_DECISIONS = {"ADMITTED", "REJECTED", "CORRECTED", "ACCEPTED"}
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -559,6 +562,51 @@ def _case_vault_dir(case_id: str) -> Path:
 def _notes_dir(case_id: str) -> Path:
     return _case_vault_dir(case_id) / "notes"
 
+
+def _compiler_proposal_id(kind: str, item: dict) -> str:
+    keys = {
+        "discrepancy": ("discrepancy_id", "id"),
+        "derivation": ("derivation_id", "id"),
+        "hypothesis": ("hypothesis_id", "id"),
+        "spine": ("proposal_id", "id"),
+    }[kind]
+    return str(next((item.get(key) for key in keys if item.get(key)), ""))
+
+
+def _load_compiler_reviews(case_id: str) -> dict[str, dict]:
+    review_dir = _case_vault_dir(case_id) / "compiler_reviews"
+    if not review_dir.exists():
+        return {}
+    reviews: dict[str, dict] = {}
+    records = [_note_record(path) for path in sorted(review_dir.glob("compiler-review-*.md"))]
+    records.sort(key=lambda item: (str(item.get("known_at", "")), str(item.get("review_id", ""))))
+    for record in records:
+        kind = str(record.get("kind") or "")
+        object_id = str(record.get("object_id") or "")
+        if kind in _COMPILER_PROPOSAL_COLLECTIONS and object_id:
+            reviews[f"{kind}:{object_id}"] = record
+    return reviews
+
+
+def _apply_compiler_reviews(projection: dict, case_id: str) -> dict:
+    """Overlay review state without mutating proposal facts or Current case state."""
+    deal = projection.get("deal") if isinstance(projection, dict) else None
+    if not isinstance(deal, dict):
+        return projection
+    reviews = _load_compiler_reviews(case_id)
+    for kind, collection in _COMPILER_PROPOSAL_COLLECTIONS.items():
+        reviewed_items = []
+        for original in deal.get(collection, []) or []:
+            item = dict(original)
+            object_id = _compiler_proposal_id(kind, item)
+            review = reviews.get(f"{kind}:{object_id}")
+            if review:
+                item["review_status"] = review.get("decision")
+                item["latest_review"] = review
+            reviewed_items.append(item)
+        deal[collection] = reviewed_items
+    return projection
+
 def _load_json_safe(path: Path) -> Any:
     return json.loads(path.read_text()) if path.exists() else {}
 
@@ -910,10 +958,10 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
         result["events"] = projection["events"]
         result["actor_directory"] = projection["actor_directory"]
         result["disclosure"] = projection["disclosure"]
-        return result
+        return _apply_compiler_reviews(result, case_id)
     except Exception as exc:
         projection["_adapter_error"] = str(exc)
-        return projection
+        return _apply_compiler_reviews(projection, case_id)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -1160,13 +1208,97 @@ def list_work_drafts(case_id: str, work_id: str) -> dict:
 
 
 @v20.get("/cases/{case_id}/compiler-proposals")
-def compiler_proposals_unavailable(case_id: str) -> JSONResponse:
-    return _capability_unavailable("compilerProposals")
+def compiler_proposals(case_id: str) -> dict:
+    projection = _apply_compiler_reviews(_build_projection(case_id), case_id)
+    deal = projection.get("deal", {})
+    return {
+        "discrepancies": deal.get("discrepancy_candidates", []),
+        "derivations": deal.get("derivations", []),
+        "hypotheses": deal.get("hypotheses", []),
+        "spine_changes": deal.get("spine_change_proposals", []),
+    }
 
 
 @v20.post("/cases/{case_id}/compiler-proposals/{kind}/{proposal_id}/review")
-def review_compiler_proposal_unavailable(case_id: str, kind: str, proposal_id: str) -> JSONResponse:
-    return _capability_unavailable("reviewCompilerProposal")
+def review_compiler_proposal(
+    case_id: str,
+    kind: str,
+    proposal_id: str,
+    payload: dict | None = None,
+) -> dict:
+    """Record a professional proposal disposition without silently mutating Current."""
+    payload = payload or {}
+    if kind not in _COMPILER_PROPOSAL_COLLECTIONS:
+        raise HTTPException(400, "kind must be discrepancy, derivation, hypothesis or spine")
+    decision = str(payload.get("decision") or "").upper()
+    if decision not in _COMPILER_REVIEW_DECISIONS:
+        raise HTTPException(400, "decision must be ADMITTED, ACCEPTED, CORRECTED or REJECTED")
+
+    projection = _apply_compiler_reviews(_build_projection(case_id), case_id)
+    collection = _COMPILER_PROPOSAL_COLLECTIONS[kind]
+    proposal = next(
+        (
+            item for item in projection.get("deal", {}).get(collection, [])
+            if _compiler_proposal_id(kind, item) == proposal_id
+        ),
+        None,
+    )
+    if proposal is None:
+        raise HTTPException(404, f"Compiler proposal not found: {proposal_id}")
+
+    idempotency_key = str(payload.get("idempotency_key") or "").strip()
+    if idempotency_key:
+        identity_seed = f"{case_id}|{kind}|{proposal_id}|{idempotency_key}"
+        identity = hashlib.sha256(identity_seed.encode("utf-8")).hexdigest()[:16]
+    else:
+        identity = uuid.uuid4().hex[:16]
+    review_id = f"REVIEW-{identity.upper()}"
+    review_dir = _case_vault_dir(case_id) / "compiler_reviews"
+    review_path = review_dir / f"compiler-review-{identity}.md"
+
+    with _compiler_reviews_lock:
+        if review_path.exists():
+            review = _note_record(review_path)
+            replayed = True
+        else:
+            known_at = _now_iso()
+            review = {
+                "type": "compiler_review",
+                "id": review_id,
+                "review_id": review_id,
+                "case": case_id,
+                "kind": kind,
+                "object_id": proposal_id,
+                "decision": decision,
+                "rationale": payload.get("rationale"),
+                "actor_id": payload.get("actor_id", "professional-reviewer"),
+                "effective_date": payload.get("effective_date") or known_at[:10],
+                "known_at": known_at,
+                "idempotency_key": idempotency_key or None,
+                "institutional_effect": "REVIEW_RECORDED_ONLY",
+                "current_mutation": False,
+                "written-by": "v20-api",
+            }
+            review_dir.mkdir(parents=True, exist_ok=True)
+            with review_path.open("x", encoding="utf-8") as handle:
+                handle.write(
+                    "---\n"
+                    + yaml.safe_dump(review, sort_keys=False, allow_unicode=True)
+                    + "---\n\n"
+                    + f"Professional review of {kind} proposal {proposal_id}: {decision}.\n"
+                )
+            replayed = False
+
+    updated_projection = _apply_compiler_reviews(_build_projection(case_id), case_id)
+    as_of_date = updated_projection.get("deal", {}).get("as_of_date") or _today()
+    state_id = updated_projection.get("deal", {}).get("as_of_state_id") or _current_state_id(case_id)
+    return {
+        "review": review,
+        "projection": updated_projection,
+        "context": _make_context(case_id, state_id, as_of_date),
+        "registry": [],
+        "idempotent_replay": replayed,
+    }
 
 
 @v20.post("/cases/{case_id}/missions/{mission_id}/prepare")

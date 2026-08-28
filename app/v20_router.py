@@ -458,6 +458,17 @@ def _read_frontmatter(path: Path) -> dict:
 def _load_json_safe(path: Path) -> Any:
     return json.loads(path.read_text()) if path.exists() else {}
 
+
+def _current_state_id(case_id: str) -> str:
+    """Use the settled runtime state as the authoritative Current version."""
+    runtime_state = _load_json_safe(PIPELINE_OUT / "runtime_state.json")
+    if isinstance(runtime_state, dict) and runtime_state.get("state_id"):
+        return str(runtime_state["state_id"])
+    current_graph = _load_json_safe(PIPELINE_OUT / "current_graph.json")
+    if isinstance(current_graph, dict) and current_graph.get("state_id"):
+        return str(current_graph["state_id"])
+    return f"STATE-{case_id.upper()}-CURRENT"
+
 def _load_profile(case_id: str) -> dict:
     p = VAULT / "deals" / case_id / "deal_profile.json"
     return json.loads(p.read_text()) if p.exists() else {}
@@ -639,7 +650,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
 
     today = _today()
     as_of_date = as_of_date or today
-    state_id = current_graph.get("state_id", f"STATE-{case_id.upper()}-CURRENT")
+    state_id = _current_state_id(case_id)
 
     # All the dates for temporal
     available_dates = sorted(set(
@@ -785,8 +796,7 @@ def bootstrap_flat(case_id: str | None = None, actor: str | None = None) -> dict
         cid = deals[0] if deals else cid
     profile = _load_profile(cid)
     today = _today()
-    cg = _load_json_safe(PIPELINE_OUT / "current_graph.json")
-    state_id = cg.get("state_id", f"STATE-{cid.upper()}-CURRENT") if isinstance(cg, dict) else f"STATE-{cid.upper()}-CURRENT"
+    state_id = _current_state_id(cid)
     session_id = f"SES-{uuid.uuid4().hex[:8].upper()}"
     return {
         "session_id": session_id,
@@ -803,8 +813,7 @@ def bootstrap(case_id: str) -> dict:
         raise HTTPException(404, f"Deal not found: {case_id}")
     profile = _load_profile(case_id)
     today = _today()
-    cg = _load_json_safe(PIPELINE_OUT / "current_graph.json")
-    state_id = cg.get("state_id", f"STATE-{case_id.upper()}-CURRENT") if isinstance(cg, dict) else f"STATE-{case_id.upper()}-CURRENT"
+    state_id = _current_state_id(case_id)
     session_id = f"SES-{uuid.uuid4().hex[:8].upper()}"
     return {
         "session_id": session_id,
@@ -824,8 +833,7 @@ def projection(case_id: str, as_of_date: str | None = None) -> dict:
         logger.error("PROJECTION BUILD FAILED case=%s err=%s", case_id, exc)
         raise HTTPException(500, f"Projection build failed: {exc}")
     today = _today()
-    cg = _load_json_safe(PIPELINE_OUT / "current_graph.json")
-    state_id = cg.get("state_id", f"STATE-{case_id.upper()}-CURRENT") if isinstance(cg, dict) else f"STATE-{case_id.upper()}-CURRENT"
+    state_id = _current_state_id(case_id)
     if proj.get("_adapter_error"):
         logger.warning("PROJECTION adapter_error case=%s err=%s", case_id, proj["_adapter_error"])
     logger.info("PROJECTION OK case=%s claims=%d questions=%d",
@@ -1215,6 +1223,12 @@ async def settle_run(
     event_id = run["event_id"]
     decision = "accepted"
     actor = payload.get("actor_id", "partner-001")
+    selected_change_ids = payload.get("selected_change_ids")
+    if selected_change_ids is None:
+        selected_change_ids = run.get("selected_change_ids", [])
+    if not isinstance(selected_change_ids, list):
+        raise HTTPException(400, "selected_change_ids must be an array")
+    selected_change_ids = [str(change_id) for change_id in selected_change_ids]
 
     human_stops = run["transition_output"].get("human_stops", [])
     if human_stops:
@@ -1253,6 +1267,7 @@ async def settle_run(
         raise HTTPException(409, str(exc)) from exc
     run["settled_state_id"] = new_state_id
     run["status"] = "SETTLED"
+    run["selected_change_ids"] = list(selected_change_ids)
     _store_run(run_id, run)
 
     # Append the institutional settlement event only after runtime persistence
@@ -1260,10 +1275,24 @@ async def settle_run(
     events_dir = VAULT / "deals" / case_id / "events"
     events_dir.mkdir(parents=True, exist_ok=True)
     settle_file = events_dir / f"e-{case_id}-settle-{ts}.md"
+    settlement_fm = {
+        "id": f"e-{case_id}-settle-{ts}",
+        "type": "settlement",
+        "settles": event_id,
+        "run_id": run_id,
+        "candidate_state_id": run["candidate_state_id"],
+        "current_state_id": new_state_id,
+        "selected-change-ids": list(selected_change_ids),
+        "replay_hash": run["transition_output"].get("replay_hash", "sha256:settled"),
+        "decision": decision,
+        "actor": actor,
+        "timestamp": ts,
+        "written-by": "v20-api",
+    }
     settle_file.write_text(
-        f"---\nid: e-{case_id}-settle-{ts}\ntype: settlement\n"
-        f"settles: {event_id}\nrun_id: {run_id}\ndecision: {decision}\n"
-        f"actor: {actor}\ntimestamp: {ts}\nwritten-by: v20-api\n---\n"
+        "---\n" + yaml.safe_dump(settlement_fm, sort_keys=False, allow_unicode=True)
+        + "---\n",
+        encoding="utf-8",
     )
     background_tasks.add_task(_rebuild_index)
 
@@ -1277,7 +1306,7 @@ async def settle_run(
         "candidate_state_id": run["candidate_state_id"],
         "prior_state_id": run["transition_output"].get("prior_state_id", "STATE-PRIOR"),
         "current_state_id": new_state_id,
-        "selected_change_ids": payload.get("selected_change_ids", []),
+        "selected_change_ids": list(selected_change_ids),
         "partial": run["transition_output"].get("partial_settlement_status", {}).get(
             "candidate"
         ) == "PARTIAL",
@@ -1327,7 +1356,43 @@ async def settle_event(
 
 @v20.post("/runs/{run_id}/prepare")
 async def prepare_run(run_id: str, payload: dict = {}) -> dict:
-    return {"run_id": run_id, "status": "PREPARED", "selected_change_ids": payload.get("selected_change_ids", [])}
+    run = _runs.get(run_id)
+    if not run:
+        raise HTTPException(404, f"Run not found: {run_id}")
+    selected_change_ids = payload.get("selected_change_ids", [])
+    if not isinstance(selected_change_ids, list):
+        raise HTTPException(400, "selected_change_ids must be an array")
+    selected_change_ids = [str(change_id) for change_id in selected_change_ids]
+    run["selected_change_ids"] = selected_change_ids
+    run["status"] = "PREPARED"
+    _store_run(run_id, run)
+
+    ts = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    case_id = run["case_id"]
+    event_record_id = f"e-{case_id}-run-prepared-{ts}-{uuid.uuid4().hex[:8]}"
+    events_dir = VAULT / "deals" / case_id / "events"
+    events_dir.mkdir(parents=True, exist_ok=True)
+    event_fm = {
+        "id": event_record_id,
+        "type": "run_prepared",
+        "run_id": run_id,
+        "candidate_state_id": run["candidate_state_id"],
+        "selected-change-ids": selected_change_ids,
+        "replay_hash": run["transition_output"].get("replay_hash", "sha256:live"),
+        "actor": payload.get("actor_id", "preparer-001"),
+        "timestamp": ts,
+        "written-by": "v20-api",
+    }
+    (events_dir / f"{event_record_id}.md").write_text(
+        "---\n" + yaml.safe_dump(event_fm, sort_keys=False, allow_unicode=True)
+        + "---\n",
+        encoding="utf-8",
+    )
+    return {
+        "run_id": run_id,
+        "status": "PREPARED",
+        "selected_change_ids": selected_change_ids,
+    }
 
 
 @v20.post("/runs/{run_id}/authority/attest")

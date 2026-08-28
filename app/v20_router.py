@@ -80,14 +80,8 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "admitEvent": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/events/{event_id}/admit"},
     "prepareRun": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/prepare"},
     "attest": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/authority/attest"},
-    "createPackage": {
-        "status": "UNAVAILABLE", "method": "POST", "path": "/runs/{run_id}/execution-packages",
-        "reason": "Execution-package creation is not implemented; no package was created.",
-    },
-    "sendPackage": {
-        "status": "UNAVAILABLE", "method": "POST", "path": "/execution-packages/{package_id}/send",
-        "reason": "Execution-package delivery is not implemented; no external effect occurred.",
-    },
+    "createPackage": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/execution-packages"},
+    "sendPackage": {"status": "AVAILABLE", "method": "POST", "path": "/execution-packages/{package_id}/send"},
     "settle": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/settle"},
     "replay": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/replay"},
     "prepareWork": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/work-items/{work_id}/prepare"},
@@ -156,6 +150,121 @@ def _capability_unavailable(action: str) -> JSONResponse:
             }
         },
     )
+
+
+def _run_packages(run: dict) -> dict[str, dict]:
+    packages = run.setdefault("execution_packages", {})
+    if isinstance(packages, list):
+        packages = {
+            str(item.get("execution_package_id")): item
+            for item in packages
+            if isinstance(item, dict) and item.get("execution_package_id")
+        }
+        run["execution_packages"] = packages
+    return packages
+
+
+def _find_execution_package(package_id: str) -> tuple[str, dict, dict] | None:
+    for run_id, run in _runs.items():
+        package = _run_packages(run).get(package_id)
+        if package:
+            return run_id, run, package
+    return None
+
+
+def _execution_course(case_id: str, course_id: str) -> tuple[dict, dict]:
+    projection = _build_projection(case_id)
+    deal = projection.get("deal", {})
+    decision_room = deal.get("decisionRoom") or deal.get("decision_room") or {}
+    course = next(
+        (item for item in decision_room.get("courses", []) if item.get("id") == course_id),
+        {},
+    )
+    execution_room = deal.get("executionRoom") or deal.get("execution_room") or {}
+    return course, execution_room
+
+
+def _package_payload_hash(package: dict) -> str:
+    mutable = {"status", "ack_id", "acknowledged_at", "failed_at"}
+    payload = {key: value for key, value in package.items() if key not in mutable | {"artifact_hash"}}
+    encoded = json.dumps(payload, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def _build_execution_package(run_id: str, authority_record: dict) -> dict:
+    run = _runs[run_id]
+    if run.get("status") != "PREPARED":
+        raise HTTPException(409, "Run must be PREPARED before package creation")
+    if authority_record.get("run_id") != run_id:
+        raise HTTPException(409, "Authority record belongs to another run")
+    if authority_record.get("candidate_state_id") != run.get("candidate_state_id"):
+        raise HTTPException(409, "Authority record belongs to another Candidate")
+    if authority_record.get("status") != "ATTESTED":
+        raise HTTPException(409, "Execution package requires an ATTESTED authority record")
+    if authority_record.get("effect_type") != "EXTERNAL_PACKAGE":
+        raise HTTPException(409, "Attested course does not require an execution package")
+
+    identity = hashlib.sha256(authority_record["authority_record_id"].encode("utf-8")).hexdigest()[:16]
+    package_id = f"EXEC-{identity.upper()}"
+    existing = _run_packages(run).get(package_id)
+    if existing:
+        return existing
+
+    course, execution_room = _execution_course(run["case_id"], authority_record["course_id"])
+    execution = course.get("execution") or {}
+    known_at = _now_iso()
+    package = {
+        "execution_package_id": package_id,
+        "run_id": run_id,
+        "candidate_state_id": run["candidate_state_id"],
+        "course_id": authority_record["course_id"],
+        "authority_record_id": authority_record["authority_record_id"],
+        "source_artifact_hash": authority_record["artifact_hash"],
+        "package_type": execution_room.get("type", "Execution package"),
+        "destination": execution_room.get("recipient"),
+        "sender": execution_room.get("sender"),
+        "subject": execution_room.get("subject"),
+        "message": execution_room.get("message"),
+        "attachments": execution_room.get("attachments", []),
+        "checks": execution_room.get("checks", []),
+        "amount": execution.get("amount"),
+        "currency": execution.get("currency"),
+        "document_version": execution.get("document_version"),
+        "status": "READY",
+        "created_at": known_at,
+        "effective_date": known_at[:10],
+        "known_at": known_at,
+        "synthetic": True,
+        "no_external_effects": True,
+    }
+    package["artifact_hash"] = _package_payload_hash(package)
+    _run_packages(run)[package_id] = package
+    _store_run(run_id, run)
+    return package
+
+
+def _validate_execution_package_scope(
+    run: dict,
+    authority_records: list[dict],
+    package_ids: list[str],
+) -> None:
+    packages = _run_packages(run)
+    for record in authority_records:
+        if record.get("effect_type") != "EXTERNAL_PACKAGE":
+            continue
+        matches = [
+            packages.get(package_id)
+            for package_id in package_ids
+            if packages.get(package_id)
+        ]
+        if not any(
+            package.get("authority_record_id") == record.get("authority_record_id")
+            and package.get("candidate_state_id") == run.get("candidate_state_id")
+            and package.get("status") == "ACCEPTED"
+            and package.get("artifact_hash") == _package_payload_hash(package)
+            for package in matches
+        ):
+            raise HTTPException(409, "External execution package lacks a scoped simulated acknowledgment")
 
 
 def _read_registry(path: Path, field: str) -> dict[str, dict]:
@@ -1209,13 +1318,53 @@ def list_ic_records(case_id: str) -> dict:
 
 
 @v20.post("/runs/{run_id}/execution-packages")
-def create_execution_package_unavailable(run_id: str) -> JSONResponse:
-    return _capability_unavailable("createPackage")
+def create_execution_package(run_id: str, payload: dict | None = None) -> dict:
+    run = _runs.get(run_id)
+    if not run:
+        raise HTTPException(404, f"Run not found: {run_id}")
+    payload = payload or {}
+    record_id = str(payload.get("authority_record_id") or "")
+    records = run.get("authority_records", [])
+    record = next(
+        (item for item in records if not record_id or item.get("authority_record_id") == record_id),
+        None,
+    )
+    if record is None:
+        raise HTTPException(409, "A scoped authority record is required")
+    package = _build_execution_package(run_id, record)
+    return {"execution_package": package, "registry": []}
 
 
 @v20.post("/execution-packages/{package_id}/send")
-def send_execution_package_unavailable(package_id: str) -> JSONResponse:
-    return _capability_unavailable("sendPackage")
+def send_execution_package(package_id: str, payload: dict | None = None):
+    located = _find_execution_package(package_id)
+    if not located:
+        raise HTTPException(404, f"Execution package not found: {package_id}")
+    run_id, run, package = located
+    if package.get("artifact_hash") != _package_payload_hash(package):
+        raise HTTPException(409, "Execution package immutable payload hash mismatch")
+    payload = payload or {}
+    known_at = _now_iso()
+    if payload.get("simulate_failure"):
+        package["status"] = "FAILED"
+        package["failed_at"] = known_at
+        _store_run(run_id, run)
+        return JSONResponse(
+            status_code=503,
+            content={
+                "error": {
+                    "code": "DELIVERY_FAILED",
+                    "message": "Simulated delivery failed; nothing was sent.",
+                    "details": {"execution_package_id": package_id},
+                }
+            },
+        )
+    if package.get("status") != "ACCEPTED":
+        package["status"] = "ACCEPTED"
+        package["ack_id"] = "ACK-" + hashlib.sha256(package_id.encode("utf-8")).hexdigest()[:12].upper()
+        package["acknowledged_at"] = known_at
+        _store_run(run_id, run)
+    return {"execution_package": package, "registry": []}
 
 
 @v20.post("/cases/{case_id}/work-items/{work_id}/prepare")
@@ -1753,13 +1902,13 @@ async def settle_run(
         raise HTTPException(400, "selected_change_ids must be an array")
     selected_change_ids = [str(change_id) for change_id in selected_change_ids]
 
+    supplied_record_ids = set(payload.get("authority_record_ids", []))
+    recorded = {
+        item["authority_record_id"]: item
+        for item in run.get("authority_records", [])
+    }
     human_stops = run["transition_output"].get("human_stops", [])
     if human_stops:
-        supplied_record_ids = set(payload.get("authority_record_ids", []))
-        recorded = {
-            item["authority_record_id"]: item
-            for item in run.get("authority_records", [])
-        }
         covered_stops = {
             recorded[record_id].get("human_stop_id")
             for record_id in supplied_record_ids
@@ -1775,6 +1924,10 @@ async def settle_run(
                 "Candidate requires recorded human approval before settlement: "
                 + ", ".join(missing),
             )
+
+    scoped_records = [recorded[record_id] for record_id in supplied_record_ids if record_id in recorded]
+    package_ids = [str(item) for item in payload.get("execution_package_ids", [])]
+    _validate_execution_package_scope(run, scoped_records, package_ids)
 
     ts = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     today = _today()
@@ -1923,6 +2076,8 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
     run = _runs.get(run_id)
     if not run:
         raise HTTPException(404, f"Run not found: {run_id}")
+    if run.get("status") != "PREPARED":
+        raise HTTPException(409, "Run must be PREPARED before authority attestation")
     ts = _now_iso()
     today = _today()
     human_stop_id = payload.get("human_stop_id", "")
@@ -1933,36 +2088,61 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
     }
     if declared_stops and human_stop_id not in declared_stops:
         raise HTTPException(409, "human_stop_id is not part of this Candidate")
+    if payload.get("candidate_state_id") != run.get("candidate_state_id"):
+        raise HTTPException(409, "Authority request Candidate does not match the run")
+    course_id = str(payload.get("course_id") or "")
+    if not course_id:
+        raise HTTPException(400, "course_id is required")
+    if not payload.get("artifact_hash"):
+        raise HTTPException(400, "artifact_hash is required")
+    course, _ = _execution_course(run["case_id"], course_id)
+    effect_type = str(course.get("effect_type") or "INTERNAL")
+    if effect_type not in {"EXTERNAL_PACKAGE", "INTERNAL", "DEFER"}:
+        raise HTTPException(409, f"Unsupported course effect_type: {effect_type}")
     record_key = "|".join(
         (
             run_id,
             human_stop_id,
             str(payload.get("actor_id", "partner-001")),
-            str(payload.get("course_id", "")),
+            course_id,
         )
     )
     record_id = "AUTH-" + hashlib.sha256(record_key.encode("utf-8")).hexdigest()[:12].upper()
+    existing = next(
+        (item for item in run.get("authority_records", []) if item.get("authority_record_id") == record_id),
+        None,
+    )
+    if existing:
+        package = None
+        if existing.get("effect_type") == "EXTERNAL_PACKAGE":
+            package = _build_execution_package(run_id, existing)
+        return {"authority_record": existing, "execution_package": package, "registry": []}
     authority_record = {
         "authority_record_id": record_id,
         "run_id": run_id,
-        "candidate_state_id": payload.get("candidate_state_id", f"CAND-{run_id}"),
+        "candidate_state_id": run["candidate_state_id"],
         "human_stop_id": human_stop_id,
-        "course_id": payload.get("course_id", ""),
+        "course_id": course_id,
         "actor_id": payload.get("actor_id", "partner-001"),
         "actor_role": payload.get("actor_role", "DEAL_PARTNER"),
         "timestamp": ts,
         "effective_date": today,
         "known_at": ts,
-        "artifact_hash": payload.get("artifact_hash", "sha256:live"),
+        "artifact_hash": payload["artifact_hash"],
         "authority_verb": "APPROVE",
-        "effect_type": "PROCEED",
-        "status": "ACTIVE",
+        "effect_type": effect_type,
+        "status": "ATTESTED",
+        "synthetic": False,
     }
     run.setdefault("authority_records", []).append(authority_record)
     _store_run(run_id, run)
+    execution_package = None
+    if effect_type == "EXTERNAL_PACKAGE":
+        execution_package = _build_execution_package(run_id, authority_record)
     return {
         "authority_record": authority_record,
-        "execution_package": None,
+        "execution_package": execution_package,
+        "registry": [],
     }
 
 

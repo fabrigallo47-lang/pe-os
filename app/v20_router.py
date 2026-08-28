@@ -70,10 +70,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "ingest": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest"},
     "getJob": {"status": "AVAILABLE", "method": "GET", "path": "/jobs/{job_id}"},
     "admitEvidence": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest/{job_id}/admit"},
-    "removeSource": {
-        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/sources/{source_id}/remove",
-        "reason": "Source retirement is not implemented; no source was changed.",
-    },
+    "removeSource": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/sources/{source_id}/remove"},
     "addNote": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/notes"},
     "openDeal": {
         "status": "UNAVAILABLE", "method": "POST", "path": "/open-deal",
@@ -123,6 +120,7 @@ _jobs: dict[str, dict] = {}
 _runs: dict[str, dict] = {}   # run_id → {transition, candidate_graph, case_id}
 _inbox_lock = threading.Lock()
 _notes_lock = threading.Lock()
+_source_lock = threading.Lock()
 _registry_lock = threading.RLock()
 
 
@@ -553,11 +551,15 @@ def _note_record(path: Path) -> dict:
     }
 
 
-def _notes_dir(case_id: str) -> Path:
-    """Resolve a case notes directory while preventing path traversal."""
+def _case_vault_dir(case_id: str) -> Path:
+    """Resolve a case directory while preventing path traversal."""
     if not re.fullmatch(r"[A-Za-z0-9._-]+", case_id):
         raise HTTPException(400, "case_id contains unsupported characters")
-    return VAULT / "deals" / case_id / "notes"
+    return VAULT / "deals" / case_id
+
+
+def _notes_dir(case_id: str) -> Path:
+    return _case_vault_dir(case_id) / "notes"
 
 def _load_json_safe(path: Path) -> Any:
     return json.loads(path.read_text()) if path.exists() else {}
@@ -669,7 +671,40 @@ def _enrich_claims(raw: list[dict], bears_on_map: dict) -> list[dict]:
         })
     return out
 
-def _build_sources_from_claims(raw: list[dict]) -> list[dict]:
+def _load_source_retirements(case_id: str) -> dict[str, dict]:
+    events_dir = _case_vault_dir(case_id) / "events"
+    if not events_dir.exists():
+        return {}
+    retired: dict[str, dict] = {}
+    for path in sorted(events_dir.glob("*.md")):
+        metadata = _read_frontmatter(path)
+        if str(metadata.get("type", "")).lower() != "source_retired":
+            continue
+        source_id = str(metadata.get("source_id") or "")
+        if source_id:
+            retired[source_id] = metadata
+    return retired
+
+
+def _apply_source_retirements(items: list[dict], case_id: str) -> list[dict]:
+    retirements = _load_source_retirements(case_id)
+    sources = []
+    for item in items:
+        source = dict(item)
+        retirement = retirements.get(str(source.get("source_id") or ""))
+        if retirement:
+            source.update(
+                status="RETIRED",
+                retired_at=retirement.get("known_at"),
+                retirement_event_id=retirement.get("id"),
+            )
+        else:
+            source.setdefault("status", "ACTIVE")
+        sources.append(source)
+    return sources
+
+
+def _build_sources_from_claims(raw: list[dict], case_id: str | None = None) -> list[dict]:
     seen: dict[str, dict] = {}
     for c in raw:
         source_ids = c.get("source_ids") or [c.get("source_id") or c.get("source_doc") or "unknown"]
@@ -683,7 +718,8 @@ def _build_sources_from_claims(raw: list[dict]) -> list[dict]:
                     "known_at": "2024-10-01T00:00:00Z",
                 }
             seen[sid]["claim_ids"].append(c.get("id") or c.get("claim_id") or "")
-    return list(seen.values())
+    sources = list(seen.values())
+    return _apply_source_retirements(sources, case_id) if case_id else sources
 
 def _build_question_spine(questions: list[dict], claims: list[dict]) -> list[dict]:
     spine = []
@@ -738,7 +774,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     raw_claims = _load_claims()
     bears_on_map = _load_bears_on_map()
     claims = _enrich_claims(raw_claims, bears_on_map)
-    sources = _build_sources_from_claims(raw_claims)
+    sources = _build_sources_from_claims(raw_claims, case_id)
     events = _load_projection_events(case_id)
     questions = _load_questions(case_id)
     question_spine = _build_question_spine(questions, claims)
@@ -962,7 +998,7 @@ def projection(case_id: str, as_of_date: str | None = None) -> dict:
 @v20.get("/cases/{case_id}/sources")
 def sources(case_id: str) -> dict:
     raw = _load_claims()
-    srcs = _build_sources_from_claims(raw)
+    srcs = _build_sources_from_claims(raw, case_id)
     inbox_items = _read_inbox_manifest()
     known_files = {item.get("stored_name") for item in inbox_items}
     inbox_dir = VAULT / "inbox"
@@ -983,8 +1019,55 @@ def inbox_v20(case_id: str) -> list:
 
 
 @v20.post("/cases/{case_id}/sources/{source_id}/remove")
-def remove_source_unavailable(case_id: str, source_id: str) -> JSONResponse:
-    return _capability_unavailable("removeSource")
+def retire_source(case_id: str, source_id: str, payload: dict | None = None) -> dict:
+    """Retire a source from Current without deleting its claims or history."""
+    payload = payload or {}
+    current_sources = _build_sources_from_claims(_load_claims(), case_id)
+    source = next((item for item in current_sources if item.get("source_id") == source_id), None)
+    if not source:
+        raise HTTPException(404, f"Source not found: {source_id}")
+    if source.get("status") == "RETIRED":
+        return {"status": "RETIRED", "source": source, "idempotent_replay": True}
+
+    identity = hashlib.sha256(source_id.encode("utf-8")).hexdigest()[:16]
+    event_id = f"SOURCE-RETIRED-{identity.upper()}"
+    known_at = _now_iso()
+    metadata = {
+        "type": "source_retired",
+        "id": event_id,
+        "case": case_id,
+        "source_id": source_id,
+        "label": "Source retired from Current projection",
+        "detail": "Historical source data and claims remain available for audit.",
+        "actor": payload.get("actor_id", "source-registry"),
+        "effective_date": payload.get("effective_date") or known_at[:10],
+        "known_at": known_at,
+        "written-by": "v20-api",
+    }
+    events_dir = _case_vault_dir(case_id) / "events"
+    event_path = events_dir / f"source-retired-{identity}.md"
+    with _source_lock:
+        events_dir.mkdir(parents=True, exist_ok=True)
+        try:
+            with event_path.open("x", encoding="utf-8") as handle:
+                handle.write(
+                    "---\n"
+                    + yaml.safe_dump(metadata, sort_keys=False, allow_unicode=True)
+                    + "---\n\n"
+                    + metadata["detail"]
+                    + "\n"
+                )
+        except FileExistsError:
+            existing = _read_frontmatter(event_path)
+            source.update(
+                status="RETIRED",
+                retired_at=existing.get("known_at"),
+                retirement_event_id=existing.get("id"),
+            )
+            return {"status": "RETIRED", "source": source, "idempotent_replay": True}
+
+    source.update(status="RETIRED", retired_at=known_at, retirement_event_id=event_id)
+    return {"status": "RETIRED", "source": source, "idempotent_replay": False}
 
 
 @v20.post("/open-deal")

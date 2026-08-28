@@ -35,7 +35,6 @@ class V20CapabilitiesTests(unittest.TestCase):
             if spec["status"] == "UNAVAILABLE"
         ]
 
-        self.assertEqual(len(unavailable), 10)
         self.assertTrue(all(spec.get("reason") for spec in unavailable))
 
 

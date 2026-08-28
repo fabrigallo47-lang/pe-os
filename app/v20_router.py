@@ -87,10 +87,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "prepareWork": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/work-items/{work_id}/prepare"},
     "compilerProposals": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/compiler-proposals"},
     "reviewCompilerProposal": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/compiler-proposals/{kind}/{proposal_id}/review"},
-    "prepareMission": {
-        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/missions/{mission_id}/prepare",
-        "reason": "Connected mission preparation is not implemented; no mission was prepared.",
-    },
+    "prepareMission": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/missions/{mission_id}/prepare"},
     "runMission": {
         "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/missions/{mission_id}/run",
         "reason": "Connected mission execution is not implemented; no mission or external action ran.",
@@ -106,6 +103,7 @@ _source_lock = threading.Lock()
 _work_drafts_lock = threading.Lock()
 _compiler_reviews_lock = threading.Lock()
 _ic_records_lock = threading.Lock()
+_mission_drafts_lock = threading.Lock()
 _registry_lock = threading.RLock()
 
 _COMPILER_PROPOSAL_COLLECTIONS = {
@@ -1533,8 +1531,96 @@ def review_compiler_proposal(
 
 
 @v20.post("/cases/{case_id}/missions/{mission_id}/prepare")
-def prepare_mission_unavailable(case_id: str, mission_id: str) -> JSONResponse:
-    return _capability_unavailable("prepareMission")
+def prepare_mission(case_id: str, mission_id: str, payload: dict | None = None) -> dict:
+    """Persist the governed mission envelope without running any mission work."""
+    payload = payload or {}
+    projection = _build_projection(case_id)
+    mission = next(
+        (
+            item for item in projection.get("deal", {}).get("agent_missions", [])
+            if mission_id in {item.get("mission_id"), item.get("id")}
+        ),
+        None,
+    )
+    if mission is None:
+        raise HTTPException(404, f"Mission not found: {mission_id}")
+
+    idempotency_key = str(payload.get("idempotency_key") or "").strip()
+    if idempotency_key:
+        identity_seed = f"{case_id}|{mission_id}|{idempotency_key}"
+        identity = hashlib.sha256(identity_seed.encode("utf-8")).hexdigest()[:16]
+    else:
+        identity = uuid.uuid4().hex[:16]
+    mission_run_id = f"MISSION-DRAFT-{identity.upper()}"
+    drafts_dir = _case_vault_dir(case_id) / "mission_runs"
+    draft_path = drafts_dir / f"mission-draft-{identity}.md"
+
+    with _mission_drafts_lock:
+        if draft_path.exists():
+            return {
+                "mission_run": _note_record(draft_path),
+                "message": "Existing mission draft returned. No research or human contact occurred.",
+                "idempotent_replay": True,
+            }
+
+        known_at = _now_iso()
+        draft = {
+            "type": "mission_draft",
+            "id": mission_run_id,
+            "mission_run_id": mission_run_id,
+            "mission_id": mission_id,
+            "case": case_id,
+            "status": "PREPARED",
+            "label": mission.get("label"),
+            "mission_type": mission.get("mission_type"),
+            "objective": mission.get("objective"),
+            "question_ids": mission.get("question_ids", []),
+            "unknown_ids": mission.get("unknown_ids", []),
+            "allowed_sources": mission.get("allowed_sources", []),
+            "prohibited_sources": mission.get("prohibited_sources", []),
+            "confidential_context_policy": mission.get("confidential_context_policy"),
+            "data_egress_policy": mission.get("data_egress_policy"),
+            "expected_output": mission.get("expected_output"),
+            "stop_condition": mission.get("stop_condition"),
+            "authority_class": mission.get("authority_class"),
+            "reviewer_id": mission.get("reviewer_id"),
+            "external_human_contact": bool(mission.get("external_human_contact")),
+            "auto_executable_in_mock": bool(mission.get("auto_executable_in_mock")),
+            "prepared_by": payload.get("actor_id", "mission-preparer"),
+            "effective_date": payload.get("effective_date") or known_at[:10],
+            "known_at": known_at,
+            "idempotency_key": idempotency_key or None,
+            "synthetic": False,
+            "no_external_effects": True,
+            "written-by": "v20-api",
+        }
+        drafts_dir.mkdir(parents=True, exist_ok=True)
+        with draft_path.open("x", encoding="utf-8") as handle:
+            handle.write(
+                "---\n"
+                + yaml.safe_dump(draft, sort_keys=False, allow_unicode=True)
+                + "---\n\n"
+                + "Governed mission envelope prepared. No research, data egress or human contact occurred.\n"
+            )
+    return {
+        "mission_run": draft,
+        "message": "Mission draft prepared. No research or human contact occurred.",
+        "idempotent_replay": False,
+    }
+
+
+@v20.get("/cases/{case_id}/missions/{mission_id}/drafts")
+def list_mission_drafts(case_id: str, mission_id: str) -> dict:
+    drafts_dir = _case_vault_dir(case_id) / "mission_runs"
+    if not drafts_dir.exists():
+        return {"mission_runs": []}
+    drafts = [
+        _note_record(path)
+        for path in sorted(drafts_dir.glob("mission-draft-*.md"))
+        if _read_frontmatter(path).get("mission_id") == mission_id
+    ]
+    drafts.sort(key=lambda item: (str(item.get("known_at", "")), str(item.get("mission_run_id", ""))))
+    return {"mission_runs": drafts}
 
 
 @v20.post("/cases/{case_id}/missions/{mission_id}/run")

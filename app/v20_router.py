@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 import base64
+import copy
 import hashlib
 import json
 import logging
@@ -516,7 +517,7 @@ def _merge_claim_corpus(existing: list[dict], incoming: list[dict]) -> tuple[lis
 
 def _build_semantic_current(claims: list[dict], case_id: str) -> dict:
     """Build the pre-runtime Current semantic graph from admitted source evidence."""
-    from claim_graph import claims_to_graph
+    from vercel.api._claim_graph import claims_to_graph
     graph = claims_to_graph(claims, deal=case_id)
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
@@ -580,54 +581,280 @@ def _semantic_rooms(graph: dict, question_spine: list[dict]) -> tuple[list[dict]
     ]}
     return foundations, unknowns, positions
 
-def _run_v1_runtime_adapter(claims: list[dict], case_id: str) -> None:
-    """Bridge V1 claims into the existing Keystone runtime bundle builder."""
-    e3_path = PIPELINE_OUT / "SINGLE" / "e3_claims.json"
-    e3_path.parent.mkdir(parents=True, exist_ok=True)
-    compiler = []
-    for c in claims:
-        compiler.append({k: c.get(k) for k in ("claim_id", "metric", "direction", "topic", "author", "derivation")})
-    e3 = {"schema_version": "e3/compat-v1", "manifest_id": "SINGLE", "deal": case_id,
-          "extractor": "extract_v1", "claims": claims,
-          "extraction_metadata": {"compiler_fields_per_claim": compiler}}
-    e3_path.write_text(json.dumps(e3, indent=2, ensure_ascii=False))
-    execution = VAULT / "deals" / case_id / "models" / "execution_graph_v7.json"
-    if not execution.exists():
-        fallback = ROOT / "pipeline_out" / "e3" / "K-PRE" / "adapter_alpha" / "execution_graph_v7.json"
-        if fallback.exists():
-            # bundle_assemble deliberately reads the canonical vault path.
-            # Recreate it after a clean-state reset from the versioned
-            # Keystone runtime template, before invoking adapter_alpha.
-            execution.parent.mkdir(parents=True, exist_ok=True)
-            execution.write_bytes(fallback.read_bytes())
-    if not execution.exists():
-        logger.warning("runtime adapter skipped: execution_graph_v7.json missing")
-        return
-    # The adapter writes its own claims.json. Keep it isolated so it can never
-    # overwrite the cumulative extractor corpus at PIPELINE_OUT/claims.json.
+def _write_json_atomic(path: Path, payload: Any) -> None:
+    """Persist one JSON artifact without exposing a partially written bundle."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    temporary.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, default=str) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
+def _runtime_execution_graph(case_id: str) -> Path:
+    candidates = (
+        VAULT / "deals" / case_id / "models" / "execution_graph_v7.json",
+        PIPELINE_OUT / "execution_graph_v7.json",
+        ROOT / "pipeline_out" / "e3" / "K-PRE" / "adapter_alpha" / "execution_graph_v7.json",
+    )
+    path = next((candidate for candidate in candidates if candidate.exists()), None)
+    if path is None:
+        raise DynamicsBundleError("execution_graph_v7.json is required to compile admitted evidence")
+    return path
+
+
+def _runtime_policy_path(filename: str) -> Path:
+    candidates = (
+        VAULT / "policy" / filename,
+        ROOT / "backend" / "dynamics" / "benchmark" / filename,
+    )
+    path = next((candidate for candidate in candidates if candidate.exists()), None)
+    if path is None:
+        raise DynamicsBundleError(f"missing dynamics input: {filename}")
+    return path
+
+
+def _compile_live_runtime_bundle(claims: list[dict], case_id: str) -> dict[str, Any]:
+    """Compile admitted extractor claims without inventing a fixture event.
+
+    ``adapter_alpha`` historically assembled and executed a hard-coded EBITDA
+    correction as part of bundle construction.  The connected path instead
+    stages only the real Current, mapping, policies and admission manifest; the
+    executable event is built separately from the newly admitted claims.
+    """
+    if not claims:
+        raise DynamicsBundleError("at least one admitted claim is required for runtime compilation")
+
+    from tools.adapter_alpha import _e3_to_extraction_graph
+    from tools.bridge_v7 import compile_v7_bundle
+
     runtime_dir = PIPELINE_OUT / "runtime"
-    cmd = [sys.executable, str(ROOT / "tools" / "adapter_alpha.py"), "--e3", str(e3_path),
-           "--execution", str(execution), "--out", str(runtime_dir), "--manifest", "SINGLE", "--deal", case_id]
-    result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
-    if result.returncode:
-        logger.warning("runtime adapter failed: %s", result.stderr[-1000:])
-    else:
-        # The V20 projection reads these runtime state files from the root
-        # bundle. Promote state only; extractor claims remain authoritative.
-        for name in (
-            "current_graph.json",
-            "candidate_graph.json",
-            "transition_output.json",
-            "execution_mapping.json",
-            "event_ebitda_correction.json",
-            "keystone_materiality_policy_v0.json",
-            "keystone_authority_matrix_v0.json",
-            "admission_manifest_v7.json",
+    runtime_dir.mkdir(parents=True, exist_ok=True)
+    compiler_fields = [
+        {
+            key: claim.get(key)
+            for key in ("claim_id", "metric", "direction", "topic", "author", "derivation")
+        }
+        for claim in claims
+    ]
+    e3 = {
+        "schema_version": "e3/live-admission-v1",
+        "manifest_id": "LIVE-ADMISSION",
+        "deal": case_id,
+        "extractor": "connected-v20",
+        "claims": claims,
+        "extraction_metadata": {"compiler_fields_per_claim": compiler_fields},
+    }
+    e3_path = runtime_dir / "admitted_e3_claims.json"
+    _write_json_atomic(e3_path, e3)
+    extraction_graph = _e3_to_extraction_graph(e3)
+    extraction_graph["graph"]["e3_claims_sha256"] = hashlib.sha256(
+        e3_path.read_bytes()
+    ).hexdigest()
+    extraction_path = runtime_dir / "extraction_graph.json"
+    _write_json_atomic(extraction_path, extraction_graph)
+
+    execution_path = _runtime_execution_graph(case_id)
+    bundle = compile_v7_bundle(
+        extraction_path,
+        execution_path,
+        status="LIVE",
+        deal=case_id,
+    )
+    staged = {
+        "current_graph.json": bundle["current_graph"],
+        "execution_mapping.json": bundle["execution_mapping"],
+        "adapter_report.json": bundle["adapter_report"],
+        "admission_manifest_v7.json": bundle["manifest"],
+    }
+    for filename, value in staged.items():
+        _write_json_atomic(runtime_dir / filename, value)
+    (runtime_dir / "execution_graph_v7.json").write_bytes(execution_path.read_bytes())
+    for filename in (
+        "keystone_materiality_policy_v0.json",
+        "keystone_authority_matrix_v0.json",
+    ):
+        source = _runtime_policy_path(filename)
+        (runtime_dir / filename).write_bytes(source.read_bytes())
+    return {**bundle, "runtime_dir": runtime_dir, "execution_graph_path": execution_path}
+
+
+def _runtime_current_graph(case_id: str) -> dict:
+    runtime_state = _load_json_safe(PIPELINE_OUT / "runtime_state.json")
+    if (
+        isinstance(runtime_state, dict)
+        and runtime_state.get("case_id") == case_id
+        and isinstance(runtime_state.get("current_graph"), dict)
+    ):
+        return copy.deepcopy(runtime_state["current_graph"])
+    current = _load_json_safe(PIPELINE_OUT / "current_graph.json")
+    if isinstance(current, dict) and current.get("case_id") == case_id:
+        return copy.deepcopy(current)
+    return {}
+
+
+def _without_claims(graph: dict, claim_ids: set[str]) -> dict:
+    """Create the pre-event runtime skeleton from a freshly compiled Current."""
+    baseline = copy.deepcopy(graph)
+    baseline["claims"] = [
+        claim for claim in baseline.get("claims", [])
+        if str(claim.get("claim_id")) not in claim_ids
+    ]
+    baseline["claim_position_edges"] = [
+        edge for edge in baseline.get("claim_position_edges", [])
+        if str(edge.get("claim_id")) not in claim_ids
+    ]
+    for position in baseline.get("case_positions", []):
+        for field in ("support_claim_ids", "contradicting_claim_ids"):
+            if isinstance(position.get(field), list):
+                position[field] = [item for item in position[field] if str(item) not in claim_ids]
+        if isinstance(position.get("support_routes"), list):
+            position["support_routes"] = [
+                route for route in position["support_routes"]
+                if str(route.get("claim_stable_id")) not in claim_ids
+            ]
+    retained_routes = []
+    for route in baseline.get("support_routes", []):
+        if str(route.get("claim_stable_id")) in claim_ids:
+            continue
+        for field in ("member_claim_ids", "counter_claim_ids"):
+            if isinstance(route.get(field), list):
+                route[field] = [item for item in route[field] if str(item) not in claim_ids]
+        retained_routes.append(route)
+    baseline["support_routes"] = retained_routes
+    return baseline
+
+
+def _normalise_runtime_unit(value: Any) -> Any:
+    if not isinstance(value, str):
+        return value
+    aliases = {"$m": "$mm", "$mn": "$mm", "usd_m": "$mm", "decimal ratio": "decimal_ratio"}
+    return aliases.get(value.strip().lower(), value.strip())
+
+
+def _claim_mapping_is_applicable(claim: dict, position: dict) -> bool:
+    pairs = (
+        (claim.get("definition_id"), position.get("definition_id", position.get("definition"))),
+        (claim.get("period_iso") or claim.get("period"), position.get("period")),
+        (claim.get("perimeter"), position.get("perimeter")),
+        (_normalise_runtime_unit(claim.get("unit")), _normalise_runtime_unit(position.get("unit"))),
+    )
+    return all(left is None or right is None or left == right for left, right in pairs)
+
+
+def _build_admitted_runtime_event(
+    case_id: str,
+    job_id: str,
+    proposal: dict,
+    added_claims: list[dict],
+    compiled_graph: dict,
+    baseline_graph: dict,
+) -> dict:
+    added_ids = {
+        str(claim.get("claim_id") or claim.get("id") or claim.get("stable_id"))
+        for claim in added_claims
+    }
+    compiled_claims = {
+        str(claim.get("claim_id")): claim
+        for claim in compiled_graph.get("claims", [])
+        if str(claim.get("claim_id")) in added_ids
+    }
+    if not compiled_claims:
+        raise DynamicsBundleError(
+            "new evidence produced no runtime-admitted claims; inspect temporal/validation coverage"
+        )
+
+    baseline_positions = {
+        str(position.get("position_id")): position
+        for position in baseline_graph.get("case_positions", [])
+    }
+    edges_by_claim: dict[str, list[dict]] = {}
+    for edge in compiled_graph.get("claim_position_edges", []):
+        claim_id = str(edge.get("claim_id") or "")
+        if claim_id in compiled_claims:
+            edges_by_claim.setdefault(claim_id, []).append(edge)
+
+    mutations = []
+    mapped_claim_ids = []
+    for claim_id in sorted(compiled_claims):
+        claim = compiled_claims[claim_id]
+        mutation = {
+            "operation": "ADD",
+            "object_type": "CLAIM",
+            "object_id": claim_id,
+            "statement": claim.get("statement") or claim_id,
+            "locator": claim.get("locator") or f"proposal:{proposal.get('proposal_id', job_id)}",
+            "epistemic_class": claim.get("epistemic_class", "observed"),
+            "period": claim.get("period_iso") or claim.get("period") or "UNSPECIFIED",
+            "perimeter": claim.get("perimeter") or "UNSPECIFIED",
+            "ground_truth_flag": bool(claim.get("ground_truth_flag", False)),
+        }
+        for field in ("definition_id", "unit", "value"):
+            if claim.get(field) is not None:
+                mutation[field] = copy.deepcopy(claim[field])
+
+        for edge in sorted(
+            edges_by_claim.get(claim_id, []),
+            key=lambda item: (str(item.get("position_id")), str(item.get("relation_type"))),
         ):
-            src = runtime_dir / name
-            if src.exists():
-                (PIPELINE_OUT / name).write_bytes(src.read_bytes())
-        logger.info("runtime adapter built V1 runtime bundle for %d claims", len(claims))
+            position_id = str(edge.get("position_id") or "")
+            position = baseline_positions.get(position_id)
+            if position and _claim_mapping_is_applicable(claim, position):
+                mutation["relation_type"] = edge.get("relation_type", "SUPPORTS")
+                mutation["target_position_id"] = position_id
+                mapped_claim_ids.append(claim_id)
+                break
+        mutations.append(mutation)
+
+    now = _now_iso()
+    source_ids = sorted(
+        {
+            str(claim.get("source_id"))
+            for claim in compiled_claims.values()
+            if claim.get("source_id")
+        }
+        | ({str(proposal.get("source_id"))} if proposal.get("source_id") else set())
+    )
+    return {
+        "event_id": f"EVIDENCE-ADMITTED-{job_id}",
+        "event": f"EVIDENCE_ADMITTED: {proposal.get('source_id') or 'reviewed source'}",
+        "event_type": "evidence_admitted",
+        "event_status": "ADMITTED_SOURCE_EVENT",
+        "deal": case_id,
+        "effective_date": _today(),
+        "known_at": now,
+        "source_ids": source_ids,
+        "trigger_claim_ids": sorted(compiled_claims),
+        "mutations": mutations,
+        "proposal_id": proposal.get("proposal_id"),
+        "evidence_claim_ids": sorted(compiled_claims),
+        "mapped_claim_ids": sorted(mapped_claim_ids),
+        "unmapped_claim_ids": sorted(set(compiled_claims) - set(mapped_claim_ids)),
+        "note": "Built from professionally admitted extractor output; no fixture event or claim was introduced.",
+    }
+
+
+def _promote_live_runtime_bundle(compiled: dict, baseline_graph: dict, event: dict) -> Path:
+    runtime_dir = Path(compiled["runtime_dir"])
+    _write_json_atomic(PIPELINE_OUT / "current_graph.json", baseline_graph)
+    for filename in (
+        "execution_mapping.json",
+        "adapter_report.json",
+        "admission_manifest_v7.json",
+    ):
+        _write_json_atomic(PIPELINE_OUT / filename, _load_json_safe(runtime_dir / filename))
+    for filename in (
+        "execution_graph_v7.json",
+        "keystone_materiality_policy_v0.json",
+        "keystone_authority_matrix_v0.json",
+    ):
+        (PIPELINE_OUT / filename).write_bytes((runtime_dir / filename).read_bytes())
+    event_path = PIPELINE_OUT / f"event_evidence_admitted_{event['event_id'].removeprefix('EVIDENCE-ADMITTED-')}.json"
+    _write_json_atomic(event_path, event)
+    _write_json_atomic(PIPELINE_OUT / "candidate_graph.json", {})
+    _write_json_atomic(PIPELINE_OUT / "transition_output.json", {})
+    return event_path
 
 def _rebuild_index() -> None:
     subprocess.run(
@@ -1753,12 +1980,17 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                             raw = json.loads(v1_out.read_text())
                         new_claims = _derive_bears_on(_normalise_v1_claims(raw, filename), e3)
                         proposal = _write_evidence_proposal(job_id, case_id, filename, new_claims)
+                        proposal_display_path = (
+                            str(proposal.relative_to(ROOT))
+                            if proposal.is_relative_to(ROOT)
+                            else str(proposal)
+                        )
                         _store_job(job_id, proposal_id=proposal.stem,
-                                   proposal_path=str(proposal.relative_to(ROOT)),
+                                   proposal_path=proposal_display_path,
                                    proposed_claim_count=len(new_claims),
                                    admission_status="PENDING_REVIEW")
                         _update_inbox_record(job_id, proposal_id=proposal.stem,
-                                             proposal_path=str(proposal.relative_to(ROOT)),
+                                             proposal_path=proposal_display_path,
                                              proposed_claim_count=len(new_claims),
                                              admission_status="PENDING_REVIEW")
                         logger.info("JOB %s produced %d evidence proposals", job_id, len(new_claims))
@@ -1796,9 +2028,10 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     """Apply the explicit professional decision at the evidence boundary.
 
     Extraction is fallible.  This endpoint is the only route that promotes an
-    extracted claim to the admitted corpus and rebuilds the semantic Current.
-    It intentionally does *not* invoke the transition/runtime adapter: the
-    resulting admitted-evidence event is the hand-off to the dynamics layer.
+    extracted claim to the admitted corpus.  It rebuilds the semantic Current,
+    compiles the live runtime inputs and emits an executable event made only
+    from the newly admitted extractor claims.  Candidate creation remains a
+    separate explicit action at ``/events/{event_id}/admit``.
     """
     proposal_file = _proposal_path(job_id)
     if not proposal_file.exists():
@@ -1830,19 +2063,65 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     existing_path = PIPELINE_OUT / "claims.json"
     existing = json.loads(existing_path.read_text()) if existing_path.exists() else []
     merged, added = _merge_claim_corpus(existing, reviewed_claims)
-    existing_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    if added and (PIPELINE_OUT / "candidate_state.json").exists():
+        raise HTTPException(
+            409,
+            "An unsettled Candidate already exists; settle it before admitting more evidence.",
+        )
+
+    compiled = None
+    runtime_event = None
+    event_path = None
+    prior_graph = _runtime_current_graph(case_id)
+    if added:
+        try:
+            compiled = _compile_live_runtime_bundle(merged, case_id)
+            added_ids = {
+                str(claim.get("claim_id") or claim.get("id") or claim.get("stable_id"))
+                for claim in added
+            }
+            baseline_graph = prior_graph or _without_claims(
+                compiled["current_graph"], added_ids
+            )
+            runtime_event = _build_admitted_runtime_event(
+                case_id,
+                job_id,
+                proposal,
+                added,
+                compiled["current_graph"],
+                baseline_graph,
+            )
+            if not prior_graph:
+                (PIPELINE_OUT / "runtime_state.json").unlink(missing_ok=True)
+            event_path = _promote_live_runtime_bundle(
+                compiled,
+                baseline_graph,
+                runtime_event,
+            )
+        except (DynamicsBundleError, ValueError, KeyError, OSError) as exc:
+            logger.exception("runtime compilation failed for evidence job %s", job_id)
+            raise HTTPException(422, f"Admitted evidence could not be compiled: {exc}") from exc
+
+    _write_json_atomic(existing_path, merged)
     persisted = _persist_claims_to_vault(case_id, added, proposal.get("source_id", ""))
     graph = _build_semantic_current(merged, case_id)
     proposal.update({"status": "ADMITTED", "reviewed_at": _now_iso(),
                      "reviewed_by": payload.get("actor_id", "professional-review"),
                      "review_note": payload.get("note", ""),
-                     "admitted_claim_count": len(added)})
-    proposal_file.write_text(json.dumps(proposal, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
-    _update_inbox_record(job_id, admission_status="ADMITTED", stage="Evidence admitted",
+                     "admitted_claim_count": len(added),
+                     "runtime_event_id": runtime_event.get("event_id") if runtime_event else None,
+                     "runtime_event_path": str(event_path) if event_path else None})
+    _write_json_atomic(proposal_file, proposal)
+    _update_inbox_record(job_id, admission_status="ADMITTED", stage="Runtime event ready",
                          admitted_claim_count=len(added),
-                         message=f"Admitted evidence changed the semantic Current ({len(added)} new claims).")
-    _store_job(job_id, admission_status="ADMITTED", stage="Evidence admitted",
-               admitted_claim_count=len(added))
+                         runtime_event_id=runtime_event.get("event_id") if runtime_event else None,
+                         message=(
+                             f"Admitted {len(added)} new claims and compiled the executable runtime event."
+                             if runtime_event else "Evidence was already represented; no new runtime event was required."
+                         ))
+    _store_job(job_id, admission_status="ADMITTED", stage="Runtime event ready",
+               admitted_claim_count=len(added),
+               runtime_event_id=runtime_event.get("event_id") if runtime_event else None)
     events_dir = VAULT / "deals" / case_id / "events"
     events_dir.mkdir(parents=True, exist_ok=True)
     event_id = f"EVIDENCE-ADMITTED-{job_id}"
@@ -1851,15 +2130,26 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
                 "claim_count": len(added), "known_at": _now_iso(), "effective_date": _today(),
                 "label": f"Admitted evidence: {proposal.get('source_id', 'source')}",
                 "detail": f"{len(added)} new claims admitted after professional review.",
+                "runtime_event_id": runtime_event.get("event_id") if runtime_event else None,
+                "runtime_event_path": str(event_path) if event_path else None,
                 "actor": payload.get("actor_id", "professional-review")}
     (events_dir / f"e-{case_id}-evidence-admitted-{job_id}.md").write_text(
         "---\n" + yaml.safe_dump(event_fm, sort_keys=False, allow_unicode=True) + "---\n\n"
-        "Admitted evidence event. Dynamics has not yet been run.\n", encoding="utf-8")
+        "Admitted evidence event compiled for dynamics. Candidate has not yet been created.\n",
+        encoding="utf-8",
+    )
     _rebuild_index()
     return {"status": "ADMITTED", "proposal_id": proposal.get("proposal_id"), "event_id": event_id,
             "new_claim_count": len(added), "persisted_claim_count": persisted,
             "semantic_graph": {"nodes": len(graph.get("nodes", [])), "edges": len(graph.get("edges", []))},
-            "message": "Evidence admitted into semantic Current; ready for dynamics."}
+            "runtime_event": ({
+                "event_id": runtime_event["event_id"],
+                "path": str(event_path),
+                "mutation_count": len(runtime_event["mutations"]),
+                "mapped_claim_count": len(runtime_event["mapped_claim_ids"]),
+                "unmapped_claim_count": len(runtime_event["unmapped_claim_ids"]),
+            } if runtime_event else None),
+            "message": "Evidence admitted into semantic Current and compiled for dynamics."}
 
 
 @v20.get("/jobs/{job_id}")

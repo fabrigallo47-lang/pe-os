@@ -2798,6 +2798,7 @@ def apply_state_transition(
                         "materiality_fixture": mutation.get("materiality_fixture"),
                         "relation_type": relation_type,
                         "target_position_id": target_position_id,
+                        "value": copy.deepcopy(mutation.get("value")),
                     }
                     admitted_mutations.append(admitted)
                     trigger_ids.add(object_id)
@@ -3215,6 +3216,18 @@ def apply_state_transition(
                     "object_id": mutation["object_id"],
                     "old_value": mutation["from"],
                     "candidate_value": mutation["to"],
+                    "unit": mutation.get("unit"),
+                    "provisional": True,
+                    "formula_or_solver_ref": None,
+                    "materiality_class": materiality_assessment["overall_class"],
+                }
+            )
+        elif mutation["operation"] == "ADD" and mutation.get("value") is not None:
+            recomputed_values.append(
+                {
+                    "object_id": mutation["object_id"],
+                    "old_value": None,
+                    "candidate_value": mutation["value"],
                     "unit": mutation.get("unit"),
                     "provisional": True,
                     "formula_or_solver_ref": None,

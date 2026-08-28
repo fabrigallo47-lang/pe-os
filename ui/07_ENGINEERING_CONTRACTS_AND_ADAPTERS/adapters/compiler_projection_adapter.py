@@ -36,7 +36,10 @@ def _known(value: Mapping[str, Any], cutoff: dt.datetime | None) -> bool:
     raw = value.get("known_at")
     if not raw:
         return False
-    return dt.datetime.fromisoformat(str(raw).replace("Z", "+00:00")) <= cutoff
+    known_at = dt.datetime.fromisoformat(str(raw).replace("Z", "+00:00"))
+    if known_at.tzinfo is None:
+        known_at = known_at.replace(tzinfo=dt.timezone.utc)
+    return known_at <= cutoff
 
 def map_compiler_bundle(base_projection: Mapping[str, Any], compiler_bundle: Mapping[str, Any], *, as_of_date: str | None = None) -> dict[str, Any]:
     """Merge a compiler bundle through explicit, typed collection boundaries."""

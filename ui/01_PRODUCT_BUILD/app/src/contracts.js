@@ -16,6 +16,9 @@
     for(const key of ['question_spine','artifacts','claims','lenses','participants','interactions','utterances','derivation_specs','derivations','discrepancy_rules','discrepancy_candidates','hypotheses','agent_missions','spine_change_proposals','condition_edges','validation_envelopes'])array(projection.deal[key],`projection.deal.${key}`);
     object(projection.deal.archetype,'projection.deal.archetype');
     requireKeys(projection.deal.rooms,['foundations','unknowns','shadowIC'],'projection.deal.rooms');requireKeys(projection.deal.replay,['source','hand_authored_snapshots','snapshots'],'projection.deal.replay');array(projection.deal.replay.snapshots,'projection.deal.replay.snapshots');
+    if('graph_versions' in projection.deal)array(projection.deal.graph_versions,'projection.deal.graph_versions');
+    if('current_graph' in projection.deal)object(projection.deal.current_graph,'projection.deal.current_graph');
+    if('candidate_graph' in projection.deal)object(projection.deal.candidate_graph,'projection.deal.candidate_graph');
     if(projection.deal.replay.source!=='REGISTRY_EVENTS'||projection.deal.replay.hand_authored_snapshots!==false)fail('TEMPORAL_CONTRACT','projection.deal.replay','must be event-log derived');
     requireKeys(projection.deal.temporal,['basis','effective_axis','knowledge_axis','available_dates','replay_source'],'projection.deal.temporal');array(projection.deal.temporal.available_dates,'projection.deal.temporal.available_dates');
     projection.deal.claims.forEach((claim,index)=>bitemporal(claim,`projection.deal.claims[${index}]`));

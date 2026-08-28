@@ -154,6 +154,9 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
         self.assertEqual(mutation["object_id"], self.claim["claim_id"])
         self.assertEqual(mutation["target_position_id"], "CP-DSO")
         self.assertNotEqual(runtime_event.get("event_status"), "SYNTHETIC_TEST_EVENT")
+        current_before_dynamics = json.loads(
+            (self.bundle / "current_graph.json").read_text(encoding="utf-8")
+        )
 
         candidate = asyncio.run(
             router.admit("keystone", event_id, BackgroundTasks(), {})
@@ -171,7 +174,33 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
             str(recomputed[self.claim["claim_id"]]["candidate_value"]),
             str(self.claim["value"]),
         )
+        self.assertEqual(
+            candidate["candidate_graph"],
+            json.loads((self.bundle / "candidate_graph.json").read_text()),
+        )
+        self.assertNotEqual(candidate["candidate_graph"], current_before_dynamics)
+        self.assertNotIn(
+            self.claim["claim_id"],
+            {item["claim_id"] for item in current_before_dynamics["claims"]},
+        )
+        self.assertIn(
+            self.claim["claim_id"],
+            {item["claim_id"] for item in candidate["candidate_graph"]["claims"]},
+        )
         self.assertTrue((self.bundle / "candidate_state.json").exists())
+        versions_before_settlement = router.list_graph_versions("keystone")["versions"]
+        self.assertEqual(
+            [item["kind"] for item in versions_before_settlement],
+            ["CURRENT", "CANDIDATE"],
+        )
+        candidate_version = candidate["candidate_graph_version"]
+        self.assertEqual(candidate_version["kind"], "CANDIDATE")
+        self.assertEqual(
+            router.get_graph_version(
+                "keystone", candidate_version["version_id"]
+            )["graph"],
+            candidate["candidate_graph"],
+        )
 
         router._runs.clear()
         router._load_durable_registries()
@@ -194,6 +223,10 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
         self.assertEqual(
             refreshed["context"]["as_of_state_id"], settled["current_state_id"]
         )
+        self.assertEqual(
+            len(refreshed["projection"]["deal"]["graph_versions"]),
+            3,
+        )
         self.assertNotIn("_adapter_error", refreshed["projection"])
         self.assertFalse((self.bundle / "candidate_state.json").exists())
         self.assertEqual(json.loads((self.bundle / "candidate_graph.json").read_text()), {})
@@ -201,6 +234,21 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
         self.assertIn(
             self.claim["claim_id"],
             {item["claim_id"] for item in settled_graph["claims"]},
+        )
+        versions_after_settlement = router.list_graph_versions("keystone")["versions"]
+        self.assertEqual(len(versions_after_settlement), 3)
+        self.assertEqual(versions_after_settlement[-1]["kind"], "CURRENT")
+        self.assertEqual(
+            router.get_graph_version(
+                "keystone", candidate_version["version_id"]
+            )["graph"],
+            candidate["candidate_graph"],
+        )
+        self.assertEqual(
+            router.get_graph_version(
+                "keystone", settled["graph_version"]["version_id"]
+            )["graph"],
+            settled_graph,
         )
 
 

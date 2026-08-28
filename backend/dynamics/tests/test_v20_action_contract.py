@@ -33,6 +33,7 @@ class V20ConnectedActionContractTests(unittest.IsolatedAsyncioTestCase):
             "kind": "derivation",
             "proposal_id": "PROP-001",
             "mission_id": "MISSION-001",
+            "version_id": "STATE-001",
         }
 
         def replace(match: re.Match) -> str:

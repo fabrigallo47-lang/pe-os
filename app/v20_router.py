@@ -79,6 +79,8 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     },
     "recordIC": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ic-record"},
     "admitEvent": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/events/{event_id}/admit"},
+    "listGraphVersions": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/graph-versions"},
+    "getGraphVersion": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/graph-versions/{version_id:path}"},
     "prepareRun": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/prepare"},
     "attest": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/authority/attest"},
     "createPackage": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/execution-packages"},
@@ -106,6 +108,7 @@ _compiler_reviews_lock = threading.Lock()
 _ic_records_lock = threading.Lock()
 _mission_drafts_lock = threading.Lock()
 _registry_lock = threading.RLock()
+_graph_versions_lock = threading.Lock()
 
 _COMPILER_PROPOSAL_COLLECTIONS = {
     "discrepancy": "discrepancy_candidates",
@@ -590,6 +593,189 @@ def _write_json_atomic(path: Path, payload: Any) -> None:
         encoding="utf-8",
     )
     temporary.replace(path)
+
+
+def _graph_versions_dir() -> Path:
+    return PIPELINE_OUT / "graph_versions"
+
+
+def _graph_version_index_path() -> Path:
+    return _graph_versions_dir() / "index.json"
+
+
+def _graph_content_hash(graph: dict) -> str:
+    canonical = json.dumps(
+        graph,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        default=str,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(canonical).hexdigest()
+
+
+def _graph_counts(graph: dict) -> dict[str, int]:
+    return {
+        "claims": len(graph.get("claims", [])),
+        "case_positions": len(graph.get("case_positions", graph.get("positions", []))),
+        "model_nodes": len(graph.get("model_nodes", [])),
+        "support_routes": len(graph.get("support_routes", [])),
+        "claim_position_edges": len(graph.get("claim_position_edges", [])),
+    }
+
+
+def _read_graph_version_index() -> list[dict[str, Any]]:
+    payload = _load_json_safe(_graph_version_index_path())
+    versions = payload.get("versions", []) if isinstance(payload, dict) else []
+    return [dict(item) for item in versions if isinstance(item, dict)]
+
+
+def _list_graph_versions(case_id: str) -> list[dict[str, Any]]:
+    versions = [
+        item for item in _read_graph_version_index()
+        if str(item.get("case_id")) == str(case_id)
+    ]
+    return sorted(
+        versions,
+        key=lambda item: (
+            str(item.get("created_at") or item.get("known_at") or ""),
+            str(item.get("version_id") or ""),
+        ),
+    )
+
+
+def _archive_graph_version(
+    case_id: str,
+    state_id: str,
+    kind: str,
+    graph: dict,
+    *,
+    run_id: str | None = None,
+    event_id: str | None = None,
+    prior_state_id: str | None = None,
+    effective_date: str | None = None,
+    known_at: str | None = None,
+) -> dict[str, Any]:
+    """Persist one immutable, addressable graph snapshot.
+
+    Operational ``current_graph.json`` and ``candidate_graph.json`` may be
+    promoted or cleared.  These snapshots are never rewritten with different
+    content, so every institutional moment remains independently inspectable.
+    """
+    if not isinstance(graph, dict) or not graph:
+        raise DynamicsBundleError("cannot archive an empty graph version")
+    state_id = str(state_id or "").strip()
+    if not state_id:
+        raise DynamicsBundleError("graph version requires a state_id")
+    kind = str(kind or "").upper()
+    if kind not in {"CURRENT", "CANDIDATE"}:
+        raise DynamicsBundleError("graph version kind must be CURRENT or CANDIDATE")
+
+    graph_hash = _graph_content_hash(graph)
+    version_id = state_id
+    archive_identity = f"{case_id}\0{version_id}"
+    filename = (
+        re.sub(r"[^A-Za-z0-9._-]+", "-", case_id).strip("-")
+        + "--"
+        + re.sub(r"[^A-Za-z0-9._-]+", "-", version_id).strip("-")
+        + "-"
+        + hashlib.sha256(archive_identity.encode("utf-8")).hexdigest()[:10]
+        + ".json"
+    )
+    path = _graph_versions_dir() / filename
+    archived_at = dt.datetime.now(dt.timezone.utc).isoformat(
+        timespec="microseconds"
+    ).replace("+00:00", "Z")
+    metadata = {
+        "schema_version": "graph-version/1.0",
+        "version_id": version_id,
+        "state_id": state_id,
+        "case_id": case_id,
+        "kind": kind,
+        "graph_hash": graph_hash,
+        "run_id": run_id,
+        "event_id": event_id,
+        "prior_state_id": prior_state_id,
+        "effective_date": effective_date or _today(),
+        "known_at": known_at or archived_at,
+        "created_at": archived_at,
+        "counts": _graph_counts(graph),
+        "filename": filename,
+    }
+    snapshot = {**metadata, "graph": copy.deepcopy(graph)}
+
+    with _graph_versions_lock:
+        if path.exists():
+            existing = _load_json_safe(path)
+            if (
+                existing.get("version_id") != version_id
+                or existing.get("case_id") != case_id
+                or existing.get("graph_hash") != graph_hash
+            ):
+                raise DynamicsBundleError(
+                    f"graph version {version_id} already exists with different content"
+                )
+            versions = _read_graph_version_index()
+            if not any(
+                item.get("case_id") == case_id
+                and item.get("version_id") == version_id
+                for item in versions
+            ):
+                existing_metadata = {
+                    key: value for key, value in existing.items() if key != "graph"
+                }
+                versions.append(existing_metadata)
+                _write_json_atomic(
+                    _graph_version_index_path(),
+                    {
+                        "schema_version": "graph-version-index/1.0",
+                        "updated_at": _now_iso(),
+                        "versions": versions,
+                    },
+                )
+            return {key: value for key, value in existing.items() if key != "graph"}
+
+        _write_json_atomic(path, snapshot)
+        versions = _read_graph_version_index()
+        if not any(
+            item.get("case_id") == case_id
+            and item.get("version_id") == version_id
+            for item in versions
+        ):
+            versions.append(metadata)
+        _write_json_atomic(
+            _graph_version_index_path(),
+            {
+                "schema_version": "graph-version-index/1.0",
+                "updated_at": _now_iso(),
+                "versions": versions,
+            },
+        )
+    return metadata
+
+
+def _load_graph_version(case_id: str, version_id: str) -> dict[str, Any]:
+    metadata = next(
+        (
+            item for item in _list_graph_versions(case_id)
+            if str(item.get("version_id")) == str(version_id)
+        ),
+        None,
+    )
+    if not metadata:
+        raise HTTPException(404, f"Graph version not found: {version_id}")
+    snapshot = _load_json_safe(
+        _graph_versions_dir() / Path(str(metadata["filename"])).name
+    )
+    graph = snapshot.get("graph") if isinstance(snapshot, dict) else None
+    if (
+        not snapshot
+        or not isinstance(graph, dict)
+        or snapshot.get("graph_hash") != metadata.get("graph_hash")
+        or _graph_content_hash(graph) != metadata.get("graph_hash")
+    ):
+        raise HTTPException(500, f"Graph version archive is inconsistent: {version_id}")
+    return snapshot
 
 
 def _runtime_execution_graph(case_id: str) -> Path:
@@ -1162,6 +1348,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     current_graph = _load_json_safe(PIPELINE_OUT / "current_graph.json")
     candidate_graph = _load_json_safe(PIPELINE_OUT / "candidate_graph.json")
     transition_output = _load_json_safe(PIPELINE_OUT / "transition_output.json")
+    graph_versions = _list_graph_versions(case_id)
 
     if isinstance(current_graph, dict) and "case_positions" in current_graph:
         current_graph = {**current_graph, "positions": current_graph["case_positions"]}
@@ -1258,6 +1445,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
             "current_graph": current_graph,
             "candidate_graph": candidate_graph,
             "transition_output": transition_output,
+            "graph_versions": graph_versions,
         },
     }
 
@@ -1275,6 +1463,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
         result["deal"]["current_graph"] = current_graph
         result["deal"]["candidate_graph"] = candidate_graph
         result["deal"]["transition_output"] = transition_output
+        result["deal"]["graph_versions"] = graph_versions
         result["deal"]["rooms"] = projection["deal"]["rooms"]
         result["deal"]["positions"] = semantic_positions
         result["deal"]["semantic_current_graph"] = semantic_graph
@@ -1371,6 +1560,19 @@ def projection(case_id: str, as_of_date: str | None = None) -> dict:
         "context": _make_context(case_id, state_id, as_of_date or today),
         "registry": [],
     }
+
+
+@v20.get("/cases/{case_id}/graph-versions")
+def list_graph_versions(case_id: str) -> dict:
+    return {
+        "case_id": case_id,
+        "versions": _list_graph_versions(case_id),
+    }
+
+
+@v20.get("/cases/{case_id}/graph-versions/{version_id:path}")
+def get_graph_version(case_id: str, version_id: str) -> dict:
+    return _load_graph_version(case_id, version_id)
 
 
 @v20.get("/cases/{case_id}/sources")
@@ -2191,6 +2393,33 @@ async def admit(
     cand_state_id = candidate_state.get(
         "state_id", f"CAND-{uuid.uuid4().hex[:8].upper()}"
     )
+    prior_state_id = transition_output.get("prior_state_id", "STATE-PRIOR")
+    event_record = event_batch[0] if event_batch else {}
+    current_graph = _load_json_safe(PIPELINE_OUT / "current_graph.json")
+    try:
+        current_graph_version = _archive_graph_version(
+            case_id,
+            prior_state_id,
+            "CURRENT",
+            current_graph,
+            run_id=run_id,
+            event_id=event_id,
+            effective_date=event_record.get("effective_date"),
+            known_at=event_record.get("known_at"),
+        )
+        candidate_graph_version = _archive_graph_version(
+            case_id,
+            cand_state_id,
+            "CANDIDATE",
+            candidate_graph,
+            run_id=run_id,
+            event_id=event_id,
+            prior_state_id=prior_state_id,
+            effective_date=event_record.get("effective_date"),
+            known_at=event_record.get("known_at"),
+        )
+    except DynamicsBundleError as exc:
+        raise HTTPException(500, f"Dynamics graph versioning failed: {exc}") from exc
 
     # Store run so /runs/{run_id}/settle can find it
     _store_run(run_id, {
@@ -2201,6 +2430,8 @@ async def admit(
         "history_append": dynamics_result.get("history_append", []),
         "transition_output": transition_output,
         "candidate_state_id": cand_state_id,
+        "current_graph_version": current_graph_version,
+        "candidate_graph_version": candidate_graph_version,
         "bundle_dir": str(PIPELINE_OUT),
         "authority_records": [],
         "status": "CANDIDATE_READY",
@@ -2223,7 +2454,7 @@ async def admit(
         "engine_version": transition_output.get("engine_version", "1.0"),
         "run_id": run_id,
         "case_id": case_id,
-        "prior_state_id": transition_output.get("prior_state_id", "STATE-PRIOR"),
+        "prior_state_id": prior_state_id,
         "candidate_state_id": cand_state_id,
         "policy_refs": transition_output.get("policy_refs", {}),
         "affected_set": transition_output.get("affected_set", []),
@@ -2244,6 +2475,9 @@ async def admit(
     return {
         "run": {"run_id": run_id, "status": "CANDIDATE_READY"},
         "transition": transition,
+        "candidate_graph": candidate_graph,
+        "current_graph_version": current_graph_version,
+        "candidate_graph_version": candidate_graph_version,
         "context": {
             **_make_context(case_id, cand_state_id, _today()),
             "run_id": run_id,
@@ -2305,7 +2539,9 @@ async def settle_run(
     package_ids = [str(item) for item in payload.get("execution_package_ids", [])]
     _validate_execution_package_scope(run, scoped_records, package_ids)
 
-    ts = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    settled_at = dt.datetime.now(dt.timezone.utc)
+    ts = settled_at.strftime("%Y%m%dT%H%M%S%fZ")
+    settled_known_at = settled_at.isoformat().replace("+00:00", "Z")
     today = _today()
     new_state_id = f"STATE-{case_id.upper()}-{ts}"
     try:
@@ -2317,7 +2553,22 @@ async def settle_run(
         )
     except DynamicsBundleError as exc:
         raise HTTPException(409, str(exc)) from exc
+    try:
+        settled_graph_version = _archive_graph_version(
+            case_id,
+            new_state_id,
+            "CURRENT",
+            settled_state["current_graph"],
+            run_id=run_id,
+            event_id=event_id,
+            prior_state_id=run["transition_output"].get("prior_state_id"),
+            effective_date=payload.get("effective_date", today),
+            known_at=settled_known_at,
+        )
+    except DynamicsBundleError as exc:
+        raise HTTPException(500, f"Settled graph versioning failed: {exc}") from exc
     run["settled_state_id"] = new_state_id
+    run["settled_graph_version"] = settled_graph_version
     run["status"] = "SETTLED"
     run["selected_change_ids"] = list(selected_change_ids)
     _store_run(run_id, run)
@@ -2338,7 +2589,7 @@ async def settle_run(
         "replay_hash": run["transition_output"].get("replay_hash", "sha256:settled"),
         "decision": decision,
         "actor": actor,
-        "timestamp": ts,
+        "timestamp": settled_known_at,
         "written-by": "v20-api",
     }
     settle_file.write_text(
@@ -2364,15 +2615,16 @@ async def settle_run(
         ) == "PARTIAL",
         "summary": f"Settled {event_id} → new Current {new_state_id}",
         "replay_hash": run["transition_output"].get("replay_hash", "sha256:settled"),
-        "timestamp": ts,
+        "timestamp": settled_known_at,
         "effective_date": payload.get("effective_date", today),
-        "known_at": ts,
+        "known_at": settled_known_at,
         "as_of_state_id": new_state_id,
         "as_of_date": today,
         "projection": {"projection": updated_projection, "context": _make_context(case_id, new_state_id, today), "registry": []},
         "context": _make_context(case_id, new_state_id, today),
         "registry": [],
         "runtime_state_id": settled_state["state_id"],
+        "graph_version": settled_graph_version,
     }
 
 # Also keep the event-based settle for direct calls

@@ -1,5 +1,5 @@
 @echo off
-cd /d %~dp0\..
-start "PANTA V20 Server" python mock_api\server.py --host 127.0.0.1 --port 4191
+cd /d %~dp0\..\..\..
+start "PANTA V20 Server" .venv\Scripts\uvicorn.exe app.server:app --host 127.0.0.1 --port 4191
 timeout /t 2 >nul
-start "" "http://localhost:4191/?mode=mock^&case=PROJECT-TETHYS^&actor=partner^&api=http://localhost:4191/api/v20#case=PROJECT-TETHYS^&view=deal-command"
+start "" "http://localhost:4191/ui/index.html?mode=connected#view=sources"

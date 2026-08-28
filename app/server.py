@@ -19,10 +19,29 @@ from datetime import datetime
 from pathlib import Path
 
 from fastapi import FastAPI, HTTPException, UploadFile
+from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse, StreamingResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 import os
+
+# Load .env at project root so ANTHROPIC_API_KEY reaches the server
+# even when uvicorn is started without an explicit export in the shell.
+def _load_dotenv() -> None:
+    env_path = Path(__file__).resolve().parent.parent / ".env"
+    if not env_path.exists():
+        return
+    for line in env_path.read_text(encoding="utf-8").splitlines():
+        line = line.strip()
+        if not line or line.startswith("#") or "=" not in line:
+            continue
+        k, _, v = line.partition("=")
+        k = k.strip()
+        v = v.strip().strip('"').strip("'")
+        os.environ.setdefault(k, v)
+
+_load_dotenv()
 
 ROOT = Path(__file__).resolve().parent.parent
 IS_CLOUD = os.environ.get("VERCEL") == "1"
@@ -54,6 +73,22 @@ def push():
         vaultsync.push_dirty(VAULT)
 
 app = FastAPI(title="PE OS", docs_url=None, redoc_url=None)
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
+
+# ── V20 router (the contract the frontend speaks) ─────────────────────────────
+from app.v20_router import v20  # noqa: E402
+app.include_router(v20)
+
+# ── V20 frontend — served at /ui so API routes always win ─────────────────────
+_UI_DIR = ROOT / "ui" / "01_PRODUCT_BUILD" / "app"
+if _UI_DIR.exists():
+    app.mount("/ui", StaticFiles(directory=str(_UI_DIR), html=True), name="v20-ui")
 
 EPISTEMIC = ("asserted", "derived", "observed", "attested")
 Q_STATES = ("open", "reducing", "resolved", "accepted-unresolved")
@@ -1211,8 +1246,11 @@ def _llm_text(system: str, user: str, max_tokens: int = 8000) -> str:
             req = urllib.request.Request(
                 "https://api.anthropic.com/v1/messages",
                 data=json.dumps(payload).encode(), method="POST",
-                headers={"Content-Type": "application/json", "x-api-key": anthropic_key,
-                         "anthropic-version": "2023-06-01"})
+                headers={k: v for k, v in {
+                    "Content-Type": "application/json", "x-api-key": anthropic_key,
+                    "anthropic-version": "2023-06-01",
+                    "anthropic-workspace-id": os.environ.get("ANTHROPIC_WORKSPACE_ID", "") or None,
+                }.items() if v})
             with urllib.request.urlopen(req, timeout=280) as resp:
                 blocks = json.loads(resp.read())["content"]
                 text = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")

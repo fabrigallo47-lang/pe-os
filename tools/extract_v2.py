@@ -1008,7 +1008,9 @@ def main() -> int:
         return 1
     try:
         import anthropic
-        client = anthropic.Anthropic(api_key=api_key)
+        workspace_id = os.environ.get("ANTHROPIC_WORKSPACE_ID", "")
+        default_headers = {"anthropic-workspace-id": workspace_id} if workspace_id else {}
+        client = anthropic.Anthropic(api_key=api_key, default_headers=default_headers)
     except ImportError:
         print("ERROR: pip install anthropic", file=sys.stderr)
         return 1

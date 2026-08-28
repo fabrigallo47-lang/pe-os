@@ -1,9 +1,10 @@
 #!/bin/bash
-cd "$(dirname "$0")/.."
+ROOT="$(cd "$(dirname "$0")/../../.." && pwd)"
+cd "$ROOT"
 PORT=${PANTA_PORT:-4191}
-echo "Opening PANTA V20 Mock Connected at http://localhost:$PORT/?mode=mock&case=PROJECT-TETHYS&actor=partner"
-python3 mock_api/server.py --host 127.0.0.1 --port "$PORT" &
+echo "Opening PANTA V20 Connected at http://localhost:$PORT/ui/index.html?mode=connected"
+.venv/bin/uvicorn app.server:app --host 127.0.0.1 --port "$PORT" &
 PID=$!
 sleep 1
-open "http://localhost:$PORT/?mode=mock&case=PROJECT-TETHYS&actor=partner&api=http://localhost:$PORT/api/v20#case=PROJECT-TETHYS&view=deal-command"
+open "http://localhost:$PORT/ui/index.html?mode=connected#view=sources"
 wait $PID

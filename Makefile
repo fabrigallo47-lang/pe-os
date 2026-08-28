@@ -20,15 +20,15 @@ state: index ## Derive deal state by replaying events (usage: make state DEAL=au
 ui: index ## Generate the static deal dashboard export (usage: make ui DEAL=aurora)
 	$(PY) tools/ui.py $(DEAL)
 
-app: index ## Run the live app (http://127.0.0.1:8787)
-	.venv/bin/uvicorn app.server:app --host 127.0.0.1 --port 8787
+app: index ## Run the live app (http://127.0.0.1:4191)
+	.venv/bin/uvicorn app.server:app --host 127.0.0.1 --port 4191
 
 watch: ## Watch vault/inbox/ and auto-trigger pipeline on new artifacts
 	$(PY) tools/watcher.py
 
 dev: index ## Run app + inbox watcher together (two panes via tmux, or run separately)
-	@echo "Starting app on :8787  — open a second terminal and run: make watch"
-	.venv/bin/uvicorn app.server:app --host 127.0.0.1 --port 8787
+	@echo "Starting app on :4191  — open a second terminal and run: make watch"
+	.venv/bin/uvicorn app.server:app --host 127.0.0.1 --port 4191
 
 agents: index ## Deploy the agent runtime (watches vault, acts under contracts)
 	$(PY) agents/runtime.py

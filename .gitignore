@@ -42,6 +42,9 @@ independent_validation_report*
 # computed cell values (keyed by the workbook's content digest).
 pipeline_out/live/
 pipeline_out/cellvalues/
+# Keystone V20 extraction output: local, derived and may contain deal evidence.
+pipeline_out/e3/K-IC/adapter_alpha/
+logs/
 
 # Proprietary algorithms — not for public repo
 tools/case_compiler_alpha.py

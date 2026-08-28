@@ -1484,6 +1484,30 @@ def api_graph(deal: str | None = None):
     first so the view is never stale. Returns stale flag, epistemic type, degree."""
     sync()
     reindex()
+    # The live Keystone path has a richer semantic Current graph than the
+    # vault index alone: it carries source→claim, question, case-position,
+    # support/contradiction and coverage-condition edges. Prefer it when it
+    # exists so the test viewer and V20 read the same semantic state.
+    semantic = ROOT / "pipeline_out" / "e3" / "K-IC" / "adapter_alpha" / "semantic_current_graph.json"
+    if deal and semantic.exists():
+        graph = json.loads(semantic.read_text(encoding="utf-8"))
+        nodes = [
+            {"id": n.get("id"), "type": n.get("type", "unknown"),
+             "title": n.get("label") or n.get("title") or n.get("id"),
+             "deal": deal, "state": n.get("decision_status") or n.get("coverage_status"),
+             "epistemic": n.get("epistemic"), "stale": False, "degree": 0}
+            for n in graph.get("nodes", [])
+        ]
+        degree: dict[str, int] = {}
+        for edge in graph.get("edges", []):
+            degree[edge.get("source")] = degree.get(edge.get("source"), 0) + 1
+            degree[edge.get("target")] = degree.get(edge.get("target"), 0) + 1
+        for node in nodes:
+            node["degree"] = degree.get(node["id"], 0)
+        return {"nodes": nodes, "links": [
+            {"source": e.get("source"), "target": e.get("target"), "rel": e.get("rel", "")}
+            for e in graph.get("edges", [])
+        ]}
     c = con()
     if deal:
         node_rows = c.execute(

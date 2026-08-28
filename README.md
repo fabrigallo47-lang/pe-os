@@ -30,6 +30,24 @@ make contracts  # show what the machine contracts load
 
 Open `vault/` in Obsidian anytime — same truth, different projection.
 
+### V20 + extractor: quickest local run
+
+```bash
+make setup
+.venv/bin/python -m uvicorn app.server:app --host 127.0.0.1 --port 4191
+```
+
+Open `http://127.0.0.1:4191/ui/index.html?mode=connected` and select the
+Keystone case. In **Sources → Ingest**, upload a PDF, `.md` or `.txt` file.
+The V1 extractor runs in the background and stores only a reviewable evidence
+proposal. Go to **Ingestion History** and choose **Admit evidence** to promote
+it into the semantic Current (Sources → Claims → Questions → Case Positions).
+Choose **Reject** to retain the extraction audit trail without changing Current.
+Use **Open live graph** in Sources to inspect the parallel semantic graph.
+
+The local extraction state is intentionally ignored by Git: it contains source
+material and derived claim memory. A fresh clone starts without it.
+
 ## Input surfaces (how knowledge enters)
 
 | Input | How | Handled by |

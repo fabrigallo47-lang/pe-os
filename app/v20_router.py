@@ -10,6 +10,7 @@ from __future__ import annotations
 
 import datetime as dt
 import base64
+import hashlib
 import json
 import logging
 import re
@@ -129,7 +130,7 @@ def _persist_claims_to_vault(case_id: str, claims: list[dict], source_filename: 
             },
             "derivation": None,
             "rests-on": [],
-            "extracted-by": "extract_v2",
+            "extracted-by": "extract_v1",
             "extracted": _today(),
             "period": claim.get("period"),
             "perimeter": claim.get("perimeter"),
@@ -144,7 +145,12 @@ def _persist_claims_to_vault(case_id: str, claims: list[dict], source_filename: 
     return written
 
 def _ensure_question_registry(case_id: str) -> None:
-    """Materialize the extractor's canonical underwriting-question graph for the case."""
+    """Materialize the archetype question grammar, never a claim-derived fact.
+
+    These are the opening questions supplied by the investment archetype.  They
+    are deliberately marked as such so future Fund Lens and deal-emergent
+    questions can live beside them without pretending all questions were fixed.
+    """
     from bind_questions_e3 import QUESTIONS
     q_dir = VAULT / "deals" / case_id / "questions"
     q_dir.mkdir(parents=True, exist_ok=True)
@@ -156,9 +162,27 @@ def _ensure_question_registry(case_id: str) -> None:
             "type": "question", "id": qid, "deal": case_id,
             "title": title, "question": title, "state": "open",
             "status": "open", "critical": False, "workstream": "underwriting",
-            "opened": _today(), "written-by": "extractor-graph",
+            "opened": _today(), "written-by": "archetype-grammar",
+            "origin": "archetype", "question_version": 1,
         }
         path.write_text("---\n" + yaml.safe_dump(fm, sort_keys=False, allow_unicode=True) + "---\n\n# " + title + "\n", encoding="utf-8")
+
+
+def _proposal_path(job_id: str) -> Path:
+    return PIPELINE_OUT / "proposals" / f"evidence-{job_id}.json"
+
+
+def _write_evidence_proposal(job_id: str, case_id: str, filename: str, claims: list[dict]) -> Path:
+    """Store extraction output as reviewable evidence, before it can affect Current."""
+    path = _proposal_path(job_id)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "proposal_id": f"evidence-{job_id}", "job_id": job_id, "case_id": case_id,
+        "source_id": filename, "source_path": f"vault/inbox/{filename}",
+        "status": "PENDING_REVIEW", "created_at": _now_iso(), "claims": claims,
+    }
+    path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    return path
 
 def _derive_bears_on(claims: list[dict], e3: dict) -> list[dict]:
     """Apply the same deterministic metric/keyword graph used by bind_questions_e3."""
@@ -175,16 +199,143 @@ def _derive_bears_on(claims: list[dict], e3: dict) -> list[dict]:
     return out
 
 def _normalise_v1_claims(claims: list[dict], source_filename: str) -> list[dict]:
-    """Give V1 records the stable fields consumed by the V20 projection."""
+    """Give V1 records stable, content-addressed identities for the V20 corpus."""
     out = []
-    for i, claim in enumerate(claims, 1):
+    for claim in claims:
         c = dict(claim)
-        c.setdefault("claim_id", c.get("id") or f"c-keystone-{i:03d}")
+        identity = "|".join(str(c.get(key, "")).strip() for key in (
+            "subject", "metric", "value", "unit", "period", "perimeter", "statement", "epistemic",
+        ))
+        c["claim_id"] = c.get("claim_id") or c.get("id") or f"v1-{hashlib.sha256(identity.encode()).hexdigest()[:16]}"
         c.setdefault("source_id", source_filename or "uploaded-source")
+        c["source_ids"] = sorted(set(c.get("source_ids", []) + [c["source_id"]]))
         c.setdefault("locator", c.get("source_locator", ""))
         c.setdefault("epistemic_class", c.get("epistemic", "asserted"))
         out.append(c)
     return out
+
+def _merge_claim_corpus(existing: list[dict], incoming: list[dict]) -> tuple[list[dict], list[dict]]:
+    """Append novel content-addressed claims and retain all source provenance."""
+    merged = [dict(c) for c in existing]
+    by_id = {str(c.get("claim_id") or c.get("id") or c.get("stable_id")): c for c in merged}
+    added: list[dict] = []
+    for claim in incoming:
+        cid = str(claim.get("claim_id") or claim.get("id") or claim.get("stable_id"))
+        prior = by_id.get(cid)
+        if prior is None:
+            merged.append(claim)
+            by_id[cid] = claim
+            added.append(claim)
+            continue
+        prior_sources = set(prior.get("source_ids", [])) | {prior.get("source_id")} | set(claim.get("source_ids", [])) | {claim.get("source_id")}
+        prior["source_ids"] = sorted(s for s in prior_sources if s)
+    return merged, added
+
+def _build_semantic_current(claims: list[dict], case_id: str) -> dict:
+    """Build the pre-runtime Current semantic graph from admitted source evidence."""
+    from claim_graph import claims_to_graph
+    graph = claims_to_graph(claims, deal=case_id)
+    nodes = graph.get("nodes", [])
+    edges = graph.get("edges", [])
+    node_ids = {n.get("id") for n in nodes}
+    # Make source provenance first-class in the test graph: Source → Claim.
+    for index, claim in enumerate(claims):
+        claim_node = f"claim:{index:03d}"
+        for source_id in claim.get("source_ids") or [claim.get("source_id")]:
+            if not source_id:
+                continue
+            source_node = f"source:{source_id}"
+            if source_node not in node_ids:
+                nodes.append({"id": source_node, "type": "source", "label": source_id,
+                              "title": source_id, "coverage_status": "mapped"})
+                node_ids.add(source_node)
+            edges.append({"source": source_node, "target": claim_node, "rel": "CONTAINS_CLAIM"})
+    # A missing question is a visible coverage condition, never a fabricated fact.
+    bound_questions = {e.get("target", "").removeprefix("q:") for e in edges if e.get("rel") == "BEARS_ON"}
+    for question in _load_questions(case_id):
+        qid = question.get("id")
+        if qid and qid not in bound_questions:
+            condition_id = f"condition:coverage-{qid}"
+            nodes.append({"id": condition_id, "type": "condition", "label": f"Evidence required for {qid}",
+                          "coverage_status": "missing", "question_id": qid})
+            edges.append({"source": f"q:{qid}", "target": condition_id, "rel": "REQUIRES_EVIDENCE"})
+    graph["nodes"] = nodes
+    graph["edges"] = edges
+    graph["kind"] = "semantic_current"
+    graph["case_id"] = case_id
+    (PIPELINE_OUT / "semantic_current_graph.json").write_text(json.dumps(graph, indent=2, ensure_ascii=False) + "\n")
+    return graph
+
+def _semantic_rooms(graph: dict, question_spine: list[dict]) -> tuple[list[dict], dict, list[dict]]:
+    """Project semantic positions and evidence gaps into Foundations and Unknowns."""
+    nodes = {n.get("id"): n for n in graph.get("nodes", [])}
+    evidence: dict[str, list[dict]] = {}
+    for edge in graph.get("edges", []):
+        if edge.get("rel") not in {"SUPPORTS", "CONTRADICTS"}:
+            continue
+        claim, position = nodes.get(edge.get("source"), {}), nodes.get(edge.get("target"), {})
+        if claim.get("type") == "claim" and position.get("type") == "case_position":
+            evidence.setdefault(position["id"], []).append({
+                "claim_id": claim["id"], "value": claim.get("value"), "unit": claim.get("unit"),
+                "period": claim.get("period"), "perimeter": claim.get("perimeter"),
+                "relation": edge["rel"], "definition_id": claim.get("definition"),
+            })
+    foundations, positions = [], []
+    for node in nodes.values():
+        if node.get("type") != "case_position":
+            continue
+        opts = evidence.get(node["id"], [])
+        positions.append({"position_id": node["id"], "id": node["id"], "label": node.get("label"), **node})
+        foundations.append({"id": node["id"], "label": node.get("label"), "economic": node.get("statement") or node.get("note", ""),
+                            "strength": "contested" if node.get("decision_status") == "CONTESTED" else "weak",
+                            "status": node.get("decision_status", "PENDING"), "evidence_options": opts,
+                            "members": [x["claim_id"] for x in opts]})
+    unknowns = {"items": [
+        {"id": f"unknown:{q['id']}", "label": q.get("label", q["id"]), "question_id": q["id"],
+         "value": "No admitted evidence yet", "closure": "Admit source evidence or accept the residual risk."}
+        for q in question_spine if q.get("coverage") == "gap"
+    ]}
+    return foundations, unknowns, positions
+
+def _run_v1_runtime_adapter(claims: list[dict], case_id: str) -> None:
+    """Bridge V1 claims into the existing Keystone runtime bundle builder."""
+    e3_path = PIPELINE_OUT / "SINGLE" / "e3_claims.json"
+    e3_path.parent.mkdir(parents=True, exist_ok=True)
+    compiler = []
+    for c in claims:
+        compiler.append({k: c.get(k) for k in ("claim_id", "metric", "direction", "topic", "author", "derivation")})
+    e3 = {"schema_version": "e3/compat-v1", "manifest_id": "SINGLE", "deal": case_id,
+          "extractor": "extract_v1", "claims": claims,
+          "extraction_metadata": {"compiler_fields_per_claim": compiler}}
+    e3_path.write_text(json.dumps(e3, indent=2, ensure_ascii=False))
+    execution = VAULT / "deals" / case_id / "models" / "execution_graph_v7.json"
+    if not execution.exists():
+        fallback = ROOT / "pipeline_out" / "e3" / "K-PRE" / "adapter_alpha" / "execution_graph_v7.json"
+        if fallback.exists():
+            # bundle_assemble deliberately reads the canonical vault path.
+            # Recreate it after a clean-state reset from the versioned
+            # Keystone runtime template, before invoking adapter_alpha.
+            execution.parent.mkdir(parents=True, exist_ok=True)
+            execution.write_bytes(fallback.read_bytes())
+    if not execution.exists():
+        logger.warning("runtime adapter skipped: execution_graph_v7.json missing")
+        return
+    # The adapter writes its own claims.json. Keep it isolated so it can never
+    # overwrite the cumulative extractor corpus at PIPELINE_OUT/claims.json.
+    runtime_dir = PIPELINE_OUT / "runtime"
+    cmd = [sys.executable, str(ROOT / "tools" / "adapter_alpha.py"), "--e3", str(e3_path),
+           "--execution", str(execution), "--out", str(runtime_dir), "--manifest", "SINGLE", "--deal", case_id]
+    result = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT))
+    if result.returncode:
+        logger.warning("runtime adapter failed: %s", result.stderr[-1000:])
+    else:
+        # The V20 projection reads these runtime state files from the root
+        # bundle. Promote state only; extractor claims remain authoritative.
+        for name in ("current_graph.json", "candidate_graph.json", "transition_output.json", "execution_mapping.json"):
+            src = runtime_dir / name
+            if src.exists():
+                (PIPELINE_OUT / name).write_bytes(src.read_bytes())
+        logger.info("runtime adapter built V1 runtime bundle for %d claims", len(claims))
 
 def _rebuild_index() -> None:
     subprocess.run(
@@ -240,6 +391,11 @@ def _load_questions(case_id: str) -> list[dict]:
     for md in sorted(q_dir.glob("*.md")):
         fm = _read_frontmatter(md)
         if fm:
+            # Migrate the initial Q-xx registry created before origins were
+            # recorded; it is archetype grammar, not deal-emergent evidence.
+            if not fm.get("origin") and str(fm.get("id", "")).startswith("Q-"):
+                fm["origin"] = "archetype"
+                fm.setdefault("question_version", 1)
             out.append(fm)
     return out
 
@@ -269,16 +425,17 @@ def _enrich_claims(raw: list[dict], bears_on_map: dict) -> list[dict]:
 def _build_sources_from_claims(raw: list[dict]) -> list[dict]:
     seen: dict[str, dict] = {}
     for c in raw:
-        sid = c.get("source_id") or c.get("source_doc") or "unknown"
-        if sid not in seen:
-            seen[sid] = {
-                "source_id": sid,
-                "title": c.get("source_doc", sid),
-                "claim_ids": [],
-                "effective_date": "2024-10-01T00:00:00Z",
-                "known_at": "2024-10-01T00:00:00Z",
-            }
-        seen[sid]["claim_ids"].append(c.get("id") or c.get("claim_id") or "")
+        source_ids = c.get("source_ids") or [c.get("source_id") or c.get("source_doc") or "unknown"]
+        for sid in source_ids:
+            if sid not in seen:
+                seen[sid] = {
+                    "source_id": sid,
+                    "title": c.get("source_doc", sid),
+                    "claim_ids": [],
+                    "effective_date": "2024-10-01T00:00:00Z",
+                    "known_at": "2024-10-01T00:00:00Z",
+                }
+            seen[sid]["claim_ids"].append(c.get("id") or c.get("claim_id") or "")
     return list(seen.values())
 
 def _build_question_spine(questions: list[dict], claims: list[dict]) -> list[dict]:
@@ -296,6 +453,8 @@ def _build_question_spine(questions: list[dict], claims: list[dict]) -> list[dic
             "claim_count": count,
             "coverage": "gap" if count == 0 else ("full" if count >= 3 else "partial"),
             "workstream": q.get("workstream", ""),
+            "origin": q.get("origin", "deal_emergent"),
+            "question_version": q.get("question_version", 1),
             "work_plan": [],
         })
     return spine
@@ -335,6 +494,8 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     sources = _build_sources_from_claims(raw_claims)
     questions = _load_questions(case_id)
     question_spine = _build_question_spine(questions, claims)
+    semantic_graph = _load_json_safe(PIPELINE_OUT / "semantic_current_graph.json")
+    foundations, unknowns, semantic_positions = _semantic_rooms(semantic_graph, question_spine) if semantic_graph else ([], {"items": []}, [])
 
     current_graph = _load_json_safe(PIPELINE_OUT / "current_graph.json")
     candidate_graph = _load_json_safe(PIPELINE_OUT / "candidate_graph.json")
@@ -418,10 +579,12 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
             "validation_envelopes": [],
             "source_center": {"sources": sources},
             "rooms": {
-                "foundations": {"sets": []},
-                "unknowns": {"items": []},
+                "foundations": {"sets": foundations},
+                "unknowns": unknowns,
                 "shadowIC": {"theses": []},
             },
+            "positions": semantic_positions,
+            "semantic_current_graph": semantic_graph,
             "current_graph": current_graph,
             "candidate_graph": candidate_graph,
             "transition_output": transition_output,
@@ -443,6 +606,8 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
         result["deal"]["candidate_graph"] = candidate_graph
         result["deal"]["transition_output"] = transition_output
         result["deal"]["rooms"] = projection["deal"]["rooms"]
+        result["deal"]["positions"] = semantic_positions
+        result["deal"]["semantic_current_graph"] = semantic_graph
         result["deal"]["replay"] = projection["deal"]["replay"]
         result["deal"]["temporal"] = projection["deal"]["temporal"]
         result["deal"]["as_of_state_id"] = state_id
@@ -630,12 +795,13 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
         # For a missing file use the legacy V1 batch entry point.
         if source_path and source_path.exists() and source_path.suffix.lower() in (".md", ".txt", ".pdf"):
             manifest_label = "SINGLE"
+            run_dir = PIPELINE_OUT / "runs" / job_id
             # Use the proven V1 extractor for the live V20 path.  pipeline.py
             # accepts PDF directly (via pdftotext) and writes canonical claims
             # plus the semantic graph under the requested output directory.
             cmd = [sys.executable, str(ROOT / "tools" / "pipeline.py"),
                    str(source_path), "--deal", case_id,
-                   "--out", str(PIPELINE_OUT / manifest_label)]
+                   "--out", str(run_dir)]
         else:
             manifest_label = "K-IC"
             cmd = [sys.executable, str(ROOT / "tools" / "extract.py"),
@@ -651,10 +817,12 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
             if r.stderr:
                 logger.warning("JOB %s stderr: %s", job_id, r.stderr[-500:])
 
-            # Merge extracted claims into adapter_alpha/claims.json so the projection sees them
+            # Extraction produces a proposal.  It must not mutate the admitted
+            # corpus or the semantic Current until a professional review admits it.
             if ok:
-                e3_out = PIPELINE_OUT / manifest_label / "e3_claims.json"
-                v1_out = PIPELINE_OUT / manifest_label / "claims.json"
+                output_dir = (PIPELINE_OUT / "runs" / job_id) if manifest_label == "SINGLE" else (PIPELINE_OUT / manifest_label)
+                e3_out = output_dir / "e3_claims.json"
+                v1_out = output_dir / "claims.json"
                 if e3_out.exists() or v1_out.exists():
                     try:
                         if e3_out.exists():
@@ -663,20 +831,17 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                         else:
                             e3 = {}
                             raw = json.loads(v1_out.read_text())
-                        _ensure_question_registry(case_id)
                         new_claims = _derive_bears_on(_normalise_v1_claims(raw, filename), e3)
-                        existing_path = PIPELINE_OUT / "claims.json"
-                        existing = json.loads(existing_path.read_text()) if existing_path.exists() else []
-                        existing_ids = {c.get("stable_id") or c.get("id") for c in existing}
-                        added = [c for c in new_claims if (c.get("stable_id") or c.get("id")) not in existing_ids]
-                        if added:
-                            merged = existing + added
-                            existing_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False))
-                            logger.info("JOB %s merged %d new claims (total %d)", job_id, len(added), len(merged))
-                        else:
-                            logger.info("JOB %s no new claims to merge (all %d already present)", job_id, len(new_claims))
-                        persisted = _persist_claims_to_vault(case_id, new_claims, filename)
-                        logger.info("JOB %s persisted %d claims to vault", job_id, persisted)
+                        proposal = _write_evidence_proposal(job_id, case_id, filename, new_claims)
+                        _jobs[job_id].update({"proposal_id": proposal.stem,
+                                              "proposal_path": str(proposal.relative_to(ROOT)),
+                                              "proposed_claim_count": len(new_claims),
+                                              "admission_status": "PENDING_REVIEW"})
+                        _update_inbox_record(job_id, proposal_id=proposal.stem,
+                                             proposal_path=str(proposal.relative_to(ROOT)),
+                                             proposed_claim_count=len(new_claims),
+                                             admission_status="PENDING_REVIEW")
+                        logger.info("JOB %s produced %d evidence proposals", job_id, len(new_claims))
                     except Exception as merge_exc:
                         logger.error("JOB %s merge failed: %s", job_id, merge_exc)
 
@@ -686,12 +851,13 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                 "progress": 100 if ok else 0,
                 "stdout": (r.stdout or "")[-2000:],
                 "stderr": (r.stderr or "")[-1000:],
-                "message": "Extraction complete — reload projection." if ok else (r.stderr or "")[-300:],
+                "message": "Extraction complete — evidence is ready for professional review."
+                if ok else (r.stderr or "")[-300:],
             })
             _update_inbox_record(
                 job_id, status="COMPLETE" if ok else "ERROR",
                 stage="Complete" if ok else "Failed", progress=100 if ok else 0,
-                message="Extraction complete; claims are available in the projection."
+                message="Extraction complete; admit, edit or reject the proposed evidence before it enters Current."
                 if ok else (r.stderr or "Extraction failed")[-300:],
             )
         except Exception as exc:
@@ -702,6 +868,72 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
 
     background_tasks.add_task(_run)
     return {"job": _jobs[job_id], "job_id": job_id}
+
+
+@v20.post("/cases/{case_id}/ingest/{job_id}/admit")
+async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
+    """Apply the explicit professional decision at the evidence boundary.
+
+    Extraction is fallible.  This endpoint is the only route that promotes an
+    extracted claim to the admitted corpus and rebuilds the semantic Current.
+    It intentionally does *not* invoke the transition/runtime adapter: the
+    resulting admitted-evidence event is the hand-off to the dynamics layer.
+    """
+    proposal_file = _proposal_path(job_id)
+    if not proposal_file.exists():
+        raise HTTPException(404, "No evidence proposal exists for this ingestion job")
+    proposal = _load_json_safe(proposal_file)
+    if proposal.get("case_id") != case_id:
+        raise HTTPException(409, "Evidence proposal belongs to another case")
+    decision = str(payload.get("decision", "ADMIT")).upper()
+    if decision not in {"ADMIT", "REJECT"}:
+        raise HTTPException(400, "decision must be ADMIT or REJECT")
+    if proposal.get("status") != "PENDING_REVIEW":
+        raise HTTPException(409, f"Evidence proposal already decided: {proposal.get('status')}")
+
+    if decision == "REJECT":
+        proposal.update({"status": "REJECTED", "reviewed_at": _now_iso(),
+                         "reviewed_by": payload.get("actor_id", "professional-review"),
+                         "review_note": payload.get("note", "")})
+        proposal_file.write_text(json.dumps(proposal, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+        _update_inbox_record(job_id, admission_status="REJECTED", stage="Evidence rejected",
+                             message="Extraction retained for audit; no claim entered Current.")
+        return {"status": "REJECTED", "proposal_id": proposal.get("proposal_id")}
+
+    # Optional corrected claims are supplied by a review UI/API client.  The
+    # default is to admit the extractor proposal unchanged.
+    reviewed_claims = payload.get("claims") if isinstance(payload.get("claims"), list) else proposal.get("claims", [])
+    reviewed_claims = [dict(c) for c in reviewed_claims if isinstance(c, dict)]
+    _ensure_question_registry(case_id)
+    existing_path = PIPELINE_OUT / "claims.json"
+    existing = json.loads(existing_path.read_text()) if existing_path.exists() else []
+    merged, added = _merge_claim_corpus(existing, reviewed_claims)
+    existing_path.write_text(json.dumps(merged, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    persisted = _persist_claims_to_vault(case_id, added, proposal.get("source_id", ""))
+    graph = _build_semantic_current(merged, case_id)
+    proposal.update({"status": "ADMITTED", "reviewed_at": _now_iso(),
+                     "reviewed_by": payload.get("actor_id", "professional-review"),
+                     "review_note": payload.get("note", ""),
+                     "admitted_claim_count": len(added)})
+    proposal_file.write_text(json.dumps(proposal, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
+    _update_inbox_record(job_id, admission_status="ADMITTED", stage="Evidence admitted",
+                         admitted_claim_count=len(added),
+                         message=f"Admitted evidence changed the semantic Current ({len(added)} new claims).")
+    events_dir = VAULT / "deals" / case_id / "events"
+    events_dir.mkdir(parents=True, exist_ok=True)
+    event_id = f"EVIDENCE-ADMITTED-{job_id}"
+    event_fm = {"type": "evidence_admitted", "id": event_id, "case": case_id,
+                "source": proposal.get("source_id"), "proposal_id": proposal.get("proposal_id"),
+                "claim_count": len(added), "known_at": _now_iso(),
+                "actor": payload.get("actor_id", "professional-review")}
+    (events_dir / f"e-{case_id}-evidence-admitted-{job_id}.md").write_text(
+        "---\n" + yaml.safe_dump(event_fm, sort_keys=False, allow_unicode=True) + "---\n\n"
+        "Admitted evidence event. Dynamics has not yet been run.\n", encoding="utf-8")
+    _rebuild_index()
+    return {"status": "ADMITTED", "proposal_id": proposal.get("proposal_id"), "event_id": event_id,
+            "new_claim_count": len(added), "persisted_claim_count": persisted,
+            "semantic_graph": {"nodes": len(graph.get("nodes", [])), "edges": len(graph.get("edges", []))},
+            "message": "Evidence admitted into semantic Current; ready for dynamics."}
 
 
 @v20.get("/jobs/{job_id}")

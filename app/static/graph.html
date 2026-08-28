@@ -72,6 +72,9 @@ select{height:34px;background:var(--surface);border:1px solid var(--line);color:
 const TYPE_COLOR = {
   question:      "#7fa8cf",
   claim:         "#53b98a",
+  source:        "#c9a24b",
+  case_position: "#b87fd4",
+  condition:     "#e07a72",
   assumption:    "#c9a24b",
   decision:      "#b87fd4",
   event:         "#98a6b8",
@@ -378,6 +381,7 @@ async function load(deal) {
 
 // ── deal selector + reload ─────────────────────────────────────────────────
 (async () => {
+  const requestedDeal = new URLSearchParams(location.search).get("deal") || "";
   try {
     const ds = await fetch("/api/deals").then(r=>r.json());
     const sel = document.getElementById("dealsel");
@@ -386,9 +390,18 @@ async function load(deal) {
       o.value = d.id; o.textContent = d.id;
       sel.appendChild(o);
     });
+    // Preserve an explicit V20 deal filter even before its first extraction
+    // has created a vault deal note. Without this, /graph?deal=keystone
+    // silently falls back to the firm-wide ontology graph.
+    if (requestedDeal && ![...sel.options].some(o => o.value === requestedDeal)) {
+      const o = document.createElement("option");
+      o.value = requestedDeal; o.textContent = requestedDeal;
+      sel.appendChild(o);
+    }
+    if (requestedDeal) sel.value = requestedDeal;
     sel.addEventListener("change", () => load(sel.value));
   } catch(e) {}
-  load(document.getElementById("dealsel").value);
+  load(requestedDeal || document.getElementById("dealsel").value);
 })();
 
 document.getElementById("reload").onclick = () => load(document.getElementById("dealsel").value);

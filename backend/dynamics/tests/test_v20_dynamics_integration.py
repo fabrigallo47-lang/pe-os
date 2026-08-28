@@ -46,14 +46,26 @@ class V20DynamicsIntegrationTests(unittest.TestCase):
 
         self.previous_bundle = router.PIPELINE_OUT
         self.previous_vault = router.VAULT
+        self.previous_jobs_log = router.INGEST_JOBS_LOG
+        self.previous_runs_log = router.RUNS_LOG
+        self.previous_jobs = dict(router._jobs)
+        self.previous_runs = dict(router._runs)
         router.PIPELINE_OUT = self.bundle
         router.VAULT = self.root / "vault"
+        router.INGEST_JOBS_LOG = self.root / "logs" / "ingest_jobs.json"
+        router.RUNS_LOG = self.root / "logs" / "runs.json"
+        router._jobs.clear()
         router._runs.clear()
 
     def tearDown(self):
         router.PIPELINE_OUT = self.previous_bundle
         router.VAULT = self.previous_vault
+        router.INGEST_JOBS_LOG = self.previous_jobs_log
+        router.RUNS_LOG = self.previous_runs_log
+        router._jobs.clear()
+        router._jobs.update(self.previous_jobs)
         router._runs.clear()
+        router._runs.update(self.previous_runs)
         self.temporary.cleanup()
 
     def test_change_impact_runs_engine_and_settlement_requires_attestation(self):
@@ -70,7 +82,13 @@ class V20DynamicsIntegrationTests(unittest.TestCase):
         transition = admitted["transition"]
         self.assertEqual(transition["replay_hash"], router._runs[run_id]["transition_output"]["replay_hash"])
         self.assertTrue((self.bundle / "candidate_state.json").exists())
+        self.assertTrue(router.RUNS_LOG.exists())
         stop_id = transition["human_stops"][0]["stop_id"]
+
+        # Simulate a full API-process restart before professional review.
+        router._runs.clear()
+        router._load_durable_registries()
+        self.assertIn(run_id, router._runs)
 
         with self.assertRaisesRegex(Exception, "recorded human approval"):
             asyncio.run(router.settle_run(run_id, BackgroundTasks(), {}))
@@ -89,6 +107,14 @@ class V20DynamicsIntegrationTests(unittest.TestCase):
             )
         )
         record_id = attestation["authority_record"]["authority_record_id"]
+
+        # The authority record must survive another restart before settlement.
+        router._runs.clear()
+        router._load_durable_registries()
+        self.assertEqual(
+            router._runs[run_id]["authority_records"][0]["authority_record_id"],
+            record_id,
+        )
         settled = asyncio.run(
             router.settle_run(
                 run_id,
@@ -103,6 +129,11 @@ class V20DynamicsIntegrationTests(unittest.TestCase):
         self.assertEqual(settled["runtime_state_id"], settled["current_state_id"])
         self.assertTrue((self.bundle / "runtime_state.json").exists())
         self.assertEqual(json.loads((self.bundle / "candidate_graph.json").read_text()), {})
+
+        router._runs.clear()
+        router._load_durable_registries()
+        self.assertEqual(router._runs[run_id]["status"], "SETTLED")
+        self.assertEqual(router._runs[run_id]["settled_state_id"], settled["current_state_id"])
 
 
 if __name__ == "__main__":

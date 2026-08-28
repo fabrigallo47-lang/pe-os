@@ -54,12 +54,16 @@ sys.path.insert(0, str(ROOT / "ui" / "07_ENGINEERING_CONTRACTS_AND_ADAPTERS" / "
 
 VAULT = ROOT / "vault"
 PIPELINE_OUT = ROOT / "pipeline_out" / "e3" / "K-IC" / "adapter_alpha"
+INGEST_JOBS_LOG = ROOT / "logs" / "ingest_jobs.json"
+RUNS_LOG = ROOT / "logs" / "runs.json"
+_REGISTRY_LIMIT = 200
 
 v20 = APIRouter(prefix="/api/v20")
 
 _jobs: dict[str, dict] = {}
 _runs: dict[str, dict] = {}   # run_id → {transition, candidate_graph, case_id}
 _inbox_lock = threading.Lock()
+_registry_lock = threading.RLock()
 
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
@@ -69,6 +73,86 @@ def _now_iso() -> str:
 
 def _today() -> str:
     return dt.date.today().isoformat()
+
+
+def _read_registry(path: Path, field: str) -> dict[str, dict]:
+    """Read a durable registry without letting a missing/corrupt log stop boot."""
+    try:
+        payload = json.loads(path.read_text(encoding="utf-8"))
+    except (FileNotFoundError, json.JSONDecodeError, OSError) as exc:
+        if not isinstance(exc, FileNotFoundError):
+            logger.warning("Ignoring unreadable state registry %s: %s", path, exc)
+        return {}
+    records = payload.get(field, {}) if isinstance(payload, dict) else {}
+    if isinstance(records, list):
+        id_field = "job_id" if field == "jobs" else "run_id"
+        records = {
+            str(item[id_field]): item
+            for item in records
+            if isinstance(item, dict) and item.get(id_field)
+        }
+    if not isinstance(records, dict):
+        return {}
+    return {
+        str(record_id): dict(record)
+        for record_id, record in records.items()
+        if isinstance(record, dict)
+    }
+
+
+def _write_registry(path: Path, field: str, records: dict[str, dict]) -> None:
+    """Atomically persist the newest registry entries in insertion order."""
+    retained = list(records.items())[-_REGISTRY_LIMIT:]
+    records.clear()
+    records.update(retained)
+    payload = {
+        "version": 1,
+        "updated_at": _now_iso(),
+        field: records,
+    }
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    temporary.write_text(
+        json.dumps(payload, indent=2, ensure_ascii=False, default=str) + "\n",
+        encoding="utf-8",
+    )
+    temporary.replace(path)
+
+
+def _store_job(job_id: str, record: dict[str, Any] | None = None, **changes: Any) -> dict:
+    with _registry_lock:
+        if record is not None:
+            _jobs[job_id] = dict(record)
+        job = _jobs.setdefault(job_id, {"job_id": job_id})
+        job.update(changes)
+        job.setdefault("job_id", job_id)
+        job["updated_at"] = _now_iso()
+        _write_registry(INGEST_JOBS_LOG, "jobs", _jobs)
+        return job
+
+
+def _store_run(run_id: str, record: dict[str, Any] | None = None, **changes: Any) -> dict:
+    with _registry_lock:
+        if record is not None:
+            _runs[run_id] = dict(record)
+        run = _runs.setdefault(run_id, {"run_id": run_id})
+        run.update(changes)
+        run.setdefault("run_id", run_id)
+        run["updated_at"] = _now_iso()
+        _write_registry(RUNS_LOG, "runs", _runs)
+        return run
+
+
+def _load_durable_registries() -> None:
+    """Hydrate jobs and admission runs when the API process starts."""
+    with _registry_lock:
+        _jobs.clear()
+        _jobs.update(_read_registry(INGEST_JOBS_LOG, "jobs"))
+        _runs.clear()
+        _runs.update(_read_registry(RUNS_LOG, "runs"))
+
+
+_load_durable_registries()
 
 
 def _inbox_manifest_path() -> Path:
@@ -821,12 +905,13 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
             filename = stored_path.name
 
     job_id = str(uuid.uuid4())[:8]
-    _jobs[job_id] = {
+    _store_job(job_id, {
         "status": "PENDING", "job_id": job_id,
         "artifact": filename, "case_id": case_id, "purpose": purpose,
         "label": filename or "extraction run",
         "stage": "Queued", "progress": 0,
-    }
+        "created_at": _now_iso(),
+    })
     if filename:
         with _inbox_lock:
             items = _read_inbox_manifest()
@@ -842,7 +927,7 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
             _write_inbox_manifest(items)
 
     def _run() -> None:
-        _jobs[job_id].update({"status": "RUNNING", "stage": "Extracting", "progress": 10})
+        _store_job(job_id, status="RUNNING", stage="Extracting", progress=10)
         _update_inbox_record(job_id, status="RUNNING", stage="Extracting", progress=10,
                              message="Source is being extracted into typed claims.")
         source_path = (inbox_dir / filename) if filename else None
@@ -902,10 +987,10 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                             raw = json.loads(v1_out.read_text())
                         new_claims = _derive_bears_on(_normalise_v1_claims(raw, filename), e3)
                         proposal = _write_evidence_proposal(job_id, case_id, filename, new_claims)
-                        _jobs[job_id].update({"proposal_id": proposal.stem,
-                                              "proposal_path": str(proposal.relative_to(ROOT)),
-                                              "proposed_claim_count": len(new_claims),
-                                              "admission_status": "PENDING_REVIEW"})
+                        _store_job(job_id, proposal_id=proposal.stem,
+                                   proposal_path=str(proposal.relative_to(ROOT)),
+                                   proposed_claim_count=len(new_claims),
+                                   admission_status="PENDING_REVIEW")
                         _update_inbox_record(job_id, proposal_id=proposal.stem,
                                              proposal_path=str(proposal.relative_to(ROOT)),
                                              proposed_claim_count=len(new_claims),
@@ -914,15 +999,16 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                     except Exception as merge_exc:
                         logger.error("JOB %s merge failed: %s", job_id, merge_exc)
 
-            _jobs[job_id].update({
-                "status": "COMPLETE" if ok else "ERROR",
-                "stage": "Complete" if ok else "Failed",
-                "progress": 100 if ok else 0,
-                "stdout": (r.stdout or "")[-2000:],
-                "stderr": (r.stderr or "")[-1000:],
-                "message": "Extraction complete — evidence is ready for professional review."
+            _store_job(
+                job_id,
+                status="COMPLETE" if ok else "ERROR",
+                stage="Complete" if ok else "Failed",
+                progress=100 if ok else 0,
+                stdout=(r.stdout or "")[-2000:],
+                stderr=(r.stderr or "")[-1000:],
+                message="Extraction complete — evidence is ready for professional review."
                 if ok else (r.stderr or "")[-300:],
-            })
+            )
             _update_inbox_record(
                 job_id, status="COMPLETE" if ok else "ERROR",
                 stage="Complete" if ok else "Failed", progress=100 if ok else 0,
@@ -931,7 +1017,7 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
             )
         except Exception as exc:
             logger.error("JOB %s EXCEPTION %s", job_id, exc)
-            _jobs[job_id].update({"status": "ERROR", "stage": "Failed", "error": str(exc), "message": str(exc)})
+            _store_job(job_id, status="ERROR", stage="Failed", error=str(exc), message=str(exc))
             _update_inbox_record(job_id, status="ERROR", stage="Failed", progress=0, message=str(exc))
         _rebuild_index()
 
@@ -967,6 +1053,7 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
         proposal_file.write_text(json.dumps(proposal, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
         _update_inbox_record(job_id, admission_status="REJECTED", stage="Evidence rejected",
                              message="Extraction retained for audit; no claim entered Current.")
+        _store_job(job_id, admission_status="REJECTED", stage="Evidence rejected")
         return {"status": "REJECTED", "proposal_id": proposal.get("proposal_id")}
 
     # Optional corrected claims are supplied by a review UI/API client.  The
@@ -988,6 +1075,8 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     _update_inbox_record(job_id, admission_status="ADMITTED", stage="Evidence admitted",
                          admitted_claim_count=len(added),
                          message=f"Admitted evidence changed the semantic Current ({len(added)} new claims).")
+    _store_job(job_id, admission_status="ADMITTED", stage="Evidence admitted",
+               admitted_claim_count=len(added))
     events_dir = VAULT / "deals" / case_id / "events"
     events_dir.mkdir(parents=True, exist_ok=True)
     event_id = f"EVIDENCE-ADMITTED-{job_id}"
@@ -1048,7 +1137,7 @@ async def admit(
     )
 
     # Store run so /runs/{run_id}/settle can find it
-    _runs[run_id] = {
+    _store_run(run_id, {
         "case_id": case_id,
         "event_id": event_id,
         "candidate_graph": candidate_graph,
@@ -1058,7 +1147,9 @@ async def admit(
         "candidate_state_id": cand_state_id,
         "bundle_dir": str(PIPELINE_OUT),
         "authority_records": [],
-    }
+        "status": "CANDIDATE_READY",
+        "created_at": _now_iso(),
+    })
 
     # Write admit event to vault
     ts = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
@@ -1161,6 +1252,8 @@ async def settle_run(
     except DynamicsBundleError as exc:
         raise HTTPException(409, str(exc)) from exc
     run["settled_state_id"] = new_state_id
+    run["status"] = "SETTLED"
+    _store_run(run_id, run)
 
     # Append the institutional settlement event only after runtime persistence
     # succeeds, so the audit trail can never claim a failed promotion occurred.
@@ -1215,7 +1308,7 @@ async def settle_event(
     to = _load_json_safe(PIPELINE_OUT / "transition_output.json")
     if not candidate_state:
         raise HTTPException(409, "No persisted Candidate state; run dynamics first")
-    _runs[run_id] = {
+    _store_run(run_id, {
         "case_id": case_id, "event_id": event_id,
         "candidate_graph": candidate_graph,
         "candidate_state": candidate_state,
@@ -1226,7 +1319,9 @@ async def settle_event(
         ),
         "bundle_dir": str(PIPELINE_OUT),
         "authority_records": [],
-    }
+        "status": "CANDIDATE_READY",
+        "created_at": _now_iso(),
+    })
     return await settle_run(run_id, background_tasks, payload)
 
 
@@ -1276,6 +1371,7 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
         "status": "ACTIVE",
     }
     run.setdefault("authority_records", []).append(authority_record)
+    _store_run(run_id, run)
     return {
         "authority_record": authority_record,
         "execution_package": None,

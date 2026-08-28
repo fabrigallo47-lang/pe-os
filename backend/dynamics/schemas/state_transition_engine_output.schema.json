@@ -1,0 +1,583 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.example/schemas/state-transition-engine-output-1.0.json",
+  "title": "PANTA State Transition Engine Output",
+  "description": "Runtime output contract. This schema does not extend the Canonical Investment Case ontology.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "engine_version",
+    "run_id",
+    "case_id",
+    "prior_state_id",
+    "policy_refs",
+    "affected_set",
+    "ordered_transitions",
+    "rule_switches",
+    "recomputed_values",
+    "unchanged_objects",
+    "human_stops",
+    "blocked_components",
+    "coverage_limits",
+    "invariant_checks",
+    "candidate_current_approved_delta",
+    "partial_settlement_status",
+    "replay_hash"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "transition-output-1.0"
+    },
+    "engine_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prior_state_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "policy_refs": {
+      "type": "object",
+      "required": [
+        "materiality_policy_id",
+        "authority_policy_id",
+        "canonical_graph_hash",
+        "execution_mapping_hash",
+        "solver_config_hash"
+      ],
+      "properties": {
+        "materiality_policy_id": {
+          "type": "string"
+        },
+        "authority_policy_id": {
+          "type": "string"
+        },
+        "canonical_graph_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "execution_mapping_hash": {
+          "$ref": "#/$defs/hash"
+        },
+        "solver_config_hash": {
+          "$ref": "#/$defs/hash"
+        }
+      },
+      "additionalProperties": true
+    },
+    "affected_set": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/object_ref"
+      }
+    },
+    "ordered_transitions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "order",
+          "component_id",
+          "component_type",
+          "member_ids",
+          "result"
+        ],
+        "properties": {
+          "order": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "component_id": {
+            "type": "string"
+          },
+          "component_type": {
+            "enum": [
+              "ACYCLIC",
+              "NUMERICAL_SCC",
+              "QUALITATIVE_SCC",
+              "CIRCULAR_SUPPORT_SCC",
+              "MIXED_SCC",
+              "WORKFLOW_EVENT"
+            ]
+          },
+          "member_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "result": {
+            "enum": [
+              "SETTLED",
+              "PROVISIONAL",
+              "BLOCKED",
+              "UNCHANGED"
+            ]
+          },
+          "iterations": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "residual": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "reason_codes": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "rule_switches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "object_id",
+          "rule_id",
+          "from",
+          "to",
+          "reason_code"
+        ],
+        "properties": {
+          "object_id": {
+            "type": "string"
+          },
+          "rule_id": {
+            "type": "string"
+          },
+          "from": {},
+          "to": {},
+          "reason_code": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "recomputed_values": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "object_id",
+          "old_value",
+          "candidate_value",
+          "unit",
+          "provisional"
+        ],
+        "properties": {
+          "object_id": {
+            "type": "string"
+          },
+          "old_value": {},
+          "candidate_value": {},
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "provisional": {
+            "type": "boolean"
+          },
+          "formula_or_solver_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "materiality_class": {
+            "$ref": "#/$defs/materiality_class"
+          },
+          "solver_outcome": {
+            "enum": [
+              "UNIQUE_OPTIMUM",
+              "NO_ADMISSIBLE_SOLUTION",
+              "MULTIPLE_OPTIMAL_SOLUTIONS",
+              "NON_CONVERGENT",
+              "OSCILLATING",
+              "INVARIANT_VIOLATION"
+            ]
+          },
+          "binding_constraints": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "required": [
+                "constraint_id",
+                "source_ref"
+              ],
+              "properties": {
+                "constraint_id": {
+                  "type": "string"
+                },
+                "source_ref": {
+                  "type": "string",
+                  "minLength": 1
+                },
+                "slack": {
+                  "type": [
+                    "string",
+                    "null"
+                  ]
+                }
+              },
+              "additionalProperties": true
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "unchanged_objects": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "object_type",
+          "object_id",
+          "reason_code"
+        ],
+        "properties": {
+          "object_type": {
+            "$ref": "#/$defs/object_type"
+          },
+          "object_id": {
+            "type": "string"
+          },
+          "reason_code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "human_stops": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "stop_id",
+          "object_or_component_id",
+          "reason_code",
+          "requested_action",
+          "required_role",
+          "policy_rule_id",
+          "downstream_scope"
+        ],
+        "properties": {
+          "stop_id": {
+            "type": "string"
+          },
+          "object_or_component_id": {
+            "type": "string"
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "requested_action": {
+            "type": "string"
+          },
+          "required_role": {
+            "type": "string"
+          },
+          "policy_rule_id": {
+            "type": "string"
+          },
+          "downstream_scope": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "blocked_components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "component_id",
+          "member_ids",
+          "reason_code",
+          "dependent_ids"
+        ],
+        "properties": {
+          "component_id": {
+            "type": "string"
+          },
+          "member_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "dependent_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "missing_assumption_or_condition": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "coverage_limits": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "limit_id",
+          "reason_code",
+          "scope_ids",
+          "effect"
+        ],
+        "properties": {
+          "limit_id": {
+            "type": "string"
+          },
+          "reason_code": {
+            "type": "string"
+          },
+          "scope_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "effect": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "invariant_checks": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "invariant_id",
+          "status"
+        ],
+        "properties": {
+          "invariant_id": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "PASS",
+              "FAIL",
+              "UNKNOWN"
+            ]
+          },
+          "details": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": true
+      }
+    },
+    "candidate_current_approved_delta": {
+      "type": "object",
+      "required": [
+        "candidate",
+        "current",
+        "approved"
+      ],
+      "properties": {
+        "candidate": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layer_delta"
+          }
+        },
+        "current": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layer_delta"
+          }
+        },
+        "approved": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/layer_delta"
+          }
+        }
+      },
+      "additionalProperties": false
+    },
+    "partial_settlement_status": {
+      "type": "object",
+      "required": [
+        "candidate",
+        "current",
+        "approved",
+        "settled_component_ids",
+        "unsettled_component_ids"
+      ],
+      "properties": {
+        "candidate": {
+          "enum": [
+            "FULL",
+            "PARTIAL",
+            "NONE"
+          ]
+        },
+        "current": {
+          "enum": [
+            "RECONCILED",
+            "REVIEW_PENDING",
+            "PARTIAL",
+            "BLOCKED"
+          ]
+        },
+        "approved": {
+          "enum": [
+            "UNCHANGED",
+            "NEW_VERSION_CREATED",
+            "AUTHORITY_PENDING"
+          ]
+        },
+        "settled_component_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "unsettled_component_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "replay_hash": {
+      "$ref": "#/$defs/hash"
+    },
+    "semantic_result_hash": {
+      "$ref": "#/$defs/hash"
+    }
+  },
+  "$defs": {
+    "hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "object_type": {
+      "enum": [
+        "CLAIM",
+        "POSITION",
+        "MODEL_NODE",
+        "SUPPORT_ROUTE",
+        "ARTIFACT",
+        "COMPONENT"
+      ]
+    },
+    "object_ref": {
+      "type": "object",
+      "required": [
+        "object_type",
+        "object_id",
+        "seed"
+      ],
+      "properties": {
+        "object_type": {
+          "$ref": "#/$defs/object_type"
+        },
+        "object_id": {
+          "type": "string"
+        },
+        "seed": {
+          "type": "boolean"
+        },
+        "reached_via": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "materiality_class": {
+      "enum": [
+        "M0_LOCAL",
+        "M1_PROFESSIONAL_REVIEW",
+        "M2_GATE_AUTHORITY",
+        "M3_HARD_BLOCKER"
+      ]
+    },
+    "layer_delta": {
+      "type": "object",
+      "required": [
+        "object_type",
+        "object_id",
+        "field",
+        "from",
+        "to",
+        "status"
+      ],
+      "properties": {
+        "object_type": {
+          "$ref": "#/$defs/object_type"
+        },
+        "object_id": {
+          "type": "string"
+        },
+        "field": {
+          "type": "string"
+        },
+        "from": {},
+        "to": {},
+        "status": {
+          "enum": [
+            "APPLIED",
+            "PROPOSED",
+            "PENDING_REVIEW",
+            "PENDING_AUTHORITY",
+            "REJECTED",
+            "UNCHANGED",
+            "BLOCKED"
+          ]
+        },
+        "reason_code": {
+          "type": "string"
+        }
+      },
+      "additionalProperties": true
+    }
+  },
+  "additionalProperties": true
+}

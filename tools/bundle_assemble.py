@@ -21,7 +21,7 @@ Order
   4  execution_graph_v7.json  canonical copy from the vault
   5  admission_manifest_v7    from the bridge
   6  event + policies         canonical copies
-  7  candidate_graph.json     serialised from the reference runtime
+  7  candidate_graph.json     serialised from the embedded dynamics runtime
      transition_output.json   ditto — the validator compares field by field,
                               so these must be the runtime's own output, not a
                               reconstruction ("Usare i valori restituiti dal
@@ -29,8 +29,8 @@ Order
   8  validation_report.txt
   9  bundle_seal              recompute every hash from the final bytes
 
-Step 7 needs the PANTA reference kit. Without it the bundle is still written,
-but those two files are left as-is and the validator will flag them.
+The dynamics runtime is vendored in ``backend/dynamics``. Bundle construction
+therefore has no dependency on a separately downloaded validator kit.
 """
 from __future__ import annotations
 
@@ -45,10 +45,16 @@ sys.path.insert(0, str(ROOT))
 
 from tools import storage_export, bundle_seal
 from tools.graph_store import build_from_extraction
+from backend.dynamics.runtime import apply_state_transition
 
 VAULT = ROOT / "vault"
+DYNAMICS_FIXTURES = ROOT / "backend" / "dynamics" / "benchmark"
 POLICY_MATERIALITY = VAULT / "policy" / "keystone_materiality_policy_v0.json"
+if not POLICY_MATERIALITY.exists():
+    POLICY_MATERIALITY = DYNAMICS_FIXTURES / "keystone_materiality_policy_v0.json"
 POLICY_AUTHORITY = VAULT / "policy" / "keystone_authority_matrix_v0.json"
+if not POLICY_AUTHORITY.exists():
+    POLICY_AUTHORITY = DYNAMICS_FIXTURES / "keystone_authority_matrix_v0.json"
 EXEC_GRAPH_SRC = VAULT / "deals" / "keystone" / "models" / "execution_graph_v7.json"
 
 
@@ -57,26 +63,8 @@ def _w(path: Path, payload) -> None:
                     encoding="utf-8")
 
 
-def find_reference_kit(explicit: Path | None = None) -> Path | None:
-    if explicit and (explicit / "panta_reference").exists():
-        return explicit
-    for guess in (ROOT / ".index" / "reference_kit" / "PANTA_V7_INDEPENDENT_VALIDATOR",
-                  ROOT / ".index" / "reference_kit",
-                  Path.home() / "Downloads" / "PANTA_V7_INDEPENDENT_VALIDATOR"):
-        if (guess / "panta_reference").exists():
-            return guess
-    return None
-
-
-def run_reference_runtime(bundle: Path, kit: Path) -> dict | None:
-    """Execute the event through PANTA's own engine and return its raw output."""
-    engine_dir = kit / "panta_reference"
-    if str(engine_dir) not in sys.path:
-        sys.path.insert(0, str(engine_dir))
-    try:
-        from runtime.panta_transition_engine import apply_state_transition
-    except ImportError:
-        return None
+def run_embedded_runtime(bundle: Path) -> dict:
+    """Execute the event through the backend-owned dynamics runtime."""
     load = lambda n: json.loads((bundle / n).read_text(encoding="utf-8"))
     return apply_state_transition(
         load("current_graph.json"),
@@ -89,6 +77,8 @@ def run_reference_runtime(bundle: Path, kit: Path) -> dict | None:
 
 def assemble(bundle_dir: Path, bundle: dict, event_src: Path,
              kit: Path | None = None, verbose: bool = True) -> dict:
+    # ``kit`` is retained as a compatibility argument for older callers. The
+    # production runtime is now embedded and the value is intentionally unused.
     bundle_dir.mkdir(parents=True, exist_ok=True)
     say = (lambda m: print(f"   {m}")) if verbose else (lambda m: None)
     written: list[str] = []
@@ -159,37 +149,26 @@ def assemble(bundle_dir: Path, bundle: dict, event_src: Path,
     bundle_seal.seal(bundle_dir, verbose=False)
     say("hash degli input sigillati (prima dell'esecuzione)")
 
-    # ── 8. runtime output, serialised from PANTA itself ──────────────────────
-    kit = find_reference_kit(kit)
-    if kit is None:
-        say("reference kit assente — candidate_graph/transition_output non rigenerati")
-    else:
-        result = run_reference_runtime(bundle_dir, kit)
-        if result is None:
-            say("engine non importabile — output runtime non rigenerati")
-        else:
-            # The engine wraps its output; the schema wants that inner object
-            # flat, with all 18 required fields. candidate_state is the full
-            # post-event snapshot — CANDIDATE_FULL_GRAPH rejects a delta.
-            to = dict(result.get("transition_output", result))
-            # The validator builds its reference output as the engine's
-            # transition_output plus the top-level history_append, so the
-            # declared file has to carry that key too.
-            to["history_append"] = result.get("history_append", [])
-            # candidate_state wraps the snapshot; the graph itself is inside.
-            candidate_state = result.get("candidate_state", {})
-            candidate_graph = candidate_state.get("current_graph", candidate_state)
-            # The handoff expects the same snapshot both standalone and nested
-            # inside the output, and checks the two hash identically.
-            to["candidate_graph"] = candidate_graph
-            _w(bundle_dir / "transition_output.json", to)
-            _w(bundle_dir / "candidate_graph.json", candidate_graph)
-            written += ["transition_output.json", "candidate_graph.json"]
-            ordered = to.get("ordered_transitions", [])
-            settled = [c for c in ordered if c.get("result") == "SETTLED"]
-            status = (to.get("partial_settlement_status") or {}).get("candidate")
-            say(f"transition_output + candidate_graph dal runtime PANTA "
-                f"({status}, {len(settled)} settled)")
+    # ── 8. runtime output, serialised from the embedded engine ───────────────
+    result = run_embedded_runtime(bundle_dir)
+    # The engine wraps its output; the schema wants that inner object flat,
+    # with all 18 required fields. candidate_state is the full post-event
+    # snapshot — CANDIDATE_FULL_GRAPH rejects a delta.
+    to = dict(result.get("transition_output", result))
+    # The independent validator builds its reference output as the engine's
+    # transition_output plus the top-level history_append.
+    to["history_append"] = result.get("history_append", [])
+    candidate_state = result.get("candidate_state", {})
+    candidate_graph = candidate_state.get("current_graph", candidate_state)
+    to["candidate_graph"] = candidate_graph
+    _w(bundle_dir / "transition_output.json", to)
+    _w(bundle_dir / "candidate_graph.json", candidate_graph)
+    written += ["transition_output.json", "candidate_graph.json"]
+    ordered = to.get("ordered_transitions", [])
+    settled = [c for c in ordered if c.get("result") == "SETTLED"]
+    status = (to.get("partial_settlement_status") or {}).get("candidate")
+    say(f"transition_output + candidate_graph dal runtime backend "
+        f"({status}, {len(settled)} settled)")
 
     # ── 8. human-readable report ─────────────────────────────────────────────
     report = bundle_dir / "validation_report.txt"

@@ -66,6 +66,7 @@ material and derived claim memory. A fresh clone starts without it.
 | `vault/` | **The product's state.** `ontology/` (schemas — the IP), `policy/` (operation→authority), `deals/<id>/` (questions, claims, events, decisions), `roles/` (desks), `library/` (question-types), `entities/`, `inbox/` (perception drop-zone), `audit/` (append-only agent log) |
 | `agents/` | The deployed runtime. Every agent binds to a row of the human-vs-automatable register; `human_judgment_required` and `authority_only_human_action` classes refuse to deploy. |
 | `tools/` | `contracts.py` (loads the machine contracts as data) · `engine.py` (state resolution by event replay + guards) · `indexer.py` (vault → SQLite) · `ui.py` (static export) |
+| `backend/dynamics/` | Deterministic Candidate/Current/Approved transition runtime, extraction adapters, policy fixtures, schemas and executable conformance tests. The runtime consumes the compiled Live Investment Case, never the raw extraction graph. |
 | `app/` | FastAPI server + live UI. The API is the policy boundary: writes are ontology-validated, agent endpoints map to policy rows. |
 | `docs/` | `00` problem structure · `01` spec/stack · `02` backbone map · `03` architecture (canonical) · `report/` client teaser · `ui/` static exports |
 | `CLAUDE.md` | Agent operating manual: the 10 invariants, build-order status, conventions |

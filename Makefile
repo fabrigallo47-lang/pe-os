@@ -1,4 +1,4 @@
-.PHONY: setup index report check state watch dev
+.PHONY: setup index report check state watch dev verify dynamics-test
 
 PY := .venv/bin/python3
 
@@ -53,6 +53,9 @@ bind-keystone: ## Retroactively bind Layer-1 keystone claims to questions via su
 
 verify: ## Run the full test suite: regression + V7 acceptance + e2e + cascade + grounding
 	@$(PY) tools/verify_all.py $(ARGS)
+
+dynamics-test: ## Run the embedded state-transition runtime and backend integration suite
+	@cd backend/dynamics && python3 -m unittest discover -s tests -v
 
 grounding: ## Grounding gate over extracted claims (usage: make grounding DEAL=keystone)
 	$(PY) tools/grounding_gate.py --claims pipeline_out/e3/K-IC/e3_claims.json \

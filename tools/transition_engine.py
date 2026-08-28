@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
 """
+Legacy compiler-side conformance kernel.
+
+Production Candidate execution is owned by ``backend.dynamics``. This module
+remains only for the older ``tools/run_conformance.py`` interface, whose data
+classes are not part of the backend API.
+
 PANTA State Transition Engine — kernel v1.0.
 
 Implements STATE_TRANSITION_ENGINE_CONTRACT_V1.md (v1.1, 22 conformance cases).

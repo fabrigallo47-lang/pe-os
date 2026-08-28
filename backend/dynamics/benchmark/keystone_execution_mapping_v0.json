@@ -1,0 +1,101 @@
+{
+  "mapping_version": "0.1.0",
+  "status": "PARTIAL_SYNTHETIC_TEST_FIXTURE",
+  "case_id": "KEYSTONE-CIC",
+  "canonical_graph_hash": "sha256:185aa8d4d917528bbcefb0699818ff89d3ad7a56f8ceef348f111753c39cc231",
+  "purpose": "Execute the Firm EBITDA conformance route while declaring the currently unmapped workbook dependencies.",
+  "model_nodes": [
+    {
+      "model_node_id": "MN-FIRM-EBITDA",
+      "computational_form": "DIRECT_FORMULA",
+      "unit": "$mm",
+      "period": "FY2025A",
+      "perimeter": "Alderstone consolidated Firm-underwritten EBITDA"
+    },
+    {
+      "model_node_id": "MN-COV-EBITDA",
+      "computational_form": "DIRECT_INPUT",
+      "unit": "$mm",
+      "period": "Opening / 2026-03-31",
+      "perimeter": "Credit-agreement borrower group covenant EBITDA"
+    }
+  ],
+  "directed_model_edges": [],
+  "position_model_directions": [
+    {
+      "binding_id": "PMB-017",
+      "position_id": "CP-008",
+      "model_node_id": "MN-FIRM-EBITDA",
+      "direction": "MODEL_DERIVES_POSITION"
+    },
+    {
+      "binding_id": "PMB-021",
+      "position_id": "CP-011",
+      "model_node_id": "MN-COV-EBITDA",
+      "direction": "MODEL_DERIVES_POSITION"
+    }
+  ],
+  "formulas": [
+    {
+      "formula_id": "FORM-SR-EBITDA-FIRM-V0",
+      "route_id": "SR-EBITDA-FIRM",
+      "input_ids": [
+        "CL-028"
+      ],
+      "supporting_member_ids": [
+        "CL-028",
+        "CL-029",
+        "CL-030",
+        "CL-031",
+        "CL-036"
+      ],
+      "output_id": "MN-FIRM-EBITDA",
+      "expression_or_function_ref": "reported_ebitda + accepted_historical_adjustments - integration_reserve - utilization_reserve - related_party_rent - recurring_compliance_cost",
+      "fixture_parameters": {
+        "accepted_historical_adjustments": "1.70",
+        "integration_reserve": "0.20",
+        "utilization_reserve": "0.15",
+        "related_party_rent": "0.10",
+        "recurring_compliance_cost": "0.05"
+      },
+      "parameter_unit": "$mm",
+      "fixture_only": true,
+      "notes": "The route members are evidentiary support, not automatically executable operands. This V0 mapping makes operand roles explicit for conformance testing."
+    }
+  ],
+  "rule_switches": [],
+  "inverse_solver_configs": [],
+  "model_controls": [
+    {
+      "control_id": "CTRL-FIRM-EBITDA-ROUTE-V0",
+      "scope_ids": [
+        "FORM-SR-EBITDA-FIRM-V0",
+        "MN-FIRM-EBITDA"
+      ],
+      "pass_condition": "candidate_output equals exact-decimal evaluation of the declared formula and all supporting route members remain admitted or are explicitly superseded"
+    }
+  ],
+  "cyclic_component_solver_configs": [],
+  "coverage_limits": [
+    {
+      "limit_id": "KEM-V0-001",
+      "reason_code": "MISSING_MODEL_DEPENDENCY",
+      "scope_ids": [
+        "MN-FIRM-EBITDA",
+        "CP-018",
+        "CP-019",
+        "CP-020",
+        "CP-001"
+      ],
+      "effect": "The V0 fixture can recompute Firm EBITDA and semantic position closure, but cannot calculate downstream valuation, capital-structure or return values."
+    },
+    {
+      "limit_id": "KEM-V0-002",
+      "reason_code": "MISSING_EXECUTABLE_DIRECTION",
+      "scope_ids": [
+        "POSITION_MODEL_BINDINGS_EXCEPT_PMB-017_AND_PMB-021"
+      ],
+      "effect": "Unmapped bindings remain associations only and cannot be traversed executably."
+    }
+  ]
+}

@@ -1,0 +1,1252 @@
+{
+  "suite_version": "1.1.0",
+  "status": "NORMATIVE_RUNTIME_CONFORMANCE",
+  "contract": "STATE_TRANSITION_ENGINE_CONTRACT_V1.md",
+  "canonical_ontology_version": "1.1.0",
+  "changes_canonical_ontology": false,
+  "default_policy_refs": {
+    "materiality": "keystone_materiality_policy_v0.json",
+    "authority": "keystone_authority_matrix_v0.json",
+    "execution_mapping": "keystone_execution_mapping_v0.json"
+  },
+  "comparison_rules": {
+    "arrays_marked_as_sets": "SORT_BY_OBJECT_TYPE_THEN_ID",
+    "numeric_values": "EXACT_DECIMAL_OR_DECLARED_SOLVER_TOLERANCE",
+    "partial_assertions": true,
+    "diagnostic_text_normative": false,
+    "reason_codes_normative": true
+  },
+  "synthetic_fixtures": [
+    {
+      "fixture_id": "SF-ALTERNATIVE-ROUTES",
+      "description": "P-TARGET has two sufficient independent routes.",
+      "claims": [
+        "C-A",
+        "C-B"
+      ],
+      "positions": [
+        "P-TARGET"
+      ],
+      "support_routes": [
+        {
+          "route_id": "R-A",
+          "target_position_id": "P-TARGET",
+          "logic": "INDEPENDENT",
+          "member_claim_ids": [
+            "C-A"
+          ]
+        },
+        {
+          "route_id": "R-B",
+          "target_position_id": "P-TARGET",
+          "logic": "INDEPENDENT",
+          "member_claim_ids": [
+            "C-B"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture_id": "SF-CIRCULAR-SUPPORT",
+      "description": "P-A and P-B support one another; an optional external route grounds P-A.",
+      "claims": [
+        "C-EXT"
+      ],
+      "positions": [
+        "P-A",
+        "P-B"
+      ],
+      "position_dependencies": [
+        {
+          "from": "P-A",
+          "to": "P-B",
+          "relation_type": "SUPPORTS"
+        },
+        {
+          "from": "P-B",
+          "to": "P-A",
+          "relation_type": "SUPPORTS"
+        }
+      ],
+      "support_routes": [
+        {
+          "route_id": "R-CYCLE-A",
+          "target_position_id": "P-A",
+          "logic": "AND",
+          "member_position_ids": [
+            "P-B"
+          ]
+        },
+        {
+          "route_id": "R-CYCLE-B",
+          "target_position_id": "P-B",
+          "logic": "AND",
+          "member_position_ids": [
+            "P-A"
+          ]
+        },
+        {
+          "route_id": "R-EXTERNAL-A",
+          "target_position_id": "P-A",
+          "logic": "INDEPENDENT",
+          "member_claim_ids": [
+            "C-EXT"
+          ]
+        }
+      ]
+    },
+    {
+      "fixture_id": "SF-NUMERIC-CONVERGENT",
+      "description": "Unique linear fixed point.",
+      "variables": [
+        "X",
+        "Y"
+      ],
+      "equations": [
+        "X = 0.5 * Y + 1",
+        "Y = 0.25 * X + 2"
+      ],
+      "solver": {
+        "method": "JACOBI_FIXED_POINT",
+        "initialization": {
+          "X": "0",
+          "Y": "0"
+        },
+        "absolute_residual_tolerance": "1e-9",
+        "relative_residual_tolerance": "1e-9",
+        "maximum_iterations": 200,
+        "admissible_bounds": {
+          "X": [
+            "-100",
+            "100"
+          ],
+          "Y": [
+            "-100",
+            "100"
+          ]
+        },
+        "uniqueness_condition": "SPECTRAL_RADIUS_LT_1"
+      }
+    },
+    {
+      "fixture_id": "SF-NUMERIC-NO-SOLUTION",
+      "description": "Inconsistent cycle plus an independent acyclic branch Z.",
+      "variables": [
+        "X",
+        "Y",
+        "Z"
+      ],
+      "equations": [
+        "X = Y + 1",
+        "Y = X + 1",
+        "Z = INPUT_Z * 2"
+      ],
+      "components": {
+        "SCC-XY": [
+          "X",
+          "Y"
+        ],
+        "ACYCLIC-Z": [
+          "Z"
+        ]
+      }
+    },
+    {
+      "fixture_id": "SF-NUMERIC-MULTIPLE",
+      "description": "Underdetermined cycle with infinitely many admissible solutions.",
+      "variables": [
+        "X",
+        "Y"
+      ],
+      "equations": [
+        "X = Y",
+        "Y = X"
+      ],
+      "admissible_bounds": {
+        "X": [
+          "0",
+          "10"
+        ],
+        "Y": [
+          "0",
+          "10"
+        ]
+      }
+    },
+    {
+      "fixture_id": "SF-CUMULATION-KT",
+      "description": "Protected output accumulation against the last Current basis K_t.",
+      "protected_output_id": "M-PROTECTED-EBITDA",
+      "last_absorbed_current_value": "11.40",
+      "unit": "$mm",
+      "absolute_materiality_threshold": "0.25",
+      "immediate_propagation_tolerance": "0.005",
+      "accumulation_method": "COMPARE_RAW_CANDIDATE_TO_K_T"
+    },
+    {
+      "fixture_id": "SF-FINANCING-GRID-SWITCH",
+      "description": "Synthetic rule-switch fixture pending the versioned Keystone financing-grid source.",
+      "selector": {
+        "metric": "SINGLE_PARENT_EXPOSURE",
+        "threshold": "0.15",
+        "operator": "gt",
+        "unit": "decimal_ratio"
+      },
+      "branches": [
+        {
+          "rule_id": "GRID-DIVERSIFIED",
+          "condition": "SINGLE_PARENT_EXPOSURE <= 0.15",
+          "leverage_limit_symbol": "L_BASE"
+        },
+        {
+          "rule_id": "GRID-SINGLE-PARENT-STEPDOWN",
+          "condition": "SINGLE_PARENT_EXPOSURE > 0.15",
+          "leverage_limit_symbol": "L_STEPDOWN"
+        }
+      ],
+      "rule_source_ref": "FIXTURE-TERM-SHEET-FINANCING-GRID",
+      "fixture_only": true
+    },
+    {
+      "fixture_id": "SF-INDEPENDENT-REVIEW",
+      "description": "A preparer attempts to adopt the same change set where policy requires an independent reviewer.",
+      "policy_rule_id": "AUTH-030",
+      "preparer_actor_id": "ACTOR-ASSOCIATE-01",
+      "attempted_adopter_actor_id": "ACTOR-ASSOCIATE-01",
+      "required_adopter_role": "FINANCIAL_OR_WORKSTREAM_REVIEWER",
+      "independence_required": true
+    },
+    {
+      "fixture_id": "SF-INVERSE-SUPPORTED-PRICE",
+      "description": "Synthetic inverse solve for maximum supported price.",
+      "objective": {
+        "sense": "MAXIMIZE",
+        "variable": "SUPPORTED_PRICE",
+        "bounds": [
+          "40",
+          "200"
+        ],
+        "unit": "$mm"
+      },
+      "base_branch": {
+        "branch_id": "FINANCING-A",
+        "fixed_debt": "40",
+        "exit_equity_proceeds": "150",
+        "entry_equity_formula": "SUPPORTED_PRICE - fixed_debt"
+      },
+      "constraints": [
+        {
+          "constraint_id": "MIN-MOIC",
+          "expression": "exit_equity_proceeds / entry_equity",
+          "operator": "gte",
+          "value": "2.0",
+          "unit": "x"
+        },
+        {
+          "constraint_id": "MIN-IRR",
+          "expression": "(exit_equity_proceeds / entry_equity)^(1/5) - 1",
+          "operator": "gte",
+          "value": "0.12",
+          "unit": "decimal_rate"
+        }
+      ],
+      "solver": {
+        "method": "DETERMINISTIC_MONOTONE_BISECTION",
+        "price_tolerance": "1e-9",
+        "constraint_tolerance": "1e-9",
+        "maximum_iterations": 200,
+        "initialization": "DECLARED_BOUNDS",
+        "uniqueness_condition": "MONOTONE_OBJECTIVE_WITH_UNIQUE_ACTIVE_BOUND"
+      }
+    }
+  ],
+  "cases": [
+    {
+      "test_id": "TCE-001-KEYSTONE-FIRM-EBITDA-CORRECTION",
+      "category": "CANONICAL_FORMULA_AND_CLOSURE",
+      "fixture_ref": "canonical/PANTA_Keystone_Initial_IC_State_2026-03-10.json",
+      "execution_mapping_ref": "keystone_execution_mapping_v0.json",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-001",
+          "event": "Correct reported FY2025 EBITDA",
+          "effective_date": "2025-12-31",
+          "known_at": "2026-04-15T09:00:00Z",
+          "source_ids": [
+            "SRC-QOE"
+          ],
+          "trigger_claim_ids": [
+            "CL-028"
+          ],
+          "mutations": [
+            {
+              "operation": "CORRECT",
+              "object_type": "CLAIM",
+              "object_id": "CL-028",
+              "field": "value",
+              "from": "10.2",
+              "to": "9.8",
+              "unit": "$mm",
+              "definition_id": "DEF-EBITDA-REPORTED",
+              "period": "FY2025A",
+              "perimeter": "Alderstone consolidated historical EBITDA"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "affected_position_ids_exact": [
+          "CP-001",
+          "CP-008",
+          "CP-018",
+          "CP-019",
+          "CP-020"
+        ],
+        "directly_affected_model_node_ids": [
+          "MN-FIRM-EBITDA"
+        ],
+        "route_results": [
+          {
+            "route_id": "SR-EBITDA-FIRM",
+            "support_satisfied": "TRUE",
+            "candidate_value": "11.0",
+            "unit": "$mm"
+          }
+        ],
+        "recomputed_values": [
+          {
+            "object_id": "MN-FIRM-EBITDA",
+            "old_value": "11.4",
+            "candidate_value": "11.0",
+            "unit": "$mm",
+            "materiality_class": "M1_PROFESSIONAL_REVIEW"
+          }
+        ],
+        "current_freshness_invalidated_position_ids": [
+          "CP-001",
+          "CP-008",
+          "CP-018",
+          "CP-019",
+          "CP-020"
+        ],
+        "decision_status_changes": [],
+        "approved_delta": [],
+        "required_human_stop_roles": [
+          "FINANCIAL_OR_WORKSTREAM_REVIEWER"
+        ],
+        "required_coverage_reason_codes": [
+          "MISSING_EXECUTABLE_DIRECTION",
+          "MISSING_MODEL_DEPENDENCY"
+        ],
+        "unchanged_assertions": [
+          {
+            "object_id": "CP-011",
+            "reason_code": "INDEPENDENT_ROUTE_NOT_REACHED"
+          },
+          {
+            "object_id": "MN-COV-EBITDA",
+            "value": "12.2",
+            "reason_code": "INDEPENDENT_ROUTE_NOT_REACHED"
+          }
+        ],
+        "partial_settlement_status": {
+          "candidate": "PARTIAL",
+          "current": "REVIEW_PENDING",
+          "approved": "UNCHANGED"
+        }
+      }
+    },
+    {
+      "test_id": "TCE-002-ALTERNATIVE-ROUTE-SURVIVES",
+      "category": "SUPPORT_ROUTE_OR",
+      "fixture_ref": "SF-ALTERNATIVE-ROUTES",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-002",
+          "event": "Retract first support path",
+          "effective_date": "2026-05-01",
+          "known_at": "2026-05-01T10:00:00Z",
+          "source_ids": [
+            "S-A"
+          ],
+          "trigger_claim_ids": [
+            "C-A"
+          ],
+          "mutations": [
+            {
+              "operation": "RETRACT",
+              "object_type": "CLAIM",
+              "object_id": "C-A"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "route_states": {
+          "R-A": "FALSE",
+          "R-B": "TRUE",
+          "P-TARGET_combined": "TRUE"
+        },
+        "position_state_delta": [],
+        "required_unchanged_reason_codes": [
+          "ROUTE_SURVIVES_ALTERNATIVE"
+        ],
+        "human_stops": [],
+        "candidate_settlement": "FULL"
+      }
+    },
+    {
+      "test_id": "TCE-003-CIRCULAR-SUPPORT-WITH-GROUNDED-ALTERNATIVE",
+      "category": "EPISTEMIC_CYCLE",
+      "fixture_ref": "SF-CIRCULAR-SUPPORT",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-003",
+          "event": "Evaluate support graph",
+          "effective_date": "2026-05-02",
+          "known_at": "2026-05-02T10:00:00Z",
+          "source_ids": [],
+          "trigger_claim_ids": [
+            "C-EXT"
+          ],
+          "mutations": [
+            {
+              "operation": "OBSERVE",
+              "object_type": "CLAIM",
+              "object_id": "C-EXT",
+              "field": "usable",
+              "from": false,
+              "to": true
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "invalid_route_ids": [
+          "R-CYCLE-A",
+          "R-CYCLE-B"
+        ],
+        "required_reason_codes": [
+          "CIRCULAR_SUPPORT"
+        ],
+        "route_states": {
+          "R-EXTERNAL-A": "TRUE",
+          "P-A_combined": "TRUE"
+        },
+        "numerical_solver_invocations": 0,
+        "global_block": false
+      }
+    },
+    {
+      "test_id": "TCE-004-CIRCULAR-SUPPORT-UNGROUNDED",
+      "category": "EPISTEMIC_CYCLE",
+      "fixture_ref": "SF-CIRCULAR-SUPPORT",
+      "fixture_override": {
+        "remove_route_ids": [
+          "R-EXTERNAL-A"
+        ]
+      },
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-004",
+          "event": "Evaluate ungrounded circular support",
+          "effective_date": "2026-05-03",
+          "known_at": "2026-05-03T10:00:00Z",
+          "source_ids": [],
+          "trigger_claim_ids": [
+            "C-EXT"
+          ],
+          "mutations": []
+        }
+      ],
+      "expected": {
+        "invalid_route_ids": [
+          "R-CYCLE-A",
+          "R-CYCLE-B"
+        ],
+        "combined_support": "UNKNOWN",
+        "required_reason_codes": [
+          "CIRCULAR_SUPPORT"
+        ],
+        "numerical_solver_invocations": 0,
+        "human_stop_required": true
+      }
+    },
+    {
+      "test_id": "TCE-005-APPLICABLE-MATERIAL-CONTRADICTION",
+      "category": "CONTRADICTION",
+      "fixture_ref": "SYNTHETIC-CRITICAL-POSITION",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-005",
+          "event": "Admit applicable counterevidence",
+          "effective_date": "2026-06-01",
+          "known_at": "2026-06-02T10:00:00Z",
+          "source_ids": [
+            "S-COUNTER"
+          ],
+          "trigger_claim_ids": [
+            "C-COUNTER"
+          ],
+          "mutations": [
+            {
+              "operation": "ADD",
+              "object_type": "CLAIM",
+              "object_id": "C-COUNTER",
+              "relation_type": "CONTRADICTS",
+              "target_position_id": "P-CRITICAL",
+              "definition_id": "DEF-X",
+              "period": "FY2026",
+              "perimeter": "PERIMETER-X",
+              "materiality_fixture": "MATERIAL"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "candidate_epistemic_status": "CONTESTED",
+        "current_epistemic_status": "PENDING_REVIEW",
+        "decision_status_change": null,
+        "minimum_materiality_class": "M1_PROFESSIONAL_REVIEW",
+        "required_human_stop_role": "QUALIFIED_PROFESSIONAL_REVIEWER",
+        "stale_is_used_as_synonym_for_contested": false,
+        "approved_delta": []
+      }
+    },
+    {
+      "test_id": "TCE-006-NON-APPLICABLE-CONTRADICTION",
+      "category": "SEMANTIC_APPLICABILITY",
+      "fixture_ref": "SYNTHETIC-EBITDA-DEFINITIONS",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-006",
+          "event": "Compare covenant and Firm EBITDA evidence",
+          "effective_date": "2026-06-30",
+          "known_at": "2026-07-01T10:00:00Z",
+          "source_ids": [
+            "S-LENDER"
+          ],
+          "trigger_claim_ids": [
+            "C-COV-EBITDA"
+          ],
+          "mutations": [
+            {
+              "operation": "OBSERVE",
+              "object_type": "CLAIM",
+              "object_id": "C-COV-EBITDA",
+              "definition_id": "DEF-EBITDA-COV",
+              "period": "LTM-2026-06-30",
+              "perimeter": "Credit agreement borrower group",
+              "candidate_target_definition_id": "DEF-EBITDA-FIRM"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "applicable": false,
+        "required_reason_codes": [
+          "NON_APPLICABLE_DEFINITION"
+        ],
+        "candidate_epistemic_delta": [],
+        "current_delta": [],
+        "approved_delta": []
+      }
+    },
+    {
+      "test_id": "TCE-007-M0-DETERMINISTIC-RECONCILIATION",
+      "category": "MATERIALITY_M0",
+      "fixture_ref": "SYNTHETIC-DERIVED-ONLY",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-007",
+          "event": "Small deterministic derived correction",
+          "effective_date": "2026-07-02",
+          "known_at": "2026-07-02T10:00:00Z",
+          "source_ids": [
+            "S-TECH"
+          ],
+          "trigger_claim_ids": [
+            "C-TECH"
+          ],
+          "mutations": [
+            {
+              "operation": "CORRECT",
+              "object_type": "MODEL_NODE",
+              "object_id": "M-DERIVED",
+              "field": "value",
+              "from": "100.00",
+              "to": "100.01",
+              "unit": "$mm"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "materiality_class": "M0_LOCAL",
+        "current_treatment": "AUTOMATIC_RECONCILIATION",
+        "case_position_delta": [],
+        "decision_status_change": null,
+        "human_stops": [],
+        "audit_entry_required": true,
+        "approved_delta": []
+      }
+    },
+    {
+      "test_id": "TCE-008-M2-INCLUSIVE-EV-THRESHOLD",
+      "category": "MATERIALITY_M2",
+      "fixture_ref": "canonical/PANTA_Keystone_Initial_IC_State_2026-03-10.json",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-008",
+          "event": "Change supported EV by exact threshold",
+          "effective_date": "2026-07-03",
+          "known_at": "2026-07-03T10:00:00Z",
+          "source_ids": [
+            "SRC-IC"
+          ],
+          "trigger_claim_ids": [],
+          "mutations": [
+            {
+              "operation": "CORRECT",
+              "object_type": "MODEL_NODE",
+              "object_id": "MN-EV",
+              "field": "value",
+              "from": "108.0",
+              "to": "107.0",
+              "unit": "$mm"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "threshold_rule_id": "MAT-ECON-002",
+        "boundary_is_inclusive": true,
+        "materiality_class": "M2_GATE_AUTHORITY",
+        "current_review_required": true,
+        "approved_status": "AUTHORITY_PENDING",
+        "approved_old_value": "108.0",
+        "approved_is_overwritten": false
+      }
+    },
+    {
+      "test_id": "TCE-009-M3-NON-WAIVABLE-AXIOM",
+      "category": "MATERIALITY_M3",
+      "fixture_ref": "SYNTHETIC-AXIOM",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-009",
+          "event": "Non-waivable axiom fails",
+          "effective_date": "2026-07-04",
+          "known_at": "2026-07-04T10:00:00Z",
+          "source_ids": [
+            "S-POLICY"
+          ],
+          "trigger_claim_ids": [
+            "C-AXIOM-FAIL"
+          ],
+          "mutations": [
+            {
+              "operation": "OBSERVE",
+              "object_type": "CLAIM",
+              "object_id": "C-AXIOM-FAIL",
+              "field": "satisfied",
+              "from": true,
+              "to": false,
+              "policy_type": "NON_WAIVABLE_AXIOM"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "materiality_class": "M3_HARD_BLOCKER",
+        "gate_status": "BLOCKED",
+        "waiver_allowed": false,
+        "approved_delta": [],
+        "global_block_allowed_only_if_root_gate": true
+      }
+    },
+    {
+      "test_id": "TCE-010-NUMERIC-SCC-CONVERGES",
+      "category": "NUMERIC_CYCLE",
+      "fixture_ref": "SF-NUMERIC-CONVERGENT",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-010",
+          "event": "Solve unique numeric cycle",
+          "effective_date": "2026-07-05",
+          "known_at": "2026-07-05T10:00:00Z",
+          "source_ids": [],
+          "trigger_claim_ids": [],
+          "mutations": [
+            {
+              "operation": "OBSERVE",
+              "object_type": "MODEL_NODE",
+              "object_id": "X",
+              "field": "active",
+              "from": false,
+              "to": true
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "component_type": "NUMERICAL_SCC",
+        "result": "SETTLED",
+        "values_within_tolerance": {
+          "X": "2.2857142857142857",
+          "Y": "2.5714285714285714"
+        },
+        "absolute_tolerance": "1e-9",
+        "invariants": "PASS",
+        "unique_solution": true
+      }
+    },
+    {
+      "test_id": "TCE-011-NUMERIC-SCC-NO-SOLUTION-PARTIAL-SETTLEMENT",
+      "category": "NUMERIC_CYCLE",
+      "fixture_ref": "SF-NUMERIC-NO-SOLUTION",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-011",
+          "event": "Solve inconsistent cycle and independent branch",
+          "effective_date": "2026-07-06",
+          "known_at": "2026-07-06T10:00:00Z",
+          "source_ids": [],
+          "trigger_claim_ids": [],
+          "mutations": [
+            {
+              "operation": "CORRECT",
+              "object_type": "MODEL_NODE",
+              "object_id": "INPUT_Z",
+              "field": "value",
+              "from": "2",
+              "to": "3"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "blocked_components": [
+          {
+            "component_id": "SCC-XY",
+            "reason_code": "NO_ADMISSIBLE_SOLUTION"
+          }
+        ],
+        "settled_values": {
+          "Z": "6"
+        },
+        "candidate_settlement": "PARTIAL",
+        "global_block": false
+      }
+    },
+    {
+      "test_id": "TCE-012-NUMERIC-SCC-MULTIPLE-SOLUTIONS",
+      "category": "NUMERIC_CYCLE",
+      "fixture_ref": "SF-NUMERIC-MULTIPLE",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-012",
+          "event": "Detect underdetermined numeric cycle",
+          "effective_date": "2026-07-07",
+          "known_at": "2026-07-07T10:00:00Z",
+          "source_ids": [],
+          "trigger_claim_ids": [],
+          "mutations": [
+            {
+              "operation": "OBSERVE",
+              "object_type": "MODEL_NODE",
+              "object_id": "X",
+              "field": "active",
+              "from": false,
+              "to": true
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "component_result": "BLOCKED",
+        "reason_code": "MULTIPLE_SOLUTIONS",
+        "selected_value": null,
+        "missing_assumption_or_condition_exposed": true,
+        "human_stop_required": true
+      }
+    },
+    {
+      "test_id": "TCE-013-BATCH-PERMUTATION-INVARIANCE",
+      "category": "DETERMINISM",
+      "fixture_ref": "SYNTHETIC-DISJOINT-UPDATES",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-013-A",
+          "batch_id": "B-TCE-013",
+          "event": "Update A",
+          "effective_date": "2026-07-08",
+          "known_at": "2026-07-08T10:00:00Z",
+          "source_ids": [
+            "S-A"
+          ],
+          "trigger_claim_ids": [
+            "C-A"
+          ],
+          "mutations": [
+            {
+              "operation": "CORRECT",
+              "object_type": "CLAIM",
+              "object_id": "C-A",
+              "field": "value",
+              "from": "1",
+              "to": "2"
+            }
+          ]
+        },
+        {
+          "event_id": "EV-TCE-013-B",
+          "batch_id": "B-TCE-013",
+          "event": "Update B",
+          "effective_date": "2026-07-08",
+          "known_at": "2026-07-08T10:00:00Z",
+          "source_ids": [
+            "S-B"
+          ],
+          "trigger_claim_ids": [
+            "C-B"
+          ],
+          "mutations": [
+            {
+              "operation": "CORRECT",
+              "object_type": "CLAIM",
+              "object_id": "C-B",
+              "field": "value",
+              "from": "3",
+              "to": "4"
+            }
+          ]
+        }
+      ],
+      "execution_variants": [
+        "AS_LISTED",
+        "REVERSED"
+      ],
+      "expected": {
+        "semantic_outputs_equal": true,
+        "replay_hash_equal": true,
+        "merge_properties": [
+          "COMMUTATIVE",
+          "ASSOCIATIVE",
+          "IDEMPOTENT"
+        ]
+      }
+    },
+    {
+      "test_id": "TCE-014-BATCH-CONFLICT-NO-WINNER",
+      "category": "BATCH_CONFLICT",
+      "fixture_ref": "SYNTHETIC-SAME-FIELD",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-014-A",
+          "batch_id": "B-TCE-014",
+          "event": "Set value to 2",
+          "effective_date": "2026-07-09",
+          "known_at": "2026-07-09T10:00:00Z",
+          "source_ids": [
+            "S-A"
+          ],
+          "trigger_claim_ids": [
+            "C-X"
+          ],
+          "mutations": [
+            {
+              "operation": "CORRECT",
+              "object_type": "CLAIM",
+              "object_id": "C-X",
+              "field": "value",
+              "from": "1",
+              "to": "2"
+            }
+          ]
+        },
+        {
+          "event_id": "EV-TCE-014-B",
+          "batch_id": "B-TCE-014",
+          "event": "Set value to 3",
+          "effective_date": "2026-07-09",
+          "known_at": "2026-07-09T10:00:00Z",
+          "source_ids": [
+            "S-B"
+          ],
+          "trigger_claim_ids": [
+            "C-X"
+          ],
+          "mutations": [
+            {
+              "operation": "CORRECT",
+              "object_type": "CLAIM",
+              "object_id": "C-X",
+              "field": "value",
+              "from": "1",
+              "to": "3"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "reason_code": "BATCH_VALUE_CONFLICT",
+        "selected_value": null,
+        "human_stop_required": true,
+        "dependent_component_blocked": true,
+        "unrelated_components_continue": true
+      }
+    },
+    {
+      "test_id": "TCE-015-KNOWN-AT-NO-RETROACTIVE-REWRITE",
+      "category": "BITEMPORAL_ORDERING",
+      "fixture_ref": "SYNTHETIC-HISTORY",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-015",
+          "event": "Late-arriving prior-period fact",
+          "effective_date": "2026-03-31",
+          "known_at": "2026-08-14T10:00:00Z",
+          "source_ids": [
+            "S-LATE"
+          ],
+          "trigger_claim_ids": [
+            "C-LATE"
+          ],
+          "mutations": [
+            {
+              "operation": "OBSERVE",
+              "object_type": "CLAIM",
+              "object_id": "C-LATE",
+              "field": "value",
+              "from": null,
+              "to": "10"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "processed_at": "2026-08-14T10:00:00Z",
+        "effective_date_preserved": "2026-03-31",
+        "historical_state_rewritten": false,
+        "new_append_only_state_required": true
+      }
+    },
+    {
+      "test_id": "TCE-016-IDEMPOTENT-REPLAY",
+      "category": "IDEMPOTENCE",
+      "fixture_ref": "RESULT_OF_TCE-007",
+      "event_batch_ref": "TCE-007-M0-DETERMINISTIC-RECONCILIATION",
+      "expected": {
+        "new_institutional_delta": [],
+        "required_unchanged_reason_codes": [
+          "EQUIVALENT_EVENT"
+        ],
+        "duplicate_history_effect": false
+      }
+    },
+    {
+      "test_id": "TCE-017-INCREMENTAL-EQUALS-GLOBAL-KEYSTONE",
+      "category": "INCREMENTAL_GLOBAL_ORACLE",
+      "fixture_ref": "TCE-001-KEYSTONE-FIRM-EBITDA-CORRECTION",
+      "event_batch_ref": "TCE-001-KEYSTONE-FIRM-EBITDA-CORRECTION",
+      "execution_variants": [
+        "INCREMENTAL_SCC",
+        "GLOBAL_RECOMPUTE"
+      ],
+      "expected": {
+        "compare_on_fully_mapped_projection": true,
+        "candidate_values_equal": true,
+        "route_states_equal": true,
+        "canonical_axis_deltas_equal": true,
+        "materiality_classes_equal": true,
+        "human_stops_equal": true,
+        "blocked_components_equal": true,
+        "invariant_results_equal": true,
+        "unaffected_objects_byte_equivalent_after_normalization": true,
+        "coverage_limits_equal": true
+      }
+    },
+    {
+      "test_id": "TCE-018-WORKFLOW-LOOP-IS-EVENT-SEQUENCE",
+      "category": "WORKFLOW_LOOP",
+      "fixture_ref": "SYNTHETIC-DILIGENCE-WORKFLOW",
+      "event_sequence": [
+        "FINDING_RECORDED",
+        "QUESTION_CREATED",
+        "DILIGENCE_RESPONSE_ADMITTED"
+      ],
+      "expected": {
+        "scc_solver_invocations": 0,
+        "events_processed_sequentially_by_known_at": true,
+        "convergence_required": false,
+        "history_append_count": 3
+      }
+    },
+    {
+      "test_id": "TCE-019-CUMULATION-AGAINST-KT",
+      "category": "CUMULATIVE_MATERIALITY",
+      "fixture_ref": "SF-CUMULATION-KT",
+      "event_sequence": [
+        {
+          "event_id": "EV-TCE-019-01",
+          "candidate_value": "11.32",
+          "gross_delta": "-0.08",
+          "known_at": "2026-07-10T10:00:00Z"
+        },
+        {
+          "event_id": "EV-TCE-019-02",
+          "candidate_value": "11.24",
+          "gross_delta": "-0.08",
+          "known_at": "2026-07-11T10:00:00Z"
+        },
+        {
+          "event_id": "EV-TCE-019-03",
+          "candidate_value": "11.15",
+          "gross_delta": "-0.09",
+          "known_at": "2026-07-12T10:00:00Z"
+        }
+      ],
+      "epsilon_subcase": {
+        "event_generator": {
+          "count": 63,
+          "per_event_delta": "-0.004",
+          "unit": "$mm",
+          "each_delta_below_immediate_propagation_tolerance": true
+        },
+        "last_absorbed_current_value": "11.400",
+        "candidate_after_62_events": "11.152",
+        "candidate_after_63_events": "11.148"
+      },
+      "expected": {
+        "comparison_basis": "LAST_ABSORBED_CURRENT_K_T",
+        "k_t_before_adoption": "11.40",
+        "ordinary_sequence": {
+          "events_1_and_2_individually_below_threshold": true,
+          "candidate_after_event_3": "11.15",
+          "cumulative_absolute_change": "0.25",
+          "threshold_operator": "gte",
+          "materiality_after_event_3": "M1_PROFESSIONAL_REVIEW",
+          "required_reason_code": "CUMULATIVE_THRESHOLD_CROSSED"
+        },
+        "epsilon_sequence": {
+          "events_1_through_62_propagation_count": 0,
+          "events_1_through_63_audit_count": 63,
+          "raw_cumulative_change_after_63": "0.252",
+          "propagation_triggered_at_event": 63,
+          "required_reason_codes": [
+            "BELOW_PROPAGATION_TOLERANCE_RECORDED",
+            "CUMULATIVE_THRESHOLD_CROSSED"
+          ]
+        },
+        "bucket_closes_only_on": [
+          "CURRENT_ADOPTION",
+          "NEXT_GATE"
+        ],
+        "gross_movements_retained_in_audit": true
+      }
+    },
+    {
+      "test_id": "TCE-020-RULE-SWITCH-MATERIAL-WITH-ZERO-NUMERIC-DELTA",
+      "category": "RULE_SWITCH",
+      "fixture_ref": "SF-FINANCING-GRID-SWITCH",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-020",
+          "event": "Single-parent exposure crosses financing-grid threshold",
+          "effective_date": "2026-07-13",
+          "known_at": "2026-07-13T10:00:00Z",
+          "source_ids": [
+            "FIXTURE-TERM-SHEET-FINANCING-GRID"
+          ],
+          "trigger_claim_ids": [
+            "C-SINGLE-PARENT-EXPOSURE"
+          ],
+          "mutations": [
+            {
+              "operation": "OBSERVE",
+              "object_type": "CLAIM",
+              "object_id": "C-SINGLE-PARENT-EXPOSURE",
+              "field": "value",
+              "from": "0.149",
+              "to": "0.151",
+              "unit": "decimal_ratio",
+              "period": "CURRENT_UNDERWRITING",
+              "perimeter": "Borrower group customer exposure"
+            }
+          ]
+        }
+      ],
+      "expected": {
+        "old_rule_id": "GRID-DIVERSIFIED",
+        "new_rule_id": "GRID-SINGLE-PARENT-STEPDOWN",
+        "selector_threshold": "0.15",
+        "rule_source_ref": "FIXTURE-TERM-SHEET-FINANCING-GRID",
+        "rule_source_ref_required": true,
+        "numeric_delta_at_switch_detection": "0",
+        "zero_numeric_delta_means_immaterial": false,
+        "minimum_materiality_class": "M2_GATE_AUTHORITY",
+        "required_reason_code": "RULE_SWITCH_MATERIAL_BY_DEFINITION",
+        "rule_switch_output_required": true,
+        "dependent_financing_component_requeued": true
+      }
+    },
+    {
+      "test_id": "TCE-021-PREPARER-CANNOT-SELF-ADOPT",
+      "category": "SEGREGATION_OF_DUTIES",
+      "fixture_ref": "SF-INDEPENDENT-REVIEW",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-021",
+          "event": "Preparer attempts to adopt own material treatment",
+          "effective_date": "2026-07-14",
+          "known_at": "2026-07-14T10:00:00Z",
+          "source_ids": [],
+          "trigger_claim_ids": [],
+          "mutations": [],
+          "governance_action": {
+            "change_set_id": "CS-TCE-021",
+            "action": "ADOPT_INTO_CURRENT",
+            "actor_id": "ACTOR-ASSOCIATE-01",
+            "actor_roles": [
+              "ASSOCIATE",
+              "PREPARER"
+            ],
+            "prepared_by_actor_id": "ACTOR-ASSOCIATE-01",
+            "policy_rule_id": "AUTH-030"
+          }
+        }
+      ],
+      "expected": {
+        "adoption_result": "REJECTED",
+        "required_reason_code": "SELF_ADOPTION_FORBIDDEN",
+        "current_delta": [],
+        "approved_delta": [],
+        "candidate_change_set_preserved": true,
+        "attempt_recorded_in_audit": true,
+        "human_stop_required": true,
+        "required_role": "FINANCIAL_OR_WORKSTREAM_REVIEWER",
+        "required_actor_distinct_from": "ACTOR-ASSOCIATE-01"
+      }
+    },
+    {
+      "test_id": "TCE-022-INVERSE-SUPPORTED-PRICE",
+      "category": "INVERSE_SOLVE",
+      "fixture_ref": "SF-INVERSE-SUPPORTED-PRICE",
+      "event_batch": [
+        {
+          "event_id": "EV-TCE-022",
+          "event": "Solve maximum supported price from return and financing constraints",
+          "effective_date": "2026-07-15",
+          "known_at": "2026-07-15T10:00:00Z",
+          "source_ids": [
+            "S-RETURN-POLICY",
+            "S-FINANCING-CONSTRAINTS"
+          ],
+          "trigger_claim_ids": [],
+          "mutations": [
+            {
+              "operation": "OBSERVE",
+              "object_type": "MODEL_NODE",
+              "object_id": "M-SUPPORTED-PRICE",
+              "field": "solve_requested",
+              "from": false,
+              "to": true
+            }
+          ]
+        }
+      ],
+      "subcases": [
+        {
+          "subcase_id": "TCE-022-A-UNIQUE",
+          "fixture_overrides": {},
+          "expected": {
+            "solver_outcome": "UNIQUE_OPTIMUM",
+            "supported_price": "115",
+            "entry_debt": "40",
+            "entry_equity": "75",
+            "exit_equity_proceeds": "150",
+            "moic": "2.0",
+            "binding_constraint_ids": [
+              "MIN-MOIC"
+            ],
+            "binding_constraint_source_refs_required": true,
+            "candidate_settlement": "FULL"
+          }
+        },
+        {
+          "subcase_id": "TCE-022-B-NO-SOLUTION",
+          "fixture_overrides": {
+            "objective_bounds": [
+              "120",
+              "200"
+            ]
+          },
+          "expected": {
+            "solver_outcome": "NO_ADMISSIBLE_SOLUTION",
+            "supported_price": null,
+            "is_runtime_error": false,
+            "candidate_settlement": "PARTIAL",
+            "blocked_scope": [
+              "M-SUPPORTED-PRICE",
+              "DEPENDENTS_OF_M-SUPPORTED-PRICE"
+            ],
+            "independent_components_continue": true,
+            "missing_or_conflicting_constraints_exposed": true
+          }
+        },
+        {
+          "subcase_id": "TCE-022-C-MULTIPLE",
+          "fixture_overrides": {
+            "financing_branches": [
+              {
+                "branch_id": "FINANCING-A",
+                "fixed_debt": "40",
+                "exit_equity_proceeds": "150"
+              },
+              {
+                "branch_id": "FINANCING-B",
+                "fixed_debt": "45",
+                "exit_equity_proceeds": "140"
+              }
+            ],
+            "branch_precedence": null
+          },
+          "expected": {
+            "solver_outcome": "MULTIPLE_OPTIMAL_SOLUTIONS",
+            "supported_price_candidates": [
+              "115",
+              "115"
+            ],
+            "solution_branch_ids": [
+              "FINANCING-A",
+              "FINANCING-B"
+            ],
+            "selected_solution": null,
+            "human_stop_required": true,
+            "candidate_settlement": "PARTIAL"
+          }
+        },
+        {
+          "subcase_id": "TCE-022-D-DETERMINISM",
+          "fixture_overrides": {},
+          "execution_count": 10,
+          "expected": {
+            "all_semantic_outputs_equal": true,
+            "all_replay_hashes_equal": true,
+            "supported_price_each_run": "115",
+            "binding_constraint_ids_each_run": [
+              "MIN-MOIC"
+            ]
+          }
+        }
+      ],
+      "expected": {
+        "arbitrary_solution_selection_forbidden": true,
+        "binding_constraint_declaration_required_for_unique_solution": true,
+        "no_solution_is_partial_settlement_not_exception": true,
+        "deterministic_solver_required": true
+      }
+    }
+  ]
+}

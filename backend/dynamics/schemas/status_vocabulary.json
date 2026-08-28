@@ -1,0 +1,26 @@
+{
+  "epistemic_status": {
+    "ESTABLISHED": "Sufficiently supported for the decision phase under the stated perimeter and period.",
+    "CONTESTED": "Material counterevidence, ambiguity or disagreement remains.",
+    "OPEN": "The proposition or required condition has not been resolved.",
+    "UNEXAMINED": "The relevant perimeter has not yet been examined."
+  },
+  "decision_status": {
+    "ACCEPTED": "Adopted into the institutional case.",
+    "ACCEPTED_WITH_CONDITIONS": "Adopted only subject to explicit conditions or monitoring.",
+    "REJECTED": "Explicitly not adopted.",
+    "PENDING": "No institutional disposition yet."
+  },
+  "freshness_status": {
+    "CURRENT": "Upstream bases are current.",
+    "STALE": "One or more material upstream bases changed and the position has not been recomputed or re-accepted."
+  },
+  "outcome_status": {
+    "NOT_TESTED": "No subsequent outcome test yet.",
+    "HELD": "Subsequent evidence supported the position.",
+    "PARTIALLY_HELD": "The position held only in part.",
+    "FALSIFIED": "The position did not hold.",
+    "MATERIALIZED": "The risk or failure mechanism occurred.",
+    "RECOVERED_AFTER_FAILURE": "The position failed and was later remediated."
+  }
+}

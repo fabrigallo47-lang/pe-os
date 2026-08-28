@@ -1,0 +1,22 @@
+{
+  "SUPPORTS": {
+    "meaning": "Source object increases evidentiary support for the target.",
+    "traversal": "support maintenance; removal may reduce target support but does not automatically recalculate values."
+  },
+  "CONTRADICTS": {
+    "meaning": "Source object is materially incompatible with the target or an existing support route.",
+    "traversal": "opens contradiction or reduces target support; requires resolution rule or human adjudication."
+  },
+  "DERIVES_FROM": {
+    "meaning": "Target semantics or value are defined or derived from the source object.",
+    "traversal": "source supersession stales the target and may require recomputation."
+  },
+  "DRIVES": {
+    "meaning": "Source causally affects the target state, assumption, formula selection or quantitative output.",
+    "traversal": "propagate downstream subject to materiality, formula and human-position boundaries."
+  },
+  "CONDITIONS": {
+    "meaning": "Target may be accepted, committed or remain current only while the source condition or governance requirement holds.",
+    "traversal": "unsatisfied condition blocks gate or stales the target institutional state."
+  }
+}

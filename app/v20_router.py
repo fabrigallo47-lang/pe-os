@@ -39,6 +39,13 @@ import yaml
 from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 
+from backend.dynamics import (
+    DynamicsBundleError,
+    load_event_batch,
+    run_bundle_transition,
+    settle_candidate_state,
+)
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT / "tools"))
 sys.path.insert(0, str(ROOT / "ui" / "07_ENGINEERING_CONTRACTS_AND_ADAPTERS" / "adapters"))
@@ -56,7 +63,7 @@ _inbox_lock = threading.Lock()
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
 def _now_iso() -> str:
-    return dt.datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
+    return dt.datetime.now(dt.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
 
 def _today() -> str:
     return dt.date.today().isoformat()
@@ -331,7 +338,16 @@ def _run_v1_runtime_adapter(claims: list[dict], case_id: str) -> None:
     else:
         # The V20 projection reads these runtime state files from the root
         # bundle. Promote state only; extractor claims remain authoritative.
-        for name in ("current_graph.json", "candidate_graph.json", "transition_output.json", "execution_mapping.json"):
+        for name in (
+            "current_graph.json",
+            "candidate_graph.json",
+            "transition_output.json",
+            "execution_mapping.json",
+            "event_ebitda_correction.json",
+            "keystone_materiality_policy_v0.json",
+            "keystone_authority_matrix_v0.json",
+            "admission_manifest_v7.json",
+        ):
             src = runtime_dir / name
             if src.exists():
                 (PIPELINE_OUT / name).write_bytes(src.read_bytes())
@@ -952,28 +968,45 @@ async def admit(
     background_tasks: BackgroundTasks,
     payload: dict = {},
 ) -> dict:
-    transition_output = _load_json_safe(PIPELINE_OUT / "transition_output.json")
-    candidate_graph = _load_json_safe(PIPELINE_OUT / "candidate_graph.json")
+    try:
+        event_batch = load_event_batch(PIPELINE_OUT, event_id, payload)
+        dynamics_result = run_bundle_transition(
+            PIPELINE_OUT,
+            event_batch,
+            persist_outputs=True,
+        )
+    except DynamicsBundleError as exc:
+        raise HTTPException(422, str(exc)) from exc
+    except (ValueError, KeyError) as exc:
+        logger.exception("dynamics rejected event %s", event_id)
+        raise HTTPException(422, f"Dynamics rejected the event: {exc}") from exc
 
-    if not transition_output:
-        raise HTTPException(503, "No transition output — run adapter_alpha first")
+    transition_output = dynamics_result["transition_output"]
+    candidate_graph = dynamics_result["candidate_graph"]
+    candidate_state = dynamics_result["candidate_state"]
 
     human_stops = transition_output.get("human_stops", [])
     blocked = transition_output.get("blocked_components", [])
-    run_id = f"RUN-{uuid.uuid4().hex[:8].upper()}"
-    cand_state_id = f"CAND-{uuid.uuid4().hex[:8].upper()}"
+    run_id = transition_output.get("run_id", f"RUN-{uuid.uuid4().hex[:8].upper()}")
+    cand_state_id = candidate_state.get(
+        "state_id", f"CAND-{uuid.uuid4().hex[:8].upper()}"
+    )
 
     # Store run so /runs/{run_id}/settle can find it
     _runs[run_id] = {
         "case_id": case_id,
         "event_id": event_id,
         "candidate_graph": candidate_graph,
+        "candidate_state": candidate_state,
+        "history_append": dynamics_result.get("history_append", []),
         "transition_output": transition_output,
         "candidate_state_id": cand_state_id,
+        "bundle_dir": str(PIPELINE_OUT),
+        "authority_records": [],
     }
 
     # Write admit event to vault
-    ts = dt.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    ts = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     events_dir = VAULT / "deals" / case_id / "events"
     events_dir.mkdir(parents=True, exist_ok=True)
     (events_dir / f"e-{case_id}-admit-{ts}.md").write_text(
@@ -1029,15 +1062,53 @@ async def settle_run(
     run = _runs.get(run_id)
     if not run:
         raise HTTPException(404, f"Run not found: {run_id}. Call /admit first to create a run.")
+    if run.get("settled_state_id"):
+        raise HTTPException(409, f"Run {run_id} is already settled")
 
     case_id = run["case_id"]
     event_id = run["event_id"]
-    candidate_graph = run["candidate_graph"]
     decision = "accepted"
     actor = payload.get("actor_id", "partner-001")
 
-    ts = dt.datetime.utcnow().strftime("%Y%m%dT%H%M%SZ")
+    human_stops = run["transition_output"].get("human_stops", [])
+    if human_stops:
+        supplied_record_ids = set(payload.get("authority_record_ids", []))
+        recorded = {
+            item["authority_record_id"]: item
+            for item in run.get("authority_records", [])
+        }
+        covered_stops = {
+            recorded[record_id].get("human_stop_id")
+            for record_id in supplied_record_ids
+            if record_id in recorded
+        }
+        required_stops = {
+            item.get("stop_id") for item in human_stops if item.get("stop_id")
+        }
+        if not required_stops.issubset(covered_stops):
+            missing = sorted(required_stops - covered_stops)
+            raise HTTPException(
+                409,
+                "Candidate requires recorded human approval before settlement: "
+                + ", ".join(missing),
+            )
+
+    ts = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     today = _today()
+    new_state_id = f"STATE-{case_id.upper()}-{ts}"
+    try:
+        settled_state = settle_candidate_state(
+            Path(run.get("bundle_dir", PIPELINE_OUT)),
+            run["candidate_state"],
+            run.get("history_append", []),
+            current_state_id=new_state_id,
+        )
+    except DynamicsBundleError as exc:
+        raise HTTPException(409, str(exc)) from exc
+    run["settled_state_id"] = new_state_id
+
+    # Append the institutional settlement event only after runtime persistence
+    # succeeds, so the audit trail can never claim a failed promotion occurred.
     events_dir = VAULT / "deals" / case_id / "events"
     events_dir.mkdir(parents=True, exist_ok=True)
     settle_file = events_dir / f"e-{case_id}-settle-{ts}.md"
@@ -1046,14 +1117,6 @@ async def settle_run(
         f"settles: {event_id}\nrun_id: {run_id}\ndecision: {decision}\n"
         f"actor: {actor}\ntimestamp: {ts}\nwritten-by: v20-api\n---\n"
     )
-
-    # Promote candidate → current
-    current_path = PIPELINE_OUT / "current_graph.json"
-    if candidate_graph:
-        current_path.write_text(json.dumps(candidate_graph, indent=2, ensure_ascii=False) + "\n")
-    (PIPELINE_OUT / "candidate_graph.json").write_text("{}\n")
-
-    new_state_id = f"STATE-{case_id.upper()}-{ts}"
     background_tasks.add_task(_rebuild_index)
 
     updated_projection = _build_projection(case_id)
@@ -1067,9 +1130,11 @@ async def settle_run(
         "prior_state_id": run["transition_output"].get("prior_state_id", "STATE-PRIOR"),
         "current_state_id": new_state_id,
         "selected_change_ids": payload.get("selected_change_ids", []),
-        "partial": False,
+        "partial": run["transition_output"].get("partial_settlement_status", {}).get(
+            "candidate"
+        ) == "PARTIAL",
         "summary": f"Settled {event_id} → new Current {new_state_id}",
-        "replay_hash": "sha256:settled",
+        "replay_hash": run["transition_output"].get("replay_hash", "sha256:settled"),
         "timestamp": ts,
         "effective_date": payload.get("effective_date", today),
         "known_at": ts,
@@ -1078,6 +1143,7 @@ async def settle_run(
         "projection": {"projection": updated_projection, "context": _make_context(case_id, new_state_id, today), "registry": []},
         "context": _make_context(case_id, new_state_id, today),
         "registry": [],
+        "runtime_state_id": settled_state["state_id"],
     }
 
 # Also keep the event-based settle for direct calls
@@ -1090,12 +1156,21 @@ async def settle_event(
     # Create a synthetic run and delegate
     run_id = f"RUN-DIRECT-{uuid.uuid4().hex[:8].upper()}"
     candidate_graph = _load_json_safe(PIPELINE_OUT / "candidate_graph.json")
+    candidate_state = _load_json_safe(PIPELINE_OUT / "candidate_state.json")
     to = _load_json_safe(PIPELINE_OUT / "transition_output.json")
+    if not candidate_state:
+        raise HTTPException(409, "No persisted Candidate state; run dynamics first")
     _runs[run_id] = {
         "case_id": case_id, "event_id": event_id,
         "candidate_graph": candidate_graph,
+        "candidate_state": candidate_state,
+        "history_append": to.get("history_append", []),
         "transition_output": to if isinstance(to, dict) else {},
-        "candidate_state_id": f"CAND-DIRECT-{uuid.uuid4().hex[:8].upper()}",
+        "candidate_state_id": candidate_state.get(
+            "state_id", f"CAND-DIRECT-{uuid.uuid4().hex[:8].upper()}"
+        ),
+        "bundle_dir": str(PIPELINE_OUT),
+        "authority_records": [],
     }
     return await settle_run(run_id, background_tasks, payload)
 
@@ -1107,26 +1182,47 @@ async def prepare_run(run_id: str, payload: dict = {}) -> dict:
 
 @v20.post("/runs/{run_id}/authority/attest")
 async def attest(run_id: str, payload: dict = {}) -> dict:
+    run = _runs.get(run_id)
+    if not run:
+        raise HTTPException(404, f"Run not found: {run_id}")
     ts = _now_iso()
     today = _today()
-    record_id = f"AUTH-{run_id}"
+    human_stop_id = payload.get("human_stop_id", "")
+    declared_stops = {
+        item.get("stop_id")
+        for item in run["transition_output"].get("human_stops", [])
+        if item.get("stop_id")
+    }
+    if declared_stops and human_stop_id not in declared_stops:
+        raise HTTPException(409, "human_stop_id is not part of this Candidate")
+    record_key = "|".join(
+        (
+            run_id,
+            human_stop_id,
+            str(payload.get("actor_id", "partner-001")),
+            str(payload.get("course_id", "")),
+        )
+    )
+    record_id = "AUTH-" + hashlib.sha256(record_key.encode("utf-8")).hexdigest()[:12].upper()
+    authority_record = {
+        "authority_record_id": record_id,
+        "run_id": run_id,
+        "candidate_state_id": payload.get("candidate_state_id", f"CAND-{run_id}"),
+        "human_stop_id": human_stop_id,
+        "course_id": payload.get("course_id", ""),
+        "actor_id": payload.get("actor_id", "partner-001"),
+        "actor_role": payload.get("actor_role", "DEAL_PARTNER"),
+        "timestamp": ts,
+        "effective_date": today,
+        "known_at": ts,
+        "artifact_hash": payload.get("artifact_hash", "sha256:live"),
+        "authority_verb": "APPROVE",
+        "effect_type": "PROCEED",
+        "status": "ACTIVE",
+    }
+    run.setdefault("authority_records", []).append(authority_record)
     return {
-        "authority_record": {
-            "authority_record_id": record_id,
-            "run_id": run_id,
-            "candidate_state_id": payload.get("candidate_state_id", f"CAND-{run_id}"),
-            "human_stop_id": payload.get("human_stop_id", ""),
-            "course_id": payload.get("course_id", ""),
-            "actor_id": payload.get("actor_id", "partner-001"),
-            "actor_role": payload.get("actor_role", "DEAL_PARTNER"),
-            "timestamp": ts,
-            "effective_date": today,
-            "known_at": ts,
-            "artifact_hash": payload.get("artifact_hash", "sha256:live"),
-            "authority_verb": "APPROVE",
-            "effect_type": "PROCEED",
-            "status": "ACTIVE",
-        },
+        "authority_record": authority_record,
         "execution_package": None,
     }
 

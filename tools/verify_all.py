@@ -12,11 +12,13 @@ Stages
   3 V7 end-to-end           21 executable-bridge tests
   4 retrieval + cascade     staleness propagation actually walks the graph
   5 grounding gate          how much extraction is human-verifiable
-  6 PANTA reference runtime Antonio's engine, if his kit is present
+  6 embedded dynamics unit suite
+  7 embedded dynamics on the compiled V7 bundle
+  8 independent bundle validator, when installed
 
-Stage 6 is skipped when the reference kit is not on this machine — it ships
-separately. Point --reference-kit at the unpacked PANTA_V7_INDEPENDENT_VALIDATOR
-directory to include it.
+Only the final independent structural validation is optional. Point
+``--reference-kit`` at the unpacked PANTA_V7_INDEPENDENT_VALIDATOR directory
+to include it; the production dynamics runtime and its tests are in this repo.
 """
 from __future__ import annotations
 
@@ -45,9 +47,9 @@ class Stage:
         return self
 
 
-def _run(cmd: list[str], timeout: int = 900) -> tuple[int, str]:
+def _run(cmd: list[str], timeout: int = 900, cwd: Path = ROOT) -> tuple[int, str]:
     try:
-        p = subprocess.run(cmd, cwd=ROOT, capture_output=True, text=True, timeout=timeout)
+        p = subprocess.run(cmd, cwd=cwd, capture_output=True, text=True, timeout=timeout)
         return p.returncode, p.stdout + p.stderr
     except subprocess.TimeoutExpired:
         return 124, "timed out"
@@ -118,19 +120,47 @@ def stage_grounding() -> Stage:
                         f"{block.group(1) if block else '?'} blocking")
 
 
-def stage_reference(kit: Path | None) -> Stage:
-    s = Stage("PANTA reference runtime (Antonio)")
-    if kit is None or not kit.exists():
-        return s.done(True, "skipped — reference kit not on this machine")
-    engine = kit / "panta_reference"
-    if not (engine / "runtime" / "panta_transition_engine.py").exists():
-        return s.done(False, f"kit at {kit} has no runtime/panta_transition_engine.py")
+def _runtime_bundle() -> Path | None:
+    for candidate in (
+        ROOT / "pipeline_out/e3/K-IC/adapter_alpha",
+        ROOT / "pipeline_out/e3/K-PRE/adapter_alpha",
+        ROOT / "pipeline_out/v7_e2e",
+    ):
+        if all((candidate / name).exists() for name in (
+            "current_graph.json",
+            "execution_mapping.json",
+            "event_ebitda_correction.json",
+            "keystone_materiality_policy_v0.json",
+            "keystone_authority_matrix_v0.json",
+        )):
+            return candidate
+    return None
 
-    bundle = ROOT / "pipeline_out/e3/K-IC/adapter_alpha"
+
+def stage_dynamics_tests() -> Stage:
+    s = Stage("Embedded dynamics unit suite")
+    dynamics = ROOT / "backend/dynamics"
+    rc, out = _run(
+        [PY, "-m", "unittest", "discover", "-s", "tests", "-v"],
+        timeout=1200,
+        cwd=dynamics,
+    )
+    match = re.search(r"Ran\s+(\d+)\s+tests?", out)
+    if not match:
+        return s.done(False, "no unittest result line")
+    count = int(match.group(1))
+    return s.done(rc == 0, f"{count}/{count} passed" if rc == 0 else "suite failed")
+
+
+def stage_dynamics_runtime() -> Stage:
+    s = Stage("Embedded dynamics bundle run")
+    bundle = _runtime_bundle()
+    if bundle is None:
+        return s.done(False, "no complete compiled runtime bundle found")
     script = f'''
 import json, sys
-sys.path.insert(0, {str(engine)!r})
-from runtime.panta_transition_engine import apply_state_transition
+sys.path.insert(0, {str(ROOT)!r})
+from backend.dynamics.runtime import apply_state_transition
 B = {str(bundle)!r}
 L = lambda n: json.load(open(B + "/" + n))
 r = apply_state_transition(L("current_graph.json"),
@@ -161,16 +191,19 @@ print(json.dumps({{
     # derived objects is what this used to accept.
     ok = (d["settlement"] in {"FULL", "PARTIAL"}
           and d["settled"] > 0 and d["blocked"] == 0)
-    return s.done(ok, f"{d['settlement']}, {d['settled']} settled, {d['blocked']} blocked")
+    return s.done(ok, f"{bundle.name}: {d['settlement']}, "
+                  f"{d['settled']} settled, {d['blocked']} blocked")
 
 
 def _find_reference_kit() -> Path | None:
     """
-    Locate Antonio's validator. It is distributed as a zip, so accept either an
+    Locate the separately distributed validator. It may be a directory or zip,
+    so accept either an
     unpacked directory or the archive, which is expanded into a cache dir.
     """
     dirs = [
         ROOT / "PANTA_V7_INDEPENDENT_VALIDATOR",
+        ROOT.parent / "PANTA_V7_INDEPENDENT_VALIDATOR",
         Path.home() / "Downloads" / "PANTA_V7_INDEPENDENT_VALIDATOR",
     ]
     for d in dirs:
@@ -182,6 +215,7 @@ def _find_reference_kit() -> Path | None:
             return nested
 
     for z in (ROOT / "PANTA_V7_INDEPENDENT_VALIDATOR.zip",
+              ROOT.parent / "PANTA_V7_INDEPENDENT_VALIDATOR.zip",
               Path.home() / "Downloads" / "PANTA_V7_INDEPENDENT_VALIDATOR.zip"):
         if not z.exists():
             continue
@@ -203,11 +237,13 @@ def _find_reference_kit() -> Path | None:
 
 
 def stage_independent(kit: Path | None) -> Stage:
-    """Antonio's own 46-check structural validation of the bundle."""
+    """Run the separately distributed structural validator when available."""
     s = Stage("PANTA independent validation")
     if kit is None or not (kit / "check_all.py").exists():
         return s.done(True, "skipped — reference kit not on this machine")
-    bundle = ROOT / "pipeline_out/e3/K-IC/adapter_alpha"
+    bundle = _runtime_bundle()
+    if bundle is None:
+        return s.done(False, "no complete compiled runtime bundle found")
     rc, out = _run([PY, str(kit / "check_all.py"), str(bundle)], timeout=1200)
     m = re.search(r"VERDICT:\s*(\w+)\s*\|\s*PASS=(\d+)\s+WARN=(\d+)\s+FAIL=(\d+)", out)
     if not m:
@@ -231,8 +267,8 @@ def main() -> int:
     print(bar)
 
     stages = [stage_regression(), stage_v7(), stage_e2e(), stage_cascade(),
-              stage_grounding(), stage_reference(kit),
-              stage_independent(kit)]
+              stage_grounding(), stage_dynamics_tests(),
+              stage_dynamics_runtime(), stage_independent(kit)]
 
     print()
     for s in stages:

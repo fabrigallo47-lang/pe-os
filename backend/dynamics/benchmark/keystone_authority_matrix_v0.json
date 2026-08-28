@@ -1,0 +1,286 @@
+{
+  "schema_version": "runtime-policy-1.0",
+  "policy_id": "KEYSTONE-AUTHORITY-V0",
+  "version": "0.2.0",
+  "status": "SYNTHETIC_TEST_FIXTURE",
+  "canonical_ontology_version": "1.1.0",
+  "scope": {
+    "case_id": "KEYSTONE-CIC",
+    "purpose": "State Transition Engine conformance testing",
+    "universal_panta_rule": false,
+    "final_fund_lens": false
+  },
+  "role_definitions": {
+    "PREPARER": "Prepares analysis or a Working change set; cannot adopt or approve merely by preparing it.",
+    "PROFESSIONAL_REVIEWER": "Adopts an analytical treatment into Current within declared scope.",
+    "AUTHORITY_HOLDER": "Exercises a reserved verb or creates a new Approved snapshot within delegation.",
+    "ESCALATION_HOLDER": "Acts when the delegated authority is insufficient or a policy exception is requested."
+  },
+  "kernel_rules": {
+    "routing_tag_confers_authority": false,
+    "decision_status_changes_automatically": false,
+    "approved_rewritten_by_current_change": false,
+    "new_approved_requires_explicit_authority_event": true,
+    "artifact_application_is_separate_action": true,
+    "history_is_append_only": true,
+    "self_adoption_when_independent_review_required": false
+  },
+  "segregation_of_duties": {
+    "compare_actor_id_not_only_role": true,
+    "preparer_must_differ_from_adopter_when_independence_required": true,
+    "failed_self_adoption_result": "REJECT_WITH_HUMAN_STOP",
+    "failed_self_adoption_reason_code": "SELF_ADOPTION_FORBIDDEN",
+    "candidate_change_set_remains_available": true,
+    "attempt_is_audited": true
+  },
+  "rule_resolution": {
+    "mode": "MOST_RESTRICTIVE_MATCH",
+    "class_order": [
+      "M0_LOCAL",
+      "M1_PROFESSIONAL_REVIEW",
+      "M2_GATE_AUTHORITY",
+      "M3_HARD_BLOCKER"
+    ],
+    "deny_or_block_overrides_permission": true,
+    "escalation_required_when_delegation_unproven": true
+  },
+  "rules": [
+    {
+      "rule_id": "AUTH-000",
+      "name": "Deterministic derived-only M0 reconciliation",
+      "priority": 10,
+      "when": {
+        "materiality_classes": [
+          "M0_LOCAL"
+        ],
+        "all_conditions": [
+          "M0_AUTO_RECONCILIATION_GUARDS_PASS"
+        ]
+      },
+      "preparer_roles": [
+        "AGENT",
+        "ANALYST",
+        "ASSOCIATE"
+      ],
+      "current_adoption": {
+        "mode": "AUTOMATIC_RECONCILIATION",
+        "required_role": null
+      },
+      "approved_action": {
+        "mode": "NONE",
+        "approved_remains_frozen": true
+      },
+      "escalation": null
+    },
+    {
+      "rule_id": "AUTH-010",
+      "name": "Technical correction outside M0 automatic guards",
+      "priority": 20,
+      "when": {
+        "change_types": [
+          "TECHNICAL_CORRECTION",
+          "SOURCE_CORRECTION",
+          "MODEL_INPUT_CORRECTION"
+        ],
+        "maximum_materiality_class": "M1_PROFESSIONAL_REVIEW"
+      },
+      "preparer_roles": [
+        "AGENT",
+        "ANALYST",
+        "ASSOCIATE"
+      ],
+      "current_adoption": {
+        "mode": "HUMAN",
+        "required_role": "WORKSTREAM_REVIEWER"
+      },
+      "approved_action": {
+        "mode": "NONE_UNLESS_RESERVED_DECISION_CHANGES",
+        "approved_remains_frozen": true
+      },
+      "escalation": null
+    },
+    {
+      "rule_id": "AUTH-020",
+      "name": "Ambiguous binding or material contradiction",
+      "priority": 30,
+      "when": {
+        "any_conditions": [
+          "AMBIGUOUS_BINDING",
+          "APPLICABLE_MATERIAL_CONTRADICTION"
+        ]
+      },
+      "preparer_roles": [
+        "ASSOCIATE"
+      ],
+      "current_adoption": {
+        "mode": "HUMAN",
+        "required_role": "QUALIFIED_PROFESSIONAL_REVIEWER"
+      },
+      "approved_action": {
+        "mode": "UNCHANGED",
+        "approved_remains_frozen": true
+      },
+      "escalation": {
+        "required_when": "GATE_OR_RESERVED_DECISION_IMPACT",
+        "required_role": "AUTHORITY_HOLDER"
+      }
+    },
+    {
+      "rule_id": "AUTH-030",
+      "name": "Material EBITDA treatment or assumption",
+      "priority": 40,
+      "when": {
+        "change_types": [
+          "MATERIAL_EBITDA_TREATMENT",
+          "MATERIAL_ASSUMPTION_CHANGE"
+        ]
+      },
+      "preparer_roles": [
+        "ASSOCIATE"
+      ],
+      "current_adoption": {
+        "mode": "HUMAN",
+        "required_role": "FINANCIAL_OR_WORKSTREAM_REVIEWER",
+        "independence_required": true,
+        "adopter_actor_must_differ_from_preparer_actor": true
+      },
+      "approved_action": {
+        "mode": "CONDITIONAL",
+        "required_role_when_triggered": "PARTNER_OR_IC",
+        "trigger_conditions": [
+          "PRICE_CHANGES",
+          "LEVERAGE_CHANGES",
+          "ACCEPTED_RISK_CHANGES",
+          "OTHER_RESERVED_DECISION_CHANGES"
+        ],
+        "approved_remains_frozen_until_action": true
+      },
+      "escalation": {
+        "required_when": "OUTSIDE_DELEGATION",
+        "required_role": "IC"
+      }
+    },
+    {
+      "rule_id": "AUTH-040",
+      "name": "Reserved economic or risk decision",
+      "priority": 50,
+      "when": {
+        "change_types": [
+          "PRICE",
+          "LEVERAGE",
+          "OFFER",
+          "SPEND",
+          "RISK_ACCEPTANCE"
+        ]
+      },
+      "preparer_roles": [
+        "ASSOCIATE",
+        "PROFESSIONAL_REVIEWER"
+      ],
+      "current_adoption": {
+        "mode": "HUMAN",
+        "required_role": "PROFESSIONAL_REVIEWER"
+      },
+      "approved_action": {
+        "mode": "HUMAN",
+        "required_role_within_delegation": "PARTNER",
+        "required_role_beyond_delegation": "IC",
+        "approved_remains_frozen_until_action": true
+      },
+      "escalation": {
+        "required_when": "OUTSIDE_PARTNER_DELEGATION",
+        "required_role": "IC"
+      }
+    },
+    {
+      "rule_id": "AUTH-050",
+      "name": "Hard blocker, policy breach or axiom",
+      "priority": 100,
+      "when": {
+        "materiality_classes": [
+          "M3_HARD_BLOCKER"
+        ]
+      },
+      "preparer_roles": [
+        "PROFESSIONAL_REVIEWER"
+      ],
+      "current_adoption": {
+        "mode": "REGISTER_FACT_ONLY",
+        "required_role": "PROFESSIONAL_REVIEWER",
+        "gate_state": "BLOCKED"
+      },
+      "approved_action": {
+        "mode": "WAIVER_IF_POLICY_ALLOWS",
+        "waivable_policy_breach_role": "ESCALATION_HOLDER",
+        "non_waivable_axiom_action": "NO_WAIVER",
+        "approved_remains_frozen_until_action": true
+      },
+      "escalation": {
+        "required_when": "WAIVER_PERMITTED_AND_REQUESTED",
+        "required_role": "ESCALATION_HOLDER"
+      }
+    },
+    {
+      "rule_id": "AUTH-060",
+      "name": "Investment approval",
+      "priority": 90,
+      "when": {
+        "change_types": [
+          "INVESTMENT_APPROVAL"
+        ]
+      },
+      "preparer_roles": [
+        "DEAL_TEAM"
+      ],
+      "current_adoption": {
+        "mode": "RECOMMENDATION",
+        "required_role": "DEAL_TEAM"
+      },
+      "approved_action": {
+        "mode": "HUMAN",
+        "required_role_within_delegation": "IC",
+        "approved_remains_frozen_until_action": true
+      },
+      "escalation": null
+    },
+    {
+      "rule_id": "AUTH-070",
+      "name": "Apply Current treatment to artifact",
+      "priority": 25,
+      "when": {
+        "change_types": [
+          "EXCEL_CHANGE",
+          "MEMO_CHANGE",
+          "LENDER_PACK_CHANGE",
+          "EXTERNAL_COMMUNICATION_CHANGE"
+        ]
+      },
+      "preparer_roles": [
+        "AGENT"
+      ],
+      "current_adoption": {
+        "mode": "ARTIFACT_APPLICATION_REVIEW",
+        "required_role": "ARTIFACT_OWNER_OR_REVIEWER"
+      },
+      "approved_action": {
+        "mode": "EXTERNAL_ACTION_POLICY",
+        "required_role_when_triggered": "SIGNING_OR_SENDING_AUTHORITY",
+        "approved_remains_frozen": true
+      },
+      "escalation": {
+        "required_when": "EXTERNAL_SIGNATURE_OR_SEND_OUTSIDE_DELEGATION",
+        "required_role": "ESCALATION_HOLDER"
+      }
+    }
+  ],
+  "deal_assignment_requirements": {
+    "people_are_deal_specific": true,
+    "required_runtime_bindings": [
+      "ROLE_TO_PERSON_OR_GROUP",
+      "DELEGATION_LIMITS",
+      "EFFECTIVE_DATES",
+      "OPTIONAL_DUAL_APPROVAL_RULES"
+    ],
+    "missing_binding_result": "HUMAN_STOP_AUTHORITY_UNRESOLVED"
+  }
+}

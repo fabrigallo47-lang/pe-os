@@ -1,0 +1,806 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>V20 Dependency Map</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;600&family=Inter:wght@400;500;600;700&display=swap">
+<style>
+:root {
+  --bg:      #07101e;
+  --surf:    #0c1a2e;
+  --surf2:   #102030;
+  --bd:      #1a2e48;
+  --bd2:     #243d5a;
+  --tx:      #adc4de;
+  --tx2:     #6d8fae;
+  --mt:      #3b5470;
+  --ok:      #2da660;
+  --okd:     #0b2e18;
+  --okt:     #40d878;
+  --par:     #c07c18;
+  --pard:    #2c1a04;
+  --part:    #e8a030;
+  --gap:     #c42828;
+  --gapd:    #2a0a0a;
+  --gapt:    #f05050;
+  --dim:     #1a2e40;
+  --dimt:    #3a5570;
+  --acc:     #2e6ec0;
+  --acct:    #5a9ae0;
+  --llm:     #5a2ea0;
+  --llmd:    #180a30;
+  --llmt:    #a070e8;
+}
+@media(prefers-color-scheme:light){:root:not([data-theme="dark"]){
+  --bg:#edf3fb;--surf:#fff;--surf2:#f0f6fc;--bd:#bcd0e8;--bd2:#9ab8d4;
+  --tx:#132333;--tx2:#3d607c;--mt:#78a0bc;
+  --ok:#1a8a48;--okd:#d4f0e0;--okt:#14703c;
+  --par:#9a6010;--pard:#fdf0d8;--part:#7a4a08;
+  --gap:#b02020;--gapd:#fce0e0;--gapt:#8a1818;
+  --dim:#e4edf8;--dimt:#7a9ab8;
+  --acc:#1858a8;--acct:#1050a0;
+  --llm:#6030b8;--llmd:#ede0ff;--llmt:#4020a0;
+}}
+:root[data-theme="light"]{--bg:#edf3fb;--surf:#fff;--surf2:#f0f6fc;--bd:#bcd0e8;--bd2:#9ab8d4;--tx:#132333;--tx2:#3d607c;--mt:#78a0bc;--ok:#1a8a48;--okd:#d4f0e0;--okt:#14703c;--par:#9a6010;--pard:#fdf0d8;--part:#7a4a08;--gap:#b02020;--gapd:#fce0e0;--gapt:#8a1818;--dim:#e4edf8;--dimt:#7a9ab8;--acc:#1858a8;--acct:#1050a0;--llm:#6030b8;--llmd:#ede0ff;--llmt:#4020a0;}
+:root[data-theme="dark"]{--bg:#07101e;--surf:#0c1a2e;--surf2:#102030;--bd:#1a2e48;--bd2:#243d5a;--tx:#adc4de;--tx2:#6d8fae;--mt:#3b5470;--ok:#2da660;--okd:#0b2e18;--okt:#40d878;--par:#c07c18;--pard:#2c1a04;--part:#e8a030;--gap:#c42828;--gapd:#2a0a0a;--gapt:#f05050;--dim:#1a2e40;--dimt:#3a5570;--acc:#2e6ec0;--acct:#5a9ae0;--llm:#5a2ea0;--llmd:#180a30;--llmt:#a070e8;}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0;}
+body{background:var(--bg);color:var(--tx);font-family:'Inter',system-ui,sans-serif;font-size:13px;line-height:1.5;min-height:100vh;}
+
+/* HEADER */
+.hdr{display:flex;align-items:center;justify-content:space-between;padding:12px 24px;background:var(--surf);border-bottom:1px solid var(--bd);flex-wrap:wrap;gap:10px;}
+.hdr-l{display:flex;align-items:baseline;gap:10px;}
+.tag{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--acct);border:1px solid var(--acc);padding:2px 7px;border-radius:3px;}
+.hdr h1{font-size:15px;font-weight:600;}
+.hdr-r{display:flex;align-items:center;gap:12px;}
+.pills{display:flex;gap:6px;}
+.pill{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;padding:2px 8px;border-radius:20px;}
+.p-ok{background:var(--okd);color:var(--okt);}
+.p-par{background:var(--pard);color:var(--part);}
+.p-gap{background:var(--gapd);color:var(--gapt);}
+.p-dim{background:var(--dim);color:var(--dimt);}
+.tbtn{background:none;border:1px solid var(--bd);color:var(--tx2);font-size:13px;padding:4px 8px;border-radius:5px;cursor:pointer;}
+.scan-note{font-size:11px;color:var(--mt);font-style:italic;}
+
+/* MAIN */
+.main{padding:24px;display:flex;flex-direction:column;gap:0;max-width:1400px;margin:0 auto;}
+
+/* LAYER ROW */
+.layer{margin-bottom:0;}
+.layer-hd{display:flex;align-items:center;gap:10px;margin-bottom:10px;}
+.layer-num{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.1em;color:var(--mt);border:1px solid var(--bd);padding:2px 6px;border-radius:3px;}
+.layer-name{font-family:'JetBrains Mono',monospace;font-size:10px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--tx2);}
+.layer-sub{font-size:11px;color:var(--mt);}
+
+/* NODES ROW */
+.nodes-row{display:flex;flex-wrap:wrap;gap:10px;align-items:flex-start;}
+.nodes-chain{display:flex;flex-wrap:wrap;gap:0;align-items:center;}
+.chain-arrow{color:var(--mt);font-size:16px;padding:0 4px;flex-shrink:0;line-height:1;}
+
+/* NODE CARD */
+.nc{
+  border-radius:6px;border:1px solid;
+  display:flex;flex-direction:column;
+  overflow:hidden;
+  flex-shrink:0;
+}
+.nc-stripe{height:4px;width:100%;flex-shrink:0;}
+.nc-body{padding:9px 11px;}
+.nc-top{display:flex;align-items:baseline;gap:8px;margin-bottom:4px;}
+.nc-title{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;color:inherit;}
+.nc-badge{font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:600;border:1px solid currentColor;border-radius:2px;padding:0px 4px;opacity:.6;white-space:nowrap;}
+.nc-detail{font-size:10.5px;color:inherit;opacity:.65;line-height:1.5;}
+.nc-chips{display:flex;flex-wrap:wrap;gap:3px;margin-top:4px;}
+.chip{font-family:'JetBrains Mono',monospace;font-size:9px;border:1px solid currentColor;border-radius:2px;padding:1px 5px;opacity:.7;white-space:nowrap;}
+
+.nc.ok  {border-color:var(--ok);background:var(--okd);color:var(--okt);}
+.nc.ok  .nc-stripe{background:var(--ok);}
+.nc.par {border-color:var(--par);background:var(--pard);color:var(--part);}
+.nc.par .nc-stripe{background:var(--par);}
+.nc.gap {border-color:var(--gap);background:var(--gapd);color:var(--gapt);}
+.nc.gap .nc-stripe{background:var(--gap);}
+.nc.dim {border-color:var(--bd);background:var(--dim);color:var(--dimt);}
+.nc.dim .nc-stripe{background:var(--bd);}
+.nc.llm {border-color:var(--llm);background:var(--llmd);color:var(--llmt);}
+.nc.llm .nc-stripe{background:var(--llm);}
+
+/* CLUSTERS */
+.cluster{
+  background:var(--surf);border:1px solid var(--bd);
+  border-radius:8px;overflow:hidden;flex-shrink:0;
+}
+.cluster-hd{
+  padding:5px 10px;background:var(--surf2);border-bottom:1px solid var(--bd);
+  font-family:'JetBrains Mono',monospace;font-size:8.5px;font-weight:600;
+  letter-spacing:.14em;text-transform:uppercase;color:var(--mt);
+}
+.cluster-body{padding:8px;display:flex;flex-direction:column;gap:6px;}
+
+/* BAND (connectors/gap sections) */
+.band{
+  display:flex;align-items:stretch;margin:0 0;
+  position:relative;
+}
+.band-line{
+  width:2px;background:var(--mt);flex-shrink:0;
+  margin:0 39px;
+}
+.band-line.gap-line{
+  background:repeating-linear-gradient(to bottom,var(--gap) 0,var(--gap) 5px,transparent 5px,transparent 9px);
+}
+.band-content{flex:1;padding:8px 0 8px 0;}
+
+/* ARROW CONNECTOR */
+.arrow-down{
+  display:flex;flex-direction:column;align-items:flex-start;
+  padding:0 0 0 33px;
+  gap:0;
+  min-height:32px;
+}
+.arrow-down .adl{width:2px;flex:1;background:var(--mt);}
+.arrow-down .adh{width:0;height:0;border-left:5px solid transparent;border-right:5px solid transparent;border-top:7px solid var(--mt);margin-left:-4px;}
+.arrow-down.gap .adl{background:repeating-linear-gradient(to bottom,var(--gap) 0,var(--gap) 4px,transparent 4px,transparent 8px);}
+.arrow-down.gap .adh{border-top-color:var(--gap);}
+.arrow-note{font-size:10px;color:var(--mt);padding:2px 0 2px 12px;font-family:'JetBrains Mono',monospace;}
+
+/* GAP CALLOUT */
+.gap-callout{
+  background:var(--gapd);border:1px solid var(--gap);border-radius:6px;
+  padding:10px 14px;margin-bottom:0;
+}
+.gap-callout-grid{display:flex;flex-direction:column;gap:8px;}
+.gap-item{display:flex;gap:10px;align-items:flex-start;}
+.gap-item-id{font-family:'JetBrains Mono',monospace;font-size:9.5px;font-weight:600;color:var(--gapt);flex-shrink:0;white-space:nowrap;padding-top:1px;}
+.gap-item-text{font-size:12px;color:var(--gapt);opacity:.85;line-height:1.5;}
+
+/* LLM BAND */
+.llm-band{
+  background:var(--llmd);border:1px solid var(--llm);border-radius:6px;
+  padding:10px 14px;margin:16px 0;
+}
+.llm-band-hd{display:flex;align-items:center;gap:8px;margin-bottom:8px;}
+.llm-band-title{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--llmt);}
+.llm-calls{display:flex;flex-wrap:wrap;gap:6px;}
+.llm-call{
+  background:var(--surf);border:1px solid var(--llm);border-radius:4px;
+  padding:5px 10px;font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--llmt);
+}
+.llm-model{opacity:.6;font-size:9px;}
+
+/* ROUTES TABLE */
+.routes-section{margin-top:24px;}
+.routes-grid{display:grid;grid-template-columns:1fr 1fr;gap:16px;}
+@media(max-width:900px){.routes-grid{grid-template-columns:1fr;}}
+.rt-panel{background:var(--surf);border:1px solid var(--bd);border-radius:8px;overflow:hidden;}
+.rt-header{padding:9px 14px;background:var(--surf2);border-bottom:1px solid var(--bd);}
+.rt-header h3{font-size:12px;font-weight:600;color:var(--tx);}
+.rt-header p{font-size:10.5px;color:var(--tx2);margin-top:2px;}
+.rt-body{padding:10px 14px;max-height:300px;overflow-y:auto;}
+.route-row{display:flex;gap:8px;padding:3px 0;border-bottom:1px solid var(--bd);font-family:'JetBrains Mono',monospace;font-size:9.5px;}
+.route-row:last-child{border-bottom:none;}
+.route-method{color:var(--acct);width:32px;flex-shrink:0;font-weight:600;}
+.route-path{color:var(--tx);}
+.route-note{color:var(--mt);margin-left:auto;white-space:nowrap;}
+
+/* DIVIDER */
+.divider{height:1px;background:var(--bd);margin:24px 0;}
+
+/* SCORE BARS (right side) */
+.right-col{width:280px;flex-shrink:0;}
+.two-col{display:grid;grid-template-columns:1fr 280px;gap:24px;align-items:start;}
+@media(max-width:1100px){.two-col{grid-template-columns:1fr;}}
+.score-panel{background:var(--surf);border:1px solid var(--bd);border-radius:8px;overflow:hidden;margin-bottom:16px;}
+.score-ph{padding:10px 14px;background:var(--surf2);border-bottom:1px solid var(--bd);}
+.score-ph .slabel{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mt);margin-bottom:3px;}
+.score-ph .stitle{font-size:13px;font-weight:600;color:var(--tx);}
+.score-ph .ssub{font-size:10.5px;color:var(--tx2);margin-top:2px;}
+.score-pb{padding:14px;}
+.scores{display:flex;flex-direction:column;gap:10px;}
+.score-row{display:flex;flex-direction:column;gap:3px;}
+.score-top{display:flex;align-items:center;justify-content:space-between;}
+.sk{font-family:'JetBrains Mono',monospace;font-size:9.5px;color:var(--tx2);}
+.sv{font-family:'JetBrains Mono',monospace;font-size:11px;font-weight:600;}
+.sv.ok{color:var(--okt);} .sv.par{color:var(--part);} .sv.gap{color:var(--gapt);}
+.bar-bg{height:5px;border-radius:3px;background:rgba(255,255,255,.05);overflow:hidden;}
+.bar-fill{height:100%;border-radius:3px;}
+.bf-ok{background:var(--ok);} .bf-par{background:var(--par);} .bf-gap{background:var(--gap);}
+.sdiv{height:1px;background:var(--bd);margin:12px 0;}
+.task-list{display:flex;flex-direction:column;gap:5px;}
+.task{display:flex;gap:7px;padding:6px 9px;background:var(--surf2);border:1px solid var(--bd);border-radius:4px;}
+.tid{font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;color:var(--gapt);flex-shrink:0;padding-top:1px;}
+.ttext{font-size:10.5px;color:var(--tx2);line-height:1.4;}
+.exec{font-family:'JetBrains Mono',monospace;font-size:10px;color:var(--tx2);line-height:2;}
+.exec-in{padding-left:14px;color:var(--mt);}
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<div class="hdr">
+  <div class="hdr-l">
+    <span class="tag">PE OS · V20</span>
+    <h1>Dependency Map</h1>
+  </div>
+  <div class="hdr-r">
+    <div class="pills">
+      <span class="pill p-ok">✓ built</span>
+      <span class="pill p-par">~ partial / wrong port</span>
+      <span class="pill p-gap">✗ missing</span>
+      <span class="pill p-dim">○ unreferenced</span>
+    </div>
+    <button class="tbtn" onclick="var r=document.documentElement;r.setAttribute('data-theme',r.getAttribute('data-theme')==='dark'?'light':'dark')">◐</button>
+  </div>
+</div>
+<div style="padding:6px 24px;background:var(--surf2);border-bottom:1px solid var(--bd);">
+  <span class="scan-note">Built from live code scan · 63 Python tools · 10 JS files · 34 server routes · 2026-08-28</span>
+</div>
+
+<div class="main">
+<div class="two-col">
+
+<!-- ═══════════════ LEFT: FLOWCHART ═══════════════ -->
+<div>
+
+<!-- ── L1: DATA ── -->
+<div class="layer">
+  <div class="layer-hd">
+    <span class="layer-num">L1</span>
+    <span class="layer-name">Data</span>
+    <span class="layer-sub">canonical state · vault is truth · .index/ is derived</span>
+  </div>
+  <div class="nodes-row">
+    <div class="nc ok" style="width:220px;">
+      <div class="nc-stripe"></div>
+      <div class="nc-body">
+        <div class="nc-top"><span class="nc-title">vault/</span><span class="nc-badge">canonical</span></div>
+        <div class="nc-chips">
+          <span class="chip">deals/keystone/</span>
+          <span class="chip">library/</span>
+          <span class="chip">policy/</span>
+          <span class="chip">inbox/</span>
+          <span class="chip">ontology/ (14 schemas)</span>
+          <span class="chip">roles/ (3 desks)</span>
+        </div>
+      </div>
+    </div>
+    <div class="nc ok" style="width:180px;">
+      <div class="nc-stripe"></div>
+      <div class="nc-body">
+        <div class="nc-top"><span class="nc-title">.index/vault.db</span><span class="nc-badge">derived</span></div>
+        <div class="nc-detail">SQLite · rebuilt via make index<br/>truth = vault, not this file</div>
+      </div>
+    </div>
+    <div class="nc ok" style="width:180px;">
+      <div class="nc-stripe"></div>
+      <div class="nc-body">
+        <div class="nc-top"><span class="nc-title">pipeline_out/</span><span class="nc-badge">derived</span></div>
+        <div class="nc-detail">e3/K-IC/ · e3/K-PRE/<br/>live/ · cellvalues/</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ARROW DOWN -->
+<div class="arrow-down" style="height:28px;">
+  <div class="adl"></div><div class="adh"></div>
+</div>
+<div class="arrow-note" style="margin-top:-24px;margin-bottom:4px;">indexer.py reads vault/ → .index/vault.db on make index</div>
+
+<!-- ── L2: TOOLS ── -->
+<div class="layer" style="margin-top:8px;">
+  <div class="layer-hd">
+    <span class="layer-num">L2</span>
+    <span class="layer-name">Tools</span>
+    <span class="layer-sub">63 Python files · stdlib + PyYAML only in v1 · no frameworks</span>
+  </div>
+  <div class="nodes-row">
+
+    <div class="cluster">
+      <div class="cluster-hd">Extraction</div>
+      <div class="cluster-body">
+        <div class="nc par" style="width:220px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">extract_v2.py</span><span class="nc-badge">K-IC not re-run</span></div>
+            <div class="nc-detail">L1 chunker → L2 LLM annotator → L3 validator → L4 assembler</div>
+            <div class="nc-chips"><span class="chip">Anthropic SDK</span><span class="chip">claude-haiku-4-5-20251001</span><span class="chip">50KB</span></div>
+          </div>
+        </div>
+        <div class="nc ok" style="width:220px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">extract.py</span><span class="nc-badge">original</span></div>
+            <div class="nc-detail">llm_extract() · HTTP POST Anthropic API</div>
+            <div class="nc-chips"><span class="chip">PEOS_MODEL (claude-sonnet-5)</span></div>
+          </div>
+        </div>
+        <div class="nc dim" style="width:220px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">extract_v3.py</span><span class="nc-badge">unreferenced</span></div>
+            <div class="nc-detail">stdlib only · exists but not called by any other file</div>
+          </div>
+        </div>
+        <div class="nc ok" style="width:220px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">ingest_service.py</span></div>
+            <div class="nc-detail">orchestrator · no LLM calls · delegates to extraction tools</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="cluster-hd">Compilation</div>
+      <div class="cluster-body">
+        <div class="nc ok" style="width:200px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">bridge_v7.py</span><span class="nc-badge">63KB</span></div>
+            <div class="nc-detail">compile_v7_bundle() · core bundle compiler</div>
+          </div>
+        </div>
+        <div class="nc ok" style="width:200px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">compiler_v7.py</span><span class="nc-badge">103KB</span></div>
+            <div class="nc-detail">→ keystone_model.py (gitignored)</div>
+          </div>
+        </div>
+        <div class="nc ok" style="width:200px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">adapter_alpha.py</span></div>
+            <div class="nc-detail">→ bridge_v7.compile_v7_bundle()</div>
+          </div>
+        </div>
+        <div class="nc ok" style="width:200px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">pipeline.py</span></div>
+            <div class="nc-detail">→ extract → claim_graph → graph_store</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="cluster-hd">State + Verify</div>
+      <div class="cluster-body">
+        <div class="nc ok" style="width:200px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">transition_engine.py</span><span class="nc-badge">103KB</span></div>
+            <div class="nc-detail">pure stdlib · no LLM · no I/O at import</div>
+          </div>
+        </div>
+        <div class="nc ok" style="width:200px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">engine.py</span></div>
+            <div class="nc-detail">load_transitions() · reads .index/vault.db</div>
+          </div>
+        </div>
+        <div class="nc ok" style="width:200px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">ui.py</span></div>
+            <div class="nc-detail">replay() · state_label()</div>
+          </div>
+        </div>
+        <div class="nc ok" style="width:200px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">verify_all.py</span></div>
+            <div class="nc-detail">6-stage test runner via subprocess</div>
+          </div>
+        </div>
+        <div class="nc ok" style="width:200px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">grounding_gate.py</span></div>
+            <div class="nc-detail">routes unverifiable claims · reads deal_profile.json</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="cluster">
+      <div class="cluster-hd">Adapters (V20)</div>
+      <div class="cluster-body">
+        <div class="nc ok" style="width:240px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">compiler_projection_adapter.py</span></div>
+            <div class="nc-detail">map_compiler_bundle() → frontend-projection/20.0<br/>pure function · transport-neutral</div>
+          </div>
+        </div>
+        <div class="nc ok" style="width:240px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">transition_runtime_adapter.py</span></div>
+            <div class="nc-detail">engine output → V20 transition shape</div>
+          </div>
+        </div>
+        <div class="nc gap" style="width:240px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">ui_projection.py</span><span class="nc-badge">VERSION MISMATCH</span></div>
+            <div class="nc-detail">build_projection() → schema "frontend-projection/1.0"<br/>V20 contracts.js expects "20.0" → validateProjection() FAILS</div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- LLM BAND -->
+<div class="llm-band">
+  <div class="llm-band-hd"><span class="llm-band-title">Anthropic API — outbound LLM calls discovered</span></div>
+  <div class="llm-calls">
+    <div class="llm-call">extract_v2.py<br/><span class="llm-model">claude-haiku-4-5-20251001</span></div>
+    <div class="llm-call">extract.py<br/><span class="llm-model">PEOS_MODEL (claude-sonnet-5)</span></div>
+    <div class="llm-call">server.py · cloud_extract()<br/><span class="llm-model">PEOS_MODEL + PEOS_GATEWAY_MODEL fallback</span></div>
+    <div class="llm-call">server.py · /api/chat<br/><span class="llm-model">PEOS_MODEL (claude-sonnet-5)</span></div>
+    <div class="llm-call">server.py · /api/agents/ask<br/><span class="llm-model">subprocess: claude CLI</span></div>
+    <div class="llm-call">test_ui.py · test_extraction_poc.py<br/><span class="llm-model">PEOS_MODEL / haiku (test only)</span></div>
+  </div>
+</div>
+
+<!-- ARROW DOWN -->
+<div class="arrow-down" style="height:28px;margin-top:4px;">
+  <div class="adl"></div><div class="adh"></div>
+</div>
+<div class="arrow-note" style="margin-top:-24px;margin-bottom:4px;">server.py imports: engine.py · ui.py · indexer.py · vaultsync.py · b0_assembler (dynamic) · recalc (dynamic)</div>
+
+<!-- ── L3: SERVERS ── -->
+<div class="layer" style="margin-top:8px;">
+  <div class="layer-hd">
+    <span class="layer-num">L3</span>
+    <span class="layer-name">Servers</span>
+    <span class="layer-sub">two servers discovered — neither listens on :4191</span>
+  </div>
+  <div class="nodes-row">
+    <div class="nc par" style="width:340px;">
+      <div class="nc-stripe"></div>
+      <div class="nc-body">
+        <div class="nc-top"><span class="nc-title">server.py</span><span class="nc-badge">port :8787 ← wrong</span></div>
+        <div class="nc-detail">FastAPI · 34 routes · /api/* only · NO /api/v20 routes<br/>make app / make dev → uvicorn --port 8787</div>
+        <div class="nc-chips">
+          <span class="chip">/api/mode</span><span class="chip">/api/deals</span><span class="chip">/api/deal/{deal}/*</span>
+          <span class="chip">/api/deal/{deal}/extract ← LLM</span>
+          <span class="chip">/api/agents/*</span><span class="chip">/canvas /graph /chat /preview /pipeline</span>
+        </div>
+      </div>
+    </div>
+    <div class="nc par" style="width:380px;">
+      <div class="nc-stripe"></div>
+      <div class="nc-body">
+        <div class="nc-top"><span class="nc-title">ui_bridge.py</span><span class="nc-badge">port :4178 ← wrong · V1 API</span></div>
+        <div class="nc-detail">Second HTTP server · serves ui/01_PRODUCT_BUILD/app/ static<br/>imports: ui_projection (builds 1.0 schema!) · live_store · live_projection · ingest_service · cell_engine</div>
+        <div class="nc-chips">
+          <span class="chip">/api/v1/bootstrap</span><span class="chip">/api/v1/cases/{id}/projection</span>
+          <span class="chip">/api/v1/cases/{id}/pending-events</span>
+          <span class="chip">/api/v1/cases/{id}/events/{id}/admit</span>
+          <span class="chip">/api/v1/ingest · /api/v1/reset · /api/v1/whatif · /api/v1/settle</span>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- GAP BAND -->
+<div style="margin:16px 0;">
+  <div class="gap-callout">
+    <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+      <span style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--gapt);">Critical Gaps — 4 structural mismatches blocking V20 frontend</span>
+    </div>
+    <div class="gap-callout-grid">
+      <div class="gap-item">
+        <span class="gap-item-id">GAP 1</span>
+        <span class="gap-item-text"><strong>No server on :4191.</strong> store.js defaults apiBase to http://127.0.0.1:4191/api/v20. server.py is on :8787, ui_bridge.py is on :4178. Every V20 call fails with ECONNREFUSED before leaving the browser. PAN-11 fixes server.py port.</span>
+      </div>
+      <div class="gap-item">
+        <span class="gap-item-id">GAP 2</span>
+        <span class="gap-item-text"><strong>No /api/v20 routes anywhere.</strong> server.py has /api/* (34 routes). ui_bridge.py has /api/v1/* (V1 only). The 9 V20 endpoints api.js calls (bootstrap, projection, sources, inbox, ingest, jobs, admit, search) do not exist. PAN-12 through PAN-18.</span>
+      </div>
+      <div class="gap-item">
+        <span class="gap-item-id">GAP 3</span>
+        <span class="gap-item-text"><strong>ui_bridge.py + ui_projection.py are V1.</strong> ui_projection.py builds schema_version "frontend-projection/1.0". contracts.js validateProjection() expects "frontend-projection/20.0". Even if port is fixed, ui_bridge's response will fail the frontend validation gate and throw UNSUPPORTED_PROJECTION.</span>
+      </div>
+      <div class="gap-item">
+        <span class="gap-item-id">GAP 4</span>
+        <span class="gap-item-text"><strong>projection_adapter.js (PantaProjectionAdapter) + v20_extension.js (32KB, patches PantaActions) exist in frontend but have no backend counterpart.</strong> These were not in the original dep map — discovered by code scan. v20_extension.js extends the engine with V20-specific behaviour that has never been exercised against a live backend.</span>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ARROW DOWN (gap) -->
+<div class="arrow-down gap" style="height:24px;">
+  <div class="adl"></div><div class="adh"></div>
+</div>
+
+<!-- ── L4: FRONTEND ── -->
+<div class="layer" style="margin-top:8px;">
+  <div class="layer-hd">
+    <span class="layer-num">L4</span>
+    <span class="layer-name">Frontend</span>
+    <span class="layer-sub">ui/01_PRODUCT_BUILD/app/src/ · 10 JS files · global namespace, no ES modules · load order is strict</span>
+  </div>
+  <div class="nodes-row">
+    <div class="cluster" style="width:100%;">
+      <div class="cluster-hd">JS Load Order (boot.js is entry point, calls PantaActions.boot() → all V20 API calls begin)</div>
+      <div class="cluster-body" style="flex-direction:row;flex-wrap:wrap;align-items:center;">
+
+        <div class="nc ok" style="width:130px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">constants.js</span></div>
+            <div class="nc-detail">PantaConstants<br/>K.* values · 3KB</div>
+          </div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="nc ok" style="width:150px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">store.js</span></div>
+            <div class="nc-detail">PantaStore<br/>apiBase → :4191 ❌<br/>reads ?api= URL param</div>
+          </div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="nc ok" style="width:150px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">contracts.js</span></div>
+            <div class="nc-detail">PantaContracts<br/>validateProjection expects "20.0"</div>
+          </div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="nc ok" style="width:170px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">projection_adapter.js</span><span class="nc-badge">was missing</span></div>
+            <div class="nc-detail">PantaProjectionAdapter<br/>maps bundle → projection</div>
+          </div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="nc ok" style="width:150px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">api.js</span></div>
+            <div class="nc-detail">PantaApi · 9 V20 endpoints<br/>reads PantaStore.apiBase</div>
+          </div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="nc ok" style="width:150px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">engine.js</span></div>
+            <div class="nc-detail">PantaActions<br/>boot() · 25KB</div>
+          </div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="nc ok" style="width:140px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">render.js</span></div>
+            <div class="nc-detail">PantaRender<br/>full UI · 90KB</div>
+          </div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="nc ok" style="width:180px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">v20_extension.js</span><span class="nc-badge">was missing</span></div>
+            <div class="nc-detail">patches PantaActions<br/>V20-specific behaviour · 32KB</div>
+          </div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="nc ok" style="width:130px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">selftest.js</span></div>
+            <div class="nc-detail">PantaSelfTest<br/>post-boot assertions</div>
+          </div>
+        </div>
+        <div class="chain-arrow">→</div>
+        <div class="nc gap" style="width:130px;">
+          <div class="nc-stripe"></div>
+          <div class="nc-body">
+            <div class="nc-top"><span class="nc-title">boot.js</span></div>
+            <div class="nc-detail">PantaActions.boot()<br/>→ ECONNREFUSED ❌</div>
+          </div>
+        </div>
+
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- V20 API CALLS -->
+<div style="margin-top:16px;">
+  <div class="layer-hd"><span class="layer-num">V20</span><span class="layer-name">API calls made by api.js</span><span class="layer-sub">all currently return ECONNREFUSED or 404</span></div>
+  <div class="nodes-row">
+    <div class="cluster" style="width:100%;">
+      <div class="cluster-hd">PantaApi.remote.* — 9 endpoints, none implemented</div>
+      <div class="cluster-body" style="flex-direction:row;flex-wrap:wrap;">
+        <div class="nc gap"><div class="nc-stripe"></div><div class="nc-body"><div class="nc-top"><span class="nc-title">GET /bootstrap</span></div><div class="nc-detail">?case_id &actor &mode<br/>PAN-13</div></div></div>
+        <div class="nc gap"><div class="nc-stripe"></div><div class="nc-body"><div class="nc-top"><span class="nc-title">GET /cases/{id}/projection</span></div><div class="nc-detail">?as_of_date &lens_id<br/>PAN-14</div></div></div>
+        <div class="nc gap"><div class="nc-stripe"></div><div class="nc-body"><div class="nc-top"><span class="nc-title">GET /cases/{id}/sources</span></div><div class="nc-detail">?as_of_date<br/>PAN-15</div></div></div>
+        <div class="nc gap"><div class="nc-stripe"></div><div class="nc-body"><div class="nc-top"><span class="nc-title">GET /cases/{id}/inbox</span></div><div class="nc-detail">PAN-15</div></div></div>
+        <div class="nc gap"><div class="nc-stripe"></div><div class="nc-body"><div class="nc-top"><span class="nc-title">POST /cases/{id}/ingest</span></div><div class="nc-detail">content_b64 · file_name<br/>PAN-16</div></div></div>
+        <div class="nc gap"><div class="nc-stripe"></div><div class="nc-body"><div class="nc-top"><span class="nc-title">GET /jobs/{jobId}</span></div><div class="nc-detail">polling<br/>PAN-16</div></div></div>
+        <div class="nc gap"><div class="nc-stripe"></div><div class="nc-body"><div class="nc-top"><span class="nc-title">POST /sessions</span></div><div class="nc-detail">PAN-13</div></div></div>
+        <div class="nc gap"><div class="nc-stripe"></div><div class="nc-body"><div class="nc-top"><span class="nc-title">POST /events/{id}/admit</span></div><div class="nc-detail">PAN-17</div></div></div>
+        <div class="nc gap"><div class="nc-stripe"></div><div class="nc-body"><div class="nc-top"><span class="nc-title">GET /cases/{id}/search</span></div><div class="nc-detail">?q= · fallback exists<br/>PAN-18</div></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ROUTES TABLE -->
+<div class="routes-section">
+  <div class="divider"></div>
+  <div class="layer-hd"><span class="layer-num">REF</span><span class="layer-name">All server routes discovered</span></div>
+  <div class="routes-grid">
+    <div class="rt-panel">
+      <div class="rt-header">
+        <h3>server.py — port :8787</h3>
+        <p>34 routes · no /api/v20 · Makefile: make app / make dev</p>
+      </div>
+      <div class="rt-body">
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/mode</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/deals</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deals</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/deal/{deal}</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/deal/{deal}/state</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deal/{deal}/state/staleness</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/deal/{deal}/claims</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deal/{deal}/claims</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deal/{deal}/claims/confirm</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/deal/{deal}/claims/unseen</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/deal/{deal}/stale</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deal/{deal}/recalc</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/deal/{deal}/coverage</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/deal/{deal}/artifacts</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deal/{deal}/artifacts</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deal/{deal}/extract <span class="route-note">← LLM</span></span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deal/{deal}/extract/commit</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deal/{deal}/questions</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deal/{deal}/events</span></div>
+        <div class="route-row"><span class="route-method">PATCH</span><span class="route-path">/api/deal/{deal}/assumptions/{aid}</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/deal/{deal}/identity</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/deal/{deal}/binding</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/deal/{deal}/parse-model</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/brain</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/ontology</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/vault/manifest</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/agents/state/{deal}</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/agents/contradictions/{deal}</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/agents/ingest/{deal}</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/agents/workstream/{deal}</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/agents/tick</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/agents/run/{kind}</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/agents/ask <span class="route-note">← claude CLI</span></span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/chat <span class="route-note">← LLM</span></span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/graph · /api/node/{id} · /api/flow</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/canvas · /graph · /chat · /preview · /pipeline</span></div>
+      </div>
+    </div>
+    <div class="rt-panel">
+      <div class="rt-header">
+        <h3>ui_bridge.py — port :4178</h3>
+        <p>V1 API only · serves ui/01_PRODUCT_BUILD/app/ static files</p>
+      </div>
+      <div class="rt-body">
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/v1/bootstrap</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/v1/cases/{id}/projection <span class="route-note">← schema 1.0 ❌</span></span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/v1/cases/{id}/pending-events</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/api/v1/cases/{id}/replay</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/v1/cases/{id}/events/{id}/admit</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/v1/ingest</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/v1/reset</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/v1/whatif</span></div>
+        <div class="route-row"><span class="route-method">POST</span><span class="route-path">/api/v1/cases/{id}/settle</span></div>
+        <div class="route-row"><span class="route-method">GET</span><span class="route-path">/  (static: ui/01_PRODUCT_BUILD/app/)</span></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+</div><!-- /left -->
+
+
+<!-- ═══════════════ RIGHT: EXTRACTION PANEL ═══════════════ -->
+<div class="right-col">
+
+  <div class="score-panel">
+    <div class="score-ph">
+      <div class="slabel">Extraction Track</div>
+      <div class="stitle">Stage 2 Benchmark</div>
+      <div class="ssub">K-IC · 2026-08-25 · pre-v2-reextract</div>
+    </div>
+    <div class="score-pb">
+      <div class="scores">
+        <div class="score-row">
+          <div class="score-top"><span class="sk">value</span><span class="sv ok">82.7%</span></div>
+          <div class="bar-bg"><div class="bar-fill bf-ok" style="width:82.7%"></div></div>
+        </div>
+        <div class="score-row">
+          <div class="score-top"><span class="sk">epistemic</span><span class="sv par">33.3%</span></div>
+          <div class="bar-bg"><div class="bar-fill bf-par" style="width:33.3%"></div></div>
+        </div>
+        <div class="score-row">
+          <div class="score-top"><span class="sk">locator</span><span class="sv par">22.7%</span></div>
+          <div class="bar-bg"><div class="bar-fill bf-par" style="width:22.7%"></div></div>
+        </div>
+        <div class="score-row">
+          <div class="score-top"><span class="sk">period</span><span class="sv gap">1.3%</span></div>
+          <div class="bar-bg"><div class="bar-fill bf-gap" style="width:1.3%;min-width:4px;"></div></div>
+        </div>
+        <div class="score-row">
+          <div class="score-top"><span class="sk">perimeter</span><span class="sv gap">2.7%</span></div>
+          <div class="bar-bg"><div class="bar-fill bf-gap" style="width:2.7%;min-width:6px;"></div></div>
+        </div>
+      </div>
+      <div class="sdiv"></div>
+      <div style="font-size:11px;color:var(--tx2);line-height:1.7;margin-bottom:12px;">
+        Root: <strong style="color:var(--gapt)">55/75</strong> claims have empty period.
+        <strong style="color:var(--gapt)">44/75</strong> have perimeter='unknown'.<br>
+        v2 extractor (e162d97) targets both — K-IC not yet re-run.
+      </div>
+      <div class="sdiv"></div>
+      <div style="font-family:'JetBrains Mono',monospace;font-size:9px;font-weight:600;letter-spacing:.14em;text-transform:uppercase;color:var(--mt);margin-bottom:8px;">Task Sequence</div>
+      <div class="task-list">
+        <div class="task"><span class="tid">PAN-19</span><span class="ttext">Re-extract K-IC with v2, re-score — new baseline for all below</span></div>
+        <div class="task"><span class="tid">PAN-20</span><span class="ttext">Period: mandatory extraction rule in L2 (target &gt;80%)</span></div>
+        <div class="task"><span class="tid">PAN-21</span><span class="ttext">Perimeter: doc-type inference (CIM→Seller View…)</span></div>
+        <div class="task"><span class="tid">PAN-22</span><span class="ttext">Locator: mandatory field + L1 section metadata</span></div>
+        <div class="task"><span class="tid">PAN-23</span><span class="ttext">Epistemic: doc-type → epistemic decision matrix</span></div>
+      </div>
+      <div class="sdiv"></div>
+      <div class="exec">
+        PAN-19<br>
+        <span class="exec-in">↳ PAN-20 period</span><br>
+        <span class="exec-in">↳ PAN-21 perimeter</span><br>
+        <span class="exec-in">↳ PAN-22 locator</span><br>
+        <span class="exec-in">↳ PAN-23 epistemic</span>
+      </div>
+    </div>
+  </div>
+
+  <div class="score-panel">
+    <div class="score-ph">
+      <div class="slabel">Bridge Fix Sequence</div>
+      <div class="stitle">Sequential → then parallel</div>
+    </div>
+    <div class="score-pb">
+      <div class="exec">
+        <span style="color:var(--gapt)">PAN-11</span> port :8787 → :4191<br>
+        <span class="exec-in">↳ <span style="color:var(--gapt)">PAN-12</span> /api/v20 router</span><br>
+        <span style="padding-left:28px;color:var(--mt);">↳ </span><span style="color:var(--gapt)">PAN-13</span> /bootstrap<br>
+        <span style="padding-left:42px;color:var(--mt);">↳ </span><span style="color:var(--gapt)">PAN-14</span> /projection<br>
+        <span style="padding-left:56px;color:var(--mt);">↳ </span><span style="color:var(--gapt)">PAN-15</span> /sources /inbox<br>
+        <span style="padding-left:56px;color:var(--mt);">↳ </span><span style="color:var(--gapt)">PAN-16</span> /ingest /jobs<br>
+        <span style="padding-left:56px;color:var(--mt);">↳ </span><span style="color:var(--gapt)">PAN-17</span> /admit<br>
+        <span style="padding-left:56px;color:var(--mt);">↳ </span><span style="color:var(--part)">PAN-18</span> /search
+      </div>
+      <div style="margin-top:10px;font-size:11px;color:var(--mt);">PAN-15–18 are independent — implement in parallel once PAN-14 lands.</div>
+      <div class="sdiv"></div>
+      <div style="font-size:11px;color:var(--tx2);line-height:1.6;">
+        <strong style="color:var(--gapt)">Note:</strong> ui_bridge.py (V1) needs a parallel V20 bridge or a router prefix on server.py — not just a port change. ui_projection.py must be replaced by compiler_projection_adapter.py for the projection route.
+      </div>
+    </div>
+  </div>
+
+</div><!-- /right -->
+
+</div><!-- /two-col -->
+</div><!-- /main -->
+
+</body>
+</html>

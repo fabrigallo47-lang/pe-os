@@ -60,6 +60,65 @@ _REGISTRY_LIMIT = 200
 
 v20 = APIRouter(prefix="/api/v20")
 
+V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
+    "bootstrap": {"status": "AVAILABLE", "method": "GET", "path": "/bootstrap"},
+    "loadProjection": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/projection"},
+    "search": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/search"},
+    "getObject": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/objects/{object_id:path}"},
+    "listSources": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/sources"},
+    "listInbox": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/inbox"},
+    "ingest": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest"},
+    "getJob": {"status": "AVAILABLE", "method": "GET", "path": "/jobs/{job_id}"},
+    "admitEvidence": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest/{job_id}/admit"},
+    "removeSource": {
+        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/sources/{source_id}/remove",
+        "reason": "Source retirement is not implemented; no source was changed.",
+    },
+    "addNote": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/notes"},
+    "openDeal": {
+        "status": "UNAVAILABLE", "method": "POST", "path": "/open-deal",
+        "reason": "Connected deal creation is not implemented; no deal was created.",
+    },
+    "recordIC": {
+        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/ic-record",
+        "reason": "Institutional IC recording is not implemented; no authority record was created.",
+    },
+    "admitEvent": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/events/{event_id}/admit"},
+    "prepareRun": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/prepare"},
+    "attest": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/authority/attest"},
+    "createPackage": {
+        "status": "UNAVAILABLE", "method": "POST", "path": "/runs/{run_id}/execution-packages",
+        "reason": "Execution-package creation is not implemented; no package was created.",
+    },
+    "sendPackage": {
+        "status": "UNAVAILABLE", "method": "POST", "path": "/execution-packages/{package_id}/send",
+        "reason": "Execution-package delivery is not implemented; no external effect occurred.",
+    },
+    "settle": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/settle"},
+    "replay": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/replay"},
+    "prepareWork": {
+        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/work-items/{work_id}/prepare",
+        "reason": "Connected work-item preparation is not implemented; no draft was created.",
+    },
+    "compilerProposals": {
+        "status": "UNAVAILABLE", "method": "GET", "path": "/cases/{case_id}/compiler-proposals",
+        "reason": "Compiler-proposal projection is not implemented for connected mode.",
+    },
+    "reviewCompilerProposal": {
+        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/compiler-proposals/{kind}/{proposal_id}/review",
+        "reason": "Compiler-proposal review is not implemented; no review was recorded.",
+    },
+    "prepareMission": {
+        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/missions/{mission_id}/prepare",
+        "reason": "Connected mission preparation is not implemented; no mission was prepared.",
+    },
+    "runMission": {
+        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/missions/{mission_id}/run",
+        "reason": "Connected mission execution is not implemented; no mission or external action ran.",
+    },
+    "newSession": {"status": "AVAILABLE", "method": "POST", "path": "/sessions"},
+}
+
 _jobs: dict[str, dict] = {}
 _runs: dict[str, dict] = {}   # run_id → {transition, candidate_graph, case_id}
 _inbox_lock = threading.Lock()
@@ -74,6 +133,32 @@ def _now_iso() -> str:
 
 def _today() -> str:
     return dt.date.today().isoformat()
+
+
+def _action_capability_manifest() -> dict:
+    return {
+        "schema_version": "v20-action-capabilities/1.0",
+        "api_prefix": "/api/v20",
+        "actions": {name: dict(spec) for name, spec in V20_ACTION_CAPABILITIES.items()},
+    }
+
+
+def _capability_unavailable(action: str) -> JSONResponse:
+    spec = V20_ACTION_CAPABILITIES[action]
+    return JSONResponse(
+        status_code=501,
+        content={
+            "error": {
+                "code": "CAPABILITY_UNAVAILABLE",
+                "message": spec["reason"],
+                "details": {
+                    "action": action,
+                    "method": spec["method"],
+                    "path": f"/api/v20{spec['path']}",
+                },
+            }
+        },
+    )
 
 
 def _read_registry(path: Path, field: str) -> dict[str, dict]:
@@ -804,6 +889,12 @@ def health() -> dict:
     return {"status": "ok", "schema_version": "frontend-projection/20.0"}
 
 
+@v20.get("/capabilities")
+def action_capabilities() -> dict:
+    """Publish the connected-mode action contract consumed by clients and tests."""
+    return _action_capability_manifest()
+
+
 # Flat /bootstrap — this is the URL api.js actually calls
 @v20.get("/bootstrap")
 def bootstrap_flat(case_id: str | None = None, actor: str | None = None) -> dict:
@@ -822,6 +913,7 @@ def bootstrap_flat(case_id: str | None = None, actor: str | None = None) -> dict
         "available_cases": [cid],
         "cases": [cid],
         "context": _make_context(cid, state_id, today),
+        "action_capabilities": _action_capability_manifest(),
     }
 
 # Also keep the /cases/{id}/bootstrap for direct calls
@@ -839,6 +931,7 @@ def bootstrap(case_id: str) -> dict:
         "available_cases": [case_id],
         "cases": [case_id],
         "context": _make_context(case_id, state_id, today),
+        "action_capabilities": _action_capability_manifest(),
         "entity": profile.get("entity", case_id),
         "deal_profile": profile,
     }
@@ -887,6 +980,56 @@ def sources(case_id: str) -> dict:
 @v20.get("/cases/{case_id}/inbox")
 def inbox_v20(case_id: str) -> list:
     return sources(case_id)["inbox"]
+
+
+@v20.post("/cases/{case_id}/sources/{source_id}/remove")
+def remove_source_unavailable(case_id: str, source_id: str) -> JSONResponse:
+    return _capability_unavailable("removeSource")
+
+
+@v20.post("/open-deal")
+def open_deal_unavailable() -> JSONResponse:
+    return _capability_unavailable("openDeal")
+
+
+@v20.post("/cases/{case_id}/ic-record")
+def record_ic_unavailable(case_id: str) -> JSONResponse:
+    return _capability_unavailable("recordIC")
+
+
+@v20.post("/runs/{run_id}/execution-packages")
+def create_execution_package_unavailable(run_id: str) -> JSONResponse:
+    return _capability_unavailable("createPackage")
+
+
+@v20.post("/execution-packages/{package_id}/send")
+def send_execution_package_unavailable(package_id: str) -> JSONResponse:
+    return _capability_unavailable("sendPackage")
+
+
+@v20.post("/cases/{case_id}/work-items/{work_id}/prepare")
+def prepare_work_unavailable(case_id: str, work_id: str) -> JSONResponse:
+    return _capability_unavailable("prepareWork")
+
+
+@v20.get("/cases/{case_id}/compiler-proposals")
+def compiler_proposals_unavailable(case_id: str) -> JSONResponse:
+    return _capability_unavailable("compilerProposals")
+
+
+@v20.post("/cases/{case_id}/compiler-proposals/{kind}/{proposal_id}/review")
+def review_compiler_proposal_unavailable(case_id: str, kind: str, proposal_id: str) -> JSONResponse:
+    return _capability_unavailable("reviewCompilerProposal")
+
+
+@v20.post("/cases/{case_id}/missions/{mission_id}/prepare")
+def prepare_mission_unavailable(case_id: str, mission_id: str) -> JSONResponse:
+    return _capability_unavailable("prepareMission")
+
+
+@v20.post("/cases/{case_id}/missions/{mission_id}/run")
+def run_mission_unavailable(case_id: str, mission_id: str) -> JSONResponse:
+    return _capability_unavailable("runMission")
 
 
 @v20.post("/cases/{case_id}/ingest")

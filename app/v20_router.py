@@ -63,6 +63,7 @@ v20 = APIRouter(prefix="/api/v20")
 _jobs: dict[str, dict] = {}
 _runs: dict[str, dict] = {}   # run_id → {transition, candidate_graph, case_id}
 _inbox_lock = threading.Lock()
+_notes_lock = threading.Lock()
 _registry_lock = threading.RLock()
 
 
@@ -454,6 +455,24 @@ def _read_frontmatter(path: Path) -> dict:
         return yaml.safe_load(m.group(1)) or {}
     except Exception:
         return {}
+
+
+def _note_record(path: Path) -> dict:
+    """Read one append-only note without relying on the derived search index."""
+    raw = path.read_text(encoding="utf-8")
+    metadata = _read_frontmatter(path)
+    match = re.match(r"^---\n.*?\n---\n?(.*)$", raw, re.DOTALL)
+    return {
+        **metadata,
+        "text": (match.group(1) if match else raw).strip(),
+    }
+
+
+def _notes_dir(case_id: str) -> Path:
+    """Resolve a case notes directory while preventing path traversal."""
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", case_id):
+        raise HTTPException(400, "case_id contains unsupported characters")
+    return VAULT / "deals" / case_id / "notes"
 
 def _load_json_safe(path: Path) -> Any:
     return json.loads(path.read_text()) if path.exists() else {}
@@ -1477,8 +1496,74 @@ def list_events(case_id: str) -> list:
 
 
 @v20.post("/cases/{case_id}/notes")
-async def add_note(case_id: str, payload: dict = {}) -> dict:
-    return {"status": "LOCAL_ONLY", "note": {**payload, "server_ack_at": None}}
+async def add_note(case_id: str, payload: dict) -> dict:
+    """Persist a review or annotation as an immutable, append-only vault note."""
+    text = str(payload.get("text") or "").strip()
+    if not text:
+        raise HTTPException(400, "note text is required")
+
+    idempotency_key = str(payload.get("idempotency_key") or "").strip()
+    if idempotency_key:
+        identity = hashlib.sha256(f"{case_id}|{idempotency_key}".encode("utf-8")).hexdigest()[:16]
+    else:
+        identity = uuid.uuid4().hex[:16]
+    note_id = f"NOTE-{identity.upper()}"
+    notes_dir = _notes_dir(case_id)
+    note_path = notes_dir / f"note-{identity}.md"
+
+    with _notes_lock:
+        if note_path.exists():
+            return {
+                "status": "PERSISTED",
+                "note": _note_record(note_path),
+                "idempotent_replay": True,
+            }
+
+        acknowledged_at = _now_iso()
+        known_at = str(payload.get("known_at") or payload.get("timestamp") or acknowledged_at)
+        effective_date = str(payload.get("effective_date") or known_at[:10] or _today())
+        metadata = {
+            "type": "note",
+            "id": note_id,
+            "case": case_id,
+            "kind": payload.get("kind", "ANNOTATION"),
+            "object_id": payload.get("object_id"),
+            "claim_id": payload.get("claim_id"),
+            "decision": payload.get("decision"),
+            "action": payload.get("action"),
+            "correction": payload.get("correction"),
+            "actor_id": payload.get("actor_id", "unknown-actor"),
+            "effective_date": effective_date,
+            "known_at": known_at,
+            "idempotency_key": idempotency_key or None,
+            "written-by": "v20-api",
+            "written_at": acknowledged_at,
+        }
+        notes_dir.mkdir(parents=True, exist_ok=True)
+        note_path.write_text(
+            "---\n"
+            + yaml.safe_dump(metadata, sort_keys=False, allow_unicode=True)
+            + "---\n\n"
+            + text
+            + "\n",
+            encoding="utf-8",
+        )
+    return {
+        "status": "PERSISTED",
+        "note": {**metadata, "text": text, "server_ack_at": acknowledged_at},
+        "idempotent_replay": False,
+    }
+
+
+@v20.get("/cases/{case_id}/notes")
+def list_notes(case_id: str) -> dict:
+    """Return the durable case notes in deterministic chronological order."""
+    notes_dir = _notes_dir(case_id)
+    if not notes_dir.exists():
+        return {"notes": []}
+    notes = [_note_record(path) for path in sorted(notes_dir.glob("note-*.md"))]
+    notes.sort(key=lambda note: (str(note.get("known_at", "")), str(note.get("id", ""))))
+    return {"notes": notes}
 
 
 @v20.get("/cases/{case_id}/objects/{object_id:path}")

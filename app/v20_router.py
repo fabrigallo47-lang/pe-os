@@ -76,10 +76,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
         "status": "UNAVAILABLE", "method": "POST", "path": "/open-deal",
         "reason": "Connected deal creation is not implemented; no deal was created.",
     },
-    "recordIC": {
-        "status": "UNAVAILABLE", "method": "POST", "path": "/cases/{case_id}/ic-record",
-        "reason": "Institutional IC recording is not implemented; no authority record was created.",
-    },
+    "recordIC": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ic-record"},
     "admitEvent": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/events/{event_id}/admit"},
     "prepareRun": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/prepare"},
     "attest": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/authority/attest"},
@@ -114,6 +111,7 @@ _notes_lock = threading.Lock()
 _source_lock = threading.Lock()
 _work_drafts_lock = threading.Lock()
 _compiler_reviews_lock = threading.Lock()
+_ic_records_lock = threading.Lock()
 _registry_lock = threading.RLock()
 
 _COMPILER_PROPOSAL_COLLECTIONS = {
@@ -1122,8 +1120,92 @@ def open_deal_unavailable() -> JSONResponse:
 
 
 @v20.post("/cases/{case_id}/ic-record")
-def record_ic_unavailable(case_id: str) -> JSONResponse:
-    return _capability_unavailable("recordIC")
+def record_ic(case_id: str, payload: dict | None = None) -> dict:
+    """Persist the IC ritual as a decision record without rewriting Approved."""
+    payload = payload or {}
+    decision = str(payload.get("decision") or "").upper()
+    allowed = {"APPROVE", "REJECT", "DEFER", "APPROVE_WITH_CONDITIONS"}
+    if decision not in allowed:
+        raise HTTPException(400, "decision must be APPROVE, REJECT, DEFER or APPROVE_WITH_CONDITIONS")
+    authority = str(payload.get("authority") or "").strip()
+    if not authority:
+        raise HTTPException(400, "authority / quorum is required")
+
+    idempotency_key = str(payload.get("idempotency_key") or "").strip()
+    if idempotency_key:
+        identity = hashlib.sha256(f"{case_id}|{idempotency_key}".encode("utf-8")).hexdigest()[:16]
+    else:
+        identity = uuid.uuid4().hex[:16]
+    record_id = f"IC-{identity.upper()}"
+    decisions_dir = _case_vault_dir(case_id) / "decisions"
+    record_path = decisions_dir / f"decision-ic-{identity}.md"
+
+    with _ic_records_lock:
+        if record_path.exists():
+            return {
+                "status": "ACKNOWLEDGED",
+                "record": _note_record(record_path),
+                "message": "Existing IC record returned; Approved was not rewritten.",
+                "idempotent_replay": True,
+            }
+
+        known_at = _now_iso()
+        actor_id = str(payload.get("actor_id") or "ic-recorder")
+        conditions = str(payload.get("conditions") or "").strip()
+        dissent = str(payload.get("dissent") or "").strip()
+        record = {
+            "type": "decision",
+            "id": record_id,
+            "deal": case_id,
+            "date": payload.get("effective_date") or known_at[:10],
+            "decided-by": [actor_id],
+            "commitment": decision,
+            "dissent": [dissent] if dissent else [],
+            "conditions": conditions,
+            "authority": authority,
+            "as_of_state_id": payload.get("as_of_state_id"),
+            "known_at": known_at,
+            "idempotency_key": idempotency_key or None,
+            "institutional_effect": "RECORD_ONLY",
+            "approved_state_mutation": False,
+            "supersedes": None,
+            "written-by": actor_id,
+        }
+        decisions_dir.mkdir(parents=True, exist_ok=True)
+        body = (
+            f"# Decision: {decision}\n\n"
+            "## Resolved — on what strength\n"
+            "Decision basis remains the referenced Current case; this endpoint records the ritual only.\n\n"
+            "## Accepted as unresolved — and why tolerable\n"
+            f"{conditions or 'None recorded.'}\n\n"
+            "## Dissent\n"
+            f"{dissent or 'None recorded.'}\n\n"
+            "## Basis\n"
+            f"Authority / quorum recorded as: {authority}.\n"
+        )
+        with record_path.open("x", encoding="utf-8") as handle:
+            handle.write(
+                "---\n"
+                + yaml.safe_dump(record, sort_keys=False, allow_unicode=True)
+                + "---\n\n"
+                + body
+            )
+    return {
+        "status": "ACKNOWLEDGED",
+        "record": record,
+        "message": "IC decision, conditions and dissent recorded; Approved remains unchanged.",
+        "idempotent_replay": False,
+    }
+
+
+@v20.get("/cases/{case_id}/ic-records")
+def list_ic_records(case_id: str) -> dict:
+    decisions_dir = _case_vault_dir(case_id) / "decisions"
+    if not decisions_dir.exists():
+        return {"records": []}
+    records = [_note_record(path) for path in sorted(decisions_dir.glob("decision-ic-*.md"))]
+    records.sort(key=lambda item: (str(item.get("known_at", "")), str(item.get("id", ""))))
+    return {"records": records}
 
 
 @v20.post("/runs/{run_id}/execution-packages")

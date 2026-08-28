@@ -1,0 +1,23 @@
+{
+  "section": "Browser",
+  "results": [
+    {
+      "section": "Browser",
+      "name": "Client self-test 30/30",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Browser",
+      "name": "Claims table renders",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Browser",
+      "name": "Claim aperture renders",
+      "status": "PASS",
+      "detail": "True"
+    }
+  ]
+}

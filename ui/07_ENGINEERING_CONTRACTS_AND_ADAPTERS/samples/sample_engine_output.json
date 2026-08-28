@@ -1,0 +1,366 @@
+{
+  "schema_version": "transition-output-1.0",
+  "engine_version": "panta-transition-fixture/1.1.0",
+  "run_id": "RUN-CONCENTRATION-V19",
+  "case_id": "PROJECT-KEYSTONE",
+  "prior_state_id": "post-qoe",
+  "policy_refs": {
+    "materiality_policy_id": "KEYSTONE-MATERIALITY-V0",
+    "authority_policy_id": "KEYSTONE-AUTHORITY-V0",
+    "canonical_graph_hash": "sha256:1111111111111111111111111111111111111111111111111111111111111111",
+    "execution_mapping_hash": "sha256:2222222222222222222222222222222222222222222222222222222222222222",
+    "solver_config_hash": "sha256:3333333333333333333333333333333333333333333333333333333333333333"
+  },
+  "affected_set": [
+    {
+      "order": 1,
+      "object_id": "CP-V15-FIN-RULE",
+      "label": "Financing rule",
+      "disposition": "RULE_SWITCH",
+      "before": "4.00x diversified profile",
+      "after": "3.75x concentration step",
+      "explanation": "Single-parent exposure exceeds 15%.",
+      "source_trace": "SRC-FIN-GRID-V15"
+    },
+    {
+      "order": 2,
+      "object_id": "MN-DEBT",
+      "label": "Debt capacity",
+      "disposition": "RECOMPUTES",
+      "before": "$45.60m",
+      "after": "$42.75m",
+      "explanation": "$11.40m \u00d7 permitted leverage",
+      "source_trace": null
+    },
+    {
+      "order": 3,
+      "object_id": "MN-SPONSOR-EQUITY",
+      "label": "Sponsor equity",
+      "disposition": "RECOMPUTES",
+      "before": "$59.20m",
+      "after": "$62.05m",
+      "explanation": "Sources and uses absorb the debt reduction.",
+      "source_trace": null
+    },
+    {
+      "order": 4,
+      "object_id": "MN-BASE-IRR",
+      "label": "Base IRR",
+      "disposition": "RECOMPUTES",
+      "before": "18.8%",
+      "after": "17.7%",
+      "explanation": "Same exit proceeds over higher sponsor equity.",
+      "source_trace": null
+    },
+    {
+      "order": 5,
+      "object_id": "CP-022",
+      "label": "approved EV ceiling",
+      "disposition": "RECOMPUTES",
+      "before": "$108.00m",
+      "after": "$105.15m",
+      "explanation": "Equity envelope held constant; debt capacity falls $2.85m.",
+      "source_trace": null
+    },
+    {
+      "order": 6,
+      "object_id": "MN-COV-EBITDA",
+      "label": "Covenant EBITDA",
+      "disposition": "SURVIVES",
+      "before": "$12.20m",
+      "after": "$12.20m",
+      "explanation": "Unchanged through the credit agreement\u2019s own definition.",
+      "source_trace": "SRC-IC-EARNINGS"
+    },
+    {
+      "order": 7,
+      "object_id": "ART-OFFER",
+      "label": "Offer treatment",
+      "disposition": "HUMAN",
+      "before": "Indicative offer $108.00m",
+      "after": "Authority required",
+      "explanation": "The existing offer is $2.85m above the revised approved EV ceiling.",
+      "source_trace": null
+    }
+  ],
+  "ordered_transitions": [
+    {
+      "order": 0,
+      "component_id": "COMP-CP-V15-FIN-RULE",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "CP-V15-FIN-RULE"
+      ],
+      "result": "PROVISIONAL"
+    },
+    {
+      "order": 1,
+      "component_id": "COMP-MN-DEBT",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "MN-DEBT"
+      ],
+      "result": "PROVISIONAL"
+    },
+    {
+      "order": 2,
+      "component_id": "COMP-MN-SPONSOR-EQUITY",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "MN-SPONSOR-EQUITY"
+      ],
+      "result": "PROVISIONAL"
+    },
+    {
+      "order": 3,
+      "component_id": "COMP-MN-BASE-IRR",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "MN-BASE-IRR"
+      ],
+      "result": "PROVISIONAL"
+    },
+    {
+      "order": 4,
+      "component_id": "COMP-CP-022",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "CP-022"
+      ],
+      "result": "PROVISIONAL"
+    },
+    {
+      "order": 5,
+      "component_id": "COMP-MN-COV-EBITDA",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "MN-COV-EBITDA"
+      ],
+      "result": "PROVISIONAL"
+    },
+    {
+      "order": 6,
+      "component_id": "COMP-ART-OFFER",
+      "component_type": "ACYCLIC",
+      "member_ids": [
+        "ART-OFFER"
+      ],
+      "result": "PROVISIONAL"
+    }
+  ],
+  "rule_switches": [],
+  "recomputed_values": [
+    {
+      "object_id": "MN-DEBT",
+      "label": "Debt capacity",
+      "before": "$45.60m",
+      "after": "$42.75m"
+    },
+    {
+      "object_id": "MN-SPONSOR-EQUITY",
+      "label": "Sponsor equity",
+      "before": "$59.20m",
+      "after": "$62.05m"
+    },
+    {
+      "object_id": "MN-BASE-IRR",
+      "label": "Base IRR",
+      "before": "18.8%",
+      "after": "17.7%"
+    },
+    {
+      "object_id": "CP-022",
+      "label": "approved EV ceiling",
+      "before": "$108.00m",
+      "after": "$105.15m"
+    }
+  ],
+  "unchanged_objects": [
+    {
+      "object_id": "MN-COV-EBITDA",
+      "label": "Covenant EBITDA",
+      "reason": "Independent definition or support route remains valid."
+    }
+  ],
+  "human_stops": [
+    {
+      "stop_id": "HS-B7",
+      "object_id": "ART-OFFER",
+      "component_id": "COMP-OFFER-AUTHORITY",
+      "reason_code": "DECISION_REQUIRES_HUMAN",
+      "requested_action": "ATTEST_COURSE",
+      "required_role": "AUTHORITY_HOLDER",
+      "required_authority_level": "INVESTMENT_COMMITTEE",
+      "policy_rule_id": "AUTH-OFFER-CEILING",
+      "downstream_scope": [
+        "ART-OFFER",
+        "ART-MEMO"
+      ],
+      "authority_verb": "approve_offer",
+      "reason": "The existing offer exceeds the revised approved EV ceiling and requires an explicit authority act.",
+      "status": "OPEN"
+    }
+  ],
+  "blocked_components": [],
+  "coverage_limits": [
+    {
+      "limit_id": "CL-CONTRACT-READ",
+      "label": "Seven customer contracts remain unread",
+      "effect": "Customer durability remains contested."
+    }
+  ],
+  "invariant_checks": [
+    {
+      "check_id": "INV-APPROVED-IMMUTABLE",
+      "status": "PASS",
+      "reason_code": "APPROVED_FROZEN"
+    },
+    {
+      "check_id": "INV-EXPLICIT-COVERAGE",
+      "status": "PASS",
+      "reason_code": "COVERAGE_DECLARED"
+    }
+  ],
+  "candidate_current_approved_delta": {
+    "candidate": {
+      "state_id": "candidate-concentration-v19",
+      "status": "FULL"
+    },
+    "current": {
+      "state_id": "post-qoe",
+      "status": "REVIEW_PENDING",
+      "mutation": "PENDING_ADOPTION"
+    },
+    "approved": {
+      "state_id": "final-ic",
+      "status": "UNCHANGED"
+    }
+  },
+  "partial_settlement_status": {
+    "candidate": "FULL",
+    "current": "REVIEW_PENDING",
+    "approved": "UNCHANGED"
+  },
+  "replay_hash": "sha256:demo-concentration-v19",
+  "source_event_id": "EVENT-CONCENTRATION-V19",
+  "candidate_state_id": "candidate-concentration-v19",
+  "as_of_state_id": "STATE-KEYSTONE-POST-CDD",
+  "as_of_date": "2026-02-05",
+  "projection_id": "PROJ-KEYSTONE-V19-001",
+  "status": "REVIEW_PENDING",
+  "artifact_change_sets": [
+    {
+      "artifact_id": "ART-MODEL",
+      "title": "Keystone LBO model",
+      "version_before": "W13",
+      "version_after": "W14",
+      "changes": [
+        {
+          "sheet": "Inputs",
+          "cell": "B13",
+          "label": "Largest parent concentration",
+          "before": "7.6%",
+          "after": "18.2%",
+          "trace_id": "MN-CONCENTRATION"
+        },
+        {
+          "sheet": "Financing_Grid",
+          "cell": "B6",
+          "label": "Underwriting leverage cap",
+          "before": "4.00x",
+          "after": "3.75x",
+          "trace_id": "SRC-FIN-GRID-V15"
+        },
+        {
+          "sheet": "Inputs",
+          "cell": "B9",
+          "label": "Debt capacity",
+          "before": "$45.60m",
+          "after": "$42.75m",
+          "trace_id": "MN-DEBT"
+        },
+        {
+          "sheet": "Inputs",
+          "cell": "B8",
+          "label": "Sponsor equity",
+          "before": "$59.20m",
+          "after": "$62.05m",
+          "trace_id": "MN-SPONSOR-EQUITY"
+        },
+        {
+          "sheet": "Ownership_Returns",
+          "cell": "L4",
+          "label": "Base IRR",
+          "before": "18.8%",
+          "after": "17.7%",
+          "trace_id": "MN-BASE-IRR"
+        },
+        {
+          "sheet": "Offer_Analysis",
+          "cell": "B6",
+          "label": "approved EV ceiling",
+          "before": "$108.00m",
+          "after": "$105.15m",
+          "trace_id": "CP-022"
+        }
+      ],
+      "passage_before": null,
+      "passage_after": null,
+      "status": "PREPARED"
+    },
+    {
+      "artifact_id": "ART-MEMO",
+      "title": "Project Keystone IC memorandum",
+      "version_before": "Draft 4",
+      "version_after": "Draft 5",
+      "changes": [],
+      "passage_before": "Customer concentration is manageable on the seller\u2019s billing-account presentation.",
+      "passage_after": "Riverton represents 18.2% of revenue at ultimate-parent level. The financing step-down reduces supported debt and leaves the indicative offer above the current approved EV ceiling.",
+      "status": "PREPARED"
+    },
+    {
+      "artifact_id": "ART-OFFER",
+      "title": "Indicative offer letter",
+      "version_before": "7 Jan 2026",
+      "version_after": "Flagged",
+      "changes": [],
+      "passage_before": "Indicative enterprise value: $108.0m.",
+      "passage_after": "Divergent from the revised approved EV ceiling by $2.85m.",
+      "status": "PREPARED"
+    },
+    {
+      "artifact_id": "ART-TRACKER",
+      "title": "Keystone diligence plan",
+      "version_before": "Plan 4",
+      "version_after": "Plan 5",
+      "changes": [
+        {
+          "sheet": "Commercial",
+          "cell": "Q-03",
+          "label": "Read seven customer contracts",
+          "before": "Not opened",
+          "after": "Required",
+          "trace_id": "Q-03"
+        },
+        {
+          "sheet": "Commercial",
+          "cell": "Q-05",
+          "label": "Run two customer reference calls",
+          "before": "Not scheduled",
+          "after": "Required",
+          "trace_id": "Q-05"
+        }
+      ],
+      "passage_before": null,
+      "passage_after": null,
+      "status": "PREPARED"
+    }
+  ],
+  "policy_result": {
+    "materiality": "MATERIAL",
+    "authority_required": true,
+    "policy_version": "keystone-policy-demo-v1"
+  },
+  "effective_date": "2025-12-31",
+  "known_at": "2026-02-05T08:15:00Z"
+}

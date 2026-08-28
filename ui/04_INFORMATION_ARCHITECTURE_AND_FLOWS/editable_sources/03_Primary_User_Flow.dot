@@ -1,0 +1,7 @@
+digraph G { graph [bgcolor="#06131d",pad="0.25",nodesep="0.45",ranksep="0.65",fontname="DejaVu Sans",fontcolor="#e9f7f8"];
+node [shape=box,style="rounded,filled",fillcolor="#0b2633",color="#2c6978",fontname="DejaVu Sans",fontcolor="#e9f7f8",fontsize=11,penwidth=1.2,margin="0.14,0.10"];
+edge [color="#45d6df",fontname="DejaVu Sans",fontcolor="#a9d9de",fontsize=9,penwidth=1.3,arrowsize=0.7]; rankdir=LR;
+fund[label="Fund Command"];deal[label="Deal Command"];object[label="Object Aperture"];arrival[label="Change Arrival"];review[label="Change Review"];impact[label="Change Impact"];frontier[label="Action Frontier"];decision[label="Decision Room",color="#d5a941"];execution[label="Execution Room",color="#d5a941"];settle[label="Settled State",color="#58cf9f"];replay[label="Causal Replay"];
+fund->deal->object->arrival->review->impact->frontier->decision->execution->settle->replay;
+frontier->settle[label="no Human Stop",style=dashed];decision->settle[label="internal / defer",style=dashed];replay->deal[label="re-underwrite loop",style=dashed,color="#a67df2"];
+}

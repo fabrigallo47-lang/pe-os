@@ -1,0 +1,106 @@
+PANTA V20 TEST RESULTS
+========================================================================================
+Status: PASS
+Passed: 49 / 49
+Failed: 0
+
+Tests the bundled V20 frontend, three synthetic fixture packs, typed schemas, pure compiler and transition adapters, and the stateful Mock Connected reference API. It does not certify production authentication/RBAC, a production Case Store, a live autonomous research service, external human contact, external effects, or Anto's separate production runtime.
+
+[PASS] RELEASE :: Release identity is V20 / 20.0.0
+    {"release":"V20","semantic_version":"20.0.0"}
+[PASS] GENERALIZATION :: Three structurally distinct synthetic cases are packaged
+    {"cases":["PROJECT-KEYSTONE","PROJECT-ORION","PROJECT-TETHYS"]}
+[PASS] CORE_PURITY :: Connected/core code is fixture-free
+    {"case_specific_matches":0,"scanned_files":11}
+[PASS] FIXTURE_SAFETY :: Tethys fixture is resynthesized and confidential-safe
+    {"real_identifiers":0,"synthetic":true}
+[PASS] GENERALIZATION :: Venture statement overlap is below 20%
+    {"normalized_exact_overlap":{"Keystone":0.0,"Orion":0.0},"tethys_claims":30}
+[PASS] GENERALIZATION :: Early-stage venture case contains no LBO grammar
+    {"banned_lbo_terms":0}
+[PASS] VENTURE_GRAMMAR :: Venture grammar uses a hierarchical archetype
+    {"archetype":"VENTURE","deal_instance":"PROJECT-TETHYS","fund_lens":"TY-LENS-VENTURE-CORE","kernel":"PANTA_LIVE_INVESTMENT_CASE","sector_overlay":"DEEP_TECH_MARITIME_SECURITY","stage_overlay":"PRE_REVENUE_SEED"}
+[PASS] INTERACTIONS :: Interactions carry speaker-level provenance and governance
+    {"interactions":6,"participants":8}
+[PASS] INTERACTIONS :: Every utterance resolves to a speaker and interaction
+    {"references_valid":true,"utterances":7}
+[PASS] EPISTEMIC :: Observed speech act does not make its content observed truth
+    {"content_claims_asserted":6,"speech_act_observations":6}
+[PASS] TEMPORAL :: V20 venture objects are bitemporal
+    {"collections":["claims","interactions","utterances","agent_missions","spine_change_proposals","condition_edges","validation_envelopes","derivation_specs","lenses"],"objects_checked":62}
+[PASS] COMPILER :: Discrepancies are generated from declarative rules
+    {"preauthored_candidates":0,"rules":3,"types":["CONDITIONAL_INVALIDATION","EXACT_CONTRADICTION","NUMERIC_INCOMPATIBILITY"]}
+[PASS] DERIVATIONS :: Deterministic derivations expose inputs, formula and assumptions
+    {"methods":["CIRCLE_AREA","IMPLIED_RADIUS_FROM_AREA_AND_NODE_COUNT","RUNWAY_MONTHS","POST_MONEY_OWNERSHIP"],"specs":4}
+[PASS] EPISTEMIC :: AI explanations are separate from deterministic derivations
+    {"base_hypotheses":0,"templates":5}
+[PASS] MISSIONS :: Agent missions declare authority, data-egress and stop conditions
+    {"human_or_physical":2,"missions":5}
+[PASS] VENTURE_FINANCE :: Venture financing, dilution and ownership arithmetic reconcile
+    {"cap_tables_sum_to":100,"new_investor_ownership_pct":20.0,"post_money_eur_m":22.5}
+[PASS] TECHNICAL_VALIDATION :: Condition edges and technical validation envelopes are first-class
+    {"condition_edges":2,"validation_envelopes":3}
+[PASS] LENS :: Fund Lens changes emphasis through projection policy, not facts
+    {"behaviors":["question order","ranking weights","required questions","controls"],"lenses":4}
+[PASS] SCHEMAS :: All public schemas contain typed properties
+    {"schema_count":23,"untyped_property_gaps":0}
+[PASS] SYNTAX :: Browser and Python runtime syntax is valid
+    {"errors":0,"javascript_files":10,"python_files":4}
+[PASS] ADAPTERS :: Compiler bundle maps through a pure typed adapter
+    {"deterministic":true,"projection_id":"PROJ-COMPILER-faf03ad0ac63fb49","pure":true,"schema_errors":0}
+[PASS] ADAPTERS :: Frozen engine output maps through a pure 19-field adapter
+    {"deterministic":true,"integration_fields":19,"pure":true,"schema_errors":0}
+[PASS] EPISTEMIC :: No detected firm act carries the attested class
+    {"firm_acts_misclassified_attested":0}
+[PASS] LANGUAGE :: Canonical approved EV ceiling terminology is preserved
+    {"retired_phrase_hits":0}
+[PASS] MODE_HONESTY :: Connected mode refuses fixture-backed data
+    {"error_code":"CONNECTED_BACKEND_NOT_CONFIGURED","status":503}
+[PASS] SCHEMAS :: All three live projections and contexts validate
+    {"PROJECT-KEYSTONE":{"context_errors":0,"projection_errors":0},"PROJECT-ORION":{"context_errors":0,"projection_errors":0},"PROJECT-TETHYS":{"context_errors":0,"projection_errors":0}}
+[PASS] COMPILER :: Compiler layer generates reviewable V20 proposals
+    {"derivations":4,"discrepancies":3,"hypotheses":5,"spine_changes":1}
+[PASS] TEMPORAL :: Selecting a past date renders only then-known information
+    {"active_lens":"TY-LENS-VENTURE-CORE","as_of_date":"2026-06-05","claims":7,"interactions":1}
+[PASS] TEMPORAL :: Causal Replay is event-derived, bitemporal and read-only
+    {"event_id":"TY-REG-011","registry_after":11,"registry_before":11,"stable_hash":"sha256:d4e362a68e78ef415010d50b7079919fe46628ceeaf2d3543f6e9589082cf647"}
+[PASS] LENS :: Lens changes ranking and visibility without changing facts
+    {"core_first":["TYQ-PROBLEM","TYQ-PERFORMANCE","TYQ-DEPLOYMENT"],"deep_tech_first":["TYQ-PERFORMANCE","TYQ-DEPLOYMENT","TYQ-DIFFERENTIATION"],"facts_hash_stable":true}
+[PASS] COMPILER :: Candidate discrepancy requires professional review
+    {"automatic_truth_change":false,"discrepancy_id":"TY-DISC-RADIUS","review_status":"ADMITTED"}
+[PASS] DERIVATIONS :: Deterministic arithmetic produces inspectable expected values
+    {"TY-DER-IMPLIED-RADIUS":97.72,"TY-DER-NOMINAL-AREA":201.06,"TY-DER-OWNERSHIP":20.0,"TY-DER-RUNWAY":16.0}
+[PASS] EPISTEMIC :: AI hypothesis cannot propagate before admission
+    {"after":true,"before":false,"hypothesis_id":"TY-DISC-RADIUS-H1"}
+[PASS] SPINE_GOVERNANCE :: Question-spine changes are governed and replayable
+    {"associate_status":403,"partner_status":200,"question_count":10}
+[PASS] MISSIONS :: Preparing a mission causes no research or external effect
+    {"source_count_unchanged":true,"status":"PREPARED"}
+[PASS] MISSIONS :: Policy-safe synthetic mission creates a reviewable source
+    {"external_effects":false,"mission_id":"TY-MISSION-PROCUREMENT","new_source":"SRC-MISSION-ED9A0B83FD09","review_required":true}
+[PASS] MISSIONS :: Human-contact and physical missions cannot auto-run
+    {"error_code":"MISSION_AUTHORITY_REQUIRED","mission_id":"TY-MISSION-SEA-TRIAL","status":409}
+[PASS] INTERACTIONS :: Transcript ingestion creates native interactions and asserted content claims
+    {"claims":2,"content_class":"asserted","interaction_id":"INT-EAB410571E19","job_id":"JOB-52E8351B9662","utterances":2}
+[PASS] AUTHORITY :: Human Stop settlement is refused without scoped authority
+    {"human_stop_id":"TY-HS-SEED-TECH-GATE","settlement_status_without_authority":409}
+[PASS] AUTHORITY :: Authority rejects a mismatched Candidate
+    {"error_code":"CANDIDATE_CONTEXT_MISMATCH","status":409}
+[PASS] SETTLEMENT :: Preparation rejects changes outside the transition output
+    {"error_code":"UNKNOWN_CHANGE_ID","status":409}
+[PASS] GOVERNED_FLOW :: Authority, course-specific execution and settlement complete coherently
+    {"authority_schema_errors":0,"current_state_id":"STATE-F50DC056F9FE","package_status":"ACCEPTED","settlement_schema_errors":0}
+[PASS] SETTLEMENT :: Blocked scope remains explicit and requires bounded partial settlement
+    {"blocked_component_id":"TY-COMP-MAINTENANCE-ECONOMICS","with_partial":200,"without_partial":409}
+[PASS] IDEMPOTENCY :: Idempotency key rejects a conflicting payload
+    {"conflict_status":409,"error_code":"IDEMPOTENCY_CONFLICT","first_status":200}
+[PASS] AUTHORITY :: Incompatible authority courses cannot coexist
+    {"error_code":"HUMAN_STOP_NOT_OPEN","first_course":"TY-COURSE-A","second_course":"TY-COURSE-B","second_status":409}
+[PASS] AUTHORITY :: Authority records cannot be reused across runs
+    {"reuse_status":409,"source_run":"RUN-58E93F449368","target_run":"RUN-E4991CE889C4"}
+[PASS] EXECUTION :: Failed delivery never reports optimistic success
+    {"error_code":"DELIVERY_FAILED","pre_ack_status":"READY","send_status":503}
+[PASS] EXECUTION :: Defer has no executable package
+    {"course_id":"TY-COURSE-C","effect_type":"DEFER","execution_package":null}
+[PASS] BROWSER_E2E :: V20 venture objects and governed flows render in the browser
+    {"console_errors":[],"lens_facts_stable":true,"lens_order_changed":true,"screenshots":["08_TEST_EVIDENCE/browser/v20_01_deal_command.png","08_TEST_EVIDENCE/browser/v20_02_interactions.png","08_TEST_EVIDENCE/browser/v20_03_utterance_aperture.png","08_TEST_EVIDENCE/browser/v20_04_compiler_review.png","08_TEST_EVIDENCE/browser/v20_05_validation_conditions.png","08_TEST_EVIDENCE/browser/v20_06_unknowns_missions.png","08_TEST_EVIDENCE/browser/v20_07_venture_financing.png","08_TEST_EVIDENCE/browser/v20_08_replay.png","08_TEST_EVIDENCE/browser/v20_09_human_stop.png","08_TEST_EVIDENCE/browser/v20_10_blocked_component.png","08_TEST_EVIDENCE/browser/v20_11_mobile_read_review.png"]}

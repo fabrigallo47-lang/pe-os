@@ -1,0 +1,170 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/discrepancy_candidate.schema.json",
+  "title": "PANTA V20 Candidate Discrepancy",
+  "type": "object",
+  "properties": {
+    "discrepancy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "definition_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "object_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "values": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "object_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "value": {
+            "type": [
+              "string",
+              "number",
+              "integer",
+              "boolean",
+              "null",
+              "object",
+              "array"
+            ]
+          },
+          "unit": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "perimeter": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "source_id": {
+            "type": [
+              "string",
+              "null"
+            ]
+          },
+          "epistemic_class": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "object_id",
+          "value"
+        ]
+      }
+    },
+    "ratio": {
+      "type": "number"
+    },
+    "aligned_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "non_aligned_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "condition_edge_id": {
+      "type": "string"
+    },
+    "detector_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "confidence": {
+      "type": "string",
+      "minLength": 1
+    },
+    "review_status": {
+      "enum": [
+        "PROPOSED",
+        "ADMITTED",
+        "EDITED",
+        "REJECTED",
+        "ACCEPTED"
+      ]
+    },
+    "automatic_truth_change": {
+      "const": false
+    },
+    "reason": {
+      "type": "string"
+    },
+    "failure_effect": {
+      "type": "string"
+    },
+    "hypothesis_templates": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true
+          }
+        ]
+      }
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "discrepancy_id",
+    "type",
+    "label",
+    "object_ids",
+    "detector_version",
+    "confidence",
+    "review_status",
+    "automatic_truth_change",
+    "effective_date",
+    "known_at"
+  ]
+}

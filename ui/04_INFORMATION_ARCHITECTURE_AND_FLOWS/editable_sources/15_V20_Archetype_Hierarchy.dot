@@ -1,0 +1,13 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="transparent", pad="0.25", nodesep="0.35", ranksep="0.55"];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=12, color="#446074", fillcolor="#13202c", fontcolor="#e9f1f5", margin="0.18,0.12"];
+  edge [color="#73bfd6", penwidth=1.4, arrowsize=0.7];
+  kernel [label="Universal PANTA kernel\nLive Investment Case"];
+  archetype [label="Deal archetype\nVenture / Buyout / Growth"];
+  stage [label="Stage overlay\nPre-revenue seed"];
+  sector [label="Sector overlay\nDeep-tech maritime security"];
+  lens [label="Fund Lens\nPolicies, gates, authority, ranking"];
+  deal [label="Deal instance\nSynthetic Project Tethys"];
+  spine [label="Governed question spine\nNine venture questions + admitted changes"];
+  kernel -> archetype -> stage -> sector -> lens -> deal -> spine;
+}

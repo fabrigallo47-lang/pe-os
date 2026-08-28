@@ -1,0 +1,65 @@
+{
+  "section": "Syntax",
+  "results": [
+    {
+      "section": "Syntax",
+      "name": "node --check api.js",
+      "status": "PASS",
+      "detail": "0"
+    },
+    {
+      "section": "Syntax",
+      "name": "node --check boot.js",
+      "status": "PASS",
+      "detail": "0"
+    },
+    {
+      "section": "Syntax",
+      "name": "node --check constants.js",
+      "status": "PASS",
+      "detail": "0"
+    },
+    {
+      "section": "Syntax",
+      "name": "node --check contracts.js",
+      "status": "PASS",
+      "detail": "0"
+    },
+    {
+      "section": "Syntax",
+      "name": "node --check engine.js",
+      "status": "PASS",
+      "detail": "0"
+    },
+    {
+      "section": "Syntax",
+      "name": "node --check projection_adapter.js",
+      "status": "PASS",
+      "detail": "0"
+    },
+    {
+      "section": "Syntax",
+      "name": "node --check render.js",
+      "status": "PASS",
+      "detail": "0"
+    },
+    {
+      "section": "Syntax",
+      "name": "node --check selftest.js",
+      "status": "PASS",
+      "detail": "0"
+    },
+    {
+      "section": "Syntax",
+      "name": "node --check store.js",
+      "status": "PASS",
+      "detail": "0"
+    },
+    {
+      "section": "Syntax",
+      "name": "Python mock server compiles",
+      "status": "PASS",
+      "detail": "0"
+    }
+  ]
+}

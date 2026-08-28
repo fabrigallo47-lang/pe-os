@@ -1,0 +1,61 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/claim_review.schema.json",
+  "title": "PANTA Claim Review",
+  "type": "object",
+  "properties": {
+    "claim_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "object_id": {
+      "type": "string"
+    },
+    "actor_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "action": {
+      "enum": [
+        "ACCEPTED",
+        "CORRECTED",
+        "REJECTED"
+      ]
+    },
+    "decision": {
+      "type": "string"
+    },
+    "correction": {
+      "type": "string"
+    },
+    "text": {
+      "type": "string"
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "claim_id",
+    "actor_id",
+    "action",
+    "timestamp",
+    "effective_date",
+    "known_at",
+    "idempotency_key"
+  ]
+}

@@ -1,0 +1,52 @@
+PANTA V19.B TEST RESULTS
+================================================================================
+Status: PASS
+Passed: 22 / 22
+Failed: 0
+
+Tests the bundled V19.B product build, synthetic fixture packs, public schemas, pure engine-output adapter and stateful mock API. It does not certify production identity, enterprise persistence, external delivery, Fabri's production compiler, or Anto's separate frozen 22-case runtime implementation.
+
+[PASS] ORION_GENERALIZATION :: Orion normalized statement overlap is below 20%
+    {"identical":0,"keystone_statements":75,"orion_statements":42,"overlap_ratio":0.0}
+[PASS] ORION_GENERALIZATION :: Orion is a growth-equity case without LBO quantities
+    {"banned_hits":[],"case_type":"growth_equity","growth_terms_present":["ARR","NRR","GRR","runway","burn multiple","onboarding","primary"]}
+[PASS] BITEMPORALITY :: Every fixture claim, source event and Registry entry is bitemporal
+    {"claims":117,"events":4,"registry":26}
+[PASS] BITEMPORALITY :: Replay fixtures contain no handwritten snapshots
+    {"Keystone":{"fixture_snapshots":0,"registry_events":17},"Orion":{"fixture_snapshots":0,"registry_events":9}}
+[PASS] EPISTEMIC_CLASS :: Institutional acts are a fifth class and never attested
+    {"distribution":{"asserted":10,"attested":14,"derived":18,"institutional_act":22,"observed":11},"firm_act_attested_violations":[],"firm_act_count":17}
+[PASS] SCHEMAS_AND_ADAPTER :: All eight public contract schemas are structurally typed
+    {"schema_count":8,"schemas":["authority_record.schema.json","claim_review.schema.json","execution_package.schema.json","experience_context.schema.json","frontend_projection.schema.json","ingest_job.schema.json","settlement_result.schema.json","transition_result.schema.json"],"untyped_properties":{}}
+[PASS] SCHEMAS_AND_ADAPTER :: Both case projections validate with zero schema errors
+    {"errors":0,"validated":["PROJECT-KEYSTONE","PROJECT-ORION"]}
+[PASS] SCHEMAS_AND_ADAPTER :: All fixture transition outputs validate against the frozen-field schema
+    {"errors":0,"transition_outputs":4}
+[PASS] SCHEMAS_AND_ADAPTER :: Frozen engine output maps through a pure Python adapter
+    {"frozen_fields":18,"integration_fields":19,"output_schema_errors":0,"pure":true,"python_adapter":"PASS"}
+[PASS] SCHEMAS_AND_ADAPTER :: Frozen engine output maps through the browser adapter
+    {"affected_set":7,"javascript_adapter":"PASS","output_schema_errors":0}
+[PASS] TRANSITION_OBJECTS :: Fixture data exercises Human Stop and blocked component objects
+    {"blocked_component_id":"OR-COMP-RENEWAL-FORECAST","blocked_components":1,"human_stop_id":"OR-HS-RETENTION-ROUND","human_stops":1}
+[PASS] LANGUAGE_REGRESSION :: Retired pricing terminology is absent
+    {"pdf_hits":[],"replacement":"approved EV ceiling","text_hits":[]}
+[PASS] STATIC_RUNTIME :: Python and browser runtime files pass syntax checks
+    {"javascript_files":["api.js","boot.js","constants.js","contracts.js","engine.js","projection_adapter.js","render.js","selftest.js","store.js"],"python_files":2}
+[PASS] MODE_HONESTY :: Bundled server refuses fixture-backed Connected mode
+    {"error_code":"CONNECTED_BACKEND_NOT_CONFIGURED","status":503}
+[PASS] BITEMPORALITY :: Any past date reconstructs knowledge and event-derived replay
+    {"early_claims":6,"effective_date":"2026-06-30","invalid_date_status":400,"known_at":"2026-07-18T10:00:00Z","late_claims":42,"replayed_event":"OR-REG-003"}
+[PASS] SCHEMAS_AND_ADAPTER :: Mock bootstrap context validates with zero errors
+    {"errors":0,"schema":"experience_context"}
+[PASS] SCHEMAS_AND_ADAPTER :: Ingest job and claim-review records validate with zero errors
+    {"claim_review_errors":0,"ingest_job_errors":0,"note_status":201}
+[PASS] TRANSITION_OBJECTS :: Human Stop settlement is server-refused without scoped authority
+    {"authority_before_prepare_status":409,"authority_record_schema_errors":0,"human_stop_id":"OR-HS-RETENTION-ROUND","settled_state_id":"STATE-6B88BB2B0379","settlement_schema_errors":0,"settlement_without_authority_status":409,"wrong_candidate_status":409}
+[PASS] SETTLEMENT_INTEGRITY :: Preparation rejects changes outside the transition output
+    {"error_code":"UNKNOWN_CHANGE_ID","status":409}
+[PASS] TRANSITION_OBJECTS :: Blocked scope requires explicit bounded partial settlement
+    {"blocked_component_id":"OR-COMP-RENEWAL-FORECAST","partial":true,"with_partial_status":200,"without_partial_status":409}
+[PASS] SCHEMAS_AND_ADAPTER :: Course-specific external package validates and requires server acknowledgment
+    {"authority_schema_errors":0,"execution_package_schema_errors":0,"package_status":"ACCEPTED"}
+[PASS] BROWSER_E2E :: Mapped transitions and bitemporal growth case render in the UI
+    {"blocked_component_text":"BLOCKED COMPONENT · OR-COMP-RENEWAL-FORECAST\nTwo renewal cohorts have no admissible source route, so the affected renewal forecast cannot settle.\n\nMISSING_MODEL_DEPENDENCY · Ingest billing and customer-success records for the two cohorts.","console_errors":[],"historical_claim_count":6,"human_stop_text":"HUMAN STOP · OR-HS-RETENTION-ROUND\nThe retention restatement changes the size and milestone conditions of the growth financing.\n\nAUTHORITY_HOLDER · approve_growth_round","replay_event_derived":true,"scenario_growth_metrics":["ARR","NRR","Runway"]}

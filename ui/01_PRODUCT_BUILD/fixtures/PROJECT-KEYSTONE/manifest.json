@@ -1,0 +1,28 @@
+{
+  "fixture_pack_version": "20.0.0",
+  "case_id": "PROJECT-KEYSTONE",
+  "company": "Alderstone Compliance & Technical Services",
+  "projection_file": "projection.json",
+  "transitions_file": "transitions.json",
+  "registry_file": "registry.json",
+  "synthetic": true,
+  "no_external_effects": true,
+  "default_actor_id": "USR-PARTNER",
+  "available_modes": [
+    "MOCK_CONNECTED",
+    "OFFLINE_DEMO"
+  ],
+  "contract_version": "20.0",
+  "release": "V20",
+  "case_type": "buyout",
+  "generalization_role": "canonical benchmark",
+  "bitemporal": true,
+  "replay_source": "REGISTRY_EVENTS",
+  "epistemic_classes": [
+    "asserted",
+    "observed",
+    "derived",
+    "attested",
+    "institutional_act"
+  ]
+}

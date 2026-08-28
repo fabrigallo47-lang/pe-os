@@ -1,0 +1,47 @@
+{
+  "release": "V20",
+  "semantic_version": "20.0.0",
+  "base_release": "V19.B / 19.1.0",
+  "date": "2026-08-27",
+  "additions": [
+    "venture archetype hierarchy",
+    "native interactions and utterances",
+    "speech-act epistemic separation",
+    "candidate discrepancies",
+    "deterministic derivations",
+    "AI hypotheses",
+    "governed missions",
+    "governed spine changes",
+    "technical validation envelopes",
+    "condition edges",
+    "venture financing and cap tables",
+    "Project Tethys fixture",
+    "V20 schemas and adapters",
+    "V20 API and browser evidence"
+  ],
+  "non_regression": [
+    "fixture-free Connected core",
+    "explicit modes",
+    "bitemporal projection and replay",
+    "institutional_act class",
+    "Human Stops",
+    "blocked partial settlement",
+    "scoped authority",
+    "course-specific execution",
+    "idempotency conflicts",
+    "no optimistic success"
+  ],
+  "acceptance": {
+    "status": "PASS",
+    "passed": 49,
+    "total": 49
+  },
+  "production_boundaries": [
+    "no production SSO/RBAC",
+    "no live external research",
+    "no human outreach",
+    "no physical test execution",
+    "no real external effects",
+    "production compiler/Case Store and Transition Engine remain integration boundaries"
+  ]
+}

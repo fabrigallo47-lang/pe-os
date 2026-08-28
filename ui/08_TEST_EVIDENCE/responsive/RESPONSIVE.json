@@ -1,0 +1,53 @@
+{
+  "section": "Responsive",
+  "results": [
+    {
+      "section": "Responsive",
+      "name": "No page clipping at 1920px",
+      "status": "PASS",
+      "detail": "1920px doc=1920 viewport=1920"
+    },
+    {
+      "section": "Responsive",
+      "name": "No page clipping at 1440px",
+      "status": "PASS",
+      "detail": "1440px doc=1440 viewport=1440"
+    },
+    {
+      "section": "Responsive",
+      "name": "No page clipping at 1280px",
+      "status": "PASS",
+      "detail": "1280px doc=1280 viewport=1280"
+    },
+    {
+      "section": "Responsive",
+      "name": "No page clipping at 1051px",
+      "status": "PASS",
+      "detail": "1051px doc=1051 viewport=1051"
+    },
+    {
+      "section": "Responsive",
+      "name": "No page clipping at 1050px",
+      "status": "PASS",
+      "detail": "1050px doc=1050 viewport=1050"
+    },
+    {
+      "section": "Responsive",
+      "name": "No page clipping at 1024px",
+      "status": "PASS",
+      "detail": "1024px doc=1024 viewport=1024"
+    },
+    {
+      "section": "Responsive",
+      "name": "No page clipping at 768px",
+      "status": "PASS",
+      "detail": "768px doc=768 viewport=768"
+    },
+    {
+      "section": "Responsive",
+      "name": "No page clipping at 390px",
+      "status": "PASS",
+      "detail": "390px doc=390 viewport=390"
+    }
+  ]
+}

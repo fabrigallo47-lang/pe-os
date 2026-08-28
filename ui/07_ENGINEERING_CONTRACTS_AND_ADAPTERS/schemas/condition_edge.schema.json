@@ -1,0 +1,55 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/condition_edge.schema.json",
+  "title": "PANTA V20 Condition Edge",
+  "type": "object",
+  "properties": {
+    "edge_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "relation": {
+      "const": "CONDITIONS"
+    },
+    "from_condition_object_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "to_position_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "condition_definition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "condition_status": {
+      "type": "string",
+      "minLength": 1
+    },
+    "failure_effect": {
+      "type": "string",
+      "minLength": 1
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "edge_id",
+    "relation",
+    "from_condition_object_id",
+    "to_position_id",
+    "condition_definition",
+    "condition_status",
+    "failure_effect",
+    "effective_date",
+    "known_at"
+  ]
+}

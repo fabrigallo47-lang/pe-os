@@ -1,0 +1,96 @@
+{
+  "package_name": "PANTA_V19B_COMPLETE_VERIFIED",
+  "release": "V19.B",
+  "semantic_version": "19.1.0",
+  "release_date": "2026-08-27",
+  "status": "Complete product-experience package and safe synthetic integration/demo build",
+  "supersedes": "PANTA V19.0.0 for implementation, fixture evidence and demonstration",
+  "basis": "PANTA V19 architecture plus six V19.B corrective acceptance requirements",
+  "evidence": {
+    "v19b_acceptance_checks": {
+      "passed": 22,
+      "total": 22,
+      "status": "PASS",
+      "path": "08_TEST_EVIDENCE/V19B_TEST_RESULTS.json"
+    },
+    "legacy_v19_checks": {
+      "passed": 89,
+      "total": 89,
+      "status": "ARCHIVED_BASELINE_ONLY"
+    },
+    "authoritative_v19_screens": 40,
+    "flow_and_state_diagrams": 14,
+    "walkthrough_videos": 2,
+    "v19b_browser_captures": 4
+  },
+  "v19b_acceptance": {
+    "orion_statement_overlap_ratio": 0.0,
+    "orion_case_type": "growth_equity",
+    "keystone_claim_distribution": {
+      "asserted": 10,
+      "observed": 11,
+      "derived": 18,
+      "attested": 14,
+      "institutional_act": 22
+    },
+    "typed_public_schemas": 8,
+    "validated_fixture_transitions": 4,
+    "bitemporal_replay_source": "REGISTRY_EVENTS",
+    "human_stop_scenario": "PROJECT-ORION/retention_restatement",
+    "blocked_component_scenario": "PROJECT-ORION/pipeline_coverage_gap"
+  },
+  "operating_modes": [
+    "CONNECTED - requires a real external backend; bundled server refuses this mode",
+    "MOCK_CONNECTED - stateful synthetic server-gated reference runtime",
+    "OFFLINE_DEMO - explicit read/review fixture mode"
+  ],
+  "production_boundaries": [
+    "No production authentication, SSO or enterprise RBAC is claimed.",
+    "No real external action is emitted by the included mock service.",
+    "No enterprise database, retention, tenancy or security infrastructure is claimed.",
+    "Fabrizio compiler/Case Store and Anto Transition Engine production endpoints remain explicit adapters.",
+    "The V19.B suite does not replace Anto's separate frozen 22-case runtime conformance evidence."
+  ],
+  "authoritative_addenda": [
+    "00_START_HERE/PANTA_V19B_Release_and_Acceptance_Report.pdf",
+    "00_START_HERE/PANTA_V19B_Package_Manifest.pdf",
+    "00_START_HERE/V19B_RELEASE_NOTES.md",
+    "00_START_HERE/V19B_ACCEPTANCE_REPORT.md",
+    "02_PRODUCT_EXPERIENCE/PANTA_V19B_Change_Specification.md",
+    "07_ENGINEERING_CONTRACTS_AND_ADAPTERS/ENGINE_OUTPUT_TO_PROJECTION_MAPPING.md"
+  ],
+  "unchanged_v19_primary_documents": [
+    "02_PRODUCT_EXPERIENCE/PANTA_V19_Product_Experience_Specification.pdf",
+    "02_PRODUCT_EXPERIENCE/PANTA_V19_Product_User_Guide.pdf",
+    "02_PRODUCT_EXPERIENCE/PANTA_V19_Annotated_Screen_Atlas.pdf",
+    "04_INFORMATION_ARCHITECTURE_AND_FLOWS/PANTA_V19_Navigation_Flows_and_State_Model.pdf",
+    "05_DESIGN_SYSTEM_AND_INTERACTION/PANTA_V19_UI_System_and_Engineering_Handoff.pdf",
+    "06_RESEARCH_AND_VALIDATION/PANTA_V19_UX_Research_and_Validation_Plan.pdf"
+  ],
+  "folder_contract": {
+    "00_START_HERE": "release navigation, corrective addenda, manifest, inventory and checksums",
+    "01_PRODUCT_BUILD": "application, stateful mock API, explicit fixtures and launchers",
+    "02_PRODUCT_EXPERIENCE": "V19 product documentation and authoritative V19.B change specification",
+    "03_SCREEN_ATLAS": "authoritative V19 screen exports",
+    "04_INFORMATION_ARCHITECTURE_AND_FLOWS": "IA, flows, state, service and data lineage",
+    "05_DESIGN_SYSTEM_AND_INTERACTION": "tokens, components, content, motion, responsive and accessibility",
+    "06_RESEARCH_AND_VALIDATION": "source audits, research plan and legacy release evidence",
+    "07_ENGINEERING_CONTRACTS_AND_ADAPTERS": "typed schemas, API reference, mapping contract and adapters",
+    "08_TEST_EVIDENCE": "V19.B executable evidence plus archived V19 evidence",
+    "09_DEMO": "explicit fixture packs, scripts, screenshots and videos",
+    "10_REFERENCE_ARCHIVE": "superseded releases and concept references"
+  },
+  "integrity_contract": {
+    "inventory_scope": "all package files except PACKAGE_INVENTORY.csv and CHECKSUMS.sha256",
+    "checksum_scope": "all package files except CHECKSUMS.sha256",
+    "algorithm": "SHA-256",
+    "verification_command": "sha256sum -c 00_START_HERE/CHECKSUMS.sha256"
+  },
+  "package_metrics": {
+    "content_artifacts_excluding_control_files": 232,
+    "inventory_entries": 233,
+    "checksum_entries": 234,
+    "package_files_total": 235,
+    "archive_filename": "PANTA_V19B_COMPLETE_VERIFIED.zip"
+  }
+}

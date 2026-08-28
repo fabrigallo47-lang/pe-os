@@ -1,0 +1,46 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/archetype.schema.json",
+  "title": "PANTA V20 Archetype Envelope",
+  "type": "object",
+  "properties": {
+    "kernel": {
+      "type": "string",
+      "minLength": 1
+    },
+    "archetype": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stage_overlay": {
+      "type": "string",
+      "minLength": 1
+    },
+    "sector_overlay": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fund_lens": {
+      "type": "string",
+      "minLength": 1
+    },
+    "deal_instance": {
+      "type": "string",
+      "minLength": 1
+    },
+    "archetype_version": {
+      "type": "string",
+      "minLength": 1
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "kernel",
+    "archetype",
+    "stage_overlay",
+    "sector_overlay",
+    "fund_lens",
+    "deal_instance",
+    "archetype_version"
+  ]
+}

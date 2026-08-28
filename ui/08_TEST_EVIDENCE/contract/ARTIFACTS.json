@@ -1,0 +1,35 @@
+{
+  "section": "Artifacts",
+  "results": [
+    {
+      "section": "Artifacts",
+      "name": "Artifacts are projection-driven",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Artifacts",
+      "name": "Ingested sources become source objects",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Artifacts",
+      "name": "Workbook cell viewer exists",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Artifacts",
+      "name": "PDF viewer exists",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Artifacts",
+      "name": "Source version history exists",
+      "status": "PASS",
+      "detail": "True"
+    }
+  ]
+}

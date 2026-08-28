@@ -1,0 +1,103 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/interaction.schema.json",
+  "title": "PANTA V20 Interaction",
+  "type": "object",
+  "properties": {
+    "interaction_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "interaction_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "title": {
+      "type": "string",
+      "minLength": 1
+    },
+    "start_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "end_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "participant_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "organizer_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "channel": {
+      "type": "string"
+    },
+    "source_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_version_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "transcript_status": {
+      "type": "string"
+    },
+    "speaker_identification_confidence": {
+      "type": "string"
+    },
+    "consent_status": {
+      "type": "string"
+    },
+    "confidentiality_class": {
+      "type": "string"
+    },
+    "model_processing_allowed": {
+      "type": "boolean"
+    },
+    "export_allowed": {
+      "type": "boolean"
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "interaction_id",
+    "interaction_type",
+    "title",
+    "start_at",
+    "end_at",
+    "participant_ids",
+    "source_id",
+    "source_version_id",
+    "transcript_status",
+    "speaker_identification_confidence",
+    "consent_status",
+    "confidentiality_class",
+    "model_processing_allowed",
+    "export_allowed",
+    "effective_date",
+    "known_at"
+  ]
+}

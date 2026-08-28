@@ -1,0 +1,115 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/spine_change_proposal.schema.json",
+  "title": "PANTA V20 Governed Spine Change Proposal",
+  "type": "object",
+  "properties": {
+    "proposal_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "proposal_type": {
+      "enum": [
+        "CREATE",
+        "PROMOTE",
+        "DEMOTE",
+        "SPLIT",
+        "MERGE",
+        "REFORMULATE",
+        "RETIRE",
+        "REBIND",
+        "REPLACE"
+      ]
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_object_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "current_question_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "proposed_question": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "binding_migration": {
+      "type": "object",
+      "properties": {
+        "claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "from_question_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "preserve_aliases": {
+          "type": "boolean"
+        }
+      },
+      "additionalProperties": true
+    },
+    "affected_artifact_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "materiality": {
+      "type": "string",
+      "minLength": 1
+    },
+    "required_authority_level": {
+      "type": "string",
+      "minLength": 1
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "proposal_id",
+    "proposal_type",
+    "label",
+    "reason",
+    "source_object_ids",
+    "current_question_ids",
+    "proposed_question",
+    "binding_migration",
+    "materiality",
+    "required_authority_level",
+    "status",
+    "effective_date",
+    "known_at"
+  ]
+}

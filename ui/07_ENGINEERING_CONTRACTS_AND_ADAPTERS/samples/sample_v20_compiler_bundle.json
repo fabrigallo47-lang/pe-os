@@ -1,0 +1,2189 @@
+{
+  "schema_version": "compiler-bundle/20.0",
+  "case_id": "PROJECT-TETHYS",
+  "archetype": {
+    "kernel": "PANTA_LIVE_INVESTMENT_CASE",
+    "archetype": "VENTURE",
+    "stage_overlay": "PRE_REVENUE_SEED",
+    "sector_overlay": "DEEP_TECH_MARITIME_SECURITY",
+    "fund_lens": "TY-LENS-VENTURE-CORE",
+    "deal_instance": "PROJECT-TETHYS",
+    "archetype_version": "venture-deep-tech/1.0"
+  },
+  "lenses": [
+    {
+      "lens_id": "TY-LENS-VENTURE-CORE",
+      "id": "TY-LENS-VENTURE-CORE",
+      "label": "Venture Core",
+      "description": "Balanced seed-underwriting lens across technical, commercial, team and financing questions.",
+      "ranking_weights": {
+        "load_bearingness": 0.3,
+        "epistemic_fragility": 0.25,
+        "severity": 0.25,
+        "gate_proximity": 0.2
+      },
+      "question_order": [
+        "TYQ-PROBLEM",
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT",
+        "TYQ-GTM",
+        "TYQ-RUNWAY",
+        "TYQ-DIFFERENTIATION",
+        "TYQ-TEAM",
+        "TYQ-OWNERSHIP",
+        "TYQ-REGULATORY"
+      ],
+      "required_question_ids": [
+        "TYQ-PROBLEM",
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT",
+        "TYQ-GTM",
+        "TYQ-RUNWAY",
+        "TYQ-DIFFERENTIATION",
+        "TYQ-TEAM",
+        "TYQ-OWNERSHIP",
+        "TYQ-REGULATORY"
+      ],
+      "materiality_policy_id": "TY-VENTURE-MATERIALITY-V1",
+      "authority_policy_id": "TY-VENTURE-AUTHORITY-V1",
+      "controls": [
+        "RUNWAY",
+        "DILUTION",
+        "MILESTONES",
+        "EVIDENCE_INDEPENDENCE"
+      ],
+      "effective_date": "2026-06-04",
+      "known_at": "2026-06-04T10:10:00Z"
+    },
+    {
+      "lens_id": "TY-LENS-DEEP-TECH",
+      "id": "TY-LENS-DEEP-TECH",
+      "label": "Deep-Tech Validation",
+      "description": "Raises technical operating-envelope, derivation and controlled-test objects. Facts do not change.",
+      "ranking_weights": {
+        "load_bearingness": 0.3,
+        "epistemic_fragility": 0.35,
+        "severity": 0.25,
+        "gate_proximity": 0.1
+      },
+      "question_order": [
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT",
+        "TYQ-DIFFERENTIATION",
+        "TYQ-RUNWAY",
+        "TYQ-REGULATORY",
+        "TYQ-PROBLEM",
+        "TYQ-GTM",
+        "TYQ-TEAM",
+        "TYQ-OWNERSHIP"
+      ],
+      "required_question_ids": [
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT",
+        "TYQ-DIFFERENTIATION"
+      ],
+      "materiality_policy_id": "TY-TECH-MATERIALITY-V1",
+      "authority_policy_id": "TY-VENTURE-AUTHORITY-V1",
+      "controls": [
+        "VALIDATION_ENVELOPE",
+        "CONDITIONS_EDGES",
+        "CONTROLLED_TEST_GATE"
+      ],
+      "effective_date": "2026-06-12",
+      "known_at": "2026-06-12T15:00:00Z"
+    },
+    {
+      "lens_id": "TY-LENS-SECURITY",
+      "id": "TY-LENS-SECURITY",
+      "label": "Security & Procurement",
+      "description": "Raises procurement, prime-contractor, export-control and security-accreditation objects.",
+      "ranking_weights": {
+        "load_bearingness": 0.25,
+        "epistemic_fragility": 0.2,
+        "severity": 0.35,
+        "gate_proximity": 0.2
+      },
+      "question_order": [
+        "TYQ-REGULATORY",
+        "TYQ-GTM",
+        "TYQ-PROBLEM",
+        "TYQ-DIFFERENTIATION",
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT",
+        "TYQ-RUNWAY",
+        "TYQ-TEAM",
+        "TYQ-OWNERSHIP"
+      ],
+      "required_question_ids": [
+        "TYQ-REGULATORY",
+        "TYQ-GTM"
+      ],
+      "materiality_policy_id": "TY-SECURITY-MATERIALITY-V1",
+      "authority_policy_id": "TY-SECURITY-AUTHORITY-V1",
+      "controls": [
+        "DATA_EGRESS",
+        "EXPORT_CONTROL",
+        "EXTERNAL_CONTACT_AUTHORITY"
+      ],
+      "effective_date": "2026-08-20",
+      "known_at": "2026-08-21T08:45:00Z"
+    },
+    {
+      "lens_id": "TY-LENS-PARTNER",
+      "id": "TY-LENS-PARTNER",
+      "label": "Partner Decision",
+      "description": "Emphasizes the next signature moment, load-bearing support routes and who must close what.",
+      "ranking_weights": {
+        "load_bearingness": 0.35,
+        "epistemic_fragility": 0.2,
+        "severity": 0.25,
+        "gate_proximity": 0.2
+      },
+      "question_order": [
+        "TYQ-PERFORMANCE",
+        "TYQ-RUNWAY",
+        "TYQ-OWNERSHIP",
+        "TYQ-DEPLOYMENT",
+        "TYQ-GTM",
+        "TYQ-DIFFERENTIATION",
+        "TYQ-TEAM",
+        "TYQ-REGULATORY",
+        "TYQ-PROBLEM"
+      ],
+      "required_question_ids": [
+        "TYQ-PERFORMANCE",
+        "TYQ-RUNWAY",
+        "TYQ-OWNERSHIP"
+      ],
+      "materiality_policy_id": "TY-PARTNER-MATERIALITY-V1",
+      "authority_policy_id": "TY-VENTURE-AUTHORITY-V1",
+      "controls": [
+        "SIGNATURE_MOMENT",
+        "HUMAN_STOP",
+        "COURSE_COMPARISON"
+      ],
+      "effective_date": "2026-08-26",
+      "known_at": "2026-08-26T17:30:00Z"
+    }
+  ],
+  "venture_financing": {
+    "currency": "EUR",
+    "round_type": "Seed Preferred",
+    "pre_money_eur_m": 18.0,
+    "new_money_eur_m": 4.5,
+    "post_money_eur_m": 22.5,
+    "new_investor_ownership_pct": 20.0,
+    "option_pool_top_up_pct": 0.0,
+    "pre_round_cap_table": [
+      {
+        "holder": "Founders",
+        "ownership_pct": 72.0
+      },
+      {
+        "holder": "Employees and option pool",
+        "ownership_pct": 12.0
+      },
+      {
+        "holder": "Existing investors",
+        "ownership_pct": 16.0
+      }
+    ],
+    "post_round_cap_table": [
+      {
+        "holder": "Founders",
+        "ownership_pct": 57.6
+      },
+      {
+        "holder": "Employees and option pool",
+        "ownership_pct": 9.6
+      },
+      {
+        "holder": "Existing investors",
+        "ownership_pct": 12.8
+      },
+      {
+        "holder": "New seed investor",
+        "ownership_pct": 20.0
+      }
+    ],
+    "instrument_terms": {
+      "liquidation_preference": "1x non-participating",
+      "anti_dilution": "Broad-based weighted average",
+      "pro_rata_rights": true,
+      "board_composition": "2 founders / 1 lead investor / 1 independent",
+      "reserved_matters": [
+        "New senior securities",
+        "Budget variance above 20%",
+        "Sale of core IP",
+        "Unapproved defence-market expansion"
+      ]
+    },
+    "milestone_tranches": [
+      {
+        "tranche": "Initial",
+        "amount_eur_m": 3.0,
+        "condition": "Closing and approved technical protocol"
+      },
+      {
+        "tranche": "Technical milestone",
+        "amount_eur_m": 1.5,
+        "condition": "Controlled sea trial meets pre-registered range and false-positive gates"
+      }
+    ],
+    "follow_on_policy": {
+      "target_ownership_pct": 15.0,
+      "illustrative_series_a_pre_money_eur_m": 45.0,
+      "illustrative_series_a_new_money_eur_m": 12.0,
+      "reserve_eur_m": 2.3
+    },
+    "effective_date": "2026-07-31",
+    "known_at": "2026-08-03T08:30:00Z"
+  },
+  "sources": [
+    {
+      "source_id": "TY-SRC-DECK",
+      "id": "TY-SRC-DECK",
+      "name": "Company investor deck",
+      "type": "PDF",
+      "status": "INGESTED",
+      "latest_version_id": "TY-SRC-DECK-V1",
+      "claim_count": 8,
+      "effective_date": "2026-05-31",
+      "known_at": "2026-06-04T09:00:00Z",
+      "ingested_at": "2026-06-04T09:00:00Z",
+      "versions": [
+        {
+          "version_id": "TY-SRC-DECK-V1",
+          "created_at": "2026-06-04T09:00:00Z",
+          "effective_date": "2026-05-31",
+          "known_at": "2026-06-04T09:00:00Z",
+          "sha256": "480ccfb45511742731b969a78103b2478304f4f69e9e224abef172ff273e52ba",
+          "supersedes": null
+        }
+      ],
+      "file_name": null,
+      "viewer": "METADATA",
+      "synthetic": true
+    },
+    {
+      "source_id": "TY-SRC-TR-FOUNDER-1",
+      "id": "TY-SRC-TR-FOUNDER-1",
+      "name": "Founder introduction transcript",
+      "type": "INTERACTION_TRANSCRIPT",
+      "status": "INGESTED",
+      "latest_version_id": "TY-SRC-TR-FOUNDER-1-V1",
+      "claim_count": 3,
+      "effective_date": "2026-06-04",
+      "known_at": "2026-06-04T10:10:00Z",
+      "ingested_at": "2026-06-04T10:10:00Z",
+      "versions": [
+        {
+          "version_id": "TY-SRC-TR-FOUNDER-1-V1",
+          "created_at": "2026-06-04T10:10:00Z",
+          "effective_date": "2026-06-04",
+          "known_at": "2026-06-04T10:10:00Z",
+          "sha256": "c3614a9de29c5e34de322b8b75b282c3c7d85b1e6ae27fdce21064b359ef640a",
+          "supersedes": null
+        }
+      ],
+      "file_name": null,
+      "viewer": "TRANSCRIPT",
+      "synthetic": true,
+      "interaction_id": "TY-INT-FOUNDER-1",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "TY-PER-FOUNDER"
+      ],
+      "confidentiality_class": "CONFIDENTIAL_DEAL",
+      "speaker_level_provenance": true
+    },
+    {
+      "source_id": "TY-SRC-TR-TECH",
+      "id": "TY-SRC-TR-TECH",
+      "name": "Technical deep-dive transcript",
+      "type": "INTERACTION_TRANSCRIPT",
+      "status": "INGESTED",
+      "latest_version_id": "TY-SRC-TR-TECH-V1",
+      "claim_count": 6,
+      "effective_date": "2026-06-12",
+      "known_at": "2026-06-12T15:00:00Z",
+      "ingested_at": "2026-06-12T15:00:00Z",
+      "versions": [
+        {
+          "version_id": "TY-SRC-TR-TECH-V1",
+          "created_at": "2026-06-12T15:00:00Z",
+          "effective_date": "2026-06-12",
+          "known_at": "2026-06-12T15:00:00Z",
+          "sha256": "bcfc9eda0cdf107f1aed72bdce89e58c5cf0daf0be66fd00ff629fc2d1039150",
+          "supersedes": null
+        }
+      ],
+      "file_name": null,
+      "viewer": "TRANSCRIPT",
+      "synthetic": true,
+      "interaction_id": "TY-INT-TECH-1",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "TY-PER-TECH-PARTNER",
+        "TY-PER-CTO",
+        "TY-PER-FOUNDER"
+      ],
+      "confidentiality_class": "CONFIDENTIAL_DEAL",
+      "speaker_level_provenance": true
+    },
+    {
+      "source_id": "TY-SRC-LAB",
+      "id": "TY-SRC-LAB",
+      "name": "Controlled basin test report",
+      "type": "PDF",
+      "status": "INGESTED",
+      "latest_version_id": "TY-SRC-LAB-V1",
+      "claim_count": 4,
+      "effective_date": "2026-07-03",
+      "known_at": "2026-07-06T11:00:00Z",
+      "ingested_at": "2026-07-06T11:00:00Z",
+      "versions": [
+        {
+          "version_id": "TY-SRC-LAB-V1",
+          "created_at": "2026-07-06T11:00:00Z",
+          "effective_date": "2026-07-03",
+          "known_at": "2026-07-06T11:00:00Z",
+          "sha256": "754143fd9445371c7713526cd8d3a6fa92a6684d0f64d8547834bb63352080ce",
+          "supersedes": null
+        }
+      ],
+      "file_name": null,
+      "viewer": "METADATA",
+      "synthetic": true
+    },
+    {
+      "source_id": "TY-SRC-FIN",
+      "id": "TY-SRC-FIN",
+      "name": "Cash, burn and cap-table workbook",
+      "type": "XLSX",
+      "status": "INGESTED",
+      "latest_version_id": "TY-SRC-FIN-V1",
+      "claim_count": 6,
+      "effective_date": "2026-07-31",
+      "known_at": "2026-08-03T08:30:00Z",
+      "ingested_at": "2026-08-03T08:30:00Z",
+      "versions": [
+        {
+          "version_id": "TY-SRC-FIN-V1",
+          "created_at": "2026-08-03T08:30:00Z",
+          "effective_date": "2026-07-31",
+          "known_at": "2026-08-03T08:30:00Z",
+          "sha256": "57b777004da59e67e00ae647e1273aed4bf4145b5beffd9c9867a067645de415",
+          "supersedes": null
+        }
+      ],
+      "file_name": null,
+      "viewer": "WORKBOOK",
+      "synthetic": true
+    },
+    {
+      "source_id": "TY-SRC-TR-PILOT",
+      "id": "TY-SRC-TR-PILOT",
+      "name": "Pilot customer reference transcript",
+      "type": "INTERACTION_TRANSCRIPT",
+      "status": "INGESTED",
+      "latest_version_id": "TY-SRC-TR-PILOT-V1",
+      "claim_count": 7,
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z",
+      "ingested_at": "2026-08-19T10:30:00Z",
+      "versions": [
+        {
+          "version_id": "TY-SRC-TR-PILOT-V1",
+          "created_at": "2026-08-19T10:30:00Z",
+          "effective_date": "2026-08-18",
+          "known_at": "2026-08-19T10:30:00Z",
+          "sha256": "2f16d11b17b3e5c58c35fbfb57c80418f93e512fc8b184a60da45d01ae623e0a",
+          "supersedes": null
+        }
+      ],
+      "file_name": null,
+      "viewer": "TRANSCRIPT",
+      "synthetic": true,
+      "interaction_id": "TY-INT-PILOT",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "TY-PER-PILOT"
+      ],
+      "confidentiality_class": "CONFIDENTIAL_REFERENCE",
+      "speaker_level_provenance": true
+    },
+    {
+      "source_id": "TY-SRC-TR-PROC",
+      "id": "TY-SRC-TR-PROC",
+      "name": "Procurement expert transcript",
+      "type": "INTERACTION_TRANSCRIPT",
+      "status": "INGESTED",
+      "latest_version_id": "TY-SRC-TR-PROC-V1",
+      "claim_count": 3,
+      "effective_date": "2026-08-20",
+      "known_at": "2026-08-21T08:45:00Z",
+      "ingested_at": "2026-08-21T08:45:00Z",
+      "versions": [
+        {
+          "version_id": "TY-SRC-TR-PROC-V1",
+          "created_at": "2026-08-21T08:45:00Z",
+          "effective_date": "2026-08-20",
+          "known_at": "2026-08-21T08:45:00Z",
+          "sha256": "1b504b62aac8faaee5ee75078abce3bfe0397d1c7a4c60073599819a96982994",
+          "supersedes": null
+        }
+      ],
+      "file_name": null,
+      "viewer": "TRANSCRIPT",
+      "synthetic": true,
+      "interaction_id": "TY-INT-PROC",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "TY-PER-PROC"
+      ],
+      "confidentiality_class": "CONFIDENTIAL_REFERENCE",
+      "speaker_level_provenance": true
+    },
+    {
+      "source_id": "TY-SRC-TR-EXPERT",
+      "id": "TY-SRC-TR-EXPERT",
+      "name": "Subsea expert transcript",
+      "type": "INTERACTION_TRANSCRIPT",
+      "status": "INGESTED",
+      "latest_version_id": "TY-SRC-TR-EXPERT-V1",
+      "claim_count": 5,
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z",
+      "ingested_at": "2026-08-25T15:15:00Z",
+      "versions": [
+        {
+          "version_id": "TY-SRC-TR-EXPERT-V1",
+          "created_at": "2026-08-25T15:15:00Z",
+          "effective_date": "2026-08-25",
+          "known_at": "2026-08-25T15:15:00Z",
+          "sha256": "edfcb1da6646ec54c416c0ed053317733d78962e7ff5553100106faf993ae33c",
+          "supersedes": null
+        }
+      ],
+      "file_name": null,
+      "viewer": "TRANSCRIPT",
+      "synthetic": true,
+      "interaction_id": "TY-INT-EXPERT",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "TY-PER-TECH-PARTNER",
+        "TY-PER-EXPERT"
+      ],
+      "confidentiality_class": "CONFIDENTIAL_REFERENCE",
+      "speaker_level_provenance": true
+    },
+    {
+      "source_id": "TY-SRC-IC",
+      "id": "TY-SRC-IC",
+      "name": "Seed pre-IC decision minutes",
+      "type": "INTERACTION_MINUTES",
+      "status": "INGESTED",
+      "latest_version_id": "TY-SRC-IC-V1",
+      "claim_count": 3,
+      "effective_date": "2026-08-26",
+      "known_at": "2026-08-26T17:30:00Z",
+      "ingested_at": "2026-08-26T17:30:00Z",
+      "versions": [
+        {
+          "version_id": "TY-SRC-IC-V1",
+          "created_at": "2026-08-26T17:30:00Z",
+          "effective_date": "2026-08-26",
+          "known_at": "2026-08-26T17:30:00Z",
+          "sha256": "5382e8c5f5a428b2a629e48b22970f8526cb2cc8d368f8cf0a5ce4b1e7b6d446",
+          "supersedes": null
+        }
+      ],
+      "file_name": null,
+      "viewer": "TRANSCRIPT",
+      "synthetic": true,
+      "interaction_id": "TY-INT-IC",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "USR-PARTNER",
+        "TY-PER-TECH-PARTNER"
+      ],
+      "confidentiality_class": "FUND_RESTRICTED",
+      "speaker_level_provenance": true
+    }
+  ],
+  "pipeline_issues": [
+    {
+      "issue_id": "TY-PIPE-001",
+      "id": "TY-PIPE-001",
+      "label": "Response-module test matrix has no integrated-sea-trial row",
+      "kind": "MISSING_VALIDATION_ROUTE",
+      "stage": "BINDING",
+      "severity": "HIGH",
+      "object_ids": [
+        "TY-VE-RESPONSE"
+      ],
+      "fix": "Obtain or create a pre-registered integrated sea-trial protocol."
+    }
+  ],
+  "participants": [
+    {
+      "participant_id": "TY-PER-FOUNDER",
+      "id": "TY-PER-FOUNDER",
+      "name": "Mira Solberg",
+      "role": "Founder & CEO",
+      "affiliation": "Tethys Marine Systems",
+      "party": "COMPANY",
+      "independence_group": "COMPANY",
+      "relationship": "Management",
+      "effective_date": "2026-06-01",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "participant_id": "TY-PER-CTO",
+      "id": "TY-PER-CTO",
+      "name": "Arun Bedi",
+      "role": "Co-founder & CTO",
+      "affiliation": "Tethys Marine Systems",
+      "party": "COMPANY",
+      "independence_group": "COMPANY",
+      "relationship": "Management",
+      "effective_date": "2026-06-01",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "participant_id": "TY-PER-PILOT",
+      "id": "TY-PER-PILOT",
+      "name": "Lea Moreau",
+      "role": "Site operations lead",
+      "affiliation": "Northhaven Aquaculture",
+      "party": "CUSTOMER",
+      "independence_group": "CUSTOMER-NORTHHAVEN",
+      "relationship": "Pilot customer; no equity interest",
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z"
+    },
+    {
+      "participant_id": "TY-PER-EXPERT",
+      "id": "TY-PER-EXPERT",
+      "name": "Jonas Klee",
+      "role": "Independent subsea systems expert",
+      "affiliation": "Klee Maritime Advisory",
+      "party": "EXPERT",
+      "independence_group": "EXPERT-KLEE",
+      "relationship": "Paid diligence expert; no company relationship disclosed",
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z"
+    },
+    {
+      "participant_id": "TY-PER-PROC",
+      "id": "TY-PER-PROC",
+      "name": "Sofia Marin",
+      "role": "Former public procurement director",
+      "affiliation": "Independent",
+      "party": "EXPERT",
+      "independence_group": "EXPERT-MARIN",
+      "relationship": "Independent procurement reference",
+      "effective_date": "2026-08-20",
+      "known_at": "2026-08-21T08:45:00Z"
+    },
+    {
+      "participant_id": "USR-ASSOCIATE",
+      "id": "USR-ASSOCIATE",
+      "name": "Nora Weiss",
+      "role": "Venture Associate",
+      "affiliation": "Atlas Frontier Fund",
+      "party": "FUND",
+      "independence_group": "FUND",
+      "relationship": "Deal team",
+      "effective_date": "2026-06-04",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "participant_id": "USR-PARTNER",
+      "id": "USR-PARTNER",
+      "name": "Elias Hart",
+      "role": "Investment Partner",
+      "affiliation": "Atlas Frontier Fund",
+      "party": "FUND",
+      "independence_group": "FUND",
+      "relationship": "Authority holder",
+      "effective_date": "2026-06-04",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "participant_id": "TY-PER-TECH-PARTNER",
+      "id": "TY-PER-TECH-PARTNER",
+      "name": "Rina Okafor",
+      "role": "Technical Partner",
+      "affiliation": "Atlas Frontier Fund",
+      "party": "FUND",
+      "independence_group": "FUND",
+      "relationship": "Technical diligence authority",
+      "effective_date": "2026-06-12",
+      "known_at": "2026-06-12T13:00:00Z"
+    }
+  ],
+  "interactions": [
+    {
+      "interaction_id": "TY-INT-FOUNDER-1",
+      "id": "TY-INT-FOUNDER-1",
+      "interaction_type": "FOUNDER_CALL",
+      "title": "Founder introduction and problem framing",
+      "start_at": "2026-06-04T09:00:00Z",
+      "end_at": "2026-06-04T09:48:00Z",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "TY-PER-FOUNDER"
+      ],
+      "organizer_id": "USR-ASSOCIATE",
+      "channel": "Video conference",
+      "source_id": "TY-SRC-TR-FOUNDER-1",
+      "source_version_id": "TY-SRC-TR-FOUNDER-1-V1",
+      "transcript_status": "VERBATIM_REVIEWED",
+      "speaker_identification_confidence": "HIGH",
+      "consent_status": "RECORDED_WITH_CONSENT",
+      "confidentiality_class": "CONFIDENTIAL_DEAL",
+      "model_processing_allowed": true,
+      "export_allowed": false,
+      "effective_date": "2026-06-04",
+      "known_at": "2026-06-04T10:10:00Z"
+    },
+    {
+      "interaction_id": "TY-INT-TECH-1",
+      "id": "TY-INT-TECH-1",
+      "interaction_type": "TECHNICAL_DEEP_DIVE",
+      "title": "Technical operating-envelope deep dive",
+      "start_at": "2026-06-12T13:00:00Z",
+      "end_at": "2026-06-12T14:35:00Z",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "TY-PER-TECH-PARTNER",
+        "TY-PER-CTO",
+        "TY-PER-FOUNDER"
+      ],
+      "organizer_id": "USR-ASSOCIATE",
+      "channel": "Video conference",
+      "source_id": "TY-SRC-TR-TECH",
+      "source_version_id": "TY-SRC-TR-TECH-V1",
+      "transcript_status": "VERBATIM_REVIEWED",
+      "speaker_identification_confidence": "HIGH",
+      "consent_status": "RECORDED_WITH_CONSENT",
+      "confidentiality_class": "CONFIDENTIAL_DEAL",
+      "model_processing_allowed": true,
+      "export_allowed": false,
+      "effective_date": "2026-06-12",
+      "known_at": "2026-06-12T15:00:00Z"
+    },
+    {
+      "interaction_id": "TY-INT-PILOT",
+      "id": "TY-INT-PILOT",
+      "interaction_type": "CUSTOMER_REFERENCE",
+      "title": "Northhaven pilot reference",
+      "start_at": "2026-08-18T14:00:00Z",
+      "end_at": "2026-08-18T14:42:00Z",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "TY-PER-PILOT"
+      ],
+      "organizer_id": "USR-ASSOCIATE",
+      "channel": "Telephone",
+      "source_id": "TY-SRC-TR-PILOT",
+      "source_version_id": "TY-SRC-TR-PILOT-V1",
+      "transcript_status": "VERBATIM_REVIEWED",
+      "speaker_identification_confidence": "HIGH",
+      "consent_status": "NOTED_WITH_CONSENT",
+      "confidentiality_class": "CONFIDENTIAL_REFERENCE",
+      "model_processing_allowed": true,
+      "export_allowed": false,
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z"
+    },
+    {
+      "interaction_id": "TY-INT-PROC",
+      "id": "TY-INT-PROC",
+      "interaction_type": "EXPERT_CALL",
+      "title": "Security procurement path reference",
+      "start_at": "2026-08-20T15:30:00Z",
+      "end_at": "2026-08-20T16:20:00Z",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "TY-PER-PROC"
+      ],
+      "organizer_id": "USR-ASSOCIATE",
+      "channel": "Video conference",
+      "source_id": "TY-SRC-TR-PROC",
+      "source_version_id": "TY-SRC-TR-PROC-V1",
+      "transcript_status": "VERBATIM_REVIEWED",
+      "speaker_identification_confidence": "HIGH",
+      "consent_status": "RECORDED_WITH_CONSENT",
+      "confidentiality_class": "CONFIDENTIAL_REFERENCE",
+      "model_processing_allowed": true,
+      "export_allowed": false,
+      "effective_date": "2026-08-20",
+      "known_at": "2026-08-21T08:45:00Z"
+    },
+    {
+      "interaction_id": "TY-INT-EXPERT",
+      "id": "TY-INT-EXPERT",
+      "interaction_type": "EXPERT_CALL",
+      "title": "Independent subsea architecture and maintenance review",
+      "start_at": "2026-08-25T13:30:00Z",
+      "end_at": "2026-08-25T14:35:00Z",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "TY-PER-TECH-PARTNER",
+        "TY-PER-EXPERT"
+      ],
+      "organizer_id": "TY-PER-TECH-PARTNER",
+      "channel": "Video conference",
+      "source_id": "TY-SRC-TR-EXPERT",
+      "source_version_id": "TY-SRC-TR-EXPERT-V1",
+      "transcript_status": "VERBATIM_REVIEWED",
+      "speaker_identification_confidence": "HIGH",
+      "consent_status": "RECORDED_WITH_CONSENT",
+      "confidentiality_class": "CONFIDENTIAL_REFERENCE",
+      "model_processing_allowed": true,
+      "export_allowed": false,
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z"
+    },
+    {
+      "interaction_id": "TY-INT-IC",
+      "id": "TY-INT-IC",
+      "interaction_type": "INVESTMENT_COMMITTEE",
+      "title": "Seed investment pre-IC",
+      "start_at": "2026-08-26T16:00:00Z",
+      "end_at": "2026-08-26T17:05:00Z",
+      "participant_ids": [
+        "USR-ASSOCIATE",
+        "USR-PARTNER",
+        "TY-PER-TECH-PARTNER"
+      ],
+      "organizer_id": "USR-PARTNER",
+      "channel": "In person",
+      "source_id": "TY-SRC-IC",
+      "source_version_id": "TY-SRC-IC-V1",
+      "transcript_status": "DECISION_MINUTES",
+      "speaker_identification_confidence": "HIGH",
+      "consent_status": "INTERNAL_MINUTES",
+      "confidentiality_class": "FUND_RESTRICTED",
+      "model_processing_allowed": true,
+      "export_allowed": false,
+      "effective_date": "2026-08-26",
+      "known_at": "2026-08-26T17:30:00Z"
+    }
+  ],
+  "utterances": [
+    {
+      "utterance_id": "TY-UTT-001",
+      "id": "TY-UTT-001",
+      "interaction_id": "TY-INT-TECH-1",
+      "speaker_id": "TY-PER-CTO",
+      "speaker_role": "Co-founder & CTO",
+      "party": "COMPANY",
+      "start_seconds": 1312,
+      "end_seconds": 1332,
+      "locator": "00:21:52-00:22:12",
+      "verbatim_text": "For a diver-sized target in a benign shallow-water environment, our current classification range is about eight hundred metres.",
+      "normalized_text": "Management states an 800 m diver classification range in benign shallow water.",
+      "attribution_confidence": "HIGH",
+      "text_status": "VERBATIM",
+      "effective_date": "2026-06-12",
+      "known_at": "2026-06-12T15:00:00Z"
+    },
+    {
+      "utterance_id": "TY-UTT-002",
+      "id": "TY-UTT-002",
+      "interaction_id": "TY-INT-PILOT",
+      "speaker_id": "TY-PER-PILOT",
+      "speaker_role": "Site operations lead",
+      "party": "CUSTOMER",
+      "start_seconds": 524,
+      "end_seconds": 550,
+      "locator": "00:08:44-00:09:10",
+      "verbatim_text": "The farm is about twelve hectares. We are planning around four nodes because one unit does not look sufficient for all pens.",
+      "normalized_text": "The pilot operator describes a 12 ha site and expects four nodes.",
+      "attribution_confidence": "HIGH",
+      "text_status": "VERBATIM",
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z"
+    },
+    {
+      "utterance_id": "TY-UTT-003",
+      "id": "TY-UTT-003",
+      "interaction_id": "TY-INT-PILOT",
+      "speaker_id": "TY-PER-PILOT",
+      "speaker_role": "Site operations lead",
+      "party": "CUSTOMER",
+      "start_seconds": 917,
+      "end_seconds": 946,
+      "locator": "00:15:17-00:15:46",
+      "verbatim_text": "We have not run a controlled intrusion yet, so I cannot say the alerts are validated. The team is coming back to walk us through the traces.",
+      "normalized_text": "The pilot has not conducted a controlled intrusion and cannot validate alerts.",
+      "attribution_confidence": "HIGH",
+      "text_status": "VERBATIM",
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z"
+    },
+    {
+      "utterance_id": "TY-UTT-004",
+      "id": "TY-UTT-004",
+      "interaction_id": "TY-INT-EXPERT",
+      "speaker_id": "TY-PER-EXPERT",
+      "speaker_role": "Independent subsea systems expert",
+      "party": "EXPERT",
+      "start_seconds": 1031,
+      "end_seconds": 1078,
+      "locator": "00:17:11-00:17:58",
+      "verbatim_text": "The maintenance assumption is the fragile part. A fish farm has divers in the water already; a cable route or port generally does not.",
+      "normalized_text": "The expert warns that pilot-site maintenance conditions do not generalize to ports or cable routes.",
+      "attribution_confidence": "HIGH",
+      "text_status": "VERBATIM",
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z"
+    },
+    {
+      "utterance_id": "TY-UTT-005",
+      "id": "TY-UTT-005",
+      "interaction_id": "TY-INT-EXPERT",
+      "speaker_id": "TY-PER-EXPERT",
+      "speaker_role": "Independent subsea systems expert",
+      "party": "EXPERT",
+      "start_seconds": 1644,
+      "end_seconds": 1681,
+      "locator": "00:27:24-00:28:01",
+      "verbatim_text": "Most large buyers prefer an integrated system from a prime because they do not want to carry interface and liability risk.",
+      "normalized_text": "The expert says large buyers often prefer integrated prime-contractor systems.",
+      "attribution_confidence": "HIGH",
+      "text_status": "VERBATIM",
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z"
+    },
+    {
+      "utterance_id": "TY-UTT-006",
+      "id": "TY-UTT-006",
+      "interaction_id": "TY-INT-PROC",
+      "speaker_id": "TY-PER-PROC",
+      "speaker_role": "Former public procurement director",
+      "party": "EXPERT",
+      "start_seconds": 742,
+      "end_seconds": 777,
+      "locator": "00:12:22-00:12:57",
+      "verbatim_text": "A credible public-security procurement path is usually eighteen to thirty months, even when the operational sponsor is enthusiastic.",
+      "normalized_text": "The procurement expert estimates an 18-30 month public-security sales cycle.",
+      "attribution_confidence": "HIGH",
+      "text_status": "VERBATIM",
+      "effective_date": "2026-08-20",
+      "known_at": "2026-08-21T08:45:00Z"
+    },
+    {
+      "utterance_id": "TY-UTT-007",
+      "id": "TY-UTT-007",
+      "interaction_id": "TY-INT-IC",
+      "speaker_id": "USR-PARTNER",
+      "speaker_role": "Investment Partner",
+      "party": "FUND",
+      "start_seconds": 810,
+      "end_seconds": 844,
+      "locator": "00:13:30-00:14:04",
+      "verbatim_text": "We do not issue a term sheet merely to preserve optionality. The controlled sea trial must be the gate.",
+      "normalized_text": "The fund lens requires controlled technical evidence before an external term-sheet act.",
+      "attribution_confidence": "HIGH",
+      "text_status": "DECISION_MINUTE",
+      "effective_date": "2026-08-26",
+      "known_at": "2026-08-26T17:30:00Z"
+    }
+  ],
+  "claims": [
+    {
+      "claim_id": "TY-CL-001",
+      "id": "TY-CL-001",
+      "statement": "Critical near-shore infrastructure faces low-cost underwater intrusion threats that existing perimeter systems do not address economically.",
+      "source_id": "TY-SRC-DECK",
+      "locator": "p.4",
+      "epistemic_class": "asserted",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-PROBLEM-IMPORTANCE",
+      "period": "2026-05-31",
+      "perimeter": "Ports, aquaculture and cable landings",
+      "topic": "Problem importance",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-PROBLEM"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-05-31",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "claim_id": "TY-CL-002",
+      "id": "TY-CL-002",
+      "statement": "The company reports eight active design partners but no paid production contract.",
+      "source_id": "TY-SRC-DECK",
+      "locator": "p.11",
+      "epistemic_class": "asserted",
+      "value": 8,
+      "unit": "design partners",
+      "definition_id": "DEF-COMMERCIAL-TRACTION",
+      "period": "2026-05-31",
+      "perimeter": "All design partners",
+      "topic": "Commercial path",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-GTM"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-05-31",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "claim_id": "TY-CL-003",
+      "id": "TY-CL-003",
+      "statement": "Management states an 800 m effective diver classification radius in benign shallow-water conditions.",
+      "source_id": "TY-SRC-TR-TECH",
+      "locator": "TY-INT-TECH-1 · TY-UTT-001 · 00:21:52",
+      "epistemic_class": "asserted",
+      "value": 800,
+      "unit": "m",
+      "definition_id": "DEF-EFFECTIVE-RADIUS-DIVER",
+      "period": "2026-06-12",
+      "perimeter": "Diver target · benign shallow water · current node configuration",
+      "topic": "Technical performance",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-06-12",
+      "known_at": "2026-06-12T15:00:00Z",
+      "speaker_id": "TY-PER-CTO",
+      "interaction_id": "TY-INT-TECH-1",
+      "utterance_id": "TY-UTT-001",
+      "asserting_actor_id": "TY-PER-CTO",
+      "observation_of_statement_id": "TY-CL-004"
+    },
+    {
+      "claim_id": "TY-CL-004",
+      "id": "TY-CL-004",
+      "statement": "The technical transcript directly records that Arun Bedi stated the 800 m diver classification range.",
+      "source_id": "TY-SRC-TR-TECH",
+      "locator": "TY-INT-TECH-1 · TY-UTT-001 · 00:21:52",
+      "epistemic_class": "observed",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-SPEECH-ACT",
+      "period": "2026-06-12",
+      "perimeter": "Utterance attribution only",
+      "topic": "Interaction provenance",
+      "direction": "context",
+      "bears_on": [
+        "TYQ-PERFORMANCE"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-06-12",
+      "known_at": "2026-06-12T15:00:00Z",
+      "speaker_id": "TY-PER-CTO",
+      "interaction_id": "TY-INT-TECH-1",
+      "utterance_id": "TY-UTT-001",
+      "observed_speech_act": true,
+      "content_claim_id": "TY-CL-003"
+    },
+    {
+      "claim_id": "TY-CL-005",
+      "id": "TY-CL-005",
+      "statement": "A controlled basin test recorded 720 m classification range for a cooperative diver target under calm conditions.",
+      "source_id": "TY-SRC-LAB",
+      "locator": "Test 3 · table 5",
+      "epistemic_class": "observed",
+      "value": 720,
+      "unit": "m",
+      "definition_id": "DEF-EFFECTIVE-RADIUS-DIVER",
+      "period": "2026-07-03",
+      "perimeter": "Cooperative diver target · calm controlled basin · instrumented run",
+      "topic": "Technical performance",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-PERFORMANCE"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-07-03",
+      "known_at": "2026-07-06T11:00:00Z",
+      "measurement_method": "Instrumented controlled test"
+    },
+    {
+      "claim_id": "TY-CL-006",
+      "id": "TY-CL-006",
+      "statement": "The pilot operator describes a 12 hectare site and expects four nodes because one unit appears insufficient for all pens.",
+      "source_id": "TY-SRC-TR-PILOT",
+      "locator": "TY-INT-PILOT · TY-UTT-002 · 00:08:44",
+      "epistemic_class": "asserted",
+      "value": 4,
+      "unit": "nodes",
+      "definition_id": "DEF-PILOT-NODE-PLAN",
+      "period": "2026-08-18",
+      "perimeter": "Northhaven pilot site · current deployment understanding",
+      "topic": "Deployment economics",
+      "direction": "contradicts",
+      "bears_on": [
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z",
+      "speaker_id": "TY-PER-PILOT",
+      "interaction_id": "TY-INT-PILOT",
+      "utterance_id": "TY-UTT-002",
+      "asserting_actor_id": "TY-PER-PILOT",
+      "observation_of_statement_id": "TY-CL-007",
+      "site_area_ha": 12
+    },
+    {
+      "claim_id": "TY-CL-007",
+      "id": "TY-CL-007",
+      "statement": "The customer-reference transcript directly records Lea Moreau’s statement that the site is about 12 hectares and the pilot plan uses four nodes.",
+      "source_id": "TY-SRC-TR-PILOT",
+      "locator": "TY-INT-PILOT · TY-UTT-002 · 00:08:44",
+      "epistemic_class": "observed",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-SPEECH-ACT",
+      "period": "2026-08-18",
+      "perimeter": "Utterance attribution only",
+      "topic": "Interaction provenance",
+      "direction": "context",
+      "bears_on": [
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z",
+      "speaker_id": "TY-PER-PILOT",
+      "interaction_id": "TY-INT-PILOT",
+      "utterance_id": "TY-UTT-002",
+      "observed_speech_act": true,
+      "content_claim_id": "TY-CL-006"
+    },
+    {
+      "claim_id": "TY-CL-008",
+      "id": "TY-CL-008",
+      "statement": "The pilot has not run a controlled intrusion and cannot yet validate live alerts.",
+      "source_id": "TY-SRC-TR-PILOT",
+      "locator": "TY-INT-PILOT · TY-UTT-003 · 00:15:17",
+      "epistemic_class": "asserted",
+      "value": false,
+      "unit": "boolean",
+      "definition_id": "DEF-LIVE-ALERT-VALIDATED",
+      "period": "2026-08-18",
+      "perimeter": "Northhaven pilot · current configuration",
+      "topic": "Technical performance",
+      "direction": "contradicts",
+      "bears_on": [
+        "TYQ-PERFORMANCE"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z",
+      "speaker_id": "TY-PER-PILOT",
+      "interaction_id": "TY-INT-PILOT",
+      "utterance_id": "TY-UTT-003",
+      "asserting_actor_id": "TY-PER-PILOT",
+      "observation_of_statement_id": "TY-CL-009"
+    },
+    {
+      "claim_id": "TY-CL-009",
+      "id": "TY-CL-009",
+      "statement": "The customer-reference transcript directly records Lea Moreau saying that no controlled intrusion has yet validated alerts.",
+      "source_id": "TY-SRC-TR-PILOT",
+      "locator": "TY-INT-PILOT · TY-UTT-003 · 00:15:17",
+      "epistemic_class": "observed",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-SPEECH-ACT",
+      "period": "2026-08-18",
+      "perimeter": "Utterance attribution only",
+      "topic": "Interaction provenance",
+      "direction": "context",
+      "bears_on": [
+        "TYQ-PERFORMANCE"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z",
+      "speaker_id": "TY-PER-PILOT",
+      "interaction_id": "TY-INT-PILOT",
+      "utterance_id": "TY-UTT-003",
+      "observed_speech_act": true,
+      "content_claim_id": "TY-CL-008"
+    },
+    {
+      "claim_id": "TY-CL-010",
+      "id": "TY-CL-010",
+      "statement": "Company materials describe the pilot as delivering live intrusion alerts.",
+      "source_id": "TY-SRC-DECK",
+      "locator": "p.15",
+      "epistemic_class": "asserted",
+      "value": true,
+      "unit": "boolean",
+      "definition_id": "DEF-LIVE-ALERT-VALIDATED",
+      "period": "2026-05-31",
+      "perimeter": "Northhaven pilot",
+      "topic": "Technical performance",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-PERFORMANCE"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-05-31",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "claim_id": "TY-CL-011",
+      "id": "TY-CL-011",
+      "statement": "The pilot configuration still lacks the final solar-buoy power module.",
+      "source_id": "TY-SRC-TR-PILOT",
+      "locator": "00:19:03",
+      "epistemic_class": "asserted",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-PILOT-CONFIGURATION",
+      "period": "2026-08-18",
+      "perimeter": "Northhaven pilot",
+      "topic": "Deployment readiness",
+      "direction": "context",
+      "bears_on": [
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z",
+      "speaker_id": "TY-PER-PILOT",
+      "interaction_id": "TY-INT-PILOT"
+    },
+    {
+      "claim_id": "TY-CL-012",
+      "id": "TY-CL-012",
+      "statement": "The company claims the only modular near-shore stack spanning detection, classification and autonomous response.",
+      "source_id": "TY-SRC-DECK",
+      "locator": "p.8",
+      "epistemic_class": "asserted",
+      "value": true,
+      "unit": "boolean",
+      "definition_id": "DEF-CLOSED-LOOP-DIFFERENTIATION",
+      "period": "2026-05-31",
+      "perimeter": "Current product roadmap",
+      "topic": "Competitive durability",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-DIFFERENTIATION"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-05-31",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "claim_id": "TY-CL-013",
+      "id": "TY-CL-013",
+      "statement": "The autonomous response module has not completed an integrated sea trial and has no qualified hull partner.",
+      "source_id": "TY-SRC-LAB",
+      "locator": "Readiness appendix · p.18",
+      "epistemic_class": "observed",
+      "value": false,
+      "unit": "boolean",
+      "definition_id": "DEF-RESPONSE-MODULE-VALIDATED",
+      "period": "2026-07-03",
+      "perimeter": "Response module · integrated operating configuration",
+      "topic": "Technical readiness",
+      "direction": "contradicts",
+      "bears_on": [
+        "TYQ-DIFFERENTIATION"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-07-03",
+      "known_at": "2026-07-06T11:00:00Z"
+    },
+    {
+      "claim_id": "TY-CL-014",
+      "id": "TY-CL-014",
+      "statement": "The independent expert says large buyers often prefer integrated prime-contractor systems to avoid interface and liability risk.",
+      "source_id": "TY-SRC-TR-EXPERT",
+      "locator": "TY-INT-EXPERT · TY-UTT-005 · 00:27:24",
+      "epistemic_class": "asserted",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-BUYER-INTEGRATION-PREFERENCE",
+      "period": "2026-08-25",
+      "perimeter": "Large ports and public-security buyers",
+      "topic": "Commercial path",
+      "direction": "contradicts",
+      "bears_on": [
+        "TYQ-DIFFERENTIATION",
+        "TYQ-GTM"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z",
+      "speaker_id": "TY-PER-EXPERT",
+      "interaction_id": "TY-INT-EXPERT",
+      "utterance_id": "TY-UTT-005",
+      "asserting_actor_id": "TY-PER-EXPERT",
+      "observation_of_statement_id": "TY-CL-015"
+    },
+    {
+      "claim_id": "TY-CL-015",
+      "id": "TY-CL-015",
+      "statement": "The expert transcript directly records Jonas Klee’s statement about buyer preference for integrated prime systems.",
+      "source_id": "TY-SRC-TR-EXPERT",
+      "locator": "TY-INT-EXPERT · TY-UTT-005 · 00:27:24",
+      "epistemic_class": "observed",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-SPEECH-ACT",
+      "period": "2026-08-25",
+      "perimeter": "Utterance attribution only",
+      "topic": "Interaction provenance",
+      "direction": "context",
+      "bears_on": [
+        "TYQ-DIFFERENTIATION",
+        "TYQ-GTM"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z",
+      "speaker_id": "TY-PER-EXPERT",
+      "interaction_id": "TY-INT-EXPERT",
+      "utterance_id": "TY-UTT-005",
+      "observed_speech_act": true,
+      "content_claim_id": "TY-CL-014"
+    },
+    {
+      "claim_id": "TY-CL-016",
+      "id": "TY-CL-016",
+      "statement": "Management models annual field maintenance at €18,000 per node.",
+      "source_id": "TY-SRC-DECK",
+      "locator": "p.20",
+      "epistemic_class": "asserted",
+      "value": 18000,
+      "unit": "EUR/node/year",
+      "definition_id": "DEF-ANNUAL-MAINTENANCE-PER-NODE",
+      "period": "2026-05-31",
+      "perimeter": "Production deployment",
+      "topic": "Deployment economics",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-DEPLOYMENT"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-05-31",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "claim_id": "TY-CL-017",
+      "id": "TY-CL-017",
+      "statement": "The pilot site already has resident divers who can clean and inspect equipment during normal operations.",
+      "source_id": "TY-SRC-TR-PILOT",
+      "locator": "00:22:11",
+      "epistemic_class": "asserted",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-MAINTENANCE-OPERATING-CONTEXT",
+      "period": "2026-08-18",
+      "perimeter": "Northhaven pilot",
+      "topic": "Deployment economics",
+      "direction": "context",
+      "bears_on": [
+        "TYQ-DEPLOYMENT"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z",
+      "speaker_id": "TY-PER-PILOT",
+      "interaction_id": "TY-INT-PILOT"
+    },
+    {
+      "claim_id": "TY-CL-018",
+      "id": "TY-CL-018",
+      "statement": "The independent expert states that pilot-site maintenance conditions do not generalize to ports or cable routes without resident divers.",
+      "source_id": "TY-SRC-TR-EXPERT",
+      "locator": "TY-INT-EXPERT · TY-UTT-004 · 00:17:11",
+      "epistemic_class": "asserted",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-MAINTENANCE-OPERATING-CONTEXT",
+      "period": "2026-08-25",
+      "perimeter": "Ports and cable landings without resident divers",
+      "topic": "Deployment economics",
+      "direction": "contradicts",
+      "bears_on": [
+        "TYQ-DEPLOYMENT"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z",
+      "speaker_id": "TY-PER-EXPERT",
+      "interaction_id": "TY-INT-EXPERT",
+      "utterance_id": "TY-UTT-004",
+      "asserting_actor_id": "TY-PER-EXPERT",
+      "observation_of_statement_id": "TY-CL-019"
+    },
+    {
+      "claim_id": "TY-CL-019",
+      "id": "TY-CL-019",
+      "statement": "The expert transcript directly records Jonas Klee’s maintenance-context warning.",
+      "source_id": "TY-SRC-TR-EXPERT",
+      "locator": "TY-INT-EXPERT · TY-UTT-004 · 00:17:11",
+      "epistemic_class": "observed",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-SPEECH-ACT",
+      "period": "2026-08-25",
+      "perimeter": "Utterance attribution only",
+      "topic": "Interaction provenance",
+      "direction": "context",
+      "bears_on": [
+        "TYQ-DEPLOYMENT"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z",
+      "speaker_id": "TY-PER-EXPERT",
+      "interaction_id": "TY-INT-EXPERT",
+      "utterance_id": "TY-UTT-004",
+      "observed_speech_act": true,
+      "content_claim_id": "TY-CL-018"
+    },
+    {
+      "claim_id": "TY-CL-020",
+      "id": "TY-CL-020",
+      "statement": "A public-security procurement path is usually 18-30 months even with an engaged operating sponsor.",
+      "source_id": "TY-SRC-TR-PROC",
+      "locator": "TY-INT-PROC · TY-UTT-006 · 00:12:22",
+      "epistemic_class": "asserted",
+      "value": 24,
+      "unit": "months midpoint",
+      "definition_id": "DEF-PUBLIC-PROCUREMENT-CYCLE",
+      "period": "2026-08-20",
+      "perimeter": "European public-security buyers",
+      "topic": "Commercial path",
+      "direction": "contradicts",
+      "bears_on": [
+        "TYQ-GTM",
+        "TYQ-RUNWAY"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-20",
+      "known_at": "2026-08-21T08:45:00Z",
+      "speaker_id": "TY-PER-PROC",
+      "interaction_id": "TY-INT-PROC",
+      "utterance_id": "TY-UTT-006",
+      "asserting_actor_id": "TY-PER-PROC",
+      "observation_of_statement_id": "TY-CL-021"
+    },
+    {
+      "claim_id": "TY-CL-021",
+      "id": "TY-CL-021",
+      "statement": "The procurement transcript directly records Sofia Marin’s 18-30 month cycle estimate.",
+      "source_id": "TY-SRC-TR-PROC",
+      "locator": "TY-INT-PROC · TY-UTT-006 · 00:12:22",
+      "epistemic_class": "observed",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-SPEECH-ACT",
+      "period": "2026-08-20",
+      "perimeter": "Utterance attribution only",
+      "topic": "Interaction provenance",
+      "direction": "context",
+      "bears_on": [
+        "TYQ-GTM",
+        "TYQ-RUNWAY"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-20",
+      "known_at": "2026-08-21T08:45:00Z",
+      "speaker_id": "TY-PER-PROC",
+      "interaction_id": "TY-INT-PROC",
+      "utterance_id": "TY-UTT-006",
+      "observed_speech_act": true,
+      "content_claim_id": "TY-CL-020"
+    },
+    {
+      "claim_id": "TY-CL-022",
+      "id": "TY-CL-022",
+      "statement": "The company has €3.84m cash and a normalized monthly burn of €0.24m before the new round.",
+      "source_id": "TY-SRC-FIN",
+      "locator": "Cash!B12 / Burn!F18",
+      "epistemic_class": "observed",
+      "value": 3.84,
+      "unit": "EURm cash",
+      "definition_id": "DEF-CASH-AND-BURN",
+      "period": "2026-07-31",
+      "perimeter": "Tethys Marine Systems consolidated",
+      "topic": "Financing and milestones",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-RUNWAY"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-07-31",
+      "known_at": "2026-08-03T08:30:00Z",
+      "cash_eur_m": 3.84,
+      "burn_eur_m": 0.24
+    },
+    {
+      "claim_id": "TY-CL-023",
+      "id": "TY-CL-023",
+      "statement": "Management is seeking €4.5m at an €18.0m pre-money valuation.",
+      "source_id": "TY-SRC-FIN",
+      "locator": "Round!B3:B5",
+      "epistemic_class": "asserted",
+      "value": 4.5,
+      "unit": "EURm new money",
+      "definition_id": "DEF-SEED-ROUND-TERMS",
+      "period": "2026-07-31",
+      "perimeter": "Primary preferred seed round",
+      "topic": "Round structure",
+      "direction": "context",
+      "bears_on": [
+        "TYQ-OWNERSHIP",
+        "TYQ-RUNWAY"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-07-31",
+      "known_at": "2026-08-03T08:30:00Z",
+      "pre_money_eur_m": 18.0
+    },
+    {
+      "claim_id": "TY-CL-024",
+      "id": "TY-CL-024",
+      "statement": "The fully diluted cap table before the round is founders 72%, employees 12%, existing investors 16%.",
+      "source_id": "TY-SRC-FIN",
+      "locator": "Cap Table!H22:H24",
+      "epistemic_class": "observed",
+      "value": 72,
+      "unit": "% founder ownership",
+      "definition_id": "DEF-PRE-ROUND-CAP-TABLE",
+      "period": "2026-07-31",
+      "perimeter": "Fully diluted ownership",
+      "topic": "Round structure",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-OWNERSHIP"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-07-31",
+      "known_at": "2026-08-03T08:30:00Z"
+    },
+    {
+      "claim_id": "TY-CL-025",
+      "id": "TY-CL-025",
+      "statement": "The technical founders have directly led three instrumented marine deployments.",
+      "source_id": "TY-SRC-TR-TECH",
+      "locator": "00:05:40",
+      "epistemic_class": "asserted",
+      "value": 3,
+      "unit": "deployments",
+      "definition_id": "DEF-TEAM-TECHNICAL-EXECUTION",
+      "period": "2026-06-12",
+      "perimeter": "Founder team",
+      "topic": "Team",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-TEAM"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-06-12",
+      "known_at": "2026-06-12T15:00:00Z"
+    },
+    {
+      "claim_id": "TY-CL-026",
+      "id": "TY-CL-026",
+      "statement": "The company has no senior commercial leader with public-security procurement experience.",
+      "source_id": "TY-SRC-DECK",
+      "locator": "Team · p.23",
+      "epistemic_class": "observed",
+      "value": false,
+      "unit": "role filled",
+      "definition_id": "DEF-TEAM-COMMERCIAL-GAP",
+      "period": "2026-05-31",
+      "perimeter": "Current leadership team",
+      "topic": "Team",
+      "direction": "contradicts",
+      "bears_on": [
+        "TYQ-TEAM",
+        "TYQ-GTM"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-05-31",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "claim_id": "TY-CL-027",
+      "id": "TY-CL-027",
+      "statement": "Export-control classification and buyer-country restrictions have not been determined for the current sensor stack.",
+      "source_id": "TY-SRC-DECK",
+      "locator": "Risk register · p.28",
+      "epistemic_class": "asserted",
+      "value": "UNDETERMINED",
+      "unit": "status",
+      "definition_id": "DEF-EXPORT-CONTROL-STATUS",
+      "period": "2026-05-31",
+      "perimeter": "Current sensor and classification software",
+      "topic": "Regulatory and security",
+      "direction": "contradicts",
+      "bears_on": [
+        "TYQ-REGULATORY"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-05-31",
+      "known_at": "2026-06-04T09:00:00Z"
+    },
+    {
+      "claim_id": "TY-CL-028",
+      "id": "TY-CL-028",
+      "statement": "The pilot letter of intent is non-binding and contains no deployment or purchase date.",
+      "source_id": "TY-SRC-TR-PILOT",
+      "locator": "Reference notes · commercial section",
+      "epistemic_class": "observed",
+      "value": false,
+      "unit": "binding commitment",
+      "definition_id": "DEF-CUSTOMER-COMMITMENT",
+      "period": "2026-08-18",
+      "perimeter": "Northhaven pilot",
+      "topic": "Commercial path",
+      "direction": "contradicts",
+      "bears_on": [
+        "TYQ-GTM"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z"
+    },
+    {
+      "claim_id": "TY-CL-029",
+      "id": "TY-CL-029",
+      "statement": "A €1.2m public innovation grant is conditional on an integrated sea trial by 31 March 2027.",
+      "source_id": "TY-SRC-FIN",
+      "locator": "Grant!B7:B11",
+      "epistemic_class": "attested",
+      "value": 1.2,
+      "unit": "EURm conditional grant",
+      "definition_id": "DEF-CONDITIONAL-GRANT",
+      "period": "2026-07-31",
+      "perimeter": "Tethys Marine Systems",
+      "topic": "Financing and milestones",
+      "direction": "supports",
+      "bears_on": [
+        "TYQ-RUNWAY",
+        "TYQ-PERFORMANCE"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-07-31",
+      "known_at": "2026-08-03T08:30:00Z"
+    },
+    {
+      "claim_id": "TY-CL-030",
+      "id": "TY-CL-030",
+      "statement": "The fund’s pre-IC requires a controlled sea trial before any external term-sheet act.",
+      "source_id": "TY-SRC-IC",
+      "locator": "TY-INT-IC · TY-UTT-007 · 00:13:30",
+      "epistemic_class": "institutional_act",
+      "value": null,
+      "unit": null,
+      "definition_id": "DEF-FUND-TECHNICAL-GATE",
+      "period": "2026-08-26",
+      "perimeter": "Project Tethys decision lens",
+      "topic": "Fund lens",
+      "direction": "context",
+      "bears_on": [
+        "TYQ-PERFORMANCE",
+        "TYQ-OWNERSHIP"
+      ],
+      "position_ids": [],
+      "review_status": "ADMITTED",
+      "ground_truth_flag": false,
+      "validation_only": false,
+      "effective_date": "2026-08-26",
+      "known_at": "2026-08-26T17:30:00Z",
+      "speaker_id": "USR-PARTNER",
+      "interaction_id": "TY-INT-IC",
+      "utterance_id": "TY-UTT-007"
+    }
+  ],
+  "derivation_specs": [
+    {
+      "derivation_spec_id": "TY-DER-SPEC-NOMINAL-AREA",
+      "label": "Nominal coverage area from stated radius",
+      "method_type": "CIRCLE_AREA",
+      "input_claim_ids": [
+        "TY-CL-003"
+      ],
+      "parameters": {
+        "radius_claim_id": "TY-CL-003",
+        "output_unit": "hectares"
+      },
+      "formula": "pi * (radius_m / 1000)^2 * 100",
+      "output_definition_id": "DEF-NOMINAL-COVERAGE-AREA",
+      "period": "2026-06-12",
+      "perimeter": "Diver target · benign shallow water",
+      "question_ids": [
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT"
+      ],
+      "effective_date": "2026-06-12",
+      "known_at": "2026-08-19T10:30:00Z",
+      "derivation_id": "TY-DER-NOMINAL-AREA",
+      "assumptions": [
+        "Circular unobstructed geometry",
+        "Nominal range is a radius",
+        "No overlap or environmental loss"
+      ]
+    },
+    {
+      "derivation_spec_id": "TY-DER-SPEC-IMPLIED-RADIUS",
+      "label": "Implied radius from pilot area and node plan",
+      "method_type": "IMPLIED_RADIUS_FROM_AREA_AND_NODE_COUNT",
+      "input_claim_ids": [
+        "TY-CL-006"
+      ],
+      "parameters": {
+        "site_area_ha": 12,
+        "node_count": 4,
+        "output_unit": "m"
+      },
+      "formula": "sqrt((site_area_ha / node_count / 100) / pi) * 1000",
+      "output_definition_id": "DEF-EFFECTIVE-RADIUS-DIVER",
+      "period": "2026-08-18",
+      "perimeter": "Northhaven pilot · current deployment understanding",
+      "question_ids": [
+        "TYQ-PERFORMANCE",
+        "TYQ-DEPLOYMENT"
+      ],
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z",
+      "derivation_id": "TY-DER-IMPLIED-RADIUS",
+      "assumptions": [
+        "Equal non-overlapping circular coverage",
+        "Node count reflects effective coverage rather than redundancy",
+        "Site area is accurate"
+      ]
+    },
+    {
+      "derivation_spec_id": "TY-DER-SPEC-RUNWAY",
+      "label": "Pre-round runway from cash and burn",
+      "method_type": "RUNWAY_MONTHS",
+      "input_claim_ids": [
+        "TY-CL-022"
+      ],
+      "parameters": {
+        "cash_eur_m": 3.84,
+        "burn_eur_m": 0.24,
+        "output_unit": "months"
+      },
+      "formula": "cash_eur_m / burn_eur_m",
+      "output_definition_id": "DEF-PRE-ROUND-RUNWAY",
+      "period": "From 2026-07-31",
+      "perimeter": "Company consolidated",
+      "question_ids": [
+        "TYQ-RUNWAY"
+      ],
+      "effective_date": "2026-07-31",
+      "known_at": "2026-08-03T08:30:00Z",
+      "derivation_id": "TY-DER-RUNWAY",
+      "assumptions": [
+        "Burn remains constant",
+        "No financing or grant receipts",
+        "No working-capital discontinuity"
+      ]
+    },
+    {
+      "derivation_spec_id": "TY-DER-SPEC-OWNERSHIP",
+      "label": "New investor ownership from pre-money and new money",
+      "method_type": "POST_MONEY_OWNERSHIP",
+      "input_claim_ids": [
+        "TY-CL-023"
+      ],
+      "parameters": {
+        "pre_money_eur_m": 18.0,
+        "new_money_eur_m": 4.5,
+        "output_unit": "%"
+      },
+      "formula": "new_money / (pre_money + new_money) * 100",
+      "output_definition_id": "DEF-NEW-INVESTOR-OWNERSHIP",
+      "period": "Proposed seed round",
+      "perimeter": "Fully diluted",
+      "question_ids": [
+        "TYQ-OWNERSHIP"
+      ],
+      "effective_date": "2026-07-31",
+      "known_at": "2026-08-03T08:30:00Z",
+      "derivation_id": "TY-DER-OWNERSHIP",
+      "assumptions": [
+        "No option-pool top-up",
+        "No convertibles or SAFE conversion",
+        "Fully diluted basis"
+      ]
+    }
+  ],
+  "discrepancy_rules": [
+    {
+      "rule_id": "TY-RULE-NUMERIC",
+      "type": "NUMERIC_INCOMPATIBILITY",
+      "definition_id": "DEF-EFFECTIVE-RADIUS-DIVER",
+      "comparison": "RATIO_GT",
+      "threshold": 2.0,
+      "dimensions": [
+        "target_class",
+        "environment",
+        "configuration",
+        "perimeter"
+      ],
+      "review_required": true,
+      "candidate_id": "TY-DISC-RADIUS",
+      "label": "Difficult-target range values are materially incompatible",
+      "reason": "The compiler proposes a discrepancy; a professional must determine whether the values truly share the same operating envelope.",
+      "confidence": "HIGH",
+      "aligned_dimensions": [
+        "target concept"
+      ],
+      "non_aligned_dimensions": [
+        "test environment",
+        "configuration",
+        "customer interpretation"
+      ],
+      "hypothesis_templates": [
+        "The nominal range may refer to controlled detection or classification rather than reliable customer-scale coverage.",
+        "The customer may be planning overlap, redundancy or a different target class.",
+        "Environmental noise, geometry or incomplete power configuration may reduce the effective range."
+      ]
+    },
+    {
+      "rule_id": "TY-RULE-BOOLEAN",
+      "type": "EXACT_CONTRADICTION",
+      "definition_id": "DEF-LIVE-ALERT-VALIDATED",
+      "comparison": "BOOLEAN_CONFLICT",
+      "review_required": true,
+      "candidate_id": "TY-DISC-LIVE-ALERT",
+      "label": "Pilot alert validation is represented as both true and false",
+      "reason": "The company deck and customer reference describe incompatible validation states.",
+      "confidence": "HIGH",
+      "hypothesis_templates": [
+        "The company may use 'live' to mean data streaming rather than validated intrusion alerts.",
+        "The deck may describe a later configuration than the customer has received."
+      ]
+    },
+    {
+      "rule_id": "TY-RULE-CONDITION",
+      "type": "CONDITIONAL_INVALIDATION",
+      "edge_relation": "CONDITIONS",
+      "review_required": true,
+      "candidate_id_prefix": "TY-DISC-COND",
+      "label": "A load-bearing position is invalid under its explicit condition",
+      "confidence": "DETERMINISTIC_EDGE",
+      "failed_statuses": [
+        "NOT_SATISFIED",
+        "FAILED"
+      ],
+      "hypothesis_templates": []
+    }
+  ],
+  "agent_missions": [
+    {
+      "mission_id": "TY-MISSION-PROCUREMENT",
+      "id": "TY-MISSION-PROCUREMENT",
+      "label": "Map public-security procurement path",
+      "mission_type": "PUBLIC_RESEARCH",
+      "objective": "Identify credible buyer, prime-contractor, budget and contracting routes for the first paid production deployment.",
+      "question_ids": [
+        "TYQ-GTM"
+      ],
+      "unknown_ids": [
+        "TY-UNK-004"
+      ],
+      "allowed_sources": [
+        "Official procurement portals",
+        "Prime-contractor announcements",
+        "Public budget documents"
+      ],
+      "prohibited_sources": [
+        "Confidential company names in external queries",
+        "Contacting buyers without authority"
+      ],
+      "confidential_context_policy": "REDACTED_PUBLIC_CONTEXT_ONLY",
+      "data_egress_policy": "No confidential deal text leaves PANTA",
+      "expected_output": "New public source pack with claim proposals",
+      "stop_condition": "Two independent public routes or explicit no-evidence result",
+      "authority_class": "READ_ONLY_POLICY_APPROVED",
+      "reviewer_id": "USR-ASSOCIATE",
+      "auto_executable_in_mock": true,
+      "external_human_contact": false,
+      "status": "READY",
+      "synthetic": true,
+      "no_external_effects": true,
+      "effective_date": "2026-08-20",
+      "known_at": "2026-08-21T08:45:00Z"
+    },
+    {
+      "mission_id": "TY-MISSION-MAINTENANCE",
+      "id": "TY-MISSION-MAINTENANCE",
+      "label": "Build independent maintenance cost range",
+      "mission_type": "PUBLIC_RESEARCH",
+      "objective": "Estimate maintenance logistics and cost for ports and cable routes without resident divers.",
+      "question_ids": [
+        "TYQ-DEPLOYMENT"
+      ],
+      "unknown_ids": [
+        "TY-UNK-003"
+      ],
+      "allowed_sources": [
+        "Public subsea maintenance tenders",
+        "Operator disclosures",
+        "Technical literature"
+      ],
+      "prohibited_sources": [
+        "Contacting customer or expert without authority"
+      ],
+      "confidential_context_policy": "GENERIC_TECHNICAL_QUERY_ONLY",
+      "data_egress_policy": "No company identifiers",
+      "expected_output": "Cost range and operating assumptions as proposed claims",
+      "stop_condition": "Three independent sources or explicit coverage limit",
+      "authority_class": "READ_ONLY_POLICY_APPROVED",
+      "reviewer_id": "TY-PER-TECH-PARTNER",
+      "auto_executable_in_mock": true,
+      "external_human_contact": false,
+      "status": "READY",
+      "synthetic": true,
+      "no_external_effects": true,
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z"
+    },
+    {
+      "mission_id": "TY-MISSION-SEA-TRIAL",
+      "id": "TY-MISSION-SEA-TRIAL",
+      "label": "Run controlled multi-target sea trial",
+      "mission_type": "PHYSICAL_TEST_AND_HUMAN_COORDINATION",
+      "objective": "Measure detection and classification range, false positives and response integration across declared target classes.",
+      "question_ids": [
+        "TYQ-PERFORMANCE",
+        "TYQ-DIFFERENTIATION"
+      ],
+      "unknown_ids": [
+        "TY-UNK-001",
+        "TY-UNK-002",
+        "TY-UNK-005"
+      ],
+      "allowed_sources": [
+        "Approved technical protocol",
+        "Company and customer test logs"
+      ],
+      "prohibited_sources": [
+        "Unapproved outreach",
+        "Unlogged test changes"
+      ],
+      "confidential_context_policy": "RESTRICTED",
+      "data_egress_policy": "Authority-gated coordination only",
+      "expected_output": "Controlled test report and instrumented raw data",
+      "stop_condition": "Pre-registered protocol completed or test declared invalid",
+      "authority_class": "EXTERNAL_EFFECT_REQUIRES_AUTHORITY",
+      "reviewer_id": "TY-PER-TECH-PARTNER",
+      "auto_executable_in_mock": false,
+      "external_human_contact": true,
+      "status": "PROPOSED",
+      "synthetic": true,
+      "no_external_effects": true,
+      "effective_date": "2026-08-26",
+      "known_at": "2026-08-26T17:30:00Z"
+    },
+    {
+      "mission_id": "TY-MISSION-EXPORT",
+      "id": "TY-MISSION-EXPORT",
+      "label": "Prepare export-control classification request",
+      "mission_type": "PROFESSIONAL_REQUEST",
+      "objective": "Determine classification, buyer-country restrictions and security accreditation path.",
+      "question_ids": [
+        "TYQ-REGULATORY"
+      ],
+      "unknown_ids": [
+        "TY-UNK-006"
+      ],
+      "allowed_sources": [
+        "Official regulations",
+        "Approved external counsel after authority"
+      ],
+      "prohibited_sources": [
+        "Filing or instructing counsel without authority"
+      ],
+      "confidential_context_policy": "RESTRICTED",
+      "data_egress_policy": "Human-approved external instruction only",
+      "expected_output": "Counsel memorandum as attested source",
+      "stop_condition": "Written classification and jurisdiction matrix",
+      "authority_class": "EXTERNAL_EFFECT_REQUIRES_AUTHORITY",
+      "reviewer_id": "USR-PARTNER",
+      "auto_executable_in_mock": false,
+      "external_human_contact": true,
+      "status": "PROPOSED",
+      "synthetic": true,
+      "no_external_effects": true,
+      "effective_date": "2026-08-26",
+      "known_at": "2026-08-26T17:30:00Z"
+    },
+    {
+      "mission_id": "TY-MISSION-RUNWAY",
+      "id": "TY-MISSION-RUNWAY",
+      "label": "Recompute delayed-milestone financing path",
+      "mission_type": "DETERMINISTIC_INTERNAL_ANALYSIS",
+      "objective": "Calculate bridge need, dilution and follow-on reserve under a six-month technical delay.",
+      "question_ids": [
+        "TYQ-RUNWAY",
+        "TYQ-OWNERSHIP"
+      ],
+      "unknown_ids": [
+        "TY-UNK-007"
+      ],
+      "allowed_sources": [
+        "Admitted cash, burn, round and milestone inputs"
+      ],
+      "prohibited_sources": [
+        "Inventing capital availability"
+      ],
+      "confidential_context_policy": "INTERNAL_ONLY",
+      "data_egress_policy": "No external data egress",
+      "expected_output": "Candidate financing scenario",
+      "stop_condition": "Scenario validates and is professionally reviewed",
+      "authority_class": "INTERNAL_AUTO_COMPUTE_REVIEW_REQUIRED",
+      "reviewer_id": "USR-ASSOCIATE",
+      "auto_executable_in_mock": true,
+      "external_human_contact": false,
+      "status": "READY",
+      "synthetic": true,
+      "no_external_effects": true,
+      "effective_date": "2026-08-26",
+      "known_at": "2026-08-26T17:30:00Z"
+    }
+  ],
+  "spine_change_proposals": [
+    {
+      "proposal_id": "TY-SPINE-001",
+      "id": "TY-SPINE-001",
+      "proposal_type": "PROMOTE",
+      "label": "Promote maintenance economics to a standalone underwriting question",
+      "reason": "Independent evidence shows the pilot’s resident-diver context may hide a structural maintenance burden not represented by the current deployment question.",
+      "source_object_ids": [
+        "TY-CL-017",
+        "TY-CL-018",
+        "TY-CL-019"
+      ],
+      "current_question_ids": [
+        "TYQ-DEPLOYMENT"
+      ],
+      "proposed_question": {
+        "id": "TYQ-MAINTENANCE",
+        "label": "Can the system be maintained economically in target customer environments without resident divers?",
+        "workstream": "Maintenance economics",
+        "origin": "COMPILER_CANDIDATE"
+      },
+      "binding_migration": {
+        "claim_ids": [
+          "TY-CL-016",
+          "TY-CL-017",
+          "TY-CL-018",
+          "TY-CL-019"
+        ],
+        "from_question_ids": [
+          "TYQ-DEPLOYMENT"
+        ],
+        "preserve_aliases": true
+      },
+      "affected_artifact_ids": [
+        "ART-TY-TECH",
+        "ART-TY-MEMO"
+      ],
+      "materiality": "LOAD_BEARING_SPINE_CHANGE",
+      "required_authority_level": "DEAL_PARTNER",
+      "status": "PROPOSED",
+      "effective_date": "2026-08-25",
+      "known_at": "2026-08-25T15:15:00Z"
+    }
+  ],
+  "condition_edges": [
+    {
+      "edge_id": "TY-EDGE-CLOSED-LOOP",
+      "relation": "CONDITIONS",
+      "from_condition_object_id": "TY-CL-013",
+      "to_position_id": "TY-CP-006",
+      "condition_definition": "The closed-loop differentiation position is valid only if the autonomous response module is operational in an integrated sea trial.",
+      "condition_status": "NOT_SATISFIED",
+      "failure_effect": "INVALIDATES_POSITION",
+      "effective_date": "2026-07-03",
+      "known_at": "2026-07-06T11:00:00Z"
+    },
+    {
+      "edge_id": "TY-EDGE-GRANT",
+      "relation": "CONDITIONS",
+      "from_condition_object_id": "TY-CL-029",
+      "to_position_id": "TY-CP-005",
+      "condition_definition": "The grant extends runway only if the integrated sea trial occurs by 31 March 2027.",
+      "condition_status": "OPEN",
+      "failure_effect": "REMOVES_FINANCING_INPUT",
+      "effective_date": "2026-07-31",
+      "known_at": "2026-08-03T08:30:00Z"
+    }
+  ],
+  "validation_envelopes": [
+    {
+      "validation_envelope_id": "TY-VE-DIVER",
+      "id": "TY-VE-DIVER",
+      "label": "Diver target · benign shallow water",
+      "question_id": "TYQ-PERFORMANCE",
+      "target_class": "Diver-sized target",
+      "environment": "Benign shallow water",
+      "configuration": "Current sensing node · controlled power",
+      "detection_range_m": 850,
+      "classification_range_m": 720,
+      "false_positive_rate": null,
+      "false_negative_rate": null,
+      "test_status": "CONTROLLED_ONLY",
+      "evidence_claim_ids": [
+        "TY-CL-003",
+        "TY-CL-005"
+      ],
+      "coverage_status": "PARTIAL",
+      "effective_date": "2026-07-03",
+      "known_at": "2026-07-06T11:00:00Z"
+    },
+    {
+      "validation_envelope_id": "TY-VE-PILOT",
+      "id": "TY-VE-PILOT",
+      "label": "Pilot farm · realistic operating configuration",
+      "question_id": "TYQ-PERFORMANCE",
+      "target_class": "Unscripted underwater intrusion",
+      "environment": "Operating aquaculture site",
+      "configuration": "Incomplete solar-buoy configuration",
+      "detection_range_m": null,
+      "classification_range_m": null,
+      "false_positive_rate": null,
+      "false_negative_rate": null,
+      "test_status": "NO_CONTROLLED_GROUND_TRUTH",
+      "evidence_claim_ids": [
+        "TY-CL-006",
+        "TY-CL-008",
+        "TY-CL-011"
+      ],
+      "coverage_status": "OPEN",
+      "effective_date": "2026-08-18",
+      "known_at": "2026-08-19T10:30:00Z"
+    },
+    {
+      "validation_envelope_id": "TY-VE-RESPONSE",
+      "id": "TY-VE-RESPONSE",
+      "label": "Autonomous response module · integrated sea trial",
+      "question_id": "TYQ-DIFFERENTIATION",
+      "target_class": "Target acquisition and response",
+      "environment": "Open-water integrated configuration",
+      "configuration": "Response module + qualified hull",
+      "detection_range_m": null,
+      "classification_range_m": null,
+      "false_positive_rate": null,
+      "false_negative_rate": null,
+      "test_status": "NOT_TESTED",
+      "evidence_claim_ids": [
+        "TY-CL-012",
+        "TY-CL-013"
+      ],
+      "coverage_status": "BLOCKED",
+      "effective_date": "2026-07-03",
+      "known_at": "2026-07-06T11:00:00Z"
+    }
+  ]
+}

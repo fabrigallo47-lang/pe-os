@@ -1,0 +1,6 @@
+(async function(){
+  'use strict';
+  const app=document.getElementById('app');
+  function chooser(){app.innerHTML=`<main class="mode-chooser"><section><span class="eyebrow">PANTA V20</span><h1>Choose an explicit system mode</h1><p>No synthetic projection is loaded unless you choose one. Connected never falls back to demo data.</p><div class="mode-grid"><a href="?mode=mock&actor=partner"><strong>Mock Connected</strong><span>Stateful synthetic API · source ingest · server-gated simulation · no external effects</span></a><a href="../launchers/OPEN_OFFLINE_DEMO.html"><strong>Offline Demo</strong><span>Explicit fixture · read/review only</span></a><a href="?mode=connected"><strong>Connected</strong><span>Live API only · no fixture fallback</span></a><a href="?mode=empty"><strong>Empty System</strong><span>Verify zero-data and unsupported-state behavior</span></a></div></section></main>`}
+  try{if(PantaStore.get().boot==='mode-selection'){chooser();return}await PantaActions.boot();PantaSelfTest.run()}catch(error){app.innerHTML=`<main class="fatal-state"><section><span class="eyebrow">CONNECTION / PROJECTION ERROR</span><h1>The requested mode could not be opened.</h1><p>${String(error.message||error)}</p><div class="button-row"><button onclick="location.reload()">Retry</button><a href="?">Choose another mode</a></div></section></main>`}
+})();

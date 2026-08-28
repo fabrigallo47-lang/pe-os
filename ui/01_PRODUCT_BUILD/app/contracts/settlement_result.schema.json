@@ -1,0 +1,252 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/settlement_result.schema.json",
+  "title": "PANTA Settlement Result",
+  "type": "object",
+  "properties": {
+    "settlement_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_state_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prior_state_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "current_state_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "approved_state_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "selected_change_ids": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1
+    },
+    "partial": {
+      "type": "boolean"
+    },
+    "blocked_components": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "component_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "member_ids": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "reason_code": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          },
+          "downstream_scope": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "resolvable_by": {
+            "type": "string"
+          },
+          "status": {
+            "enum": [
+              "BLOCKED",
+              "RESOLVED"
+            ]
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "component_id",
+          "member_ids",
+          "reason_code",
+          "reason",
+          "downstream_scope",
+          "status"
+        ]
+      }
+    },
+    "summary": {
+      "type": "string",
+      "minLength": 1
+    },
+    "replay_hash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "as_of_state_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "as_of_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "projection": {
+      "$ref": "frontend_projection.schema.json"
+    },
+    "context": {
+      "$ref": "experience_context.schema.json"
+    },
+    "registry": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "event_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "kind": {
+            "type": "string",
+            "minLength": 1
+          },
+          "label": {
+            "type": "string",
+            "minLength": 1
+          },
+          "detail": {
+            "type": "string"
+          },
+          "actor_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "actor_label": {
+            "type": "string"
+          },
+          "object_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "case_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "run_id": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "provenance": {
+            "type": "string"
+          },
+          "synthetic": {
+            "type": "boolean"
+          },
+          "epistemic_class": {
+            "enum": [
+              "asserted",
+              "observed",
+              "derived",
+              "attested",
+              "institutional_act"
+            ]
+          },
+          "timestamp": {
+            "type": "string",
+            "format": "date-time"
+          },
+          "source_state_id": {
+            "type": "string"
+          },
+          "result_state_id": {
+            "type": "string"
+          },
+          "effective_date": {
+            "type": "string",
+            "format": "date"
+          },
+          "known_at": {
+            "type": "string",
+            "format": "date-time"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "event_id",
+          "kind",
+          "label",
+          "actor_id",
+          "case_id",
+          "effective_date",
+          "known_at"
+        ]
+      }
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "settlement_id",
+    "case_id",
+    "run_id",
+    "candidate_state_id",
+    "prior_state_id",
+    "current_state_id",
+    "selected_change_ids",
+    "partial",
+    "summary",
+    "replay_hash",
+    "timestamp",
+    "effective_date",
+    "known_at",
+    "as_of_state_id",
+    "as_of_date"
+  ]
+}

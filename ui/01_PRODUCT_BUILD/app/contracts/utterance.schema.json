@@ -1,0 +1,76 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/utterance.schema.json",
+  "title": "PANTA V20 Utterance",
+  "type": "object",
+  "properties": {
+    "utterance_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "interaction_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "speaker_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "speaker_role": {
+      "type": "string"
+    },
+    "party": {
+      "type": "string"
+    },
+    "start_seconds": {
+      "type": "number",
+      "minimum": 0
+    },
+    "end_seconds": {
+      "type": "number",
+      "minimum": 0
+    },
+    "locator": {
+      "type": "string",
+      "minLength": 1
+    },
+    "verbatim_text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "normalized_text": {
+      "type": "string",
+      "minLength": 1
+    },
+    "attribution_confidence": {
+      "type": "string"
+    },
+    "text_status": {
+      "type": "string"
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "utterance_id",
+    "interaction_id",
+    "speaker_id",
+    "locator",
+    "verbatim_text",
+    "normalized_text",
+    "attribution_confidence",
+    "text_status",
+    "effective_date",
+    "known_at"
+  ]
+}

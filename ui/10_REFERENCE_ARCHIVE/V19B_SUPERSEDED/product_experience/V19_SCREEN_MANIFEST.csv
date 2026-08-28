@@ -1,0 +1,41 @@
+number,key,title,category,description,path
+1,Fund_Command,Fund Command,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/01_Fund_Command.png
+2,Deal_Command,Deal Command,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/02_Deal_Command.png
+3,Sources_Ingest,Sources Ingest,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/03_Sources_Ingest.png
+4,Ingest_Progress,Ingest Progress,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/04_Ingest_Progress.png
+5,Vault_Inbox,Vault Inbox,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/05_Vault_Inbox.png
+6,Source_Library,Source Library,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/06_Source_Library.png
+7,Claims_Explorer,Claims Explorer,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/07_Claims_Explorer.png
+8,Compiler_Review,Compiler Review,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/08_Compiler_Review.png
+9,Case_Setup_IC_Record,Case Setup IC Record,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/09_Case_Setup_IC_Record.png
+10,Work,Work,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/10_Work.png
+11,What_the_Deal_Rests_On,What the Deal Rests On,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/11_What_the_Deal_Rests_On.png
+12,Unknowns_Decision,Unknowns Decision,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/12_Unknowns_Decision.png
+13,Unknowns_Pipeline,Unknowns Pipeline,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/13_Unknowns_Pipeline.png
+14,Shadow_IC,Shadow IC,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/14_Shadow_IC.png
+15,Scenario_Lab,Scenario Lab,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/15_Scenario_Lab.png
+16,Artifacts,Artifacts,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/16_Artifacts.png
+17,Registry,Registry,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/17_Registry.png
+18,Causal_Replay,Causal Replay,PERSISTENT ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/18_Causal_Replay.png
+19,Object_Aperture_Claim_Basis,Object Aperture Claim Basis,CONTEXTUAL OVERLAY,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/19_Object_Aperture_Claim_Basis.png
+20,Object_Aperture_Claim_Action,Object Aperture Claim Action,CONTEXTUAL OVERLAY,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/20_Object_Aperture_Claim_Action.png
+21,Object_Aperture_Cell,Object Aperture Cell,CONTEXTUAL OVERLAY,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/21_Object_Aperture_Cell.png
+22,Object_Aperture_Source_PDF,Object Aperture Source PDF,CONTEXTUAL OVERLAY,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/22_Object_Aperture_Source_PDF.png
+23,Quick_Navigation,Quick Navigation,CONTEXTUAL OVERLAY,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/23_Quick_Navigation.png
+24,Change_Arrival,Change Arrival,TRANSIENT WORKFLOW,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/24_Change_Arrival.png
+25,Change_Review,Change Review,TRANSIENT WORKFLOW,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/25_Change_Review.png
+26,Change_Review_Editing,Change Review Editing,TRANSIENT WORKFLOW,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/26_Change_Review_Editing.png
+27,Change_Impact,Change Impact,TRANSIENT WORKFLOW,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/27_Change_Impact.png
+28,Action_Frontier,Action Frontier,TRANSIENT WORKFLOW,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/28_Action_Frontier.png
+29,Decision_Room_Active,Decision Room Active,GATED ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/04_GATED_ROOMS/29_Decision_Room_Active.png
+30,Execution_Room_Ready,Execution Room Ready,GATED ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/04_GATED_ROOMS/30_Execution_Room_Ready.png
+31,Execution_Room_Acknowledged,Execution Room Acknowledged,GATED ROOM,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/04_GATED_ROOMS/31_Execution_Room_Acknowledged.png
+32,Settled_State,Settled State,COMPLETION STATE,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/05_COMPLETION_STATES/32_Settled_State.png
+33,Decision_Blocked,Decision Blocked,MODE / BLOCKED / ERROR STATE,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/33_Decision_Blocked.png
+34,Empty_System,Empty System,MODE / BLOCKED / ERROR STATE,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/34_Empty_System.png
+35,Mode_Chooser,Mode Chooser,MODE / BLOCKED / ERROR STATE,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/35_Mode_Chooser.png
+36,Connected_Error,Connected Error,MODE / BLOCKED / ERROR STATE,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/36_Connected_Error.png
+37,Offline_Read_Only,Offline Read Only,MODE / BLOCKED / ERROR STATE,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/37_Offline_Read_Only.png
+38,Orion_Generalization,Orion Generalization,MODE / BLOCKED / ERROR STATE,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/38_Orion_Generalization.png
+39,Mobile_Read_Only,Mobile Read Only,MODE / BLOCKED / ERROR STATE,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/39_Mobile_Read_Only.png
+40,Claims_Filtered_AsOf,Claims Filtered AsOf,MODE / BLOCKED / ERROR STATE,Actual PANTA V19 interface screen captured from the runnable build.,03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/40_Claims_Filtered_AsOf.png

@@ -1,0 +1,16 @@
+{
+  "product": "PANTA Deal World",
+  "release": "V20",
+  "semantic_version": "20.0.0",
+  "release_date": "2026-08-27",
+  "base_release": "V19.B / 19.1.0",
+  "contract_version": "20.0",
+  "status": "complete synthetic venture-extension integration/demo build preserving V19.B integrity contracts",
+  "release_thesis": "One Live Investment Case kernel across buyout, growth and conversation-heavy early-stage venture diligence.",
+  "production_boundaries": [
+    "no production identity or enterprise RBAC",
+    "no real external effects or human outreach",
+    "no live autonomous research service",
+    "Fabri compiler/Case Store and Anto production runtime remain explicit integration boundaries"
+  ]
+}

@@ -1,0 +1,65 @@
+{
+  "section": "Output",
+  "results": [
+    {
+      "section": "Output",
+      "name": "Seven claim filters exist",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Output",
+      "name": "Sorting exists",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Output",
+      "name": "Pagination is explicit",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Output",
+      "name": "As-of state selector exists",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Output",
+      "name": "Aggregate members are clickable",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Output",
+      "name": "Search index is not capped at five",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Output",
+      "name": "Fake Lens selector removed",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Output",
+      "name": "Export and deep link actions exist",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Output",
+      "name": "Foundations preserve multiple values and perimeters",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Output",
+      "name": "Domain unknowns and pipeline review separated",
+      "status": "PASS",
+      "detail": "True"
+    }
+  ]
+}

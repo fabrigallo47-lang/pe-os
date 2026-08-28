@@ -1,0 +1,86 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/authority_record.schema.json",
+  "title": "PANTA Authority Record",
+  "type": "object",
+  "properties": {
+    "authority_record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "run_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "candidate_state_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "human_stop_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "course_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actor_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "actor_role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "artifact_hash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authority_verb": {
+      "type": "string",
+      "minLength": 1
+    },
+    "effect_type": {
+      "enum": [
+        "EXTERNAL_PACKAGE",
+        "INTERNAL",
+        "DEFER"
+      ]
+    },
+    "status": {
+      "const": "ATTESTED"
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "authority_record_id",
+    "run_id",
+    "candidate_state_id",
+    "human_stop_id",
+    "course_id",
+    "actor_id",
+    "actor_role",
+    "timestamp",
+    "effective_date",
+    "known_at",
+    "artifact_hash",
+    "authority_verb",
+    "effect_type",
+    "status"
+  ]
+}

@@ -1,0 +1,14 @@
+{
+  "release": "V19.B",
+  "distribution": {
+    "asserted": 10,
+    "attested": 14,
+    "derived": 18,
+    "institutional_act": 22,
+    "observed": 11
+  },
+  "institutional_act_count": 22,
+  "attested_count": 14,
+  "firm_acts_misclassified_as_attested": [],
+  "pass": true
+}

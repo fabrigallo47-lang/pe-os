@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/participant.schema.json",
+  "title": "PANTA V20 Participant",
+  "type": "object",
+  "properties": {
+    "participant_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "name": {
+      "type": "string",
+      "minLength": 1
+    },
+    "role": {
+      "type": "string"
+    },
+    "affiliation": {
+      "type": "string"
+    },
+    "party": {
+      "type": "string"
+    },
+    "independence_group": {
+      "type": "string"
+    },
+    "relationship": {
+      "type": "string"
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "name"
+  ],
+  "anyOf": [
+    {
+      "required": [
+        "participant_id"
+      ]
+    },
+    {
+      "required": [
+        "id"
+      ]
+    }
+  ]
+}

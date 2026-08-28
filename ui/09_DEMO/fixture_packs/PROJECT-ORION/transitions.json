@@ -1,0 +1,396 @@
+{
+  "retention_restatement": {
+    "schema_version": "transition-output-1.0",
+    "engine_version": "panta-transition-fixture/1.1.0",
+    "run_id": "OR-RUN-RETENTION_RESTATEMENT",
+    "case_id": "PROJECT-ORION",
+    "prior_state_id": "2026-08-24",
+    "policy_refs": {
+      "materiality_policy_id": "ORION-GROWTH-MATERIALITY-V1",
+      "authority_policy_id": "ORION-GROWTH-AUTHORITY-V1",
+      "canonical_graph_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "execution_mapping_hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+      "solver_config_hash": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+    },
+    "affected_set": [
+      {
+        "order": 1,
+        "object_id": "OR-CP-002",
+        "label": "Underwriting retention basis",
+        "disposition": "RECOMPUTES",
+        "before": "118% management NRR",
+        "after": "112% independent NRR",
+        "explanation": "The admitted cohort definition replaces the management presentation.",
+        "source_trace": "OR-CL-016"
+      },
+      {
+        "order": 2,
+        "object_id": "OR-MN-ARR-GROWTH",
+        "label": "Forward ARR growth",
+        "disposition": "RECOMPUTES",
+        "before": "38%",
+        "after": "34%",
+        "explanation": "Lower expansion and slower onboarding reduce the forward growth case.",
+        "source_trace": "OR-CL-016"
+      },
+      {
+        "order": 3,
+        "object_id": "ART-ORION-MODEL",
+        "label": "Growth operating model",
+        "disposition": "BECOMES_STALE",
+        "before": "V2",
+        "after": "V3 Candidate",
+        "explanation": "Retention, ARR and runway schedules require an updated branch.",
+        "source_trace": "OR-EVENT-RETENTION"
+      },
+      {
+        "order": 4,
+        "object_id": "ART-ORION-TERM",
+        "label": "Milestone-linked term sheet",
+        "disposition": "REQUIRES_AUTHORITY",
+        "before": "Single funding course",
+        "after": "Two milestone-linked tranches",
+        "explanation": "The revised retention basis changes the financing conditions.",
+        "source_trace": "OR-EVENT-RETENTION"
+      }
+    ],
+    "ordered_transitions": [
+      {
+        "order": 0,
+        "component_id": "OR-COMP-OR-CP-002",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "OR-CP-002"
+        ],
+        "result": "SETTLED"
+      },
+      {
+        "order": 1,
+        "component_id": "OR-COMP-OR-MN-ARR-GROWTH",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "OR-MN-ARR-GROWTH"
+        ],
+        "result": "SETTLED"
+      },
+      {
+        "order": 2,
+        "component_id": "OR-COMP-ART-ORION-MODEL",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "ART-ORION-MODEL"
+        ],
+        "result": "SETTLED"
+      },
+      {
+        "order": 3,
+        "component_id": "OR-COMP-ART-ORION-TERM",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "ART-ORION-TERM"
+        ],
+        "result": "PROVISIONAL"
+      }
+    ],
+    "rule_switches": [],
+    "recomputed_values": [
+      {
+        "order": 1,
+        "object_id": "OR-CP-002",
+        "label": "Underwriting retention basis",
+        "disposition": "RECOMPUTES",
+        "before": "118% management NRR",
+        "after": "112% independent NRR",
+        "explanation": "The admitted cohort definition replaces the management presentation.",
+        "source_trace": "OR-CL-016"
+      },
+      {
+        "order": 2,
+        "object_id": "OR-MN-ARR-GROWTH",
+        "label": "Forward ARR growth",
+        "disposition": "RECOMPUTES",
+        "before": "38%",
+        "after": "34%",
+        "explanation": "Lower expansion and slower onboarding reduce the forward growth case.",
+        "source_trace": "OR-CL-016"
+      }
+    ],
+    "unchanged_objects": [],
+    "human_stops": [
+      {
+        "stop_id": "OR-HS-RETENTION-ROUND",
+        "object_id": "ART-ORION-TERM",
+        "component_id": "OR-COMP-ART-ORION-TERM",
+        "reason_code": "DECISION_REQUIRES_HUMAN",
+        "requested_action": "ATTEST_COURSE",
+        "required_role": "AUTHORITY_HOLDER",
+        "required_authority_level": "INVESTMENT_COMMITTEE",
+        "policy_rule_id": "OR-AUTH-GROWTH-ROUND",
+        "downstream_scope": [
+          "ART-ORION-TERM",
+          "ART-ORION-MEMO"
+        ],
+        "authority_verb": "approve_growth_round",
+        "reason": "The retention restatement changes the size and milestone conditions of the growth financing.",
+        "status": "OPEN"
+      }
+    ],
+    "blocked_components": [],
+    "coverage_limits": [],
+    "invariant_checks": [
+      {
+        "check_id": "OR-INV-APPROVED",
+        "status": "PASS",
+        "reason_code": "APPROVED_FROZEN"
+      },
+      {
+        "check_id": "OR-INV-COVERAGE",
+        "status": "PASS",
+        "reason_code": "COVERAGE_DECLARED"
+      }
+    ],
+    "candidate_current_approved_delta": {
+      "candidate": {
+        "state_id": "OR-CAND-RETENTION_RESTATEMENT",
+        "status": "FULL"
+      },
+      "current": {
+        "state_id": "2026-08-24",
+        "status": "REVIEW_PENDING",
+        "mutation": "PENDING_ADOPTION"
+      },
+      "approved": {
+        "state_id": "2026-08-26",
+        "status": "UNCHANGED"
+      }
+    },
+    "partial_settlement_status": {
+      "candidate": "FULL",
+      "current": "REVIEW_PENDING",
+      "approved": "UNCHANGED"
+    },
+    "replay_hash": "sha256:49d88e8d73c72b5728bcd4621b708f1ff7c62c440e79c65d805da26e5bbc3b48",
+    "source_event_id": "OR-EVENT-RETENTION",
+    "candidate_state_id": "OR-CAND-RETENTION_RESTATEMENT",
+    "as_of_state_id": "2026-08-24",
+    "as_of_date": "2026-08-22",
+    "projection_id": "PROJ-ORION-V19B",
+    "status": "REVIEW_PENDING",
+    "artifact_change_sets": [
+      {
+        "artifact_id": "ART-ORION-MODEL",
+        "title": "Growth operating model",
+        "version_before": "V2",
+        "version_after": "V3 Candidate",
+        "status": "READY",
+        "changes": [
+          {
+            "label": "NRR basis",
+            "before": "118%",
+            "after": "112%"
+          },
+          {
+            "label": "FY2027 ARR",
+            "before": "$47.1m",
+            "after": "$45.2m"
+          }
+        ]
+      },
+      {
+        "artifact_id": "ART-ORION-MEMO",
+        "title": "Growth IC memorandum",
+        "version_before": "Pre-read",
+        "version_after": "Candidate addendum",
+        "status": "READY",
+        "passage_after": "Adopt 112% NRR and bind the second tranche to retention and onboarding milestones."
+      },
+      {
+        "artifact_id": "ART-ORION-TERM",
+        "title": "Milestone-linked growth term sheet",
+        "version_before": "Draft 2",
+        "version_after": "Draft 3 Candidate",
+        "status": "AUTHORITY_REQUIRED",
+        "changes": [
+          {
+            "label": "Funding structure",
+            "before": "Single funding",
+            "after": "Two tranches"
+          }
+        ]
+      }
+    ],
+    "policy_result": {
+      "materiality": "MATERIAL"
+    },
+    "effective_date": "2026-06-30",
+    "known_at": "2026-08-22T08:00:00Z"
+  },
+  "pipeline_coverage_gap": {
+    "schema_version": "transition-output-1.0",
+    "engine_version": "panta-transition-fixture/1.1.0",
+    "run_id": "OR-RUN-PIPELINE_COVERAGE_GAP",
+    "case_id": "PROJECT-ORION",
+    "prior_state_id": "2026-08-24",
+    "policy_refs": {
+      "materiality_policy_id": "ORION-GROWTH-MATERIALITY-V1",
+      "authority_policy_id": "ORION-GROWTH-AUTHORITY-V1",
+      "canonical_graph_hash": "sha256:4444444444444444444444444444444444444444444444444444444444444444",
+      "execution_mapping_hash": "sha256:5555555555555555555555555555555555555555555555555555555555555555",
+      "solver_config_hash": "sha256:6666666666666666666666666666666666666666666666666666666666666666"
+    },
+    "affected_set": [
+      {
+        "order": 1,
+        "object_id": "OR-CL-028",
+        "label": "Renewal cohort coverage",
+        "disposition": "BECOMES_CONTESTED",
+        "before": "Complete CRM coverage",
+        "after": "Two cohorts missing",
+        "explanation": "The CRM export cannot ground the full renewal forecast.",
+        "source_trace": "OR-EVENT-PIPELINE-GAP"
+      },
+      {
+        "order": 2,
+        "object_id": "OR-MN-PIPELINE",
+        "label": "Qualified pipeline volume",
+        "disposition": "SURVIVES",
+        "before": "$18.2m ARR",
+        "after": "$18.2m ARR",
+        "explanation": "Pipeline volume is independent of the missing renewal records.",
+        "source_trace": "OR-CL-023"
+      },
+      {
+        "order": 3,
+        "object_id": "OR-MN-ARR-GROWTH",
+        "label": "Forward renewal component",
+        "disposition": "BLOCKED",
+        "before": "Modeled",
+        "after": "Blocked",
+        "explanation": "The renewal component cannot be calculated without the missing source records.",
+        "source_trace": "OR-CL-028"
+      }
+    ],
+    "ordered_transitions": [
+      {
+        "order": 0,
+        "component_id": "OR-COMP-OR-CL-028",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "OR-CL-028"
+        ],
+        "result": "SETTLED"
+      },
+      {
+        "order": 1,
+        "component_id": "OR-COMP-OR-MN-PIPELINE",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "OR-MN-PIPELINE"
+        ],
+        "result": "SETTLED"
+      },
+      {
+        "order": 2,
+        "component_id": "OR-COMP-OR-MN-ARR-GROWTH",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "OR-MN-ARR-GROWTH"
+        ],
+        "result": "BLOCKED"
+      }
+    ],
+    "rule_switches": [],
+    "recomputed_values": [],
+    "unchanged_objects": [
+      {
+        "order": 2,
+        "object_id": "OR-MN-PIPELINE",
+        "label": "Qualified pipeline volume",
+        "disposition": "SURVIVES",
+        "before": "$18.2m ARR",
+        "after": "$18.2m ARR",
+        "explanation": "Pipeline volume is independent of the missing renewal records.",
+        "source_trace": "OR-CL-023"
+      }
+    ],
+    "human_stops": [],
+    "blocked_components": [
+      {
+        "component_id": "OR-COMP-RENEWAL-FORECAST",
+        "member_ids": [
+          "OR-MN-ARR-GROWTH",
+          "ART-ORION-GTM"
+        ],
+        "reason_code": "MISSING_MODEL_DEPENDENCY",
+        "reason": "Two renewal cohorts have no admissible source route, so the affected renewal forecast cannot settle.",
+        "downstream_scope": [
+          "OR-MN-ARR-GROWTH",
+          "ART-ORION-GTM"
+        ],
+        "resolvable_by": "Ingest billing and customer-success records for the two cohorts.",
+        "status": "BLOCKED"
+      }
+    ],
+    "coverage_limits": [
+      {
+        "limit_id": "OR-LIMIT-001",
+        "reason_code": "MISSING_SOURCE_COVERAGE",
+        "effect": "Two renewal cohorts remain outside the mapped perimeter."
+      }
+    ],
+    "invariant_checks": [
+      {
+        "check_id": "OR-INV-APPROVED",
+        "status": "PASS",
+        "reason_code": "APPROVED_FROZEN"
+      },
+      {
+        "check_id": "OR-INV-COVERAGE",
+        "status": "PASS",
+        "reason_code": "COVERAGE_DECLARED"
+      }
+    ],
+    "candidate_current_approved_delta": {
+      "candidate": {
+        "state_id": "OR-CAND-PIPELINE_COVERAGE_GAP",
+        "status": "PARTIAL"
+      },
+      "current": {
+        "state_id": "2026-08-24",
+        "status": "PARTIAL",
+        "mutation": "PENDING_ADOPTION"
+      },
+      "approved": {
+        "state_id": "2026-08-26",
+        "status": "UNCHANGED"
+      }
+    },
+    "partial_settlement_status": {
+      "candidate": "PARTIAL",
+      "current": "PARTIAL",
+      "approved": "UNCHANGED"
+    },
+    "replay_hash": "sha256:1de57a4e615787fd68a25c59fe3d7f6de7ad902c4aa2cbc6a9af418c9363a928",
+    "source_event_id": "OR-EVENT-PIPELINE-GAP",
+    "candidate_state_id": "OR-CAND-PIPELINE_COVERAGE_GAP",
+    "as_of_state_id": "2026-08-24",
+    "as_of_date": "2026-08-24",
+    "projection_id": "PROJ-ORION-V19B",
+    "status": "PARTIAL",
+    "artifact_change_sets": [
+      {
+        "artifact_id": "ART-ORION-GTM",
+        "title": "Pipeline quality review",
+        "version_before": "V2",
+        "version_after": "V2 + coverage note",
+        "status": "READY",
+        "passage_after": "The renewal forecast is blocked for the uncovered cohorts; new-logo pipeline remains visible."
+      }
+    ],
+    "policy_result": {
+      "materiality": "LOCAL_BLOCK"
+    },
+    "effective_date": "2026-07-31",
+    "known_at": "2026-08-24T09:00:00Z"
+  }
+}

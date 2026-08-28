@@ -1,0 +1,65 @@
+{
+  "section": "Backend",
+  "results": [
+    {
+      "section": "Backend",
+      "name": "Question bindings exposed",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Backend",
+      "name": "Questions served in projection",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Backend",
+      "name": "Contradiction routes exposed",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Backend",
+      "name": "Admission is implemented",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Backend",
+      "name": "Replay is implemented and read-only",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Backend",
+      "name": "Compiler report, coverage and cell routes exist",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Backend",
+      "name": "Human inputs persist in session store",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Backend",
+      "name": "Ingest is asynchronous",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Backend",
+      "name": "Reset is not exposed as destructive product action",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Backend",
+      "name": "Session-scoped history exists",
+      "status": "PASS",
+      "detail": "True"
+    }
+  ]
+}

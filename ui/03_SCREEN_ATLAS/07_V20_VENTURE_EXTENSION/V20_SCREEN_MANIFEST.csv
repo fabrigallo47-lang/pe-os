@@ -1,0 +1,12 @@
+screen_number,file,title,surface_class,purpose,release,case,synthetic
+1,v20_01_deal_command.png,Deal Command - Venture Archetype,Persistent room,"Hierarchical venture grammar, governed Lens and decomposed decision criticality.",V20,PROJECT-TETHYS,True
+2,v20_02_interactions.png,Sources - Native Interactions,Persistent room,Speaker-level interaction and utterance provenance.,V20,PROJECT-TETHYS,True
+3,v20_03_utterance_aperture.png,Object Aperture - Utterance,Contextual overlay,Separates observed speech act from asserted content.,V20,PROJECT-TETHYS,True
+4,v20_04_compiler_review.png,Compiler Review - Venture Proposals,Persistent room,"Candidate discrepancies, deterministic derivations, AI hypotheses and spine change.",V20,PROJECT-TETHYS,True
+5,v20_05_validation_conditions.png,Foundations - Validation Envelopes,Persistent room,Target/environment/configuration coverage and explicit condition edges.,V20,PROJECT-TETHYS,True
+6,v20_06_unknowns_missions.png,Unknowns - Governed Missions,Persistent room,Mission authority classes and closure-value decomposition.,V20,PROJECT-TETHYS,True
+7,v20_07_venture_financing.png,Scenario Lab - Venture Financing,Persistent room,"Round, cap table, dilution, milestones and reserve.",V20,PROJECT-TETHYS,True
+8,v20_08_replay.png,Causal Replay - Venture Case,Persistent room,Event-derived bitemporal replay.,V20,PROJECT-TETHYS,True
+9,v20_09_human_stop.png,Change Impact - Human Stop,Transient workflow,Technical discrepancy requires scoped authority.,V20,PROJECT-TETHYS,True
+10,v20_10_blocked_component.png,Change Impact - Blocked Component,Transient workflow,Maintenance economics remain honestly blocked.,V20,PROJECT-TETHYS,True
+11,v20_11_mobile_read_review.png,Mobile Read/Review,Responsive state,Sub-768 venture review mode without compressed authority controls.,V20,PROJECT-TETHYS,True

@@ -1,0 +1,28 @@
+{
+  "fixture_pack_version": "20.0.0",
+  "case_id": "PROJECT-TETHYS",
+  "company": "Tethys Marine Systems",
+  "label": "Project Tethys Seed · synthetic venture/deep-tech",
+  "projection_file": "projection.json",
+  "transitions_file": "transitions.json",
+  "registry_file": "registry.json",
+  "synthetic": true,
+  "no_external_effects": true,
+  "default_actor_id": "USR-PARTNER",
+  "available_modes": [
+    "MOCK_CONNECTED",
+    "OFFLINE_DEMO"
+  ],
+  "contract_version": "20.0",
+  "release": "V20",
+  "case_type": "early_stage_venture",
+  "venture_grammar": true,
+  "stage_overlay": "pre_revenue_seed",
+  "sector_overlay": "deep_tech_maritime_security",
+  "structural_clone": false,
+  "generalization_evidence": true,
+  "bitemporal": true,
+  "replay_source": "REGISTRY_EVENTS",
+  "confidential_source_material": false,
+  "resynthesized": true
+}

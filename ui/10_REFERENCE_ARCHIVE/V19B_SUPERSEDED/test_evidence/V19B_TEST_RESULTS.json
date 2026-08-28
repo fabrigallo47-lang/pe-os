@@ -1,0 +1,373 @@
+{
+  "suite": "PANTA V19.B acceptance and regression suite",
+  "release": "19.1.0 / V19.B",
+  "started_at": "2026-08-27T15:23:34.306670Z",
+  "ended_at": "2026-08-27T15:23:41.483394Z",
+  "total": 22,
+  "passed": 22,
+  "failed": 0,
+  "status": "PASS",
+  "categories": {
+    "ORION_GENERALIZATION": {
+      "PASS": 2,
+      "FAIL": 0
+    },
+    "BITEMPORALITY": {
+      "PASS": 3,
+      "FAIL": 0
+    },
+    "EPISTEMIC_CLASS": {
+      "PASS": 1,
+      "FAIL": 0
+    },
+    "SCHEMAS_AND_ADAPTER": {
+      "PASS": 8,
+      "FAIL": 0
+    },
+    "TRANSITION_OBJECTS": {
+      "PASS": 3,
+      "FAIL": 0
+    },
+    "LANGUAGE_REGRESSION": {
+      "PASS": 1,
+      "FAIL": 0
+    },
+    "STATIC_RUNTIME": {
+      "PASS": 1,
+      "FAIL": 0
+    },
+    "MODE_HONESTY": {
+      "PASS": 1,
+      "FAIL": 0
+    },
+    "SETTLEMENT_INTEGRITY": {
+      "PASS": 1,
+      "FAIL": 0
+    },
+    "BROWSER_E2E": {
+      "PASS": 1,
+      "FAIL": 0
+    }
+  },
+  "scope_limit": "Tests the bundled V19.B product build, synthetic fixture packs, public schemas, pure engine-output adapter and stateful mock API. It does not certify production identity, enterprise persistence, external delivery, Fabri's production compiler, or Anto's separate frozen 22-case runtime implementation.",
+  "results": [
+    {
+      "name": "Orion normalized statement overlap is below 20%",
+      "category": "ORION_GENERALIZATION",
+      "status": "PASS",
+      "duration_ms": 0.36,
+      "evidence": {
+        "keystone_statements": 75,
+        "orion_statements": 42,
+        "identical": 0,
+        "overlap_ratio": 0.0
+      },
+      "error": null
+    },
+    {
+      "name": "Orion is a growth-equity case without LBO quantities",
+      "category": "ORION_GENERALIZATION",
+      "status": "PASS",
+      "duration_ms": 235.06,
+      "evidence": {
+        "banned_hits": [],
+        "growth_terms_present": [
+          "ARR",
+          "NRR",
+          "GRR",
+          "runway",
+          "burn multiple",
+          "onboarding",
+          "primary"
+        ],
+        "case_type": "growth_equity"
+      },
+      "error": null
+    },
+    {
+      "name": "Every fixture claim, source event and Registry entry is bitemporal",
+      "category": "BITEMPORALITY",
+      "status": "PASS",
+      "duration_ms": 0.64,
+      "evidence": {
+        "claims": 117,
+        "events": 4,
+        "registry": 26
+      },
+      "error": null
+    },
+    {
+      "name": "Replay fixtures contain no handwritten snapshots",
+      "category": "BITEMPORALITY",
+      "status": "PASS",
+      "duration_ms": 0.01,
+      "evidence": {
+        "Keystone": {
+          "fixture_snapshots": 0,
+          "registry_events": 17
+        },
+        "Orion": {
+          "fixture_snapshots": 0,
+          "registry_events": 9
+        }
+      },
+      "error": null
+    },
+    {
+      "name": "Institutional acts are a fifth class and never attested",
+      "category": "EPISTEMIC_CLASS",
+      "status": "PASS",
+      "duration_ms": 0.59,
+      "evidence": {
+        "distribution": {
+          "asserted": 10,
+          "derived": 18,
+          "institutional_act": 22,
+          "attested": 14,
+          "observed": 11
+        },
+        "firm_act_count": 17,
+        "firm_act_attested_violations": []
+      },
+      "error": null
+    },
+    {
+      "name": "All eight public contract schemas are structurally typed",
+      "category": "SCHEMAS_AND_ADAPTER",
+      "status": "PASS",
+      "duration_ms": 116.78,
+      "evidence": {
+        "schemas": [
+          "authority_record.schema.json",
+          "claim_review.schema.json",
+          "execution_package.schema.json",
+          "experience_context.schema.json",
+          "frontend_projection.schema.json",
+          "ingest_job.schema.json",
+          "settlement_result.schema.json",
+          "transition_result.schema.json"
+        ],
+        "schema_count": 8,
+        "untyped_properties": {}
+      },
+      "error": null
+    },
+    {
+      "name": "Both case projections validate with zero schema errors",
+      "category": "SCHEMAS_AND_ADAPTER",
+      "status": "PASS",
+      "duration_ms": 20.22,
+      "evidence": {
+        "validated": [
+          "PROJECT-KEYSTONE",
+          "PROJECT-ORION"
+        ],
+        "errors": 0
+      },
+      "error": null
+    },
+    {
+      "name": "All fixture transition outputs validate against the frozen-field schema",
+      "category": "SCHEMAS_AND_ADAPTER",
+      "status": "PASS",
+      "duration_ms": 5.26,
+      "evidence": {
+        "transition_outputs": 4,
+        "errors": 0
+      },
+      "error": null
+    },
+    {
+      "name": "Frozen engine output maps through a pure Python adapter",
+      "category": "SCHEMAS_AND_ADAPTER",
+      "status": "PASS",
+      "duration_ms": 4.92,
+      "evidence": {
+        "python_adapter": "PASS",
+        "output_schema_errors": 0,
+        "pure": true,
+        "frozen_fields": 18,
+        "integration_fields": 19
+      },
+      "error": null
+    },
+    {
+      "name": "Frozen engine output maps through the browser adapter",
+      "category": "SCHEMAS_AND_ADAPTER",
+      "status": "PASS",
+      "duration_ms": 30.33,
+      "evidence": {
+        "javascript_adapter": "PASS",
+        "output_schema_errors": 0,
+        "affected_set": 7
+      },
+      "error": null
+    },
+    {
+      "name": "Fixture data exercises Human Stop and blocked component objects",
+      "category": "TRANSITION_OBJECTS",
+      "status": "PASS",
+      "duration_ms": 0.01,
+      "evidence": {
+        "human_stops": 1,
+        "blocked_components": 1,
+        "human_stop_id": "OR-HS-RETENTION-ROUND",
+        "blocked_component_id": "OR-COMP-RENEWAL-FORECAST"
+      },
+      "error": null
+    },
+    {
+      "name": "Retired pricing terminology is absent",
+      "category": "LANGUAGE_REGRESSION",
+      "status": "PASS",
+      "duration_ms": 286.27,
+      "evidence": {
+        "text_hits": [],
+        "pdf_hits": [],
+        "replacement": "approved EV ceiling"
+      },
+      "error": null
+    },
+    {
+      "name": "Python and browser runtime files pass syntax checks",
+      "category": "STATIC_RUNTIME",
+      "status": "PASS",
+      "duration_ms": 865.79,
+      "evidence": {
+        "python_files": 2,
+        "javascript_files": [
+          "api.js",
+          "boot.js",
+          "constants.js",
+          "contracts.js",
+          "engine.js",
+          "projection_adapter.js",
+          "render.js",
+          "selftest.js",
+          "store.js"
+        ]
+      },
+      "error": null
+    },
+    {
+      "name": "Bundled server refuses fixture-backed Connected mode",
+      "category": "MODE_HONESTY",
+      "status": "PASS",
+      "duration_ms": 1.97,
+      "evidence": {
+        "status": 503,
+        "error_code": "CONNECTED_BACKEND_NOT_CONFIGURED"
+      },
+      "error": null
+    },
+    {
+      "name": "Any past date reconstructs knowledge and event-derived replay",
+      "category": "BITEMPORALITY",
+      "status": "PASS",
+      "duration_ms": 53.38,
+      "evidence": {
+        "early_claims": 6,
+        "late_claims": 42,
+        "replayed_event": "OR-REG-003",
+        "effective_date": "2026-06-30",
+        "known_at": "2026-07-18T10:00:00Z",
+        "invalid_date_status": 400
+      },
+      "error": null
+    },
+    {
+      "name": "Mock bootstrap context validates with zero errors",
+      "category": "SCHEMAS_AND_ADAPTER",
+      "status": "PASS",
+      "duration_ms": 29.68,
+      "evidence": {
+        "schema": "experience_context",
+        "errors": 0
+      },
+      "error": null
+    },
+    {
+      "name": "Ingest job and claim-review records validate with zero errors",
+      "category": "SCHEMAS_AND_ADAPTER",
+      "status": "PASS",
+      "duration_ms": 33.01,
+      "evidence": {
+        "ingest_job_errors": 0,
+        "claim_review_errors": 0,
+        "note_status": 201
+      },
+      "error": null
+    },
+    {
+      "name": "Human Stop settlement is server-refused without scoped authority",
+      "category": "TRANSITION_OBJECTS",
+      "status": "PASS",
+      "duration_ms": 102.54,
+      "evidence": {
+        "human_stop_id": "OR-HS-RETENTION-ROUND",
+        "authority_before_prepare_status": 409,
+        "wrong_candidate_status": 409,
+        "settlement_without_authority_status": 409,
+        "authority_record_schema_errors": 0,
+        "settlement_schema_errors": 0,
+        "settled_state_id": "STATE-6B88BB2B0379"
+      },
+      "error": null
+    },
+    {
+      "name": "Preparation rejects changes outside the transition output",
+      "category": "SETTLEMENT_INTEGRITY",
+      "status": "PASS",
+      "duration_ms": 109.08,
+      "evidence": {
+        "status": 409,
+        "error_code": "UNKNOWN_CHANGE_ID"
+      },
+      "error": null
+    },
+    {
+      "name": "Blocked scope requires explicit bounded partial settlement",
+      "category": "TRANSITION_OBJECTS",
+      "status": "PASS",
+      "duration_ms": 76.78,
+      "evidence": {
+        "blocked_component_id": "OR-COMP-RENEWAL-FORECAST",
+        "without_partial_status": 409,
+        "with_partial_status": 200,
+        "partial": true
+      },
+      "error": null
+    },
+    {
+      "name": "Course-specific external package validates and requires server acknowledgment",
+      "category": "SCHEMAS_AND_ADAPTER",
+      "status": "PASS",
+      "duration_ms": 144.36,
+      "evidence": {
+        "authority_schema_errors": 0,
+        "execution_package_schema_errors": 0,
+        "package_status": "ACCEPTED"
+      },
+      "error": null
+    },
+    {
+      "name": "Mapped transitions and bitemporal growth case render in the UI",
+      "category": "BROWSER_E2E",
+      "status": "PASS",
+      "duration_ms": 4493.06,
+      "evidence": {
+        "historical_claim_count": 6,
+        "scenario_growth_metrics": [
+          "ARR",
+          "NRR",
+          "Runway"
+        ],
+        "replay_event_derived": true,
+        "console_errors": [],
+        "human_stop_text": "HUMAN STOP · OR-HS-RETENTION-ROUND\nThe retention restatement changes the size and milestone conditions of the growth financing.\n\nAUTHORITY_HOLDER · approve_growth_round",
+        "blocked_component_text": "BLOCKED COMPONENT · OR-COMP-RENEWAL-FORECAST\nTwo renewal cohorts have no admissible source route, so the affected renewal forecast cannot settle.\n\nMISSING_MODEL_DEPENDENCY · Ingest billing and customer-success records for the two cohorts."
+      },
+      "error": null
+    }
+  ]
+}

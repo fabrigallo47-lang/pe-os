@@ -1,0 +1,112 @@
+[
+  {
+    "screen_number": 1,
+    "file": "v20_01_deal_command.png",
+    "title": "Deal Command - Venture Archetype",
+    "surface_class": "Persistent room",
+    "purpose": "Hierarchical venture grammar, governed Lens and decomposed decision criticality.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  },
+  {
+    "screen_number": 2,
+    "file": "v20_02_interactions.png",
+    "title": "Sources - Native Interactions",
+    "surface_class": "Persistent room",
+    "purpose": "Speaker-level interaction and utterance provenance.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  },
+  {
+    "screen_number": 3,
+    "file": "v20_03_utterance_aperture.png",
+    "title": "Object Aperture - Utterance",
+    "surface_class": "Contextual overlay",
+    "purpose": "Separates observed speech act from asserted content.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  },
+  {
+    "screen_number": 4,
+    "file": "v20_04_compiler_review.png",
+    "title": "Compiler Review - Venture Proposals",
+    "surface_class": "Persistent room",
+    "purpose": "Candidate discrepancies, deterministic derivations, AI hypotheses and spine change.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  },
+  {
+    "screen_number": 5,
+    "file": "v20_05_validation_conditions.png",
+    "title": "Foundations - Validation Envelopes",
+    "surface_class": "Persistent room",
+    "purpose": "Target/environment/configuration coverage and explicit condition edges.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  },
+  {
+    "screen_number": 6,
+    "file": "v20_06_unknowns_missions.png",
+    "title": "Unknowns - Governed Missions",
+    "surface_class": "Persistent room",
+    "purpose": "Mission authority classes and closure-value decomposition.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  },
+  {
+    "screen_number": 7,
+    "file": "v20_07_venture_financing.png",
+    "title": "Scenario Lab - Venture Financing",
+    "surface_class": "Persistent room",
+    "purpose": "Round, cap table, dilution, milestones and reserve.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  },
+  {
+    "screen_number": 8,
+    "file": "v20_08_replay.png",
+    "title": "Causal Replay - Venture Case",
+    "surface_class": "Persistent room",
+    "purpose": "Event-derived bitemporal replay.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  },
+  {
+    "screen_number": 9,
+    "file": "v20_09_human_stop.png",
+    "title": "Change Impact - Human Stop",
+    "surface_class": "Transient workflow",
+    "purpose": "Technical discrepancy requires scoped authority.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  },
+  {
+    "screen_number": 10,
+    "file": "v20_10_blocked_component.png",
+    "title": "Change Impact - Blocked Component",
+    "surface_class": "Transient workflow",
+    "purpose": "Maintenance economics remain honestly blocked.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  },
+  {
+    "screen_number": 11,
+    "file": "v20_11_mobile_read_review.png",
+    "title": "Mobile Read/Review",
+    "surface_class": "Responsive state",
+    "purpose": "Sub-768 venture review mode without compressed authority controls.",
+    "release": "V20",
+    "case": "PROJECT-TETHYS",
+    "synthetic": true
+  }
+]

@@ -1,0 +1,22 @@
+digraph G {
+  graph [rankdir=TB, bgcolor="transparent", pad="0.25", nodesep="0.3", ranksep="0.55"];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11, color="#446074", fillcolor="#13202c", fontcolor="#e9f1f5", margin="0.16,0.1"];
+  edge [color="#73bfd6", penwidth=1.4, arrowsize=0.7];
+  admitted [label="Admitted inputs\nclaims + semantic dimensions"];
+  discrepancy [label="Candidate discrepancy\ncomparison proposal; no truth change"];
+  derivation [label="Deterministic derivation\nformula + inputs + method hash"];
+  hypothesis [label="AI hypothesis\nexplanation proposal only"];
+  spine [label="Spine change proposal\ncreate / split / merge / promote"];
+  review [label="Professional / authority review"];
+  event [label="Admitted event"];
+  engine [label="Transition Engine\ndeterministic consequences"];
+  admitted -> discrepancy;
+  admitted -> derivation;
+  discrepancy -> hypothesis;
+  admitted -> spine;
+  discrepancy -> review;
+  derivation -> review;
+  hypothesis -> review;
+  spine -> review;
+  review -> event -> engine;
+}

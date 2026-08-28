@@ -1,0 +1,134 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/derivation.schema.json",
+  "title": "PANTA V20 Deterministic Derivation",
+  "type": "object",
+  "properties": {
+    "derivation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "statement": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method_type": {
+      "type": "string"
+    },
+    "formula": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input_claim_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "value": {
+      "type": [
+        "number",
+        "integer",
+        "string",
+        "boolean",
+        "null"
+      ]
+    },
+    "unit": {
+      "type": "string"
+    },
+    "definition_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "period": {
+      "type": "string"
+    },
+    "perimeter": {
+      "type": "string"
+    },
+    "question_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "bears_on": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "epistemic_class": {
+      "const": "derived"
+    },
+    "review_status": {
+      "enum": [
+        "PROPOSED",
+        "ADMITTED",
+        "EDITED",
+        "REJECTED",
+        "ACCEPTED"
+      ]
+    },
+    "propagation_eligible": {
+      "type": "boolean"
+    },
+    "method_version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method_hash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "source_trace": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "derivation_id",
+    "label",
+    "statement",
+    "method_type",
+    "formula",
+    "input_claim_ids",
+    "assumptions",
+    "value",
+    "unit",
+    "definition_id",
+    "question_ids",
+    "epistemic_class",
+    "review_status",
+    "propagation_eligible",
+    "method_version",
+    "method_hash",
+    "effective_date",
+    "known_at"
+  ]
+}

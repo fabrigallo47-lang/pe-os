@@ -1,0 +1,104 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/discrepancy_rule.schema.json",
+  "title": "PANTA V20 Candidate Discrepancy Rule",
+  "type": "object",
+  "properties": {
+    "rule_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "type": {
+      "enum": [
+        "NUMERIC_INCOMPATIBILITY",
+        "EXACT_CONTRADICTION",
+        "CONDITIONAL_INVALIDATION",
+        "DEFINITION_MISMATCH",
+        "PERIMETER_MISMATCH",
+        "TEMPORAL_SUPERSESSION",
+        "MAGNITUDE_ANOMALY"
+      ]
+    },
+    "definition_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "comparison": {
+      "type": "string"
+    },
+    "threshold": {
+      "type": "number"
+    },
+    "dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "review_required": {
+      "type": "boolean"
+    },
+    "candidate_id": {
+      "type": "string"
+    },
+    "candidate_id_prefix": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string"
+    },
+    "reason": {
+      "type": "string"
+    },
+    "confidence": {
+      "type": "string"
+    },
+    "aligned_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "non_aligned_dimensions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "edge_relation": {
+      "type": "string"
+    },
+    "failed_statuses": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "hypothesis_templates": {
+      "type": "array",
+      "items": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "object",
+            "additionalProperties": true
+          }
+        ]
+      }
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "rule_id",
+    "type",
+    "review_required"
+  ]
+}

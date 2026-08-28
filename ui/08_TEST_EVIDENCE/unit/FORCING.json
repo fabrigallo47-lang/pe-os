@@ -1,0 +1,41 @@
+{
+  "section": "Forcing",
+  "results": [
+    {
+      "section": "Forcing",
+      "name": "Scenario trajectory uses projected data",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Forcing",
+      "name": "Navigation consumes capability map",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Forcing",
+      "name": "Reviewables are data-driven",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Forcing",
+      "name": "Initial selection comes from projection",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Forcing",
+      "name": "Claim drawer has explicit object branch",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Forcing",
+      "name": "Registry and UI telemetry are separate",
+      "status": "PASS",
+      "detail": "True"
+    }
+  ]
+}

@@ -1,0 +1,167 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/experience_context.schema.json",
+  "title": "PANTA V20 Experience Context",
+  "type": "object",
+  "properties": {
+    "mode": {
+      "enum": [
+        "CONNECTED",
+        "MOCK_CONNECTED",
+        "OFFLINE_DEMO",
+        "EMPTY_SYSTEM"
+      ]
+    },
+    "action_capability": {
+      "enum": [
+        "READ_ONLY",
+        "SIMULATED",
+        "SIMULATED_SERVER",
+        "SERVER_GATED",
+        "UNAVAILABLE"
+      ]
+    },
+    "case_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projection_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "projection_hash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "as_of_state_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "as_of_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "authenticated_actor": {
+      "type": "object",
+      "properties": {
+        "actor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authority_verbs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "actor_id",
+        "role",
+        "authority_verbs"
+      ]
+    },
+    "viewer_projection": {
+      "enum": [
+        "associate",
+        "partner"
+      ]
+    },
+    "authority_assignments": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "actor_id": {
+            "type": "string",
+            "minLength": 1
+          },
+          "authority_level": {
+            "type": "string",
+            "minLength": 1
+          },
+          "verbs": {
+            "type": "array",
+            "items": {
+              "type": "string"
+            }
+          },
+          "active": {
+            "type": "boolean"
+          }
+        },
+        "additionalProperties": true,
+        "required": [
+          "actor_id",
+          "authority_level",
+          "verbs",
+          "active"
+        ]
+      }
+    },
+    "demo_session_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "no_external_effects": {
+      "type": "boolean"
+    },
+    "contract_version": {
+      "const": "20.0"
+    },
+    "run_id": {
+      "type": "string"
+    },
+    "candidate_state_id": {
+      "type": "string"
+    },
+    "human_stop_id": {
+      "anyOf": [
+        {
+          "type": "string"
+        },
+        {
+          "type": "null"
+        }
+      ]
+    },
+    "active_lens_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "mode",
+    "action_capability",
+    "case_id",
+    "projection_id",
+    "projection_hash",
+    "as_of_state_id",
+    "as_of_date",
+    "authenticated_actor",
+    "viewer_projection",
+    "authority_assignments",
+    "demo_session_id",
+    "synthetic",
+    "no_external_effects",
+    "contract_version",
+    "active_lens_id"
+  ]
+}

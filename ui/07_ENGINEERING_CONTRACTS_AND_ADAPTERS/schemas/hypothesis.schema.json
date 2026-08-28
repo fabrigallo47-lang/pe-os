@@ -1,0 +1,72 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/hypothesis.schema.json",
+  "title": "PANTA V20 AI Hypothesis Proposal",
+  "type": "object",
+  "properties": {
+    "hypothesis_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "discrepancy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "input_object_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "origin": {
+      "const": "AI_REASONING_PROPOSAL"
+    },
+    "review_status": {
+      "enum": [
+        "PROPOSED",
+        "ADMITTED",
+        "EDITED",
+        "REJECTED",
+        "ACCEPTED"
+      ]
+    },
+    "epistemic_class": {
+      "const": "asserted"
+    },
+    "propagation_eligible": {
+      "type": "boolean"
+    },
+    "automatic_truth_change": {
+      "const": false
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "hypothesis_id",
+    "label",
+    "discrepancy_id",
+    "input_object_ids",
+    "origin",
+    "review_status",
+    "epistemic_class",
+    "propagation_eligible",
+    "automatic_truth_change",
+    "effective_date",
+    "known_at"
+  ]
+}

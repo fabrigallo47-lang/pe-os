@@ -1,0 +1,12 @@
+Component,Purpose,Data owner,Key states
+Universal Shell,"Fund/deal orientation, mode, actor, as-of and rails",Frontend projection,"connected/mock/offline, loading, error"
+Source Center,Ingest and inspect source/compiler output,Compiler + Case Store,"queued, parsing, binding, validating, complete, failed"
+Question Spine,Decision-bearing question orientation,Live Investment Case,"working, current, approved"
+Object Aperture,Inspect one object without losing place,Projection + granular object routes,"basis, dependents, action, history"
+Change Review,Professional admission boundary,Compiler proposal + professional,"evidence, edit, reject, admit"
+Change Impact,Ordered transition projection,Transition Engine,"playing, complete, error"
+Action Frontier,Explicit downstream selection,Transition result,"none selected, partial, all"
+Decision Room,Authority gate,Policy/authority service,"blocked, active, attested"
+Execution Room,Externality boundary,Execution service,"draft, ready, sending, accepted, rejected, failed"
+Registry,Append-only institutional trace,Case Store,"human, system, authority, settlement"
+Causal Replay,Read-only as-of reconstruction,Event store/replay,"known, believed, approved, open"

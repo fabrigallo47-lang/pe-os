@@ -1,0 +1,77 @@
+{
+  "section": "Fixture",
+  "results": [
+    {
+      "section": "Fixture",
+      "name": "PROJECT-KEYSTONE uses V19 contract",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-KEYSTONE has bound claims",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-KEYSTONE has questions",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-KEYSTONE has inspectable cells",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-KEYSTONE has multi-value foundations",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-KEYSTONE separates pipeline issues",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-ORION uses V19 contract",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-ORION has bound claims",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-ORION has questions",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-ORION has inspectable cells",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-ORION has multi-value foundations",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Fixture",
+      "name": "PROJECT-ORION separates pipeline issues",
+      "status": "PASS",
+      "detail": "True"
+    }
+  ]
+}

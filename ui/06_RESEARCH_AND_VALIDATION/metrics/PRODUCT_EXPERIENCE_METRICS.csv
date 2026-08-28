@@ -1,0 +1,7 @@
+metric,target
+time_to_orient_seconds,30
+time_to_trace_claim_seconds,20
+state_comprehension_percent,90
+authority_comprehension_percent,95
+critical_task_completion_percent,85
+severe_trust_errors,0

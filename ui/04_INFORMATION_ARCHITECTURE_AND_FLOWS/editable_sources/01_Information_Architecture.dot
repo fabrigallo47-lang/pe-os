@@ -1,0 +1,13 @@
+digraph G { graph [bgcolor="#06131d",pad="0.25",nodesep="0.45",ranksep="0.65",fontname="DejaVu Sans",fontcolor="#e9f7f8"];
+node [shape=box,style="rounded,filled",fillcolor="#0b2633",color="#2c6978",fontname="DejaVu Sans",fontcolor="#e9f7f8",fontsize=11,penwidth=1.2,margin="0.14,0.10"];
+edge [color="#45d6df",fontname="DejaVu Sans",fontcolor="#a9d9de",fontsize=9,penwidth=1.3,arrowsize=0.7]; rankdir=TB;
+root[label="PANTA V19
+Investment Decision System",fillcolor="#103747",color="#45d6df"];
+persistent[label="Persistent rooms"]; overlay[label="Contextual overlay"]; workflow[label="Transient workflow"]; gated[label="Gated rooms",color="#d5a941"]; completion[label="Completion state",color="#58cf9f"];
+root->persistent;root->overlay;root->workflow;root->gated;root->completion;
+persistent->fund[label="Fund Command"];persistent->deal[label="Deal Command"];persistent->sources[label="Sources and Compiler"];persistent->work[label="Work"];persistent->found[label="What the Deal Rests On"];persistent->unknown[label="Unknowns / Pipeline Review"];persistent->shadow[label="Shadow IC"];persistent->scenario[label="Scenario Lab"];persistent->artifacts[label="Artifacts"];persistent->registry[label="Registry"];persistent->replay[label="Causal Replay"];
+overlay->aperture[label="Object Aperture"];
+workflow->arrival[label="Change Arrival"];workflow->review[label="Change Review"];workflow->impact[label="Change Impact"];workflow->frontier[label="Action Frontier"];
+gated->decision[label="Decision Room"];gated->execution[label="Execution Room"];
+completion->settled[label="Settled State"];
+}

@@ -1,0 +1,29 @@
+{
+  "section": "Core purity",
+  "results": [
+    {
+      "section": "Core purity",
+      "name": "No Keystone facts in connected core",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Core purity",
+      "name": "No fixture import in connected core",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Core purity",
+      "name": "Explicit three operating modes",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Core purity",
+      "name": "Connected has no silent fixture fallback",
+      "status": "PASS",
+      "detail": "True"
+    }
+  ]
+}

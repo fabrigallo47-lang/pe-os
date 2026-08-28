@@ -1,0 +1,397 @@
+{
+  "coverage_restatement": {
+    "schema_version": "transition-output-1.0",
+    "engine_version": "panta-transition-fixture/1.1.0",
+    "run_id": "TY-RUN-COVERAGE_RESTATEMENT",
+    "case_id": "PROJECT-TETHYS",
+    "prior_state_id": "TY-STATE-2026-08-26",
+    "policy_refs": {
+      "materiality_policy_id": "TY-VENTURE-MATERIALITY-V1",
+      "authority_policy_id": "TY-VENTURE-AUTHORITY-V1",
+      "canonical_graph_hash": "sha256:878e3c9233f9b58fb8e662dd442ada365b5d145060a517e30bc3d7d1c2d5825f",
+      "execution_mapping_hash": "sha256:5cf0fe138b62dd019b6fc58644abac2865f6ccce98a109832eb207bca13d8752",
+      "solver_config_hash": "sha256:753014c0e51db6a24ab5f15af075e162783bdba4b26352b02650b8d67f4e830e"
+    },
+    "affected_set": [
+      {
+        "order": 1,
+        "object_id": "TY-DISC-RADIUS",
+        "label": "Effective diver-range discrepancy",
+        "disposition": "BECOMES_CONTESTED",
+        "before": "800 m asserted / 720 m controlled",
+        "after": "~98 m implied pilot geometry also visible",
+        "explanation": "The same operating concept has materially incompatible values and perimeters that require professional review.",
+        "source_trace": "TY-DER-IMPLIED-RADIUS"
+      },
+      {
+        "order": 2,
+        "object_id": "TY-CP-002",
+        "label": "Difficult-target performance position",
+        "disposition": "REQUIRES_HUMAN",
+        "before": "Controlled-only support",
+        "after": "Material customer-scale discrepancy",
+        "explanation": "The investment gate cannot settle without authority over the remaining technical risk.",
+        "source_trace": "TY-EVENT-COVERAGE"
+      },
+      {
+        "order": 3,
+        "object_id": "TY-MN-RADIUS-NOMINAL",
+        "label": "Nominal range model input",
+        "disposition": "BECOMES_CONTESTED",
+        "before": "800 m",
+        "after": "800 m retained as asserted; pilot-implied range shown separately",
+        "explanation": "PANTA preserves both definitions rather than overwriting the management input.",
+        "source_trace": "TY-CL-003"
+      },
+      {
+        "order": 4,
+        "object_id": "ART-TY-TERM",
+        "label": "Milestone-linked term sheet",
+        "disposition": "REQUIRES_AUTHORITY",
+        "before": "Draft 1",
+        "after": "Controlled sea-trial condition required",
+        "explanation": "The external financing act must encode the technical evidence gate.",
+        "source_trace": "TY-EVENT-COVERAGE"
+      }
+    ],
+    "ordered_transitions": [
+      {
+        "order": 0,
+        "component_id": "TY-COMP-TY-DISC-RADIUS",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "TY-DISC-RADIUS"
+        ],
+        "result": "SETTLED"
+      },
+      {
+        "order": 1,
+        "component_id": "TY-COMP-TY-CP-002",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "TY-CP-002"
+        ],
+        "result": "PROVISIONAL"
+      },
+      {
+        "order": 2,
+        "component_id": "TY-COMP-TY-MN-RADIUS-NOMINAL",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "TY-MN-RADIUS-NOMINAL"
+        ],
+        "result": "SETTLED"
+      },
+      {
+        "order": 3,
+        "component_id": "TY-COMP-ART-TY-TERM",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "ART-TY-TERM"
+        ],
+        "result": "SETTLED"
+      }
+    ],
+    "rule_switches": [
+      {
+        "rule_id": "TY-RULE-SALE-TRIAL-GATE",
+        "object_id": "TY-CP-006",
+        "before": "Closed-loop differentiation active",
+        "after": "Condition not satisfied; position invalidated",
+        "reason": "Response module has no integrated sea trial",
+        "source_trace": "TY-EDGE-CLOSED-LOOP"
+      }
+    ],
+    "recomputed_values": [
+      {
+        "order": 3,
+        "object_id": "TY-MN-RADIUS-NOMINAL",
+        "label": "Nominal range model input",
+        "disposition": "BECOMES_CONTESTED",
+        "before": "800 m",
+        "after": "800 m retained as asserted; pilot-implied range shown separately",
+        "explanation": "PANTA preserves both definitions rather than overwriting the management input.",
+        "source_trace": "TY-CL-003"
+      }
+    ],
+    "unchanged_objects": [],
+    "human_stops": [
+      {
+        "stop_id": "TY-HS-SEED-TECH-GATE",
+        "object_id": "ART-TY-TERM",
+        "component_id": "TY-COMP-ART-TY-TERM",
+        "reason_code": "DECISION_REQUIRES_HUMAN",
+        "requested_action": "ATTEST_COURSE",
+        "required_role": "AUTHORITY_HOLDER",
+        "required_authority_level": "INVESTMENT_COMMITTEE",
+        "policy_rule_id": "TY-AUTH-SEED",
+        "downstream_scope": [
+          "ART-TY-TERM",
+          "ART-TY-MEMO",
+          "TY-CP-002"
+        ],
+        "authority_verb": "approve_seed_investment",
+        "reason": "The customer-scale range discrepancy changes whether and how the fund may issue a seed term sheet.",
+        "status": "OPEN"
+      }
+    ],
+    "blocked_components": [],
+    "coverage_limits": [],
+    "invariant_checks": [
+      {
+        "check_id": "TY-INV-APPROVED",
+        "status": "PASS",
+        "reason_code": "APPROVED_FROZEN"
+      },
+      {
+        "check_id": "TY-INV-COVERAGE",
+        "status": "PASS",
+        "reason_code": "COVERAGE_DECLARED"
+      }
+    ],
+    "candidate_current_approved_delta": {
+      "candidate": {
+        "state_id": "TY-CAND-COVERAGE",
+        "status": "FULL"
+      },
+      "current": {
+        "state_id": "TY-STATE-2026-08-26",
+        "status": "REVIEW_PENDING",
+        "mutation": "PENDING_ADOPTION"
+      },
+      "approved": {
+        "state_id": "TY-APPROVED-NONE",
+        "status": "UNCHANGED"
+      }
+    },
+    "partial_settlement_status": {
+      "candidate": "FULL",
+      "current": "REVIEW_PENDING",
+      "approved": "UNCHANGED"
+    },
+    "replay_hash": "sha256:b1abe00d84c2661da4c53a87df3aff04af8587db59240c10e6d304e36aeae644",
+    "source_event_id": "TY-EVENT-COVERAGE",
+    "candidate_state_id": "TY-CAND-COVERAGE",
+    "as_of_state_id": "TY-STATE-2026-08-26",
+    "as_of_date": "2026-08-19",
+    "projection_id": "PROJ-TETHYS-V20",
+    "status": "REVIEW_PENDING",
+    "artifact_change_sets": [
+      {
+        "artifact_id": "ART-TY-TECH",
+        "title": "Target and environment validation envelope",
+        "version_before": "V3",
+        "version_after": "V4 Candidate",
+        "status": "READY",
+        "changes": [
+          {
+            "label": "Pilot geometry",
+            "before": "Not represented",
+            "after": "~98 m implied effective radius candidate"
+          },
+          {
+            "label": "Validation status",
+            "before": "Controlled-only",
+            "after": "Controlled-only + customer discrepancy"
+          }
+        ]
+      },
+      {
+        "artifact_id": "ART-TY-MEMO",
+        "title": "Project Tethys seed IC memorandum",
+        "version_before": "Pre-IC",
+        "version_after": "Candidate addendum",
+        "status": "READY",
+        "passage_after": "The technical gate remains open. Any investment course must be milestone-linked to a controlled multi-target sea trial."
+      },
+      {
+        "artifact_id": "ART-TY-TERM",
+        "title": "Tethys seed term sheet",
+        "version_before": "Draft 1",
+        "version_after": "Draft 2 Candidate",
+        "status": "AUTHORITY_REQUIRED",
+        "changes": [
+          {
+            "label": "Technical tranche",
+            "before": "No binding test gate",
+            "after": "€1.5m released only after pre-registered sea-trial thresholds"
+          }
+        ]
+      }
+    ],
+    "policy_result": {
+      "materiality": "MATERIAL"
+    },
+    "effective_date": "2026-08-18",
+    "known_at": "2026-08-19T10:30:00Z"
+  },
+  "maintenance_gap": {
+    "schema_version": "transition-output-1.0",
+    "engine_version": "panta-transition-fixture/1.1.0",
+    "run_id": "TY-RUN-MAINTENANCE_GAP",
+    "case_id": "PROJECT-TETHYS",
+    "prior_state_id": "TY-STATE-2026-08-26",
+    "policy_refs": {
+      "materiality_policy_id": "TY-VENTURE-MATERIALITY-V1",
+      "authority_policy_id": "TY-VENTURE-AUTHORITY-V1",
+      "canonical_graph_hash": "sha256:878e3c9233f9b58fb8e662dd442ada365b5d145060a517e30bc3d7d1c2d5825f",
+      "execution_mapping_hash": "sha256:5cf0fe138b62dd019b6fc58644abac2865f6ccce98a109832eb207bca13d8752",
+      "solver_config_hash": "sha256:753014c0e51db6a24ab5f15af075e162783bdba4b26352b02650b8d67f4e830e"
+    },
+    "affected_set": [
+      {
+        "order": 1,
+        "object_id": "TY-CP-003",
+        "label": "Deployment and maintenance economics",
+        "disposition": "BLOCKED",
+        "before": "€18k/node/year management model",
+        "after": "Target-market maintenance economics blocked",
+        "explanation": "Pilot operating context has resident divers and cannot ground the target-market cost basis.",
+        "source_trace": "TY-CL-018"
+      },
+      {
+        "order": 2,
+        "object_id": "TY-MN-RUNWAY",
+        "label": "Runway excluding maintenance expansion",
+        "disposition": "SURVIVES",
+        "before": "16 months pre-round",
+        "after": "16 months pre-round",
+        "explanation": "Current corporate runway remains visible, while target-deployment economics are blocked.",
+        "source_trace": "TY-CL-022"
+      },
+      {
+        "order": 3,
+        "object_id": "ART-TY-MEMO",
+        "label": "Venture IC memorandum",
+        "disposition": "BECOMES_STALE",
+        "before": "Pilot maintenance assumption carried forward",
+        "after": "Coverage limitation required",
+        "explanation": "The memo must stop extrapolating pilot maintenance to ports and cable routes.",
+        "source_trace": "TY-EVENT-MAINTENANCE"
+      }
+    ],
+    "ordered_transitions": [
+      {
+        "order": 0,
+        "component_id": "TY-COMP-TY-CP-003",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "TY-CP-003"
+        ],
+        "result": "BLOCKED"
+      },
+      {
+        "order": 1,
+        "component_id": "TY-COMP-TY-MN-RUNWAY",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "TY-MN-RUNWAY"
+        ],
+        "result": "SETTLED"
+      },
+      {
+        "order": 2,
+        "component_id": "TY-COMP-ART-TY-MEMO",
+        "component_type": "ACYCLIC",
+        "member_ids": [
+          "ART-TY-MEMO"
+        ],
+        "result": "SETTLED"
+      }
+    ],
+    "rule_switches": [],
+    "recomputed_values": [],
+    "unchanged_objects": [
+      {
+        "order": 2,
+        "object_id": "TY-MN-RUNWAY",
+        "label": "Runway excluding maintenance expansion",
+        "disposition": "SURVIVES",
+        "before": "16 months pre-round",
+        "after": "16 months pre-round",
+        "explanation": "Current corporate runway remains visible, while target-deployment economics are blocked.",
+        "source_trace": "TY-CL-022"
+      }
+    ],
+    "human_stops": [],
+    "blocked_components": [
+      {
+        "component_id": "TY-COMP-MAINTENANCE-ECONOMICS",
+        "member_ids": [
+          "TY-CP-003",
+          "ART-TY-TECH"
+        ],
+        "reason_code": "NON_TRANSFERABLE_EVIDENCE_CONTEXT",
+        "reason": "The only operating evidence includes resident divers, so maintenance cost for ports and cable routes has no admissible independent source route.",
+        "downstream_scope": [
+          "TY-CP-003",
+          "ART-TY-TECH",
+          "ART-TY-MEMO"
+        ],
+        "resolvable_by": "Independent port or cable-route maintenance estimate, tender or controlled operating plan.",
+        "status": "BLOCKED"
+      }
+    ],
+    "coverage_limits": [
+      {
+        "limit_id": "TY-LIMIT-MAINTENANCE",
+        "reason_code": "TARGET_ENVIRONMENT_UNCOVERED",
+        "effect": "Pilot maintenance evidence cannot be generalized beyond aquaculture sites with resident divers."
+      }
+    ],
+    "invariant_checks": [
+      {
+        "check_id": "TY-INV-APPROVED",
+        "status": "PASS",
+        "reason_code": "APPROVED_FROZEN"
+      },
+      {
+        "check_id": "TY-INV-COVERAGE",
+        "status": "PASS",
+        "reason_code": "COVERAGE_DECLARED"
+      }
+    ],
+    "candidate_current_approved_delta": {
+      "candidate": {
+        "state_id": "TY-CAND-MAINTENANCE",
+        "status": "PARTIAL"
+      },
+      "current": {
+        "state_id": "TY-STATE-2026-08-26",
+        "status": "PARTIAL",
+        "mutation": "PENDING_ADOPTION"
+      },
+      "approved": {
+        "state_id": "TY-APPROVED-NONE",
+        "status": "UNCHANGED"
+      }
+    },
+    "partial_settlement_status": {
+      "candidate": "PARTIAL",
+      "current": "PARTIAL",
+      "approved": "UNCHANGED"
+    },
+    "replay_hash": "sha256:092becffa592547d00cb587a6d2fd2dc47655f1aeace274f158d39a57f86bc76",
+    "source_event_id": "TY-EVENT-MAINTENANCE",
+    "candidate_state_id": "TY-CAND-MAINTENANCE",
+    "as_of_state_id": "TY-STATE-2026-08-26",
+    "as_of_date": "2026-08-25",
+    "projection_id": "PROJ-TETHYS-V20",
+    "status": "PARTIAL",
+    "artifact_change_sets": [
+      {
+        "artifact_id": "ART-TY-MEMO",
+        "title": "Project Tethys seed IC memorandum",
+        "version_before": "Pre-IC",
+        "version_after": "Pre-IC + coverage note",
+        "status": "READY",
+        "passage_after": "Target-market maintenance economics remain blocked; the current runway calculation survives independently."
+      }
+    ],
+    "policy_result": {
+      "materiality": "LOCAL_BLOCK"
+    },
+    "effective_date": "2026-08-25",
+    "known_at": "2026-08-25T15:15:00Z"
+  }
+}

@@ -1,0 +1,512 @@
+[
+  {
+    "screen_number": 1,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/01_Fund_Command.png",
+    "title": "Fund Command",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 2,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/02_Deal_Command.png",
+    "title": "Deal Command",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 3,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/03_Sources_Ingest.png",
+    "title": "Sources Ingest",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 4,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/04_Ingest_Progress.png",
+    "title": "Ingest Progress",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 5,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/05_Vault_Inbox.png",
+    "title": "Vault Inbox",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 6,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/06_Source_Library.png",
+    "title": "Source Library",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 7,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/07_Claims_Explorer.png",
+    "title": "Claims Explorer",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 8,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/08_Compiler_Review.png",
+    "title": "Compiler Review",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 9,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/09_Case_Setup_IC_Record.png",
+    "title": "Case Setup IC Record",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 10,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/10_Work.png",
+    "title": "Work",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 11,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/11_What_the_Deal_Rests_On.png",
+    "title": "What the Deal Rests On",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 12,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/12_Unknowns_Decision.png",
+    "title": "Unknowns Decision",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 13,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/13_Unknowns_Pipeline.png",
+    "title": "Unknowns Pipeline",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 14,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/14_Shadow_IC.png",
+    "title": "Shadow IC",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 15,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/15_Scenario_Lab.png",
+    "title": "Scenario Lab",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 16,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/16_Artifacts.png",
+    "title": "Artifacts",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 17,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/17_Registry.png",
+    "title": "Registry",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 18,
+    "file": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/18_Causal_Replay.png",
+    "title": "Causal Replay",
+    "surface_class": "Persistent Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 19,
+    "file": "03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/19_Object_Aperture_Claim_Basis.png",
+    "title": "Object Aperture Claim Basis",
+    "surface_class": "Contextual Overlay",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 20,
+    "file": "03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/20_Object_Aperture_Claim_Action.png",
+    "title": "Object Aperture Claim Action",
+    "surface_class": "Contextual Overlay",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 21,
+    "file": "03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/21_Object_Aperture_Cell.png",
+    "title": "Object Aperture Cell",
+    "surface_class": "Contextual Overlay",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 22,
+    "file": "03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/22_Object_Aperture_Source_PDF.png",
+    "title": "Object Aperture Source PDF",
+    "surface_class": "Contextual Overlay",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 23,
+    "file": "03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/23_Quick_Navigation.png",
+    "title": "Quick Navigation",
+    "surface_class": "Contextual Overlay",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 24,
+    "file": "03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/24_Change_Arrival.png",
+    "title": "Change Arrival",
+    "surface_class": "Transient Workflow",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 25,
+    "file": "03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/25_Change_Review.png",
+    "title": "Change Review",
+    "surface_class": "Transient Workflow",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 26,
+    "file": "03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/26_Change_Review_Editing.png",
+    "title": "Change Review Editing",
+    "surface_class": "Transient Workflow",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 27,
+    "file": "03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/27_Change_Impact.png",
+    "title": "Change Impact",
+    "surface_class": "Transient Workflow",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 28,
+    "file": "03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/28_Action_Frontier.png",
+    "title": "Action Frontier",
+    "surface_class": "Transient Workflow",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 29,
+    "file": "03_SCREEN_ATLAS/04_GATED_ROOMS/29_Decision_Room_Active.png",
+    "title": "Decision Room Active",
+    "surface_class": "Gated Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 30,
+    "file": "03_SCREEN_ATLAS/04_GATED_ROOMS/30_Execution_Room_Ready.png",
+    "title": "Execution Room Ready",
+    "surface_class": "Gated Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 31,
+    "file": "03_SCREEN_ATLAS/04_GATED_ROOMS/31_Execution_Room_Acknowledged.png",
+    "title": "Execution Room Acknowledged",
+    "surface_class": "Gated Room",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 32,
+    "file": "03_SCREEN_ATLAS/05_COMPLETION_STATES/32_Settled_State.png",
+    "title": "Settled State",
+    "surface_class": "Completion State",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 33,
+    "file": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/33_Decision_Blocked.png",
+    "title": "Decision Blocked",
+    "surface_class": "Mode / Blocked / Error State",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 34,
+    "file": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/34_Empty_System.png",
+    "title": "Empty System",
+    "surface_class": "Mode / Blocked / Error State",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 35,
+    "file": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/35_Mode_Chooser.png",
+    "title": "Mode Chooser",
+    "surface_class": "Mode / Blocked / Error State",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 36,
+    "file": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/36_Connected_Error.png",
+    "title": "Connected Error",
+    "surface_class": "Mode / Blocked / Error State",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 37,
+    "file": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/37_Offline_Read_Only.png",
+    "title": "Offline Read Only",
+    "surface_class": "Mode / Blocked / Error State",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 38,
+    "file": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/38_Orion_Generalization.png",
+    "title": "Orion Generalization",
+    "surface_class": "Mode / Blocked / Error State",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 39,
+    "file": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/39_Mobile_Read_Only.png",
+    "title": "Mobile Read Only",
+    "surface_class": "Mode / Blocked / Error State",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 40,
+    "file": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/40_Claims_Filtered_AsOf.png",
+    "title": "Claims Filtered AsOf",
+    "surface_class": "Mode / Blocked / Error State",
+    "purpose": "Inherited V19/V19.B core surface retained by V20 without a room-architecture redesign.",
+    "release": "V20",
+    "origin": "V19/V19.B inherited core",
+    "synthetic": true
+  },
+  {
+    "screen_number": 41,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_01_deal_command.png",
+    "title": "Deal Command - Venture Archetype",
+    "surface_class": "Persistent room",
+    "purpose": "Hierarchical venture grammar, governed Lens and decomposed decision criticality.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  },
+  {
+    "screen_number": 42,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_02_interactions.png",
+    "title": "Sources - Native Interactions",
+    "surface_class": "Persistent room",
+    "purpose": "Speaker-level interaction and utterance provenance.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  },
+  {
+    "screen_number": 43,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_03_utterance_aperture.png",
+    "title": "Object Aperture - Utterance",
+    "surface_class": "Contextual overlay",
+    "purpose": "Separates observed speech act from asserted content.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  },
+  {
+    "screen_number": 44,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_04_compiler_review.png",
+    "title": "Compiler Review - Venture Proposals",
+    "surface_class": "Persistent room",
+    "purpose": "Candidate discrepancies, deterministic derivations, AI hypotheses and spine change.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  },
+  {
+    "screen_number": 45,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_05_validation_conditions.png",
+    "title": "Foundations - Validation Envelopes",
+    "surface_class": "Persistent room",
+    "purpose": "Target/environment/configuration coverage and explicit condition edges.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  },
+  {
+    "screen_number": 46,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_06_unknowns_missions.png",
+    "title": "Unknowns - Governed Missions",
+    "surface_class": "Persistent room",
+    "purpose": "Mission authority classes and closure-value decomposition.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  },
+  {
+    "screen_number": 47,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_07_venture_financing.png",
+    "title": "Scenario Lab - Venture Financing",
+    "surface_class": "Persistent room",
+    "purpose": "Round, cap table, dilution, milestones and reserve.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  },
+  {
+    "screen_number": 48,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_08_replay.png",
+    "title": "Causal Replay - Venture Case",
+    "surface_class": "Persistent room",
+    "purpose": "Event-derived bitemporal replay.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  },
+  {
+    "screen_number": 49,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_09_human_stop.png",
+    "title": "Change Impact - Human Stop",
+    "surface_class": "Transient workflow",
+    "purpose": "Technical discrepancy requires scoped authority.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  },
+  {
+    "screen_number": 50,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_10_blocked_component.png",
+    "title": "Change Impact - Blocked Component",
+    "surface_class": "Transient workflow",
+    "purpose": "Maintenance economics remain honestly blocked.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  },
+  {
+    "screen_number": 51,
+    "file": "03_SCREEN_ATLAS/07_V20_VENTURE_EXTENSION/v20_11_mobile_read_review.png",
+    "title": "Mobile Read/Review",
+    "surface_class": "Responsive state",
+    "purpose": "Sub-768 venture review mode without compressed authority controls.",
+    "release": "V20",
+    "origin": "V20 venture extension",
+    "synthetic": true
+  }
+]

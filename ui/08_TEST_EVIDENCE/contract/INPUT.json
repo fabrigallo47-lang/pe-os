@@ -1,0 +1,47 @@
+{
+  "section": "Input",
+  "results": [
+    {
+      "section": "Input",
+      "name": "File input exists",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Input",
+      "name": "Path and URL inputs exist",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Input",
+      "name": "Vault inbox is visible",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Input",
+      "name": "Refresh projection and sources exist",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Input",
+      "name": "Case switcher exists",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Input",
+      "name": "Professional claim review is server-acknowledged",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "Input",
+      "name": "Structured deal opening and IC record exist",
+      "status": "PASS",
+      "detail": "True"
+    }
+  ]
+}

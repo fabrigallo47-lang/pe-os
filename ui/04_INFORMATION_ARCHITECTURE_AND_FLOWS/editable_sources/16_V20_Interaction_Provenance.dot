@@ -1,0 +1,17 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="transparent", pad="0.25", nodesep="0.35", ranksep="0.55"];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11, color="#446074", fillcolor="#13202c", fontcolor="#e9f1f5", margin="0.16,0.1"];
+  edge [color="#73bfd6", penwidth=1.4, arrowsize=0.7];
+  source [label="Transcript / call / email\nimmutable source version"];
+  interaction [label="Interaction\nparticipants, channel, consent, confidentiality"];
+  utterance [label="Utterance\nspeaker, role, timestamp, attribution"];
+  speech [label="Observed speech act\n'person said X'"];
+  content [label="Content claim\nX remains asserted"];
+  review [label="Professional review\nadmit / correct / reject"];
+  case [label="Live Investment Case\nquestion and position bindings"];
+  source -> interaction -> utterance;
+  utterance -> speech;
+  utterance -> content;
+  speech -> review;
+  content -> review -> case;
+}

@@ -1,0 +1,87 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/derivation_spec.schema.json",
+  "title": "PANTA V20 Deterministic Derivation Specification",
+  "type": "object",
+  "properties": {
+    "derivation_spec_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "derivation_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "method_type": {
+      "enum": [
+        "CIRCLE_AREA",
+        "IMPLIED_RADIUS_FROM_AREA_AND_NODE_COUNT",
+        "RUNWAY_MONTHS",
+        "POST_MONEY_OWNERSHIP"
+      ]
+    },
+    "input_claim_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "parameters": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "formula": {
+      "type": "string",
+      "minLength": 1
+    },
+    "output_definition_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "period": {
+      "type": "string"
+    },
+    "perimeter": {
+      "type": "string"
+    },
+    "question_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "assumptions": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "derivation_spec_id",
+    "derivation_id",
+    "label",
+    "method_type",
+    "input_claim_ids",
+    "parameters",
+    "formula",
+    "output_definition_id",
+    "question_ids",
+    "assumptions",
+    "effective_date",
+    "known_at"
+  ]
+}

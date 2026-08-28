@@ -1,0 +1,24 @@
+{
+  "fixture_pack_version": "20.0.0",
+  "case_id": "PROJECT-ORION",
+  "company": "Orion Metrics Cloud",
+  "label": "Project Orion Growth",
+  "projection_file": "projection.json",
+  "transitions_file": "transitions.json",
+  "registry_file": "registry.json",
+  "synthetic": true,
+  "no_external_effects": true,
+  "default_actor_id": "USR-PARTNER",
+  "available_modes": [
+    "MOCK_CONNECTED",
+    "OFFLINE_DEMO"
+  ],
+  "contract_version": "20.0",
+  "release": "V20",
+  "case_type": "growth_equity",
+  "growth_grammar": true,
+  "structural_clone": false,
+  "generalization_evidence": true,
+  "bitemporal": true,
+  "replay_source": "REGISTRY_EVENTS"
+}

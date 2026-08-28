@@ -1,0 +1,12 @@
+{
+  "release": "V19.B",
+  "keystone_claims": 75,
+  "orion_claims": 42,
+  "exact_normalized_statement_overlap": 0.0,
+  "threshold": 0.2,
+  "pass": true,
+  "orion_case_type": "growth_equity",
+  "growth_banned_term_hits": [],
+  "structural_clone": false,
+  "method": "Exact normalized statement intersection / Orion statement count; independent banned-vocabulary scan across projection, registry and transitions."
+}

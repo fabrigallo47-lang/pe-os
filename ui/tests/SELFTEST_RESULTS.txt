@@ -1,9 +1,0 @@
-PANTA V17 STATIC CHECKS — 7/7 PASS
-
-PASS  Required package structure: 12 required files
-PASS  JavaScript syntax: 8 JavaScript files
-PASS  JSON parse: 25 JSON files
-PASS  V17 fixture invariants: 8 questions · 3 core rooms · human stop · disclosure
-PASS  Projection schema validation: 3 V17 projection contracts
-PASS  Frontend adapter boundary: projection adapter maps only
-PASS  Core integrity hash: core sha256 945bf8b1f729051aadd1dbbf300bafbc3164ee531b15ad794e3a9fa6f1dc3fc3

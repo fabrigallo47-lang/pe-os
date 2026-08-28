@@ -1,0 +1,44 @@
+[
+  {
+    "id": "15_V20_Archetype_Hierarchy",
+    "png": "15_V20_Archetype_Hierarchy.png",
+    "svg": "15_V20_Archetype_Hierarchy.svg",
+    "release": "V20",
+    "authoritative_source": "../editable_sources/15_V20_Archetype_Hierarchy.dot"
+  },
+  {
+    "id": "16_V20_Interaction_Provenance",
+    "png": "16_V20_Interaction_Provenance.png",
+    "svg": "16_V20_Interaction_Provenance.svg",
+    "release": "V20",
+    "authoritative_source": "../editable_sources/16_V20_Interaction_Provenance.dot"
+  },
+  {
+    "id": "17_V20_Compiler_Proposal_Boundaries",
+    "png": "17_V20_Compiler_Proposal_Boundaries.png",
+    "svg": "17_V20_Compiler_Proposal_Boundaries.svg",
+    "release": "V20",
+    "authoritative_source": "../editable_sources/17_V20_Compiler_Proposal_Boundaries.dot"
+  },
+  {
+    "id": "18_V20_Governed_Missions",
+    "png": "18_V20_Governed_Missions.png",
+    "svg": "18_V20_Governed_Missions.svg",
+    "release": "V20",
+    "authoritative_source": "../editable_sources/18_V20_Governed_Missions.dot"
+  },
+  {
+    "id": "19_V20_Venture_Financing",
+    "png": "19_V20_Venture_Financing.png",
+    "svg": "19_V20_Venture_Financing.svg",
+    "release": "V20",
+    "authoritative_source": "../editable_sources/19_V20_Venture_Financing.dot"
+  },
+  {
+    "id": "20_V20_End_to_End",
+    "png": "20_V20_End_to_End.png",
+    "svg": "20_V20_End_to_End.svg",
+    "release": "V20",
+    "authoritative_source": "../editable_sources/20_V20_End_to_End.dot"
+  }
+]

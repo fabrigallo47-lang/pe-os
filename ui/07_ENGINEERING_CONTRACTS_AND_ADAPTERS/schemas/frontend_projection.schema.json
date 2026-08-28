@@ -1,0 +1,1025 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/frontend_projection.schema.json",
+  "title": "PANTA V20 Frontend Projection",
+  "type": "object",
+  "additionalProperties": true,
+  "$defs": {
+    "claim": {
+      "type": "object",
+      "properties": {
+        "claim_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "id": {
+          "type": "string"
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "type": "string"
+        },
+        "epistemic_class": {
+          "enum": [
+            "asserted",
+            "observed",
+            "derived",
+            "attested",
+            "institutional_act"
+          ]
+        },
+        "value": {
+          "type": [
+            "string",
+            "number",
+            "integer",
+            "boolean",
+            "null",
+            "object",
+            "array"
+          ]
+        },
+        "unit": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "definition_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "period": {
+          "type": "string"
+        },
+        "perimeter": {
+          "type": "string"
+        },
+        "topic": {
+          "type": "string"
+        },
+        "direction": {
+          "type": "string"
+        },
+        "bears_on": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "position_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "review_status": {
+          "type": "string"
+        },
+        "ground_truth_flag": {
+          "type": "boolean"
+        },
+        "validation_only": {
+          "type": "boolean"
+        },
+        "effective_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "known_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "claim_id",
+        "statement",
+        "source_id",
+        "epistemic_class",
+        "bears_on",
+        "effective_date",
+        "known_at"
+      ]
+    },
+    "registry_event": {
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "kind": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "detail": {
+          "type": "string"
+        },
+        "actor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "actor_label": {
+          "type": "string"
+        },
+        "object_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "case_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "run_id": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "provenance": {
+          "type": "string"
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "epistemic_class": {
+          "enum": [
+            "asserted",
+            "observed",
+            "derived",
+            "attested",
+            "institutional_act"
+          ]
+        },
+        "timestamp": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "source_state_id": {
+          "type": "string"
+        },
+        "result_state_id": {
+          "type": "string"
+        },
+        "effective_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "known_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "event_id",
+        "kind",
+        "label",
+        "actor_id",
+        "case_id",
+        "effective_date",
+        "known_at"
+      ]
+    },
+    "source": {
+      "type": "object",
+      "properties": {
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "status": {
+          "type": "string",
+          "minLength": 1
+        },
+        "latest_version_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "claim_count": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "ingested_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "version_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "created_at": {
+                "type": "string",
+                "format": "date-time"
+              },
+              "sha256": {
+                "type": "string",
+                "minLength": 1
+              },
+              "supersedes": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "effective_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "known_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "version_id",
+              "created_at",
+              "sha256",
+              "effective_date",
+              "known_at"
+            ]
+          }
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "effective_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "known_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "source_id",
+        "name",
+        "type",
+        "status",
+        "latest_version_id",
+        "claim_count",
+        "versions",
+        "effective_date",
+        "known_at"
+      ]
+    },
+    "replay_snapshot": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "date": {
+          "type": "string",
+          "format": "date"
+        },
+        "effective_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "known_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "known": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "believed": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "approved": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "open": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "event_index": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "derived_from_event_log": {
+          "const": true
+        },
+        "stable_hash": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "event_id",
+        "label",
+        "effective_date",
+        "known_at",
+        "derived_from_event_log"
+      ]
+    },
+    "question": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "workstream": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "versions": {
+          "type": "object",
+          "additionalProperties": {
+            "type": "object",
+            "properties": {
+              "view": {
+                "type": "string"
+              },
+              "strength": {
+                "type": "string"
+              },
+              "economic_weight": {
+                "type": "string"
+              },
+              "cause": {
+                "type": "string"
+              },
+              "effective_date": {
+                "type": "string",
+                "format": "date"
+              },
+              "known_at": {
+                "type": "string",
+                "format": "date-time"
+              }
+            },
+            "additionalProperties": true,
+            "required": [
+              "view",
+              "effective_date",
+              "known_at"
+            ]
+          }
+        },
+        "claim_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "model_node_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "work_plan": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "label",
+        "versions"
+      ]
+    },
+    "artifact": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string"
+        },
+        "title": {
+          "type": "string",
+          "minLength": 1
+        },
+        "current_version": {
+          "type": "string"
+        },
+        "status": {
+          "type": "string"
+        },
+        "owner": {
+          "type": "string"
+        },
+        "trace_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "versions": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "id",
+        "title"
+      ]
+    },
+    "source_event": {
+      "type": "object",
+      "properties": {
+        "event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "label": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_title": {
+          "type": "string"
+        },
+        "source_passage": {
+          "type": "string"
+        },
+        "locator": {
+          "type": "string"
+        },
+        "definition": {
+          "type": "string"
+        },
+        "period": {
+          "type": "string"
+        },
+        "perimeter": {
+          "type": "string"
+        },
+        "proposed_position": {
+          "type": "string"
+        },
+        "scene_id": {
+          "type": "string"
+        },
+        "synthetic": {
+          "type": "boolean"
+        },
+        "question_id": {
+          "type": "string"
+        },
+        "source_version_id": {
+          "type": "string"
+        },
+        "treatment_id": {
+          "type": "string"
+        },
+        "treatment_hash": {
+          "type": "string"
+        },
+        "effective_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "known_at": {
+          "type": "string",
+          "format": "date-time"
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "event_id",
+        "type",
+        "label",
+        "effective_date",
+        "known_at"
+      ]
+    },
+    "actor": {
+      "type": "object",
+      "properties": {
+        "actor_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "display_name": {
+          "type": "string"
+        },
+        "role": {
+          "type": "string",
+          "minLength": 1
+        },
+        "authority_verbs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "actor_id",
+        "role",
+        "authority_verbs"
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "package_version",
+    "disclosure",
+    "fund",
+    "deal",
+    "events",
+    "actor_directory"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "frontend-projection/20.0"
+    },
+    "package_version": {
+      "type": "string",
+      "pattern": "^20\\."
+    },
+    "disclosure": {
+      "type": "string",
+      "minLength": 1
+    },
+    "fund": {
+      "type": "object",
+      "properties": {
+        "situations": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": true
+          }
+        },
+        "morning_delta": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {},
+            "additionalProperties": true
+          }
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "situations",
+        "morning_delta"
+      ]
+    },
+    "deal": {
+      "type": "object",
+      "properties": {
+        "case_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "name": {
+          "type": "string"
+        },
+        "company": {
+          "type": "string"
+        },
+        "objective": {
+          "type": "object",
+          "properties": {
+            "verb": {
+              "type": "string"
+            },
+            "target": {
+              "type": "string"
+            },
+            "statement": {
+              "type": "string",
+              "minLength": 1
+            },
+            "deadline": {
+              "type": "string"
+            },
+            "status": {
+              "type": "string"
+            }
+          },
+          "additionalProperties": true,
+          "required": [
+            "statement"
+          ]
+        },
+        "as_of_state_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "as_of_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "projection_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "question_spine": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/question"
+          }
+        },
+        "artifacts": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/artifact"
+          }
+        },
+        "claims": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/claim"
+          }
+        },
+        "rooms": {
+          "type": "object",
+          "properties": {
+            "foundations": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": true
+            },
+            "unknowns": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": true
+            },
+            "shadowIC": {
+              "type": "object",
+              "properties": {},
+              "additionalProperties": true
+            }
+          },
+          "additionalProperties": true,
+          "required": [
+            "foundations",
+            "unknowns",
+            "shadowIC"
+          ]
+        },
+        "replay": {
+          "type": "object",
+          "properties": {
+            "source": {
+              "const": "REGISTRY_EVENTS"
+            },
+            "hand_authored_snapshots": {
+              "const": false
+            },
+            "snapshots": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/replay_snapshot"
+              }
+            }
+          },
+          "additionalProperties": true,
+          "required": [
+            "source",
+            "hand_authored_snapshots",
+            "snapshots"
+          ]
+        },
+        "source_center": {
+          "type": "object",
+          "properties": {
+            "sources": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/source"
+              }
+            },
+            "pipeline_issues": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {},
+                "additionalProperties": true
+              }
+            }
+          },
+          "additionalProperties": true,
+          "required": [
+            "sources"
+          ]
+        },
+        "temporal": {
+          "type": "object",
+          "properties": {
+            "basis": {
+              "const": "KNOWN_AT"
+            },
+            "effective_axis": {
+              "const": "effective_date"
+            },
+            "knowledge_axis": {
+              "const": "known_at"
+            },
+            "available_dates": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "format": "date"
+              }
+            },
+            "latest_known_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "replay_source": {
+              "const": "REGISTRY_EVENTS"
+            }
+          },
+          "additionalProperties": true,
+          "required": [
+            "basis",
+            "effective_axis",
+            "knowledge_axis",
+            "available_dates",
+            "replay_source"
+          ]
+        },
+        "capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "navigation_capabilities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "decisionRoom": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": true
+        },
+        "executionRoom": {
+          "type": "object",
+          "properties": {},
+          "additionalProperties": true
+        },
+        "archetype": {
+          "$ref": "https://panta.local/contracts/archetype.schema.json"
+        },
+        "default_lens_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "active_lens_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "lenses": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/lens.schema.json"
+          }
+        },
+        "participants": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/participant.schema.json"
+          }
+        },
+        "interactions": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/interaction.schema.json"
+          }
+        },
+        "utterances": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/utterance.schema.json"
+          }
+        },
+        "derivation_specs": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/derivation_spec.schema.json"
+          }
+        },
+        "derivations": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/derivation.schema.json"
+          }
+        },
+        "discrepancy_rules": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/discrepancy_rule.schema.json"
+          }
+        },
+        "discrepancy_candidates": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/discrepancy_candidate.schema.json"
+          }
+        },
+        "hypotheses": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/hypothesis.schema.json"
+          }
+        },
+        "agent_missions": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/agent_mission.schema.json"
+          }
+        },
+        "spine_change_proposals": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/spine_change_proposal.schema.json"
+          }
+        },
+        "condition_edges": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/condition_edge.schema.json"
+          }
+        },
+        "validation_envelopes": {
+          "type": "array",
+          "items": {
+            "$ref": "https://panta.local/contracts/validation_envelope.schema.json"
+          }
+        },
+        "venture_financing": {
+          "anyOf": [
+            {
+              "$ref": "https://panta.local/contracts/venture_financing.schema.json"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      },
+      "additionalProperties": true,
+      "required": [
+        "case_id",
+        "objective",
+        "as_of_state_id",
+        "as_of_date",
+        "projection_id",
+        "question_spine",
+        "artifacts",
+        "claims",
+        "rooms",
+        "replay",
+        "source_center",
+        "temporal",
+        "archetype",
+        "lenses",
+        "participants",
+        "interactions",
+        "utterances",
+        "derivation_specs",
+        "derivations",
+        "discrepancy_rules",
+        "discrepancy_candidates",
+        "hypotheses",
+        "agent_missions",
+        "spine_change_proposals",
+        "condition_edges",
+        "validation_envelopes"
+      ]
+    },
+    "events": {
+      "type": "object",
+      "additionalProperties": {
+        "$ref": "#/$defs/source_event"
+      }
+    },
+    "actor_directory": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/actor"
+      }
+    },
+    "context": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": true
+    },
+    "v16": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": true
+    },
+    "epistemic_vocabulary": {
+      "type": "object",
+      "properties": {},
+      "additionalProperties": true
+    }
+  }
+}

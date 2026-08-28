@@ -1,0 +1,86 @@
+[
+  {
+    "id": "01_Information_Architecture",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/01_Information_Architecture.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/01_Information_Architecture.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/01_Information_Architecture.png"
+  },
+  {
+    "id": "02_Extractor_to_Screen",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/02_Extractor_to_Screen.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/02_Extractor_to_Screen.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/02_Extractor_to_Screen.png"
+  },
+  {
+    "id": "03_Primary_User_Flow",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/03_Primary_User_Flow.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/03_Primary_User_Flow.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/03_Primary_User_Flow.png"
+  },
+  {
+    "id": "04_Source_Lifecycle",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/04_Source_Lifecycle.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/04_Source_Lifecycle.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/04_Source_Lifecycle.png"
+  },
+  {
+    "id": "05_Institutional_State_Machine",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/05_Institutional_State_Machine.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/05_Institutional_State_Machine.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/05_Institutional_State_Machine.png"
+  },
+  {
+    "id": "06_Authority_Execution_Settlement",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/06_Authority_Execution_Settlement.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/06_Authority_Execution_Settlement.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/06_Authority_Execution_Settlement.png"
+  },
+  {
+    "id": "07_Object_Aperture_Model",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/07_Object_Aperture_Model.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/07_Object_Aperture_Model.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/07_Object_Aperture_Model.png"
+  },
+  {
+    "id": "08_Domain_vs_Pipeline_Uncertainty",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/08_Domain_vs_Pipeline_Uncertainty.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/08_Domain_vs_Pipeline_Uncertainty.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/08_Domain_vs_Pipeline_Uncertainty.png"
+  },
+  {
+    "id": "09_Replay_and_AsOf",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/09_Replay_and_AsOf.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/09_Replay_and_AsOf.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/09_Replay_and_AsOf.png"
+  },
+  {
+    "id": "10_Ownership_and_Contracts",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/10_Ownership_and_Contracts.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/10_Ownership_and_Contracts.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/10_Ownership_and_Contracts.png"
+  },
+  {
+    "id": "11_Operating_Modes",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/11_Operating_Modes.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/11_Operating_Modes.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/11_Operating_Modes.png"
+  },
+  {
+    "id": "12_Responsive_Behavior",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/12_Responsive_Behavior.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/12_Responsive_Behavior.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/12_Responsive_Behavior.png"
+  },
+  {
+    "id": "13_Service_Blueprint",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/13_Service_Blueprint.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/13_Service_Blueprint.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/13_Service_Blueprint.png"
+  },
+  {
+    "id": "14_Versioned_Model_Lineage",
+    "dot": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/editable_sources/14_Versioned_Model_Lineage.dot",
+    "svg": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/14_Versioned_Model_Lineage.svg",
+    "png": "04_INFORMATION_ARCHITECTURE_AND_FLOWS/DIAGRAMS/14_Versioned_Model_Lineage.png"
+  }
+]

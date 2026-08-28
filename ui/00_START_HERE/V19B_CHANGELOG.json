@@ -1,0 +1,50 @@
+{
+  "release": "V19.B",
+  "semantic_version": "19.1.0",
+  "base_release": "V19.0.0",
+  "release_date": "2026-08-27",
+  "changes": [
+    {
+      "id": "V19B-01",
+      "title": "Distinct Orion growth-equity case",
+      "acceptance": "normalized exact statement overlap below 20 percent and no buyout-specific quantities",
+      "result": "0.0 percent overlap; growth-only grammar"
+    },
+    {
+      "id": "V19B-02",
+      "title": "Bitemporal projection and event-derived replay",
+      "acceptance": "both dates on claims/events/Registry; date-driven as-of; replay from events",
+      "result": "implemented in fixture, offline adapter, API, renderer and schemas"
+    },
+    {
+      "id": "V19B-03",
+      "title": "Institutional-act epistemic class",
+      "acceptance": "no firm act carries attested",
+      "result": "22 institutional acts and 14 true attestations across 75 Keystone claims"
+    },
+    {
+      "id": "V19B-04",
+      "title": "Typed schemas and engine mapping",
+      "acceptance": "sample engine output maps and validates at zero errors",
+      "result": "eight typed schemas; pure Python and JavaScript adapters"
+    },
+    {
+      "id": "V19B-05",
+      "title": "Human Stop and blocked component exercised",
+      "acceptance": "visible in UI; Human Stop settlement refused without authority",
+      "result": "browser and server negative-path tests pass"
+    },
+    {
+      "id": "V19B-06",
+      "title": "Canonical approved-EV-ceiling language",
+      "acceptance": "retired phrase absent",
+      "result": "package-wide text and PDF scan passes"
+    }
+  ],
+  "acceptance_suite": {
+    "path": "08_TEST_EVIDENCE/run_v19b_tests.py",
+    "passed": 22,
+    "total": 22,
+    "status": "PASS"
+  }
+}

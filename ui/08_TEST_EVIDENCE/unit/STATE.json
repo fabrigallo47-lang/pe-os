@@ -1,0 +1,41 @@
+{
+  "section": "State",
+  "results": [
+    {
+      "section": "State",
+      "name": "Operation-specific errors rendered",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "State",
+      "name": "Ingest job progress rendered",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "State",
+      "name": "Deep-link routing exists",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "State",
+      "name": "Focus and scroll restoration exist",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "State",
+      "name": "Accessible dialog focus trap exists",
+      "status": "PASS",
+      "detail": "True"
+    },
+    {
+      "section": "State",
+      "name": "Reduced motion is system-derived",
+      "status": "PASS",
+      "detail": "True"
+    }
+  ]
+}

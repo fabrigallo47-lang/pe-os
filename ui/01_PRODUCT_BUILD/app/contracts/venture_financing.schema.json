@@ -1,0 +1,174 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/venture_financing.schema.json",
+  "title": "PANTA V20 Venture Financing Projection",
+  "type": "object",
+  "properties": {
+    "currency": {
+      "type": "string",
+      "minLength": 1
+    },
+    "round_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "pre_money_eur_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "new_money_eur_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "post_money_eur_m": {
+      "type": "number",
+      "minimum": 0
+    },
+    "new_investor_ownership_pct": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "option_pool_top_up_pct": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 100
+    },
+    "pre_round_cap_table": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "holder": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ownership_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "holder",
+          "ownership_pct"
+        ]
+      }
+    },
+    "post_round_cap_table": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "holder": {
+            "type": "string",
+            "minLength": 1
+          },
+          "ownership_pct": {
+            "type": "number",
+            "minimum": 0,
+            "maximum": 100
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "holder",
+          "ownership_pct"
+        ]
+      }
+    },
+    "instrument_terms": {
+      "type": "object",
+      "properties": {
+        "liquidation_preference": {
+          "type": "string"
+        },
+        "anti_dilution": {
+          "type": "string"
+        },
+        "pro_rata_rights": {
+          "type": "boolean"
+        },
+        "board_composition": {
+          "type": "string"
+        },
+        "reserved_matters": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      },
+      "additionalProperties": true
+    },
+    "milestone_tranches": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "tranche": {
+            "type": "string",
+            "minLength": 1
+          },
+          "amount_eur_m": {
+            "type": "number",
+            "minimum": 0
+          },
+          "condition": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "additionalProperties": false,
+        "required": [
+          "tranche",
+          "amount_eur_m",
+          "condition"
+        ]
+      }
+    },
+    "follow_on_policy": {
+      "type": "object",
+      "properties": {
+        "target_ownership_pct": {
+          "type": "number"
+        },
+        "illustrative_series_a_pre_money_eur_m": {
+          "type": "number"
+        },
+        "illustrative_series_a_new_money_eur_m": {
+          "type": "number"
+        },
+        "reserve_eur_m": {
+          "type": "number"
+        }
+      },
+      "additionalProperties": true
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "currency",
+    "round_type",
+    "pre_money_eur_m",
+    "new_money_eur_m",
+    "post_money_eur_m",
+    "new_investor_ownership_pct",
+    "pre_round_cap_table",
+    "post_round_cap_table",
+    "instrument_terms",
+    "milestone_tranches",
+    "follow_on_policy",
+    "effective_date",
+    "known_at"
+  ]
+}

@@ -1,0 +1,89 @@
+{
+  "product": "PANTA Deal World",
+  "release": "V20",
+  "semantic_version": "20.0.0",
+  "release_date": "2026-08-27",
+  "base_release": "V19.B / 19.1.0",
+  "contract_version": "20.0",
+  "status": "complete synthetic venture-extension integration/demo build preserving V19.B integrity contracts",
+  "release_thesis": "One Live Investment Case kernel across buyout, growth and conversation-heavy early-stage venture diligence.",
+  "precedence": [
+    "frozen versioned machine contracts and conformance tests",
+    "latest applicable Engineering Source of Truth",
+    "V18/V19.B integrity contracts",
+    "V20 specifications",
+    "screenshots and synthetic runtime behavior"
+  ],
+  "cases": [
+    {
+      "case_id": "PROJECT-KEYSTONE",
+      "type": "buyout",
+      "synthetic": true
+    },
+    {
+      "case_id": "PROJECT-ORION",
+      "type": "growth_equity",
+      "synthetic": true
+    },
+    {
+      "case_id": "PROJECT-TETHYS",
+      "type": "pre_revenue_deep_tech_venture",
+      "synthetic": true,
+      "confidential_safe": true
+    }
+  ],
+  "acceptance": {
+    "status": "PASS",
+    "passed": 49,
+    "failed": 0,
+    "results": "08_TEST_EVIDENCE/V20_TEST_RESULTS.json"
+  },
+  "evidence_counts": {
+    "screen_states": 51,
+    "venture_extension_screens": 11,
+    "architecture_diagrams": 20,
+    "typed_public_schemas": 23,
+    "active_walkthrough_videos": 1
+  },
+  "directory_file_counts": {
+    "00_START_HERE": 13,
+    "01_PRODUCT_BUILD": 58,
+    "02_PRODUCT_EXPERIENCE": 7,
+    "03_SCREEN_ATLAS": 70,
+    "04_INFORMATION_ARCHITECTURE_AND_FLOWS": 65,
+    "05_DESIGN_SYSTEM_AND_INTERACTION": 9,
+    "06_RESEARCH_AND_VALIDATION": 9,
+    "07_ENGINEERING_CONTRACTS_AND_ADAPTERS": 40,
+    "08_TEST_EVIDENCE": 40,
+    "09_DEMO": 20,
+    "10_REFERENCE_ARCHIVE": 47
+  },
+  "principal_pdfs": [
+    "00_START_HERE/PANTA_V20_Package_Manifest.pdf",
+    "00_START_HERE/PANTA_V20_Release_and_Acceptance_Report.pdf",
+    "01_PRODUCT_BUILD/app/assets/sources/PROJECT-KEYSTONE/PANTA_Keystone_Canonical_Investment_Case_v1.pdf",
+    "02_PRODUCT_EXPERIENCE/PANTA_V20_Product_Experience_Specification.pdf",
+    "02_PRODUCT_EXPERIENCE/PANTA_V20_Product_User_Guide.pdf",
+    "03_SCREEN_ATLAS/PANTA_V20_Annotated_Screen_Atlas.pdf",
+    "04_INFORMATION_ARCHITECTURE_AND_FLOWS/PANTA_V20_Navigation_Flows_and_State_Model.pdf",
+    "05_DESIGN_SYSTEM_AND_INTERACTION/PANTA_V20_UI_System_and_Engineering_Handoff.pdf",
+    "06_RESEARCH_AND_VALIDATION/PANTA_V20_UX_Research_and_Validation_Plan.pdf",
+    "07_ENGINEERING_CONTRACTS_AND_ADAPTERS/API/PANTA_V20_API_REFERENCE.pdf",
+    "07_ENGINEERING_CONTRACTS_AND_ADAPTERS/PANTA_V20_Venture_Integration_Contract.pdf",
+    "08_TEST_EVIDENCE/PANTA_V20_Test_Evidence_Report.pdf"
+  ],
+  "production_boundaries": [
+    "no production identity or enterprise RBAC",
+    "no tenant-aware production Case Store",
+    "no live autonomous research service or human outreach",
+    "no real external effects or write-back",
+    "Fabrizio compiler/Case Store remains an integration boundary",
+    "Anto production runtime and separate conformance evidence remain an integration boundary"
+  ],
+  "integrity": {
+    "inventory": "00_START_HERE/PACKAGE_INVENTORY.csv",
+    "checksums": "00_START_HERE/CHECKSUMS.sha256",
+    "summary": "00_START_HERE/INTEGRITY_SUMMARY.json",
+    "checksum_rule": "all regular package files except CHECKSUMS.sha256"
+  }
+}

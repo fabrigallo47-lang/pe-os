@@ -1,0 +1,20 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="transparent", pad="0.25", nodesep="0.35", ranksep="0.55"];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11, color="#446074", fillcolor="#13202c", fontcolor="#e9f1f5", margin="0.16,0.1"];
+  edge [color="#73bfd6", penwidth=1.4, arrowsize=0.7];
+  inputs [label="Cash, burn, pre-money, new money, option pool, milestones"];
+  round [label="Round mechanics\npost-money and ownership"];
+  runway [label="Runway and milestone timing"];
+  dilution [label="Dilution and next-round ownership"];
+  reserve [label="Follow-on reserve requirement"];
+  terms [label="Instrument and governance terms"];
+  scenarios [label="Scenario Lab\nbase / delay / tranches"];
+  decision [label="Decision Room\nsize, tranche, defer, decline"];
+  inputs -> round;
+  inputs -> runway;
+  round -> dilution;
+  dilution -> reserve;
+  terms -> scenarios;
+  runway -> scenarios;
+  reserve -> scenarios -> decision;
+}

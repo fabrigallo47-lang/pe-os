@@ -1,0 +1,35 @@
+{
+  "version": "19.0",
+  "color": {
+    "background": "#020B12",
+    "surface": "#061722",
+    "current": "#26D5E3",
+    "working": "#7957B5",
+    "threshold": "#D89B2B",
+    "blocked": "#CB4A4E",
+    "authority": "#D9A441",
+    "success": "#2EA679"
+  },
+  "typography": {
+    "body": "14-16px",
+    "operational_metadata": "12px minimum",
+    "compact_label": "10px minimum",
+    "font_family": "Inter, system-ui, sans-serif"
+  },
+  "spacing": {
+    "base": 4,
+    "control_min_height": 40,
+    "primary_touch_target": 44
+  },
+  "motion": {
+    "reveal": "120-220ms",
+    "ripple_total": "adaptive to affected-set size",
+    "reduced_motion": "step transitions without decorative interpolation"
+  },
+  "breakpoints": {
+    "full_command_center": 1440,
+    "overlay_rails": 1024,
+    "tablet_drawers": 768,
+    "mobile_review_only": 767
+  }
+}

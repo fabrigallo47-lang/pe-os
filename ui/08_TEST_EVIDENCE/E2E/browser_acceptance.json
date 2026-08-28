@@ -1,0 +1,67 @@
+[
+  {
+    "name": "Boot",
+    "status": "PASS",
+    "detail": "19.0.0"
+  },
+  {
+    "name": "Self test",
+    "status": "PASS",
+    "detail": "30/30"
+  },
+  {
+    "name": "Question binding",
+    "status": "PASS",
+    "detail": "40"
+  },
+  {
+    "name": "File input",
+    "status": "PASS",
+    "detail": "1"
+  },
+  {
+    "name": "Claims filters",
+    "status": "PASS",
+    "detail": "0"
+  },
+  {
+    "name": "Claim aperture",
+    "status": "PASS",
+    "detail": "0"
+  },
+  {
+    "name": "Transition",
+    "status": "PASS",
+    "detail": "CAND-F061CE4F73AF"
+  },
+  {
+    "name": "Action selection",
+    "status": "PASS",
+    "detail": "4"
+  },
+  {
+    "name": "Decision gate",
+    "status": "PASS",
+    "detail": "True"
+  },
+  {
+    "name": "Authority and package",
+    "status": "PASS",
+    "detail": "READY"
+  },
+  {
+    "name": "Server ack",
+    "status": "PASS",
+    "detail": "ACK-490DB5F5E067"
+  },
+  {
+    "name": "Settlement",
+    "status": "PASS",
+    "detail": "STATE-EAE602CBD48E"
+  },
+  {
+    "name": "No JS errors",
+    "status": "PASS",
+    "detail": "0"
+  }
+]

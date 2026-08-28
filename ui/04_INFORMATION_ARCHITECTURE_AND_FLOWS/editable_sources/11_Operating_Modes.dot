@@ -1,0 +1,16 @@
+digraph G { graph [bgcolor="#06131d",pad="0.25",nodesep="0.45",ranksep="0.65",fontname="DejaVu Sans",fontcolor="#e9f7f8"];
+node [shape=box,style="rounded,filled",fillcolor="#0b2633",color="#2c6978",fontname="DejaVu Sans",fontcolor="#e9f7f8",fontsize=11,penwidth=1.2,margin="0.14,0.10"];
+edge [color="#45d6df",fontname="DejaVu Sans",fontcolor="#a9d9de",fontsize=9,penwidth=1.3,arrowsize=0.7]; rankdir=TB;
+core[label="Fixture-free core UI",fillcolor="#103747"];
+connected[label="CONNECTED
+Live projection only
+no fallback"];mock[label="MOCK CONNECTED
+stateful synthetic API
+no external effects"];offline[label="OFFLINE DEMO
+explicit fixture
+read/review only"];empty[label="EMPTY
+zero-data validation"];
+core->connected;core->mock;core->offline;core->empty;
+connected->error[label="API failure",style=dashed,color="#ff7678"];error[label="Explicit connection error
+current projection not replaced",color="#ff7678"];
+}

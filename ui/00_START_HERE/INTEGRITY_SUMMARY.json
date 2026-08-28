@@ -1,0 +1,21 @@
+{
+  "product": "PANTA Deal World",
+  "release": "V20",
+  "semantic_version": "20.0.0",
+  "generated_at": "2026-08-27T19:50:57.796311Z",
+  "acceptance_status": "PASS",
+  "acceptance_passed": 49,
+  "acceptance_failed": 0,
+  "checksum_rule": "Every regular file in the package is covered except 00_START_HERE/CHECKSUMS.sha256 itself.",
+  "expected_checksum_entries": 381,
+  "nested_archives": 0,
+  "symlinks": 0,
+  "runtime_session_files": 0,
+  "cache_or_bytecode_files": 0,
+  "operating_modes": [
+    "CONNECTED (not configured; explicit refusal)",
+    "MOCK CONNECTED (synthetic, stateful, no external effects)",
+    "OFFLINE DEMO (explicit fixture, read/review-first)"
+  ],
+  "production_certification": false
+}

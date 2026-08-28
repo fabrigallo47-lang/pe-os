@@ -1,0 +1,16 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="transparent", pad="0.25", nodesep="0.28", ranksep="0.55"];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=10.5, color="#446074", fillcolor="#13202c", fontcolor="#e9f1f5", margin="0.15,0.09"];
+  edge [color="#73bfd6", penwidth=1.35, arrowsize=0.65];
+  interaction [label="Interaction / document"];
+  claim [label="Claim proposal"];
+  compiler [label="Discrepancy / derivation / hypothesis"];
+  review [label="Professional review"];
+  event [label="Admitted event"];
+  transition [label="Transition result"];
+  action [label="Work / Human Stop / blocked scope"];
+  authority [label="Authority + execution when external"];
+  settle [label="Canonical settlement"];
+  replay [label="Bitemporal replay"];
+  interaction -> claim -> compiler -> review -> event -> transition -> action -> authority -> settle -> replay;
+}

@@ -1,0 +1,322 @@
+[
+  {
+    "number": 1,
+    "key": "Fund_Command",
+    "title": "Fund Command",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/01_Fund_Command.png"
+  },
+  {
+    "number": 2,
+    "key": "Deal_Command",
+    "title": "Deal Command",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/02_Deal_Command.png"
+  },
+  {
+    "number": 3,
+    "key": "Sources_Ingest",
+    "title": "Sources Ingest",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/03_Sources_Ingest.png"
+  },
+  {
+    "number": 4,
+    "key": "Ingest_Progress",
+    "title": "Ingest Progress",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/04_Ingest_Progress.png"
+  },
+  {
+    "number": 5,
+    "key": "Vault_Inbox",
+    "title": "Vault Inbox",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/05_Vault_Inbox.png"
+  },
+  {
+    "number": 6,
+    "key": "Source_Library",
+    "title": "Source Library",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/06_Source_Library.png"
+  },
+  {
+    "number": 7,
+    "key": "Claims_Explorer",
+    "title": "Claims Explorer",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/07_Claims_Explorer.png"
+  },
+  {
+    "number": 8,
+    "key": "Compiler_Review",
+    "title": "Compiler Review",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/08_Compiler_Review.png"
+  },
+  {
+    "number": 9,
+    "key": "Case_Setup_IC_Record",
+    "title": "Case Setup IC Record",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/09_Case_Setup_IC_Record.png"
+  },
+  {
+    "number": 10,
+    "key": "Work",
+    "title": "Work",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/10_Work.png"
+  },
+  {
+    "number": 11,
+    "key": "What_the_Deal_Rests_On",
+    "title": "What the Deal Rests On",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/11_What_the_Deal_Rests_On.png"
+  },
+  {
+    "number": 12,
+    "key": "Unknowns_Decision",
+    "title": "Unknowns Decision",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/12_Unknowns_Decision.png"
+  },
+  {
+    "number": 13,
+    "key": "Unknowns_Pipeline",
+    "title": "Unknowns Pipeline",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/13_Unknowns_Pipeline.png"
+  },
+  {
+    "number": 14,
+    "key": "Shadow_IC",
+    "title": "Shadow IC",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/14_Shadow_IC.png"
+  },
+  {
+    "number": 15,
+    "key": "Scenario_Lab",
+    "title": "Scenario Lab",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/15_Scenario_Lab.png"
+  },
+  {
+    "number": 16,
+    "key": "Artifacts",
+    "title": "Artifacts",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/16_Artifacts.png"
+  },
+  {
+    "number": 17,
+    "key": "Registry",
+    "title": "Registry",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/17_Registry.png"
+  },
+  {
+    "number": 18,
+    "key": "Causal_Replay",
+    "title": "Causal Replay",
+    "category": "PERSISTENT ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/01_PERSISTENT_ROOMS/18_Causal_Replay.png"
+  },
+  {
+    "number": 19,
+    "key": "Object_Aperture_Claim_Basis",
+    "title": "Object Aperture Claim Basis",
+    "category": "CONTEXTUAL OVERLAY",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/19_Object_Aperture_Claim_Basis.png"
+  },
+  {
+    "number": 20,
+    "key": "Object_Aperture_Claim_Action",
+    "title": "Object Aperture Claim Action",
+    "category": "CONTEXTUAL OVERLAY",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/20_Object_Aperture_Claim_Action.png"
+  },
+  {
+    "number": 21,
+    "key": "Object_Aperture_Cell",
+    "title": "Object Aperture Cell",
+    "category": "CONTEXTUAL OVERLAY",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/21_Object_Aperture_Cell.png"
+  },
+  {
+    "number": 22,
+    "key": "Object_Aperture_Source_PDF",
+    "title": "Object Aperture Source PDF",
+    "category": "CONTEXTUAL OVERLAY",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/22_Object_Aperture_Source_PDF.png"
+  },
+  {
+    "number": 23,
+    "key": "Quick_Navigation",
+    "title": "Quick Navigation",
+    "category": "CONTEXTUAL OVERLAY",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/02_CONTEXTUAL_OVERLAYS/23_Quick_Navigation.png"
+  },
+  {
+    "number": 24,
+    "key": "Change_Arrival",
+    "title": "Change Arrival",
+    "category": "TRANSIENT WORKFLOW",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/24_Change_Arrival.png"
+  },
+  {
+    "number": 25,
+    "key": "Change_Review",
+    "title": "Change Review",
+    "category": "TRANSIENT WORKFLOW",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/25_Change_Review.png"
+  },
+  {
+    "number": 26,
+    "key": "Change_Review_Editing",
+    "title": "Change Review Editing",
+    "category": "TRANSIENT WORKFLOW",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/26_Change_Review_Editing.png"
+  },
+  {
+    "number": 27,
+    "key": "Change_Impact",
+    "title": "Change Impact",
+    "category": "TRANSIENT WORKFLOW",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/27_Change_Impact.png"
+  },
+  {
+    "number": 28,
+    "key": "Action_Frontier",
+    "title": "Action Frontier",
+    "category": "TRANSIENT WORKFLOW",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/03_TRANSIENT_WORKFLOWS/28_Action_Frontier.png"
+  },
+  {
+    "number": 29,
+    "key": "Decision_Room_Active",
+    "title": "Decision Room Active",
+    "category": "GATED ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/04_GATED_ROOMS/29_Decision_Room_Active.png"
+  },
+  {
+    "number": 30,
+    "key": "Execution_Room_Ready",
+    "title": "Execution Room Ready",
+    "category": "GATED ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/04_GATED_ROOMS/30_Execution_Room_Ready.png"
+  },
+  {
+    "number": 31,
+    "key": "Execution_Room_Acknowledged",
+    "title": "Execution Room Acknowledged",
+    "category": "GATED ROOM",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/04_GATED_ROOMS/31_Execution_Room_Acknowledged.png"
+  },
+  {
+    "number": 32,
+    "key": "Settled_State",
+    "title": "Settled State",
+    "category": "COMPLETION STATE",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/05_COMPLETION_STATES/32_Settled_State.png"
+  },
+  {
+    "number": 33,
+    "key": "Decision_Blocked",
+    "title": "Decision Blocked",
+    "category": "MODE / BLOCKED / ERROR STATE",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/33_Decision_Blocked.png"
+  },
+  {
+    "number": 34,
+    "key": "Empty_System",
+    "title": "Empty System",
+    "category": "MODE / BLOCKED / ERROR STATE",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/34_Empty_System.png"
+  },
+  {
+    "number": 35,
+    "key": "Mode_Chooser",
+    "title": "Mode Chooser",
+    "category": "MODE / BLOCKED / ERROR STATE",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/35_Mode_Chooser.png"
+  },
+  {
+    "number": 36,
+    "key": "Connected_Error",
+    "title": "Connected Error",
+    "category": "MODE / BLOCKED / ERROR STATE",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/36_Connected_Error.png"
+  },
+  {
+    "number": 37,
+    "key": "Offline_Read_Only",
+    "title": "Offline Read Only",
+    "category": "MODE / BLOCKED / ERROR STATE",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/37_Offline_Read_Only.png"
+  },
+  {
+    "number": 38,
+    "key": "Orion_Generalization",
+    "title": "Orion Generalization",
+    "category": "MODE / BLOCKED / ERROR STATE",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/38_Orion_Generalization.png"
+  },
+  {
+    "number": 39,
+    "key": "Mobile_Read_Only",
+    "title": "Mobile Read Only",
+    "category": "MODE / BLOCKED / ERROR STATE",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/39_Mobile_Read_Only.png"
+  },
+  {
+    "number": 40,
+    "key": "Claims_Filtered_AsOf",
+    "title": "Claims Filtered AsOf",
+    "category": "MODE / BLOCKED / ERROR STATE",
+    "description": "Actual PANTA V19 interface screen captured from the runnable build.",
+    "path": "03_SCREEN_ATLAS/06_BLOCKED_ERROR_AND_MODE_STATES/40_Claims_Filtered_AsOf.png"
+  }
+]

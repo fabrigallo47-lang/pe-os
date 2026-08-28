@@ -1,0 +1,21 @@
+{
+  "package_name": "PANTA_V19B_COMPLETE_VERIFIED",
+  "release": "V19.B",
+  "semantic_version": "19.1.0",
+  "generated_at_utc": "2026-08-27T15:25:53Z",
+  "content_artifacts_excluding_control_files": 232,
+  "content_bytes_excluding_control_files": 66760148,
+  "inventory_entries": 233,
+  "checksum_entries": 234,
+  "package_files_total": 235,
+  "acceptance_checks": {
+    "passed": 22,
+    "total": 22,
+    "status": "PASS"
+  },
+  "orion_normalized_statement_overlap_ratio": 0.0,
+  "inventory_scope": "all files except 00_START_HERE/PACKAGE_INVENTORY.csv and 00_START_HERE/CHECKSUMS.sha256",
+  "checksum_scope": "all files except 00_START_HERE/CHECKSUMS.sha256",
+  "algorithm": "SHA-256",
+  "checksum_verification_status": "PASS"
+}

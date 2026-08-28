@@ -1,0 +1,22 @@
+digraph G { graph [bgcolor="#06131d",pad="0.25",nodesep="0.45",ranksep="0.65",fontname="DejaVu Sans",fontcolor="#e9f7f8"];
+node [shape=box,style="rounded,filled",fillcolor="#0b2633",color="#2c6978",fontname="DejaVu Sans",fontcolor="#e9f7f8",fontsize=11,penwidth=1.2,margin="0.14,0.10"];
+edge [color="#45d6df",fontname="DejaVu Sans",fontcolor="#a9d9de",fontsize=9,penwidth=1.3,arrowsize=0.7]; rankdir=LR;
+files[label="Native files
+Excel / PDF / Word / PPT / URL / Inbox"];
+parse[label="Lossless source decoding
+text, cells, formulas, locators, versions"];
+compiler[label="Constrained semantic compiler
+claims, identities, questions, bindings"];
+review[label="Professional review
+admit / correct / reject",color="#d5a941"];
+store[label="Live Investment Case Store
+Current + event history",fillcolor="#103747"];
+runtime[label="Transition Engine
+Candidate + affected set + human stops"];
+projection[label="Validated frontend projection
+room contracts + capabilities"];
+ui[label="PANTA V19 UI
+inspect, decide, execute, replay",color="#45d6df"];
+files->parse->compiler->review->store->runtime->projection->ui;
+compiler->coverage[label="unresolved",style=dashed,color="#d5a941"];coverage[label="Coverage and Pipeline Review",color="#d5a941"];
+}

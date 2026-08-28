@@ -1,0 +1,122 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/agent_mission.schema.json",
+  "title": "PANTA V20 Governed Agent Mission",
+  "type": "object",
+  "properties": {
+    "mission_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "id": {
+      "type": "string"
+    },
+    "label": {
+      "type": "string",
+      "minLength": 1
+    },
+    "mission_type": {
+      "type": "string",
+      "minLength": 1
+    },
+    "objective": {
+      "type": "string",
+      "minLength": 1
+    },
+    "question_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "unknown_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "allowed_sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "prohibited_sources": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "confidential_context_policy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "data_egress_policy": {
+      "type": "string",
+      "minLength": 1
+    },
+    "expected_output": {
+      "type": "string",
+      "minLength": 1
+    },
+    "stop_condition": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authority_class": {
+      "type": "string",
+      "minLength": 1
+    },
+    "reviewer_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "auto_executable_in_mock": {
+      "type": "boolean"
+    },
+    "external_human_contact": {
+      "type": "boolean"
+    },
+    "status": {
+      "type": "string",
+      "minLength": 1
+    },
+    "synthetic": {
+      "type": "boolean"
+    },
+    "no_external_effects": {
+      "type": "boolean"
+    },
+    "effective_date": {
+      "type": "string",
+      "format": "date"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    }
+  },
+  "additionalProperties": true,
+  "required": [
+    "mission_id",
+    "label",
+    "mission_type",
+    "objective",
+    "question_ids",
+    "allowed_sources",
+    "prohibited_sources",
+    "confidential_context_policy",
+    "data_egress_policy",
+    "expected_output",
+    "stop_condition",
+    "authority_class",
+    "reviewer_id",
+    "auto_executable_in_mock",
+    "external_human_contact",
+    "status",
+    "synthetic",
+    "no_external_effects",
+    "effective_date",
+    "known_at"
+  ]
+}

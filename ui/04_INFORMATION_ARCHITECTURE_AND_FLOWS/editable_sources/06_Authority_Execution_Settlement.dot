@@ -1,0 +1,8 @@
+digraph G { graph [bgcolor="#06131d",pad="0.25",nodesep="0.45",ranksep="0.65",fontname="DejaVu Sans",fontcolor="#e9f7f8"];
+node [shape=box,style="rounded,filled",fillcolor="#0b2633",color="#2c6978",fontname="DejaVu Sans",fontcolor="#e9f7f8",fontsize=11,penwidth=1.2,margin="0.14,0.10"];
+edge [color="#45d6df",fontname="DejaVu Sans",fontcolor="#a9d9de",fontsize=9,penwidth=1.3,arrowsize=0.7]; rankdir=LR;
+stop[label="Open Human Stop"];gate[label="Server authority gate",color="#d5a941"];course[label="Attested course"];pkg[label="Immutable execution package"];ack[label="Server acknowledgment"];settle[label="Settlement gate",color="#58cf9f"];
+stop->gate->course;course->pkg[label="external effect"];pkg->ack->settle;course->settle[label="internal / defer",style=dashed];
+gate->denied[label="insufficient authority",style=dashed,color="#ff7678"];denied[label="Blocked - no record written",color="#ff7678"];
+settle->canonical[label="Canonical Current + replay hash",color="#58cf9f"];
+}

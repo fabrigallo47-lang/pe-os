@@ -1,0 +1,16 @@
+digraph G {
+  graph [rankdir=LR, bgcolor="transparent", pad="0.25", nodesep="0.3", ranksep="0.55"];
+  node [shape=box, style="rounded,filled", fontname="Arial", fontsize=11, color="#446074", fillcolor="#13202c", fontcolor="#e9f1f5", margin="0.16,0.1"];
+  edge [color="#73bfd6", penwidth=1.4, arrowsize=0.7];
+  unknown [label="Unknown / question"];
+  mission [label="Mission envelope\nobjective, allowed/prohibited sources, egress, stop"];
+  internal [label="Deterministic internal analysis\nmay auto-compute; review required"];
+  public [label="Policy-safe public research\nsynthetic in packaged runtime"];
+  human [label="Human contact / physical test\nnever auto-runs"];
+  source [label="New source\nprovenance + review-required claim"];
+  authority [label="Authority / scheduling"];
+  unknown -> mission;
+  mission -> internal -> source;
+  mission -> public -> source;
+  mission -> human -> authority -> source;
+}

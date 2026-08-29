@@ -23,16 +23,20 @@ from tools.adapter_alpha import (
     e3_to_extraction_graph,
 )
 from tools.extract_v2 import (
+    CLAIM_TOOL,
     Chunk,
+    RawClaim,
     SYSTEM_PROMPT,
     UnsupportedSourceError,
     _is_fatal_provider_error,
     _provider_retry_delay,
     _source_record,
     annotate_chunk,
+    assemble,
     load_manifest,
     parse_markdown,
     parse_source,
+    validate,
 )
 from tools.extraction_quality import score_e3
 
@@ -106,6 +110,117 @@ def _e3_manifest() -> dict:
 
 
 class WorkbookV2ContractTests(unittest.TestCase):
+    def test_l2_tool_schema_requires_non_empty_identity_strings(self) -> None:
+        claim_schema = CLAIM_TOOL["input_schema"]["properties"]["claims"]["items"]
+        self.assertTrue(
+            {"period", "perimeter", "locator_hint"}
+            <= set(claim_schema["required"])
+        )
+        for field in ("period", "perimeter", "locator_hint"):
+            with self.subTest(field=field):
+                field_schema = claim_schema["properties"][field]
+                self.assertEqual(field_schema["type"], "string")
+                self.assertEqual(field_schema["minLength"], 1)
+                self.assertRegex("x", field_schema["pattern"])
+                self.assertNotRegex("   ", field_schema["pattern"])
+
+    def test_l2_blank_identity_uses_only_safe_source_and_chunk_metadata(self) -> None:
+        class ToolUseBlock:
+            type = "tool_use"
+            name = "emit_claims"
+            input = {
+                "claims": [
+                    {
+                        "metric": "Revenue",
+                        "value": 100,
+                        "unit": "$m",
+                        "period": "   ",
+                        "perimeter": "   ",
+                        "epistemic_class": "asserted",
+                        "direction": "supports",
+                        "topic": "Financial Performance",
+                        "statement": "Revenue was $100m.",
+                        "locator_hint": "   ",
+                    }
+                ]
+            }
+
+        class Messages:
+            def create(self, **_request):
+                return type("Response", (), {"content": [ToolUseBlock()]})()
+
+        client = type("Client", (), {"messages": Messages()})()
+        chunk = Chunk(
+            chunk_id="ch-safe-metadata-fallback",
+            locator="keystone_seller_cim.md::## Revenue",
+            body="Revenue was $100m.",
+            source_path="keystone_seller_cim.md",
+            source_type="md",
+            source_record=_source_record(Path("keystone_seller_cim.md")),
+            word_count=3,
+            section_heading="## Revenue",
+        )
+
+        claims = annotate_chunk(chunk, client, "keystone", rate_limit_delay=0)
+
+        self.assertEqual(len(claims), 1)
+        self.assertEqual(claims[0].period, "as of 2025-10-27")
+        self.assertEqual(claims[0].perimeter, "unknown")
+        self.assertEqual(claims[0].locator, "keystone_seller_cim.md::## Revenue")
+
+    def test_legacy_cache_null_identity_fields_remain_readable(self) -> None:
+        raw = RawClaim(
+            metric="Revenue",
+            value=100,
+            unit="$m",
+            period=None,
+            perimeter=None,
+            epistemic_class="asserted",
+            direction="supports",
+            topic="Financial Performance",
+            definition_id=None,
+            statement="Historical cached revenue claim.",
+            locator="legacy.md::line 1",
+            source_id="SRC-LEGACY",
+            source_path="legacy.md",
+            known_at="",
+        )
+
+        canonical = validate(raw)
+        graph = assemble([canonical])
+
+        self.assertEqual(canonical.period, "")
+        self.assertEqual(canonical.period_iso, "unknown")
+        self.assertEqual(canonical.perimeter, "unknown")
+        self.assertEqual(graph.admitted_count, 1)
+        self.assertEqual(graph.rejected_count, 0)
+
+    def test_derived_without_non_whitespace_derivation_is_rejected(self) -> None:
+        raw = RawClaim(
+            metric="Revenue Growth",
+            value=10,
+            unit="%",
+            period="FY2026E",
+            perimeter="Synthetic standalone base scenario",
+            epistemic_class="derived",
+            direction="supports",
+            topic="Financial Performance",
+            definition_id=None,
+            statement="Revenue growth is 10%.",
+            locator="synthetic.xlsx::Inputs!C3",
+            source_id="SRC-MODEL",
+            source_path="synthetic.xlsx",
+            known_at="2026-08-29",
+            derivation="   ",
+        )
+
+        canonical = validate(raw)
+        graph = assemble([canonical])
+
+        self.assertIn("derived claim missing derivation field", canonical.validation_errors)
+        self.assertEqual(graph.admitted_count, 0)
+        self.assertEqual(graph.rejected_count, 1)
+
     def test_transient_provider_errors_honor_retry_after(self) -> None:
         error = RuntimeError("retry_after_seconds: 5")
         error.status_code = 429

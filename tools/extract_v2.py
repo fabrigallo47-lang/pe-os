@@ -366,17 +366,21 @@ CLAIM_TOOL = {
                             "enum": UNIT_ENUM,
                         },
                         "period": {
-                            "type": ["string", "null"],
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": r".*\S.*",
                             "description": (
                                 "The time period or vintage this claim refers to, in the document's own language. "
                                 "Use the richest description available. Examples: "
                                 "'FY2025A', 'FY2025A / FY2025E seller presentation', 'As of 2025-10-27', "
                                 "'LTM Sep-25', '2020 to 2025-10-27', 'FY2026E–FY2030E forecast'. "
-                                "Null only if the claim is genuinely timeless."
+                                "Use 'cross-period' only if the claim is genuinely timeless."
                             ),
                         },
                         "perimeter": {
-                            "type": ["string", "null"],
+                            "type": "string",
+                            "minLength": 1,
+                            "pattern": r".*\S.*",
                             "description": (
                                 "The precise economic scope — entity + metric definition + any adjustments. "
                                 "Write the full descriptive string, not a shorthand. Examples: "
@@ -386,7 +390,7 @@ CLAIM_TOOL = {
                                 "'Alderstone consolidated EBITDA under Firm valuation, leverage and returns perimeter', "
                                 "'Alderstone customer revenue measured by individual billing account', "
                                 "'Alderstone accounts-receivable ledger'. "
-                                "Null only if scope is truly unspecified."
+                                "Use 'unknown' only if scope is truly unspecified."
                             ),
                         },
                         "epistemic_class": {
@@ -418,6 +422,8 @@ CLAIM_TOOL = {
                         },
                         "locator_hint": {
                             "type": "string",
+                            "minLength": 1,
+                            "pattern": r".*\S.*",
                             "maxLength": 120,
                             "description": "Section heading, table name, slide, or line reference where this appears.",
                         },
@@ -830,7 +836,26 @@ def annotate_chunk(
     for block in resp.content:
         if block.type == "tool_use" and block.name == "emit_claims":
             for c in block.input.get("claims", []):
-                hint = (c.get("locator_hint") or "").strip()
+                period = _non_empty_l2_text(c.get("period"))
+                if period is None:
+                    effective_date = _non_empty_l2_text(src.get("effective_date"))
+                    period = f"as of {effective_date}" if effective_date else "unknown"
+
+                # There is no reliable economic-scope inference when the model
+                # omitted the perimeter. Preserve that absence explicitly rather
+                # than inventing an entity, consolidation basis, or adjustment view.
+                perimeter = _non_empty_l2_text(c.get("perimeter")) or "unknown"
+
+                hint = _non_empty_l2_text(c.get("locator_hint"))
+                if hint is None:
+                    hint = _non_empty_l2_text(chunk.section_heading)
+                if hint is None and chunk.page_or_slide_number is not None:
+                    hint = f"page or slide {chunk.page_or_slide_number}"
+                if hint is None:
+                    # The fragment locator is deterministic L1 metadata. Reusing it
+                    # does not add a fabricated location and the branch below avoids
+                    # appending the locator to itself.
+                    hint = chunk.locator
                 # The model sometimes echoes the fragment locator it was given
                 # instead of naming a position inside it, which produced
                 # "file.md::## Heading:file.md::## Heading". Only append a hint
@@ -843,8 +868,8 @@ def annotate_chunk(
                     metric=c["metric"],
                     value=c.get("value"),
                     unit=c.get("unit"),
-                    period=c.get("period"),
-                    perimeter=c.get("perimeter"),
+                    period=period,
+                    perimeter=perimeter,
                     epistemic_class=c.get("epistemic_class", "asserted"),
                     direction=c.get("direction", "context"),
                     topic=c.get("topic", "Other"),
@@ -871,6 +896,14 @@ def _parse_float(v: Any) -> float | None:
         return float(str(v).replace(",", "").replace("%", "").strip())
     except (TypeError, ValueError):
         return None
+
+
+def _non_empty_l2_text(value: Any) -> str | None:
+    """Return trimmed non-empty L2 text without coercing non-string values."""
+    if not isinstance(value, str):
+        return None
+    value = value.strip()
+    return value or None
 
 
 def _normalize_period(raw: str | None) -> str:
@@ -929,7 +962,7 @@ def validate(raw: RawClaim) -> CanonicalClaim:
     ec = raw.epistemic_class if raw.epistemic_class in EPISTEMIC_CLASS_ENUM else "asserted"
     if raw.epistemic_class not in EPISTEMIC_CLASS_ENUM:
         errors.append(f"invalid epistemic_class: '{raw.epistemic_class}'")
-    if ec == "derived" and not raw.derivation:
+    if ec == "derived" and not (raw.derivation or "").strip():
         errors.append("derived claim missing derivation field")
     claim_id = _stable_id(raw.metric, value, period_iso, perimeter)
     return CanonicalClaim(

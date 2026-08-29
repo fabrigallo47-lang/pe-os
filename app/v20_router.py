@@ -1615,9 +1615,36 @@ def _runtime_execution_graph(case_id: str) -> Path:
             ROOT / "pipeline_out" / "e3" / "K-PRE" / "adapter_alpha" / "execution_graph_v7.json",
         )
     path = next((candidate for candidate in candidates if candidate.exists()), None)
-    if path is None:
-        raise DynamicsBundleError("execution_graph_v7.json is required to compile admitted evidence")
-    return path
+    if path is not None:
+        return path
+    # No hand-curated or previously-compiled mapping exists yet for this case.
+    # extract_v2 captures a workbook_formula_graphs.json for every uploaded
+    # .xlsx/.xlsm regardless of case -- if this case has one, mechanically
+    # compile a runtime mapping from its own formulas (PAN-55) rather than
+    # borrowing keystone's or declaring a blocker a case could resolve itself
+    # just by having uploaded a spreadsheet.
+    formula_graphs_path = pipeline_out / "workbook_formula_graphs.json"
+    if formula_graphs_path.exists():
+        from tools.workbook_model_compiler import (
+            WorkbookModelCompilerError,
+            compile_workbook_formula_graphs,
+        )
+        try:
+            payload = json.loads(formula_graphs_path.read_text(encoding="utf-8"))
+            graph = compile_workbook_formula_graphs(payload, case_id)
+        except WorkbookModelCompilerError as exc:
+            # Same failure shape admit_evidence already knows how to turn
+            # into a declared RUNTIME_MAPPING_REQUIRED Human Stop -- a case
+            # whose workbook has no formulas, or none the compiler can
+            # honestly resolve, is exactly the case that gets no mapping.
+            raise DynamicsBundleError(
+                f"execution_graph_v7.json could not be mechanically compiled: {exc}"
+            ) from exc
+        derived_path = VAULT / "deals" / case_id / "models" / "execution_graph_v7.json"
+        derived_path.parent.mkdir(parents=True, exist_ok=True)
+        _write_json_atomic(derived_path, graph)
+        return derived_path
+    raise DynamicsBundleError("execution_graph_v7.json is required to compile admitted evidence")
 
 
 def _runtime_policy_path(filename: str) -> Path:

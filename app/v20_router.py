@@ -89,6 +89,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "sendPackage": {"status": "AVAILABLE", "method": "POST", "path": "/execution-packages/{package_id}/send"},
     "settle": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/settle"},
     "replay": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/replay"},
+    "loadReunderwrite": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/re-underwrite"},
     "prepareWork": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/work-items/{work_id}/prepare"},
     "compilerProposals": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/compiler-proposals"},
     "reviewCompilerProposal": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/compiler-proposals/{kind}/{proposal_id}/review"},
@@ -909,6 +910,186 @@ def _current_graph_as_of(
     return (copy.deepcopy(graph), metadata) if isinstance(graph, dict) else ({}, metadata)
 
 
+def _graph_collection_delta(
+    baseline: dict,
+    current: dict,
+    collection: str,
+    id_fields: tuple[str, ...],
+) -> dict[str, Any]:
+    """Compare one graph collection by stable object identity."""
+    def indexed(graph: dict) -> dict[str, dict]:
+        records: dict[str, dict] = {}
+        for item in graph.get(collection, []) or []:
+            if not isinstance(item, dict):
+                continue
+            object_id = next(
+                (str(item[field]) for field in id_fields if item.get(field)),
+                "",
+            )
+            if object_id:
+                records[object_id] = item
+        return records
+
+    before = indexed(baseline)
+    after = indexed(current)
+    added = sorted(after.keys() - before.keys())
+    removed = sorted(before.keys() - after.keys())
+    unchanged = []
+    changed = []
+    for object_id in sorted(before.keys() & after.keys()):
+        if _stable_json_hash(before[object_id]) == _stable_json_hash(after[object_id]):
+            unchanged.append(object_id)
+            continue
+        changed_fields = sorted(
+            key
+            for key in before[object_id].keys() | after[object_id].keys()
+            if before[object_id].get(key) != after[object_id].get(key)
+        )
+        changed.append({
+            "object_id": object_id,
+            "changed_fields": changed_fields,
+            "before_hash": _stable_json_hash(before[object_id]),
+            "after_hash": _stable_json_hash(after[object_id]),
+        })
+    return {
+        "collection": collection,
+        "added_ids": added,
+        "removed_ids": removed,
+        "changed": changed,
+        "unchanged_ids": unchanged,
+        "counts": {
+            "added": len(added),
+            "removed": len(removed),
+            "changed": len(changed),
+            "unchanged": len(unchanged),
+        },
+    }
+
+
+def _build_reunderwrite(
+    case_id: str,
+    baseline_state_id: str | None = None,
+    current_state_id: str | None = None,
+) -> dict[str, Any]:
+    """Compare two immutable Current states and project the selected latest one."""
+    versions = [
+        item for item in _list_graph_versions(case_id)
+        if str(item.get("kind")) == "CURRENT"
+    ]
+    versions.sort(key=lambda item: (
+        _parse_temporal_instant(item.get("known_at"))
+        or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+        str(item.get("version_id") or ""),
+    ))
+    if not versions:
+        raise HTTPException(409, "Re-underwrite requires immutable Current graph versions")
+
+    by_state = {str(item.get("state_id")): item for item in versions}
+    current_meta = by_state.get(str(current_state_id)) if current_state_id else versions[-1]
+    if current_meta is None:
+        raise HTTPException(404, f"Current state version not found: {current_state_id}")
+    current_index = versions.index(current_meta)
+    if baseline_state_id:
+        baseline_meta = by_state.get(str(baseline_state_id))
+        if baseline_meta is None:
+            raise HTTPException(404, f"Baseline state version not found: {baseline_state_id}")
+    elif current_index > 0:
+        baseline_meta = versions[current_index - 1]
+    else:
+        raise HTTPException(409, "Re-underwrite requires a prior Current graph version")
+    if baseline_meta["state_id"] == current_meta["state_id"]:
+        raise HTTPException(400, "Baseline and Current state must be different")
+    if versions.index(baseline_meta) >= current_index:
+        raise HTTPException(400, "Baseline state must precede Current state")
+
+    baseline_snapshot = _load_graph_version(case_id, str(baseline_meta["version_id"]))
+    current_snapshot = _load_graph_version(case_id, str(current_meta["version_id"]))
+    baseline_graph = copy.deepcopy(baseline_snapshot["graph"])
+    current_graph = copy.deepcopy(current_snapshot["graph"])
+    deltas = [
+        _graph_collection_delta(
+            baseline_graph,
+            current_graph,
+            "claims",
+            ("claim_id", "stable_id", "id"),
+        ),
+        _graph_collection_delta(
+            baseline_graph,
+            current_graph,
+            "case_positions",
+            ("position_id", "id"),
+        ),
+        _graph_collection_delta(
+            baseline_graph,
+            current_graph,
+            "model_nodes",
+            ("model_node_id", "id"),
+        ),
+    ]
+    comparison = {
+        "schema_version": "reunderwrite-comparison/1.0",
+        "case_id": case_id,
+        "baseline_state_id": baseline_meta["state_id"],
+        "current_state_id": current_meta["state_id"],
+        "baseline_graph_hash": baseline_meta["graph_hash"],
+        "current_graph_hash": current_meta["graph_hash"],
+        "baseline_known_at": baseline_meta["known_at"],
+        "current_known_at": current_meta["known_at"],
+        "collections": {item["collection"]: item for item in deltas},
+        "changed_object_count": sum(
+            item["counts"]["added"]
+            + item["counts"]["removed"]
+            + item["counts"]["changed"]
+            for item in deltas
+        ),
+        "method": {
+            "identity": "stable object ID within each graph collection",
+            "change_detection": "canonical JSON SHA-256 inequality",
+            "field_explanation": "top-level fields whose values differ",
+        },
+    }
+
+    projection = _build_projection(case_id)
+    deal = projection["deal"]
+    if "case_positions" in current_graph:
+        current_graph["positions"] = current_graph["case_positions"]
+    graph_claims = current_graph.get("claims", [])
+    if isinstance(graph_claims, list):
+        claims = _enrich_claims(graph_claims, _load_bears_on_map(case_id))
+        deal["claims"] = claims
+        deal["source_center"] = {
+            "sources": _build_sources_from_claims(claims, case_id)
+        }
+        deal["question_spine"] = _build_question_spine(
+            _load_questions(case_id),
+            claims,
+        )
+    deal.update({
+        "as_of_state_id": str(current_meta["state_id"]),
+        "as_of_date": str(current_meta["known_at"])[:10],
+        "current_graph": current_graph,
+        "candidate_graph": {},
+        "transition_output": {},
+        "reunderwrite": comparison,
+    })
+    projection = _apply_decision_intelligence(projection)
+    context = _make_context(
+        case_id,
+        str(current_meta["state_id"]),
+        str(current_meta["known_at"])[:10],
+    )
+    return {
+        "mode": "RE_UNDERWRITE",
+        "read_only": True,
+        "comparison": comparison,
+        "projection": {
+            "projection": projection,
+            "context": context,
+            "registry": [],
+        },
+    }
+
+
 def _runtime_execution_graph(case_id: str) -> Path:
     pipeline_out = _pipeline_out_for_case(case_id)
     candidates = (
@@ -1477,7 +1658,7 @@ def _enrich_claims(raw: list[dict], bears_on_map: dict) -> list[dict]:
             **c,
             "claim_id": cid,
             "id": cid,
-            "bears_on": bears_on_map.get(cid, []),
+            "bears_on": bears_on_map.get(cid, c.get("bears_on", [])),
             "locator": c.get("locator", ""),
             "epistemic_type": c.get("epistemic", c.get("epistemic_type", "asserted")),
             "epistemic_class": c.get("epistemic", "asserted"),
@@ -2012,6 +2193,19 @@ def list_graph_versions(case_id: str) -> dict:
 @v20.get("/cases/{case_id}/graph-versions/{version_id:path}")
 def get_graph_version(case_id: str, version_id: str) -> dict:
     return _load_graph_version(case_id, version_id)
+
+
+@v20.get("/cases/{case_id}/re-underwrite")
+def reunderwrite(
+    case_id: str,
+    baseline_state_id: str | None = None,
+    current_state_id: str | None = None,
+) -> dict:
+    return _build_reunderwrite(
+        case_id,
+        baseline_state_id=baseline_state_id,
+        current_state_id=current_state_id,
+    )
 
 
 @v20.get("/cases/{case_id}/sources")
@@ -2795,6 +2989,71 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
     return {"job": _jobs[job_id], "job_id": job_id}
 
 
+@v20.get("/cases/{case_id}/ingest/{job_id}/proposal")
+def get_evidence_proposal(case_id: str, job_id: str) -> dict:
+    """Return the editable extraction boundary without changing Current."""
+    proposal_path = _proposal_path(job_id, case_id)
+    if not proposal_path.exists():
+        raise HTTPException(404, "No evidence proposal exists for this ingestion job")
+    proposal = _load_json_safe(proposal_path)
+    if proposal.get("case_id") != case_id:
+        raise HTTPException(409, "Evidence proposal belongs to another case")
+    existing = _load_claims(case_id)
+    preview_claims, _ = _merge_claim_corpus(existing, proposal.get("claims", []))
+    preview = _semantic_graph_from_claims(preview_claims, case_id)
+    return {
+        "proposal": proposal,
+        "questions": _build_question_spine(_load_questions(case_id), proposal.get("claims", [])),
+        "semantic_preview": {
+            "nodes": len(preview.get("nodes", [])),
+            "edges": len(preview.get("edges", [])),
+            "current_mutated": False,
+        },
+    }
+
+
+def _validated_reviewed_claims(case_id: str, proposal: dict, payload: dict) -> list[dict]:
+    """Apply editable fields while preserving proposal identity and provenance."""
+    supplied = payload.get("claims")
+    if not isinstance(supplied, list):
+        return [dict(claim) for claim in proposal.get("claims", []) if isinstance(claim, dict)]
+
+    originals = {
+        str(item.get("claim_id") or item.get("id")): item
+        for item in proposal.get("claims", []) if isinstance(item, dict)
+    }
+    registry_ids = {str(item.get("id")) for item in _load_questions(case_id)}
+    reviewed = []
+    seen: set[str] = set()
+    editable = {
+        "statement", "value", "unit", "period", "perimeter", "locator",
+        "epistemic", "epistemic_class", "direction", "topic", "metric",
+        "definition_id", "author", "bears_on",
+    }
+    for raw in supplied:
+        if not isinstance(raw, dict):
+            raise HTTPException(422, "Reviewed claims must be objects")
+        claim_id = str(raw.get("claim_id") or raw.get("id") or "")
+        original = originals.get(claim_id)
+        if original is None or claim_id in seen:
+            raise HTTPException(422, f"Reviewed claim is not unique in this proposal: {claim_id}")
+        seen.add(claim_id)
+        claim = dict(original)
+        claim.update({key: raw[key] for key in editable if key in raw})
+        bears_on = claim.get("bears_on", [])
+        if not isinstance(bears_on, list):
+            raise HTTPException(422, f"bears_on must be a list for claim {claim_id}")
+        unknown = sorted({str(qid) for qid in bears_on if str(qid) not in registry_ids})
+        if unknown:
+            raise HTTPException(422, f"Unknown question binding(s) for {claim_id}: {', '.join(unknown)}")
+        claim["bears_on"] = sorted({str(qid) for qid in bears_on})
+        claim["claim_id"] = claim_id
+        claim["source_id"] = original.get("source_id") or proposal.get("source_id")
+        claim["source_ids"] = original.get("source_ids") or [claim["source_id"]]
+        reviewed.append(claim)
+    return reviewed
+
+
 @v20.post("/cases/{case_id}/ingest/{job_id}/admit")
 async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     """Apply the explicit professional decision at the evidence boundary.
@@ -2830,8 +3089,7 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
 
     # Optional corrected claims are supplied by a review UI/API client.  The
     # default is to admit the extractor proposal unchanged.
-    reviewed_claims = payload.get("claims") if isinstance(payload.get("claims"), list) else proposal.get("claims", [])
-    reviewed_claims = [dict(c) for c in reviewed_claims if isinstance(c, dict)]
+    reviewed_claims = _validated_reviewed_claims(case_id, proposal, payload)
     _ensure_question_registry(case_id)
     existing_path = pipeline_out / "claims.json"
     existing = json.loads(existing_path.read_text()) if existing_path.exists() else []

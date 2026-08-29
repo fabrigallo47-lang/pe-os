@@ -2,6 +2,7 @@ import os
 import sys
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 
@@ -9,6 +10,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools import llm_provider  # noqa: E402
+from tools import extract_v2  # noqa: E402
 
 
 class LLMProviderTests(unittest.TestCase):
@@ -54,6 +56,52 @@ class LLMProviderTests(unittest.TestCase):
                     }
                 },
             )
+
+    def test_v2_allows_complete_excel_tool_output(self):
+        captured = {}
+
+        class FakeMessages:
+            def create(self, **request):
+                captured.update(request)
+                return SimpleNamespace(content=[])
+
+        chunk = extract_v2.Chunk(
+            chunk_id="ch-test",
+            locator="model.xlsx::Inputs!52:64",
+            body="A57=Standalone Upside - DSO | B57=days | C57=62",
+            source_path="model.xlsx",
+            source_type="xlsx",
+            source_record={
+                "source_id": "SRC-MODEL",
+                "name": "Keystone model",
+                "doc_type": "LBO Model",
+                "known_at": "2026-03-05",
+            },
+            word_count=8,
+        )
+        client = SimpleNamespace(messages=FakeMessages())
+        with patch.dict(
+            os.environ,
+            {"PEOS_LLM_PROVIDER": "openrouter"},
+            clear=True,
+        ):
+            claims = extract_v2.annotate_chunk(
+                chunk,
+                client,
+                "keystone",
+                rate_limit_delay=0,
+            )
+
+        self.assertEqual(claims, [])
+        self.assertEqual(captured["max_tokens"], 4096)
+        self.assertEqual(
+            captured["tools"][0]["input_schema"]["properties"]["claims"]["maxItems"],
+            20,
+        )
+        self.assertEqual(
+            captured["extra_body"]["provider"]["data_collection"],
+            "deny",
+        )
 
 
 if __name__ == "__main__":

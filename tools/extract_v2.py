@@ -57,6 +57,7 @@ from tools.llm_provider import (  # noqa: E402
 
 VAULT_INBOX = ROOT / "vault" / "inbox"
 MODEL = configured_model("claude-haiku-4-5-20251001")
+MAX_TOKENS = int(os.environ.get("PEOS_EXTRACT_V2_MAX_TOKENS", "4096"))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Source registry — maps vault/inbox filenames to canonical SRC-xxx IDs.
@@ -319,7 +320,7 @@ DEFINITION_ENUM: list[str | None] = [
 CLAIM_TOOL = {
     "name": "emit_claims",
     "description": (
-        "Emit 0-4 financial claims from this document fragment. "
+        "Emit 0-20 financial claims from this document fragment. "
         "Extract only what is explicitly stated. Empty list if no financial claims. "
         "epistemic_class: asserted=seller/mgmt claim, observed=third-party real-time, "
         "attested=formally certified (QoE conclusion, IC decision), derived=YOU computed it."
@@ -330,7 +331,10 @@ CLAIM_TOOL = {
         "properties": {
             "claims": {
                 "type": "array",
-                "maxItems": 4,
+                # A 250-word Excel chunk can contain more than four distinct
+                # financial rows. The old cap deterministically dropped later
+                # rows such as PAN-37's DSO assumption.
+                "maxItems": 20,
                 "items": {
                     "type": "object",
                     "required": [
@@ -690,7 +694,9 @@ def annotate_chunk(chunk: Chunk, client, deal: str,
     try:
         request = {
             "model": MODEL,
-            "max_tokens": 1024,
+            # Match the larger schema capacity: Excel chunks commonly contain
+            # more than four claim-bearing rows and need room for tool JSON.
+            "max_tokens": MAX_TOKENS,
             "system": SYSTEM_PROMPT,
             "tools": [CLAIM_TOOL],
             "tool_choice": {"type": "tool", "name": "emit_claims"},

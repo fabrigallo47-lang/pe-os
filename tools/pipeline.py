@@ -27,6 +27,7 @@ Environment
     ANTHROPIC_API_KEY   required when provider=anthropic
     OPENROUTER_API_KEY  required when provider=openrouter
     PEOS_MODEL          provider model name
+    PEOS_EXTRACT_V2_MAX_TOKENS  V2 tool-output budget (default: 4096)
 """
 from __future__ import annotations
 

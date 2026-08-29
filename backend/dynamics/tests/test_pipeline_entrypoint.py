@@ -32,7 +32,14 @@ class PipelineEntrypointTests(unittest.TestCase):
             source.write_text("Keystone revenue was $10m in FY2025.\n", encoding="utf-8")
             output = Path(tmp) / "output"
             env = os.environ.copy()
-            env.pop("ANTHROPIC_API_KEY", None)
+            for key in (
+                "ANTHROPIC_API_KEY",
+                "OPENROUTER_API_KEY",
+                "PEOS_LLM_PROVIDER",
+                "PEOS_MODEL",
+                "PEOS_LLM_BASE_URL",
+            ):
+                env.pop(key, None)
 
             result = subprocess.run(
                 [

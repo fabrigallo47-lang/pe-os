@@ -1,4 +1,4 @@
-.PHONY: setup index report check state watch dev verify dynamics-test
+.PHONY: setup index report check state watch dev verify dynamics-test baseline
 
 PY := .venv/bin/python3
 
@@ -35,6 +35,9 @@ agents: index ## Deploy the agent runtime (watches vault, acts under contracts)
 
 contracts: ## Show what the machine contracts load
 	$(PY) tools/contracts.py
+
+baseline: ## Verify reproducible core inputs, hashes and external-package markers
+	$(PY) tools/baseline_inventory.py --require-core
 
 extract: ## Extract unextracted inbox files for all deals (or --deal DEAL --file FILE)
 	$(PY) tools/extract.py $(ARGS)

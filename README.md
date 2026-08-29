@@ -26,6 +26,7 @@ make state DEAL=aurora   # derive a deal's state by event replay
 make report     # open questions · contradictions · unbound claims
 make ui DEAL=aurora      # static shareable dashboard export
 make contracts  # show what the machine contracts load
+make baseline   # verify frozen inputs, hashes and external-package markers
 ```
 
 Open `vault/` in Obsidian anytime — same truth, different projection.
@@ -70,7 +71,7 @@ material and derived claim memory. A fresh clone starts without it.
 | `tools/` | `contracts.py` (loads the machine contracts as data) · `engine.py` (state resolution by event replay + guards) · `indexer.py` (vault → SQLite) · `ui.py` (static export) |
 | `backend/dynamics/` | Deterministic Candidate/Current/Approved transition runtime, extraction adapters, policy fixtures, schemas and executable conformance tests. The runtime consumes the compiled Live Investment Case, never the raw extraction graph. |
 | `app/` | FastAPI server + live UI. The API is the policy boundary: writes are ontology-validated, agent endpoints map to policy rows. |
-| `docs/` | `00` problem structure · `01` spec/stack · `02` backbone map · `03` architecture (canonical) · `report/` client teaser · `ui/` static exports |
+| `docs/` | `00` problem structure · `01` spec/stack · `02` backbone map · `03` architecture (canonical) · `reproducible-baseline.md` input/access plan · `report/` client teaser · `ui/` static exports |
 | `CLAUDE.md` | Agent operating manual: the 10 invariants, build-order status, conventions |
 
 ## The rules that don't bend

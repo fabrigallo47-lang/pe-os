@@ -65,15 +65,68 @@ _REF_RE = re.compile(
 # Text inside quotes must not be mined for references, and neither must the
 # names of functions that merely look like column letters.
 _STRING_RE = re.compile(r'"[^"]*"')
-_FUNCS = {"IF", "MAX", "MIN", "SUM", "ABS", "AND", "OR", "NOT", "ROUND",
-          "IFERROR", "NA", "TRUE", "FALSE", "PMT", "IRR", "XIRR", "NPV"}
+_SUPPORTED_FUNCTIONS = {
+    "ABS", "AND", "AVERAGE", "CHOOSE", "COUNT", "COUNTIF", "COUNTIFS",
+    "FALSE", "HLOOKUP", "IF", "IFERROR", "INDEX", "IRR", "MATCH", "MAX",
+    "MIN", "NA", "NOT", "NPV", "OR", "PMT", "ROUND", "SUM", "SUMIF",
+    "SUMIFS", "TRUE", "VLOOKUP", "XIRR", "XLOOKUP", "XNPV",
+}
+_FUNCTION_RE = re.compile(r"(?<![A-Za-z0-9_.])([A-Za-z_][A-Za-z0-9_.]*)\s*\(")
+_EXTERNAL_REF_RE = re.compile(
+    r"(?:'(?P<quoted>\[[^\]]+\][^']+)'|(?P<plain>\[[^\]]+\][A-Za-z_][A-Za-z0-9_. ]*))!"
+    r"(?P<c1>\$?[A-Z]{1,3}\$?\d+)(?::(?P<c2>\$?[A-Z]{1,3}\$?\d+))?",
+    re.IGNORECASE,
+)
 
 
 def _strip(ref: str) -> str:
     return ref.replace("$", "").upper()
 
 
-def parse_precedents(formula: str, own_sheet: str) -> list[str]:
+def external_references(formula: str) -> list[str]:
+    """Return workbook-qualified references without pretending they are local."""
+    if not formula or not formula.startswith("="):
+        return []
+    references = []
+    for match in _EXTERNAL_REF_RE.finditer(_STRING_RE.sub('\"\"', formula)):
+        book_sheet = match.group("quoted") or match.group("plain") or ""
+        ref = _strip(match.group("c1"))
+        if match.group("c2"):
+            ref += ":" + _strip(match.group("c2"))
+        locator = f"{book_sheet.upper()}!{ref}"
+        if locator not in references:
+            references.append(locator)
+    return references
+
+
+def formula_functions(formula: str) -> list[str]:
+    """List function names exactly enough to disclose unsupported evaluation."""
+    if not formula or not formula.startswith("="):
+        return []
+    body = _STRING_RE.sub('\"\"', formula)
+    return sorted({match.group(1).upper() for match in _FUNCTION_RE.finditer(body)})
+
+
+def _named_reference_destinations(
+    formula: str,
+    defined_names: dict[str, str] | None,
+) -> dict[str, str]:
+    if not formula or not defined_names:
+        return {}
+    body = _STRING_RE.sub('\"\"', formula)
+    found = {}
+    for name, destination in defined_names.items():
+        pattern = rf"(?<![A-Za-z0-9_.]){re.escape(name)}(?![A-Za-z0-9_.(])"
+        if re.search(pattern, body, re.IGNORECASE):
+            found[str(name)] = str(destination)
+    return found
+
+
+def parse_precedents(
+    formula: str,
+    own_sheet: str,
+    defined_names: dict[str, str] | None = None,
+) -> list[str]:
     """
     Locators a formula reads. A range is kept whole (SHEET!A1:B2) rather than
     expanded: the workbook expressed a range, and L1 records what it expressed.
@@ -81,6 +134,9 @@ def parse_precedents(formula: str, own_sheet: str) -> list[str]:
     if not formula or not formula.startswith("="):
         return []
     body = _STRING_RE.sub('""', formula)
+    # An external reference is not a dependency on a similarly named local
+    # cell. Keep it in ``external_references`` and remove it from this pass.
+    body = _EXTERNAL_REF_RE.sub("", body)
     out: list[str] = []
     for m in _REF_RE.finditer(body):
         sheet = m.group("q")
@@ -91,7 +147,7 @@ def parse_precedents(formula: str, own_sheet: str) -> list[str]:
             end = m.end()
             if end < len(body) and body[end] == "(":
                 continue
-            if _strip(m.group("c1")) in _FUNCS:
+            if _strip(m.group("c1")) in _SUPPORTED_FUNCTIONS:
                 continue
             sheet = own_sheet
         ref = _strip(m.group("c1"))
@@ -100,6 +156,19 @@ def parse_precedents(formula: str, own_sheet: str) -> list[str]:
         loc = f"{sheet.upper()}!{ref}"
         if loc not in out:
             out.append(loc)
+    for destination in _named_reference_destinations(formula, defined_names).values():
+        # Defined names may be constants or dynamic formulas. Only direct
+        # cell/range destinations become edges; all names remain preserved on
+        # the CellRecord for review.
+        destination_body = destination.removeprefix("=")
+        for match in _REF_RE.finditer(destination_body):
+            sheet = (match.group("q") or own_sheet).strip("'")
+            ref = _strip(match.group("c1"))
+            if match.group("c2"):
+                ref += ":" + _strip(match.group("c2"))
+            locator = f"{sheet.upper()}!{ref}"
+            if locator not in out:
+                out.append(locator)
     return out
 
 
@@ -121,6 +190,13 @@ class CellRecord:
     # script and never opened in Excel caches nothing, which is precisely why
     # reading with data_only=True loses the model.
     cached_value: Any = None
+    function_names: list[str] = field(default_factory=list)
+    unsupported_functions: list[str] = field(default_factory=list)
+    external_references: list[str] = field(default_factory=list)
+    named_references: dict[str, str] = field(default_factory=dict)
+    formula_status: str | None = None
+    evaluation_status: str | None = None
+    human_stop_reason: str | None = None
 
 
 @dataclass
@@ -145,8 +221,11 @@ class SourceGraph:
 
     def stats(self) -> dict:
         kinds: dict[str, int] = {}
+        formula_statuses: dict[str, int] = {}
         for c in self.cells.values():
             kinds[c.kind] = kinds.get(c.kind, 0) + 1
+            if c.formula_status:
+                formula_statuses[c.formula_status] = formula_statuses.get(c.formula_status, 0) + 1
         return {
             "sheets": len(self.sheets),
             "cells": len(self.cells),
@@ -154,6 +233,8 @@ class SourceGraph:
             "precedent_edges": sum(len(c.precedents) for c in self.cells.values()),
             "merged_ranges": sum(len(s.merged_ranges) for s in self.sheets),
             "defined_names": len(self.defined_names),
+            "formula_statuses": formula_statuses,
+            "human_stops": sum(c.evaluation_status == "HUMAN_STOP" for c in self.cells.values()),
         }
 
     def to_json(self) -> dict:
@@ -248,7 +329,10 @@ def capture(path: Path) -> SourceGraph:
                     kind=_kind_of(cell.value, is_formula),
                     value=cell.value,
                     number_format=cell.number_format or "",
-                    precedents=parse_precedents(cell.value, ws.title) if is_formula else [],
+                    precedents=(
+                        parse_precedents(cell.value, ws.title, graph.defined_names)
+                        if is_formula else []
+                    ),
                     merged_into=anchor_of.get(loc),
                 )
                 # A formula's last computed value is part of what the file
@@ -259,6 +343,38 @@ def capture(path: Path) -> SourceGraph:
                         rec.cached_value = vs[cell.coordinate].value  # type: ignore[attr-defined]
                     except Exception:
                         pass
+                if is_formula:
+                    rec.function_names = formula_functions(str(cell.value))
+                    rec.unsupported_functions = sorted(
+                        set(rec.function_names) - _SUPPORTED_FUNCTIONS
+                    )
+                    rec.external_references = external_references(str(cell.value))
+                    rec.named_references = _named_reference_destinations(
+                        str(cell.value), graph.defined_names
+                    )
+                    if rec.external_references:
+                        rec.formula_status = "EXTERNAL_LINK"
+                        rec.evaluation_status = "HUMAN_STOP"
+                        rec.human_stop_reason = (
+                            "External workbook dependency is unavailable; cached_value is display-only."
+                        )
+                    elif rec.unsupported_functions:
+                        rec.formula_status = "UNSUPPORTED_FUNCTION"
+                        rec.evaluation_status = "HUMAN_STOP"
+                        rec.human_stop_reason = (
+                            "Unsupported Excel function(s): "
+                            + ", ".join(rec.unsupported_functions)
+                            + "; no value was evaluated."
+                        )
+                    else:
+                        rec.formula_status = "PRESERVED"
+                        if rec.cached_value is None:
+                            rec.evaluation_status = "HUMAN_STOP"
+                            rec.human_stop_reason = (
+                                "The workbook has no cached/displayed value and capture does not calculate formulas."
+                            )
+                        else:
+                            rec.evaluation_status = "CACHED_VALUE_AVAILABLE"
                 graph.cells[loc] = rec
     return graph
 

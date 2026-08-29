@@ -1,0 +1,60 @@
+{
+  "schema_version": "pan51-formula-expectations/1.0",
+  "workbook": "pan51_formula_model.xlsx",
+  "formula_count": 8,
+  "formulas": {
+    "OUTPUTS!B2": {
+      "formula_text": "=Inputs!B2*(1+Inputs!B3)",
+      "precedents": ["INPUTS!B2", "INPUTS!B3"],
+      "formula_status": "PRESERVED"
+    },
+    "OUTPUTS!B3": {
+      "formula_text": "=SUM(Inputs!B2:B4)",
+      "precedents": ["INPUTS!B2:B4"],
+      "formula_status": "PRESERVED"
+    },
+    "OUTPUTS!B4": {
+      "formula_text": "=IF(Inputs!B2>90,Inputs!B4,0)",
+      "precedents": ["INPUTS!B2", "INPUTS!B4"],
+      "formula_status": "PRESERVED"
+    },
+    "OUTPUTS!B5": {
+      "formula_text": "=VLOOKUP(Inputs!B5,Lookup!A2:B4,2,FALSE)",
+      "precedents": ["INPUTS!B5", "LOOKUP!A2:B4"],
+      "formula_status": "PRESERVED"
+    },
+    "OUTPUTS!B6": {
+      "formula_text": "=RevenueBase*(1+Inputs!B3)",
+      "precedents": ["INPUTS!B3", "INPUTS!B2"],
+      "named_references": {"RevenueBase": "'Inputs'!$B$2"},
+      "formula_status": "PRESERVED"
+    },
+    "OUTPUTS!B7": {
+      "formula_text": "='[External.xlsx]Data'!A1+Inputs!B2",
+      "precedents": ["INPUTS!B2"],
+      "external_references": ["[EXTERNAL.XLSX]DATA!A1"],
+      "formula_status": "EXTERNAL_LINK"
+    },
+    "OUTPUTS!B8": {
+      "formula_text": "=CUBEVALUE(\"Connection\",\"[Measures].[Revenue]\")",
+      "precedents": [],
+      "unsupported_functions": ["CUBEVALUE"],
+      "formula_status": "UNSUPPORTED_FUNCTION"
+    },
+    "OUTPUTS!B9": {
+      "formula_text": "=Outputs!B2-Inputs!B4",
+      "precedents": ["OUTPUTS!B2", "INPUTS!B4"],
+      "formula_status": "PRESERVED"
+    }
+  },
+  "expected_evaluated_values": {
+    "OUTPUTS!B2": 120.0,
+    "OUTPUTS!B3": 150.2,
+    "OUTPUTS!B4": 50,
+    "OUTPUTS!B5": 9.5,
+    "OUTPUTS!B6": 120.0,
+    "OUTPUTS!B9": 70.0
+  },
+  "human_stop_locators": ["OUTPUTS!B7", "OUTPUTS!B8"],
+  "reason": "The fixture has no Excel cache. Supported acyclic formulas are recomputed; external or unsupported evaluation remains unknown."
+}

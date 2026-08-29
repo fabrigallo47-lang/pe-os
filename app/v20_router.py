@@ -609,6 +609,58 @@ def _proposal_path(job_id: str, case_id: str = "keystone") -> Path:
     return _pipeline_out_for_case(case_id) / "proposals" / f"evidence-{job_id}.json"
 
 
+def _excel_model_graphs_path(case_id: str) -> Path:
+    return _pipeline_out_for_case(case_id) / "excel_model_graphs.json"
+
+
+def _load_excel_model_graphs(case_id: str) -> list[dict]:
+    payload = _load_json_safe(_excel_model_graphs_path(case_id))
+    graphs = payload.get("graphs", []) if isinstance(payload, dict) else []
+    return [dict(item) for item in graphs if isinstance(item, dict)]
+
+
+def _admit_excel_formula_graph(case_id: str, proposal: dict, actor_id: str) -> dict | None:
+    """Persist one reviewed workbook graph without recalculating any formula."""
+    incoming = proposal.get("excel_formula_graph")
+    if not isinstance(incoming, dict) or not isinstance(incoming.get("nodes"), list):
+        return None
+    source = incoming.get("source", {})
+    digest = str(source.get("digest") or "").strip()
+    if not digest:
+        raise DynamicsBundleError("Excel formula graph is missing its source digest")
+    admitted = {
+        **copy.deepcopy(incoming),
+        "admission": {
+            "status": "ADMITTED",
+            "proposal_id": proposal.get("proposal_id"),
+            "reviewed_by": actor_id,
+            "reviewed_at": _now_iso(),
+        },
+    }
+    existing = _load_excel_model_graphs(case_id)
+    def source_identity(item: dict) -> tuple[str, str]:
+        item_source = item.get("source", {})
+        return (
+            str(item_source.get("source_id") or item_source.get("workbook") or ""),
+            str(item_source.get("digest") or ""),
+        )
+
+    by_identity = {source_identity(item): item for item in existing}
+    by_identity[source_identity(admitted)] = admitted
+    graphs = sorted(
+        by_identity.values(),
+        key=lambda item: (
+            str(item.get("source", {}).get("workbook", "")),
+            str(item.get("source", {}).get("digest", "")),
+        ),
+    )
+    _write_json_atomic(
+        _excel_model_graphs_path(case_id),
+        {"schema_version": "excel-model-graph-registry/1.0", "graphs": graphs},
+    )
+    return admitted
+
+
 def _write_evidence_proposal(
     job_id: str,
     case_id: str,
@@ -616,6 +668,7 @@ def _write_evidence_proposal(
     claims: list[dict],
     question_proposals: list[dict] | None = None,
     fund_lens: dict | None = None,
+    excel_formula_graph: dict | None = None,
 ) -> Path:
     """Store extraction output as reviewable evidence, before it can affect Current."""
     path = _proposal_path(job_id, case_id)
@@ -625,6 +678,7 @@ def _write_evidence_proposal(
         "source_id": filename, "source_path": f"vault/inbox/{filename}",
         "status": "PENDING_REVIEW", "created_at": _now_iso(), "claims": claims,
         "question_proposals": question_proposals or [],
+        "excel_formula_graph": excel_formula_graph,
         "fund_lens": {
             "lens_id": (fund_lens or {}).get("lens_id"),
             "version": (fund_lens or {}).get("version"),
@@ -735,7 +789,57 @@ def _merge_claim_corpus(existing: list[dict], incoming: list[dict]) -> tuple[lis
         prior["source_ids"] = sorted(s for s in prior_sources if s)
     return merged, added
 
-def _semantic_graph_from_claims(claims: list[dict], case_id: str) -> dict:
+
+def _claim_locator_covers_formula(
+    claim: dict,
+    formula_locator: str,
+    workbook: str,
+) -> bool:
+    """True when an extracted cell/range locator contains a formula output."""
+    locator = str(claim.get("locator") or claim.get("source_locator") or "")
+    if not locator or "!" not in locator or "!" not in formula_locator:
+        return False
+    if "::" in locator:
+        located_workbook, locator = locator.rsplit("::", 1)
+        if workbook and Path(located_workbook).name.lower() != Path(workbook).name.lower():
+            return False
+    claim_sheet, claim_ref = locator.rsplit("!", 1)
+    formula_sheet, formula_ref = formula_locator.rsplit("!", 1)
+    if claim_sheet.strip("'").upper() != formula_sheet.strip("'").upper():
+        return False
+    match = re.fullmatch(r"\$?([A-Z]{1,3})\$?(\d+)", formula_ref.upper())
+    if not match:
+        return False
+    formula_col, formula_row = match.group(1), int(match.group(2))
+    if re.fullmatch(r"\d+:\d+", claim_ref):
+        start, end = (int(value) for value in claim_ref.split(":", 1))
+        return start <= formula_row <= end
+    cell_match = re.fullmatch(r"\$?([A-Z]{1,3})\$?(\d+)", claim_ref.upper())
+    if cell_match:
+        return (formula_col, formula_row) == (cell_match.group(1), int(cell_match.group(2)))
+    range_match = re.fullmatch(
+        r"\$?([A-Z]{1,3})\$?(\d+):\$?([A-Z]{1,3})\$?(\d+)",
+        claim_ref.upper(),
+    )
+    if not range_match:
+        return False
+
+    def column_number(column: str) -> int:
+        value = 0
+        for character in column:
+            value = value * 26 + ord(character) - ord("A") + 1
+        return value
+
+    min_col, max_col = sorted((column_number(range_match.group(1)), column_number(range_match.group(3))))
+    min_row, max_row = sorted((int(range_match.group(2)), int(range_match.group(4))))
+    return min_col <= column_number(formula_col) <= max_col and min_row <= formula_row <= max_row
+
+
+def _semantic_graph_from_claims(
+    claims: list[dict],
+    case_id: str,
+    excel_models: list[dict] | None = None,
+) -> dict:
     """Derive a semantic graph without mutating the operational Current."""
     from vercel.api._claim_graph import claims_to_graph
 
@@ -768,6 +872,54 @@ def _semantic_graph_from_claims(claims: list[dict], case_id: str) -> dict:
     graph["edges"] = edges
     graph["kind"] = "semantic_current"
     graph["case_id"] = case_id
+    model_graphs = _load_excel_model_graphs(case_id) if excel_models is None else excel_models
+    formulas = []
+    coverage_limits = []
+    model_sources = []
+    for model_graph in model_graphs:
+        if not isinstance(model_graph, dict):
+            continue
+        source = model_graph.get("source", {})
+        model_sources.append({
+            **source,
+            "admission": copy.deepcopy(model_graph.get("admission")),
+        })
+        for node in model_graph.get("nodes", []):
+            if not isinstance(node, dict) or not node.get("id") or node.get("id") in node_ids:
+                continue
+            nodes.append(copy.deepcopy(node))
+            node_ids.add(node["id"])
+        for edge in model_graph.get("edges", []):
+            if not isinstance(edge, dict):
+                continue
+            if edge.get("source") in node_ids and edge.get("target") in node_ids:
+                edges.append(copy.deepcopy(edge))
+        formulas.extend(copy.deepcopy(model_graph.get("formulas", [])))
+        coverage_limits.extend(copy.deepcopy(model_graph.get("coverage_limits", [])))
+        workbook = str(source.get("workbook") or source.get("source_id") or "")
+        for claim_index, claim in enumerate(claims):
+            claim_node_id = f"claim:{claim_index:03d}"
+            if claim_node_id not in node_ids:
+                continue
+            for formula in model_graph.get("formulas", []):
+                if not isinstance(formula, dict):
+                    continue
+                output_id = formula.get("output_model_node_id")
+                locator = str(formula.get("locator") or "")
+                if (
+                    output_id in node_ids
+                    and _claim_locator_covers_formula(claim, locator, workbook)
+                ):
+                    edges.append({
+                        "source": claim_node_id,
+                        "target": output_id,
+                        "rel": "GROUNDED_IN_MODEL",
+                        "formula_id": formula.get("formula_id"),
+                        "locator": locator,
+                    })
+    graph["excel_model_sources"] = model_sources
+    graph["excel_formulas"] = formulas
+    graph["coverage_limits"] = coverage_limits
     return graph
 
 
@@ -3134,6 +3286,40 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                         new_claims = _derive_bears_on(
                             _normalise_v1_claims(raw, filename), e3, fund_lens
                         )
+                        excel_formula_graph = None
+                        if manifest_label == "SINGLE_V2" and source_path is not None:
+                            try:
+                                from tools.excel_formula_graph import compile_workbook
+                                excel_formula_graph = compile_workbook(source_path)
+                            except Exception as formula_exc:
+                                # Extraction can still expose claim evidence, but
+                                # the missing model capture must be visible and
+                                # must never degrade into an invented value.
+                                excel_formula_graph = {
+                                    "schema_version": "excel-formula-graph/1.0",
+                                    "status": "HUMAN_STOP",
+                                    "source": {
+                                        "source_id": filename,
+                                        "workbook": filename,
+                                        "digest": "sha256:" + hashlib.sha256(
+                                            source_path.read_bytes()
+                                        ).hexdigest(),
+                                    },
+                                    "nodes": [],
+                                    "edges": [],
+                                    "formulas": [],
+                                    "coverage_limits": [{
+                                        "reason_code": "WORKBOOK_CAPTURE_FAILED",
+                                        "effect": str(formula_exc),
+                                        "resolution": "HUMAN_STOP",
+                                        "scope_ids": [],
+                                    }],
+                                }
+                                logger.warning(
+                                    "JOB %s Excel formula capture stopped: %s",
+                                    job_id,
+                                    formula_exc,
+                                )
                         question_proposals = _derive_question_proposals(new_claims, case_id)
                         proposal = _write_evidence_proposal(
                             job_id,
@@ -3142,6 +3328,7 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                             new_claims,
                             question_proposals,
                             fund_lens,
+                            excel_formula_graph,
                         )
                         proposal_display_path = (
                             str(proposal.relative_to(ROOT))
@@ -3151,12 +3338,18 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                         _store_job(job_id, proposal_id=proposal.stem,
                                    proposal_path=proposal_display_path,
                                    proposed_claim_count=len(new_claims),
+                                   formula_node_count=len((excel_formula_graph or {}).get("formulas", [])),
                                    admission_status="PENDING_REVIEW")
                         _update_inbox_record(job_id, proposal_id=proposal.stem,
                                              proposal_path=proposal_display_path,
                                              proposed_claim_count=len(new_claims),
                                              admission_status="PENDING_REVIEW")
-                        logger.info("JOB %s produced %d evidence proposals", job_id, len(new_claims))
+                        logger.info(
+                            "JOB %s produced %d claim proposals and %d formula nodes",
+                            job_id,
+                            len(new_claims),
+                            len((excel_formula_graph or {}).get("formulas", [])),
+                        )
                     except Exception as merge_exc:
                         logger.error("JOB %s merge failed: %s", job_id, merge_exc)
 
@@ -3411,13 +3604,22 @@ def get_evidence_proposal(case_id: str, job_id: str) -> dict:
         raise HTTPException(409, "Evidence proposal belongs to another case")
     existing = _load_claims(case_id)
     preview_claims, _ = _merge_claim_corpus(existing, proposal.get("claims", []))
-    preview = _semantic_graph_from_claims(preview_claims, case_id)
+    preview_models = _load_excel_model_graphs(case_id)
+    if isinstance(proposal.get("excel_formula_graph"), dict):
+        preview_models.append(proposal["excel_formula_graph"])
+    preview = _semantic_graph_from_claims(
+        preview_claims,
+        case_id,
+        excel_models=preview_models,
+    )
     return {
         "proposal": proposal,
         "questions": _build_question_spine(_load_questions(case_id), proposal.get("claims", [])),
         "semantic_preview": {
             "nodes": len(preview.get("nodes", [])),
             "edges": len(preview.get("edges", [])),
+            "formula_nodes": len(preview.get("excel_formulas", [])),
+            "human_stops": len(preview.get("coverage_limits", [])),
             "current_mutated": False,
         },
     }
@@ -3545,6 +3747,11 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
             logger.exception("runtime compilation failed for evidence job %s", job_id)
             raise HTTPException(422, f"Admitted evidence could not be compiled: {exc}") from exc
 
+    admitted_excel_model = _admit_excel_formula_graph(
+        case_id,
+        proposal,
+        str(payload.get("actor_id", "professional-review")),
+    )
     _write_json_atomic(existing_path, merged)
     persisted = _persist_claims_to_vault(case_id, added, proposal.get("source_id", ""))
     graph = _build_semantic_current(merged, case_id)
@@ -3552,6 +3759,7 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
                      "reviewed_by": payload.get("actor_id", "professional-review"),
                      "review_note": payload.get("note", ""),
                      "admitted_claim_count": len(added),
+                     "admitted_formula_count": len((admitted_excel_model or {}).get("formulas", [])),
                      "runtime_event_id": runtime_event.get("event_id") if runtime_event else None,
                      "runtime_event_path": str(event_path) if event_path else None})
     _write_json_atomic(proposal_file, proposal)
@@ -3584,7 +3792,12 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     _rebuild_index()
     return {"status": "ADMITTED", "proposal_id": proposal.get("proposal_id"), "event_id": event_id,
             "new_claim_count": len(added), "persisted_claim_count": persisted,
-            "semantic_graph": {"nodes": len(graph.get("nodes", [])), "edges": len(graph.get("edges", []))},
+            "semantic_graph": {
+                "nodes": len(graph.get("nodes", [])),
+                "edges": len(graph.get("edges", [])),
+                "formula_nodes": len(graph.get("excel_formulas", [])),
+                "human_stops": len(graph.get("coverage_limits", [])),
+            },
             "runtime_event": ({
                 "event_id": runtime_event["event_id"],
                 "path": str(event_path),

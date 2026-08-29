@@ -28,6 +28,8 @@ REPO_CONTRACTS = (
     "backend/dynamics/benchmark/transition_engine_conformance_cases_v1.json",
     "backend/dynamics/canonical/PANTA_Keystone_Initial_IC_State_2026-03-10.json",
     "tools/fixtures/pan36_synthetic_model.xlsx",
+    "tools/fixtures/pan51_formula_model.xlsx",
+    "tools/fixtures/pan51_formula_expectations.json",
 )
 
 PACKAGE_SPECS = {

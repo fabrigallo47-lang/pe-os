@@ -48,6 +48,37 @@ History** and choose **Admit evidence** to promote it into the semantic Current
 Choose **Reject** to retain the extraction audit trail without changing Current.
 Use **Open live graph** in Sources to inspect the parallel semantic graph.
 
+### Excel formula smoke test (PAN-51)
+
+The workbook boundary is explicit: `.xlsx` and `.xlsm` uploads use V2 and
+preserve formula text, the displayed/cached value (when present), named ranges,
+and directed cell dependencies. Narrative files use V1. Legacy `.xls` is not
+read as an Open XML workbook and returns: `convert the workbook to .xlsx before
+upload`.
+
+Run the versioned, non-sensitive formula fixture without an API key:
+
+```bash
+.venv/bin/python tools/excel_formula_graph.py \
+  --workbook tools/fixtures/pan51_formula_model.xlsx \
+  --out /tmp/pan51-formula-graph.json
+```
+
+Expected summary:
+
+```text
+[excel_formula_graph] pan51_formula_model.xlsx: 8 formulas, 14 dependencies, 2 Human Stops
+  -> /tmp/pan51-formula-graph.json
+```
+
+The fixture has never been calculated by Excel and therefore contains no
+displayed/cached formula values. The bounded local evaluator recomputes the six
+supported acyclic outputs; the external workbook link and unsupported function
+remain `null` with distinct Human Stop reason codes. After professional
+admission, these formula/model nodes and edges are stored in
+`excel_model_graphs.json` and projected through V20's `semantic_current_graph`;
+an evaluation failure is never silently promoted to a calculated fact.
+
 The local extraction state is intentionally ignored by Git: it contains source
 material and derived claim memory. A fresh clone starts without it.
 

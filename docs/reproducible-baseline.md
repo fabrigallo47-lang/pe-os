@@ -29,7 +29,7 @@ the repository.
 |---|---|---|
 | Repository schemas | `backend/dynamics/schemas/*.json` | `make baseline` |
 | Transition behavior | versioned conformance cases and canonical IC state | `make verify` |
-| Extraction integration | synthetic `.xlsx` fixture with stable cell locators | `tools/test_pan36.py` |
+| Extraction integration | synthetic `.xlsx` fixtures with stable cell locators and formula/dependency Human Stops | `tools/test_pan36.py`; `backend/dynamics/tests/test_pan51_excel_formulas.py` |
 | Keystone package | package checksum file, benchmark manifest, canonical CIC and source markers | `make baseline` |
 | Runtime handoff | package manifest, conformance suite, canonical CIC and output schema | `make baseline` |
 | Independent validator | version marker, release manifest and validator entrypoints | `make baseline` and `make verify` |

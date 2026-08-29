@@ -10,7 +10,19 @@
     abort(key);const controller=new AbortController();controllers.set(key,controller);const st=S.get();const headers={...(options.headers||{})};if(!(options.body instanceof FormData)&&!headers['Content-Type'])headers['Content-Type']='application/json';if(st.sessionId)headers['X-Panta-Session']=st.sessionId;
     let response;try{response=await fetch(`${st.apiBase}${path}`,{...options,headers,signal:controller.signal})}finally{controllers.delete(key)}
     const type=response.headers.get('content-type')||'';let body={};if(type.includes('application/json')){try{body=await response.json()}catch(_){body={}}}else body=await response.text();
-    if(!response.ok){const raw=body?.error||body||{};const e=new Error(raw.message||String(body)||`${response.status} ${response.statusText}`);e.code=raw.code||'API_ERROR';e.details=raw.details||{};e.status=response.status;throw e}return body
+    if(!response.ok){
+      const raw=body?.error||{};
+      // FastAPI's own HTTPException shape is {detail: "..."} (or a list of
+      // validation errors), never {message}/{error}. Without this, any plain
+      // server error rendered String(body) as literally "[object Object]".
+      let message=raw.message;
+      if(!message&&typeof body?.detail==='string')message=body.detail;
+      if(!message&&Array.isArray(body?.detail))message=body.detail.map(d=>d?.msg||JSON.stringify(d)).join('; ');
+      if(!message&&body?.detail&&typeof body.detail==='object')message=body.detail.message||JSON.stringify(body.detail);
+      if(!message&&typeof body==='string'&&body)message=body;
+      if(!message)message=`${response.status} ${response.statusText}`;
+      const e=new Error(message);e.code=raw.code||'API_ERROR';e.details=raw.details||{};e.status=response.status;throw e
+    }return body
   }
   function localIndex(projection,q){
     const term=(q||'').trim().toLowerCase();const items=[];
@@ -77,6 +89,7 @@
     async retryBatchJob(batchId,jobId){return request(`/cases/${encodeURIComponent(S.get().caseId)}/ingest/batches/${encodeURIComponent(batchId)}/jobs/${encodeURIComponent(jobId)}/retry?${new URLSearchParams({session_id:S.get().sessionId||''})}`,{method:'POST',body:'{}'},`batch-retry:${jobId}`)},
     async getEvidenceProposal(jobId){return request(`/cases/${encodeURIComponent(S.get().caseId)}/ingest/${encodeURIComponent(jobId)}/proposal?${new URLSearchParams({session_id:S.get().sessionId||''})}`,{},`evidence-proposal:${jobId}`)},
     async admitEvidence(jobId,payload){return request(`/cases/${encodeURIComponent(S.get().caseId)}/ingest/${encodeURIComponent(jobId)}/admit?${new URLSearchParams({session_id:S.get().sessionId||''})}`,{method:'POST',body:JSON.stringify(payload)},`evidence-admission:${jobId}`)},
+    async admitAllPending(payload){return request(`/cases/${encodeURIComponent(S.get().caseId)}/admit-all?${new URLSearchParams({session_id:S.get().sessionId||''})}`,{method:'POST',body:JSON.stringify(payload)},'admit-all')},
     async removeSource(sourceId){return request(`/cases/${encodeURIComponent(S.get().caseId)}/sources/${encodeURIComponent(sourceId)}/remove?${new URLSearchParams({session_id:S.get().sessionId||''})}`,{method:'POST',body:'{}'},`remove:${sourceId}`)},
     async addNote(note){return request(`/cases/${encodeURIComponent(S.get().caseId)}/notes?${new URLSearchParams({session_id:S.get().sessionId||''})}`,{method:'POST',body:JSON.stringify(note)},'note')},
     async openDeal(payload){return request('/open-deal',{method:'POST',body:JSON.stringify({...payload,session_id:S.get().sessionId})},'open-deal')},

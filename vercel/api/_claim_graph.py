@@ -237,6 +237,24 @@ _HYGIENE_NOISE: list[str] = [
     "summary-2", "summary_2",
 ]
 
+
+def is_hygiene_noise(c: dict) -> bool:
+    """True if a claim dict matches the non-PE noise filter (test/demo content).
+
+    Exposed so callers that assign their own ``claim:{index}`` ids (e.g. the
+    Source -> Claim provenance wiring in app/v20_router.py) can apply the
+    identical filter *before* calling claims_to_graph. Pass 0 below drops
+    matching claims and re-numbers the rest by position in the filtered list;
+    a caller using a different index space for the same claims would otherwise
+    point edges at the wrong node — or a dangling one — for every claim after
+    the first filtered one.
+    """
+    combined = " ".join([
+        str(c.get("subject", "")), str(c.get("metric", "")),
+        str(c.get("statement", "")), str(c.get("source_doc", "")),
+    ]).lower()
+    return any(pat in combined for pat in _HYGIENE_NOISE)
+
 # ── V2: Standard artifacts ───────────────────────────────────────────────────
 _STANDARD_ARTIFACTS: list[tuple[str, str, str]] = [
     ("art:model",       "Financial Model",   "model"),
@@ -524,11 +542,7 @@ def claims_to_graph(
     hygiene_flags: list[str] = []
     clean_claims: list[dict] = []
     for i, c in enumerate(claims):
-        combined = " ".join([
-            str(c.get("subject", "")), str(c.get("metric", "")),
-            str(c.get("statement", "")), str(c.get("source_doc", "")),
-        ]).lower()
-        is_noise = any(pat in combined for pat in _HYGIENE_NOISE)
+        is_noise = is_hygiene_noise(c)
         if is_noise:
             hygiene_flags.append(
                 f"claim[{i}] excluded — non-PE content detected "

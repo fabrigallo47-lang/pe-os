@@ -44,6 +44,8 @@ pipeline_out/live/
 pipeline_out/cellvalues/
 # Keystone V20 extraction output: local, derived and may contain deal evidence.
 pipeline_out/e3/K-IC/adapter_alpha/
+# Per-case V20 runtime bundles (non-keystone cases): same category as above.
+pipeline_out/cases/
 logs/
 
 # Proprietary algorithms — not for public repo

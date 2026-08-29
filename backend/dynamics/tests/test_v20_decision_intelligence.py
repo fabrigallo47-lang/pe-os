@@ -89,8 +89,14 @@ class V20DecisionIntelligenceTests(unittest.TestCase):
         unknowns = ranked["rooms"]["unknowns"]["items"]
         self.assertEqual(
             [item["question_id"] for item in unknowns],
-            ["Q-GAP", "Q-PARTIAL", "Q-NONCRITICAL"],
+            ["Q-GAP", "Q-PARTIAL", "Q-NONCRITICAL", None],
         )
+        # CP-GATE is CONTESTED in the fixture: a real conflict between
+        # admitted claims, not a coverage gap, so it must surface too - but
+        # after the ranked question-spine gaps, not mixed into their order.
+        conflict = unknowns[-1]
+        self.assertEqual(conflict["id"], "conflict:CP-GATE")
+        self.assertEqual(conflict["status"], "CONTESTED")
         self.assertEqual(ranked["next_best_work"]["question_id"], "Q-GAP")
         self.assertEqual(ranked["next_best_work"]["label"], "Obtain the missing schedule")
         self.assertEqual(ranked["next_best_work"]["owner"], "Analyst")

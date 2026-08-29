@@ -83,6 +83,35 @@
   async function openEvidenceReview(jobId){try{S.set({busy:true,operation:'EVIDENCE_REVIEW'});const out=await API.adapter().getEvidenceProposal(jobId);S.set({busy:false,evidenceProposal:out.proposal,evidenceProposalQuestions:out.questions||[],evidenceSemanticPreview:out.semantic_preview||null,sourceTab:'inbox'});status('Review extracted claims and question bindings before admission')}catch(e){S.set({busy:false});toast(`Evidence proposal unavailable: ${e.message}`,'error')}}
   function closeEvidenceReview(){S.set({evidenceProposal:null,evidenceProposalQuestions:[],evidenceSemanticPreview:null})}
   async function admitEvidence(jobId,decision='ADMIT',claims=null){try{S.set({busy:true,operation:'EVIDENCE_ADMISSION'});const payload={decision,actor_id:actor().actor_id,idempotency_key:uid('EVIDENCE')};if(Array.isArray(claims))payload.claims=claims;const out=await API.adapter().admitEvidence(jobId,payload);S.set({busy:false,evidenceProposal:null,evidenceProposalQuestions:[],evidenceSemanticPreview:null});if(decision==='ADMIT')await refreshProjection();await refreshSources();await refreshInbox();toast(out.message||(decision==='ADMIT'?'Reviewed evidence admitted into semantic Current.':'Evidence rejected; Current is unchanged.'),'success')}catch(e){S.set({busy:false});toast(`Evidence decision was not recorded: ${e.message}`,'error')}}
+  // Explicit second step after admission: admission only compiles the
+  // runtime-ready event (or declares why it can't). Invoking dynamics -
+  // producing a Candidate from that event - is a separate, visible action so
+  // a reviewer sees exactly what compiled before choosing to run it.
+  async function processAdmittedEvent(jobId){
+    const job=(S.get().inbox||[]).find(x=>x.job_id===jobId)||(S.get().ingestJobs||[]).find(x=>x.job_id===jobId);
+    const eventId=job?.runtime_event_id;
+    if(!eventId){toast(job?.runtime_blocker?.reason||'No runtime event is ready to process for this source.','warning');return}
+    const epoch=++requestEpoch;
+    S.set({busy:true,operation:'TRANSITION',lastError:null,view:'change-impact'});
+    try{
+      const payload={actor_id:actor().actor_id,idempotency_key:uid('ADMIT')};
+      const out=await API.adapter().admitEvent(eventId,payload);
+      if(epoch!==requestEpoch)return;
+      const t=PA.normalizeTransition(out.transition||out),cv=C.safe(C.validateTransition,t);
+      if(!cv.ok)throw Object.assign(new Error('Transition failed the frontend contract.'),{code:'INVALID_TRANSITION',details:cv.errors});
+      const nextProjection=clone(S.get().projection);
+      if(out.candidate_graph&&nextProjection?.deal){
+        nextProjection.deal.candidate_graph=clone(out.candidate_graph);
+        const versions=[...(nextProjection.deal.graph_versions||[])];
+        for(const version of [out.current_graph_version,out.candidate_graph_version])if(version&&!versions.some(x=>x.version_id===version.version_id))versions.push(clone(version));
+        nextProjection.deal.graph_versions=versions;
+      }
+      S.set({busy:false,projection:nextProjection,activeEventId:eventId,activeRun:out.run||{run_id:t.run_id,status:'CANDIDATE'},transition:t,transitionIndex:-1,selectedChangeIds:[],context:{...S.get().context,...(out.context||{}),run_id:t.run_id,candidate_state_id:t.candidate_state_id,human_stop_id:t.human_stops?.[0]?.stop_id||null},registry:out.registry||out.registry_events||S.get().registry});
+      syncRoute();
+      animateTransition();
+      toast('Admitted event processed into a Candidate.','success')
+    }catch(e){if(epoch!==requestEpoch)return;S.set({busy:false,lastError:errorShape(e)});toast(`Processing the admitted event failed: ${e.message}`,'error')}
+  }
   async function removeSource(id){try{await API.adapter().removeSource(id);await refreshSources();await refreshProjection();toast('Source version retired; history preserved.','success')}catch(e){toast(e.message,'error')}}
   async function saveOpenDeal(payload){try{const out=await API.adapter().openDeal({...payload,actor_id:actor().actor_id,idempotency_key:uid('OPENDEAL')});toast(out.message||'Deal decomposition recorded.','success');await refreshProjection()}catch(e){toast(e.message,'error')}}
   async function saveICRecord(payload){try{const out=await API.adapter().recordIC({...payload,actor_id:actor().actor_id,idempotency_key:uid('IC')});toast(out.message||'IC decision ritual recorded.','success');await refreshProjection()}catch(e){toast(e.message,'error')}}
@@ -124,6 +153,21 @@
       animateTransition();
     }catch(e){if(epoch!==requestEpoch)return;S.set({busy:false,lastError:errorShape(e)});toast(`Transition rejected: ${e.message}`,'error')}
   }
+  // Runs every PENDING_REVIEW source through admit -> dynamics -> settle in
+  // one sequential server-side pass, so a reviewer doesn't have to click
+  // through each source and each settlement individually while testing.
+  async function admitAllPending(){
+    S.set({busy:true,operation:'ADMIT_ALL'});
+    try{
+      const out=await API.adapter().admitAllPending({actor_id:actor().actor_id});
+      await refreshProjection();
+      await refreshSources();
+      await refreshInbox();
+      S.set({busy:false});
+      toast(out.message||`Settled ${out.settled_count||0} of ${out.requested||0} pending source(s).`, out.settled_count===out.requested?'success':'warning');
+      return out;
+    }catch(e){S.set({busy:false});toast(`Admit all failed: ${e.message}`,'error')}
+  }
   function animateTransition(){clearTimeout(transitionTimer);const t=S.get().transition;if(!t)return;let i=0;const n=t.affected_set.length,delay=S.get().reducedMotion?10:Math.max(80,Math.min(420,2200/Math.max(n,1)));S.set({transitionPlaying:true,transitionIndex:-1});const tick=()=>{if(i>=n){S.set({transitionPlaying:false,transitionIndex:Math.max(0,n-1)});status('Candidate consequences ready');return}S.set({transitionIndex:i++});transitionTimer=setTimeout(tick,delay)};tick()}
   function skipTransition(){clearTimeout(transitionTimer);const n=S.get().transition?.affected_set?.length||0;S.set({transitionPlaying:false,transitionIndex:Math.max(0,n-1)})}
   function replayTransition(){animateTransition()}
@@ -141,5 +185,5 @@
   async function openGraphVersion(id){if(!id)return;S.set({busy:true,operation:'GRAPH_VERSION'});try{const out=await API.adapter().getGraphVersion(id);S.set({busy:false,selectedGraphVersionId:id,graphVersionDetail:out,view:'replay'});syncRoute()}catch(e){S.set({busy:false});toast(`Graph version unavailable: ${e.message}`,'error')}}
   async function newDemoSession(){try{const out=await API.adapter().newSession(S.get().caseId,'partner');sessionStorage.setItem('panta-v20-session',out.session_id);S.set({sessionId:out.session_id,registry:[]});location.search=`?mode=${modeQuery()}&case=${encodeURIComponent(S.get().caseId)}&session=${encodeURIComponent(out.session_id)}`}catch(e){toast(e.message,'error')}}
 
-  window.PantaActions={boot,applyProjection,refreshProjection,setAsOfDate,setAsOfState,refreshSources,refreshInbox,openCase,setView,setViewerProjection,selectSituation,selectQuestion,selectArtifact,selectScenario,setWorkstream,openObject,closeDrawer,setDrawerTab,toggleActionRail,toggleNav,toggleInspector,setReducedMotion,clearError,resetInterface,getWorkItems,prepareWork,command,closeCommand,openCommandResult,activeEvent,setSourceTab,setSourceSearch,setSourceFilter,setSourceSort,setSourcePage,getClaims,ingest,ingestFiles,pollIngestJob,pollIngestBatch,retryBatchJob,openEvidenceReview,closeEvidenceReview,admitEvidence,removeSource,saveOpenDeal,saveICRecord,reviewClaim,addNote,setUnknownTab,setUnknownSearch,setUnknownSort,setUnknownPage,setRegistryFilter,copyText,deepLink,exportJSON,startReview,editTreatment,cancelEdit,setTreatmentDraft,rejectTreatment,admitTreatment,replayTransition,skipTransition,openActionFrontier,toggleChange,selectAllChanges,decisionGate,executionGate,prepareResponse,selectCourse,attestDecision,sendExecution,settleCurrent,openReplay,openGraphVersion,newDemoSession,showToast:toast,showChangeArrival,hasAuthority,authorityLevel};
+  window.PantaActions={boot,applyProjection,refreshProjection,setAsOfDate,setAsOfState,refreshSources,refreshInbox,openCase,setView,setViewerProjection,selectSituation,selectQuestion,selectArtifact,selectScenario,setWorkstream,openObject,closeDrawer,setDrawerTab,toggleActionRail,toggleNav,toggleInspector,setReducedMotion,clearError,resetInterface,getWorkItems,prepareWork,command,closeCommand,openCommandResult,activeEvent,setSourceTab,setSourceSearch,setSourceFilter,setSourceSort,setSourcePage,getClaims,ingest,ingestFiles,pollIngestJob,pollIngestBatch,retryBatchJob,openEvidenceReview,closeEvidenceReview,admitEvidence,processAdmittedEvent,admitAllPending,removeSource,saveOpenDeal,saveICRecord,reviewClaim,addNote,setUnknownTab,setUnknownSearch,setUnknownSort,setUnknownPage,setRegistryFilter,copyText,deepLink,exportJSON,startReview,editTreatment,cancelEdit,setTreatmentDraft,rejectTreatment,admitTreatment,replayTransition,skipTransition,openActionFrontier,toggleChange,selectAllChanges,decisionGate,executionGate,prepareResponse,selectCourse,attestDecision,sendExecution,settleCurrent,openReplay,openGraphVersion,newDemoSession,showToast:toast,showChangeArrival,hasAuthority,authorityLevel};
 })();

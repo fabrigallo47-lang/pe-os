@@ -48,6 +48,7 @@ from backend.dynamics import (
     run_bundle_transition,
     settle_candidate_state,
 )
+from tools.source_envelope import build_source_envelope
 
 ROOT = Path(__file__).resolve().parent.parent
 INDEX_DB = Path(os.environ["PEOS_DB"]) if os.environ.get("PEOS_DB") else ROOT / ".index" / "vault.db"
@@ -78,6 +79,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "getJob": {"status": "AVAILABLE", "method": "GET", "path": "/jobs/{job_id}"},
     "getEvidenceProposal": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/ingest/{job_id}/proposal"},
     "admitEvidence": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest/{job_id}/admit"},
+    "admitAllPending": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/admit-all"},
     "removeSource": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/sources/{source_id}/remove"},
     "addNote": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/notes"},
     "openDeal": {
@@ -669,16 +671,44 @@ def _write_evidence_proposal(
     question_proposals: list[dict] | None = None,
     fund_lens: dict | None = None,
     excel_formula_graph: dict | None = None,
+    workbook_formula_graphs: dict | None = None,
+    source_envelope: dict | None = None,
 ) -> Path:
     """Store extraction output as reviewable evidence, before it can affect Current."""
+    # Backwards-compatible positional callers supplied workbook sidecars as
+    # the first formula argument before PAN-51 added excel_formula_graph.
+    if (isinstance(excel_formula_graph, dict)
+            and str(excel_formula_graph.get("schema", "")).startswith("workbook-formula-graphs")):
+        workbook_formula_graphs = excel_formula_graph
+        excel_formula_graph = None
     path = _proposal_path(job_id, case_id)
     path.parent.mkdir(parents=True, exist_ok=True)
+    formula_graphs = workbook_formula_graphs or {"schema": "workbook-formula-graphs-1.0", "workbooks": []}
+    artifact_path = path.with_name(f"{path.stem}-workbook-formula-graphs.json")
+    if formula_graphs.get("workbooks"):
+        _write_json_atomic(artifact_path, formula_graphs)
+    summaries = [
+        {
+            "source_id": item.get("source_id"),
+            "source_filename": item.get("source_filename"),
+            **(item.get("summary") or {}),
+        }
+        for item in formula_graphs.get("workbooks", [])
+        if isinstance(item, dict)
+    ]
     payload = {
         "proposal_id": f"evidence-{job_id}", "job_id": job_id, "case_id": case_id,
-        "source_id": filename, "source_path": f"vault/inbox/{filename}",
+        "source_id": (source_envelope or {}).get("source_id") or filename,
+        "source_path": f"vault/inbox/{filename}",
+        "source_envelope": source_envelope,
         "status": "PENDING_REVIEW", "created_at": _now_iso(), "claims": claims,
         "question_proposals": question_proposals or [],
         "excel_formula_graph": excel_formula_graph,
+        "workbook_formula_graph": {
+            "available": bool(summaries),
+            "artifact": artifact_path.name if summaries else None,
+            "workbooks": summaries,
+        },
         "fund_lens": {
             "lens_id": (fund_lens or {}).get("lens_id"),
             "version": (fund_lens or {}).get("version"),
@@ -688,15 +718,51 @@ def _write_evidence_proposal(
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return path
 
+
+def _proposal_workbook_formula_graphs(proposal_file: Path, proposal: dict) -> dict:
+    """Load the immutable formula graph stored beside an evidence proposal."""
+    artifact = (proposal.get("workbook_formula_graph") or {}).get("artifact")
+    if not artifact:
+        return {"schema": "workbook-formula-graphs-1.0", "workbooks": []}
+    candidate = proposal_file.parent / Path(str(artifact)).name
+    payload = _load_json_safe(candidate)
+    if not isinstance(payload.get("workbooks"), list):
+        return {"schema": "workbook-formula-graphs-1.0", "workbooks": []}
+    return payload
+
+
+def _promote_workbook_formula_graphs(case_id: str, proposal_file: Path, proposal: dict) -> dict:
+    """Persist admitted workbook structure separately from LLM claim output."""
+    incoming = _proposal_workbook_formula_graphs(proposal_file, proposal)
+    if not incoming["workbooks"]:
+        return {"schema": "workbook-formula-graphs-1.0", "workbooks": []}
+    destination = _pipeline_out_for_case(case_id) / "workbook_formula_graphs.json"
+    existing = _load_json_safe(destination)
+    retained = {
+        str(item.get("source_id") or item.get("source_filename")): item
+        for item in existing.get("workbooks", [])
+        if isinstance(item, dict)
+    }
+    for item in incoming["workbooks"]:
+        if isinstance(item, dict):
+            retained[str(item.get("source_id") or item.get("source_filename"))] = item
+    promoted = {"schema": "workbook-formula-graphs-1.0", "workbooks": list(retained.values())}
+    _write_json_atomic(destination, promoted)
+    return promoted
+
 def _derive_bears_on(claims: list[dict], e3: dict, fund_lens: dict | None = None) -> list[dict]:
     """Apply the same deterministic metric/keyword graph used by bind_questions_e3."""
-    from bind_questions_e3 import bind_claim
+    from bind_questions_e3 import ranked_bindings
     metadata = {x.get("claim_id"): x for x in e3.get("extraction_metadata", {}).get("compiler_fields_per_claim", [])}
     out = []
     for claim in claims:
         c = dict(claim)
         meta = metadata.get(c.get("claim_id"), c)
-        c["bears_on"] = bind_claim(c, meta, fund_lens or _active_fund_lens(str(e3.get("deal") or "keystone")))
+        binding_evidence = ranked_bindings(
+            c, meta, fund_lens or _active_fund_lens(str(e3.get("deal") or "keystone"))
+        )
+        c["bears_on"] = [item["question_id"] for item in binding_evidence]
+        c["binding_evidence"] = binding_evidence
         if metadata.get(c.get("claim_id")):
             c.update({k: v for k, v in metadata[c["claim_id"]].items() if k not in c or not c.get(k)})
         out.append(c)
@@ -841,14 +907,34 @@ def _semantic_graph_from_claims(
     excel_models: list[dict] | None = None,
 ) -> dict:
     """Derive a semantic graph without mutating the operational Current."""
-    from vercel.api._claim_graph import claims_to_graph
+    from vercel.api._claim_graph import claims_to_graph, is_hygiene_noise
 
-    graph = claims_to_graph(claims, deal=case_id)
+    # The V1/V2 extraction envelope carries ``metric``/``statement`` and
+    # ``source_id``/``epistemic_class``; claims_to_graph's Pass 1 requires the
+    # older ``subject``/``source_doc``/``epistemic`` names and silently drops
+    # any claim with an empty subject. Without this, every claim from this
+    # envelope disappears from the graph before a single edge is built —
+    # matching normalization to _build_semantic_current's boundary.
+    semantic_claims = []
+    for claim in claims:
+        current = dict(claim)
+        current.setdefault("source_doc", current.get("source_id", ""))
+        current.setdefault("epistemic", current.get("epistemic_class", "asserted"))
+        current.setdefault("as_of", current.get("effective_date") or current.get("period", ""))
+        current.setdefault("subject", current.get("metric") or current.get("statement", "")[:96])
+        semantic_claims.append(current)
+    # claims_to_graph applies its own hygiene filter internally (Pass 0) and
+    # numbers claim:NNN nodes by position in the *filtered* list. Filter here
+    # first, identically, so the index space used for the Source -> Claim
+    # provenance edges below matches the node ids claims_to_graph creates.
+    semantic_claims = [c for c in semantic_claims if not is_hygiene_noise(c)]
+
+    graph = claims_to_graph(semantic_claims, deal=case_id)
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
     node_ids = {n.get("id") for n in nodes}
     # Make source provenance first-class in the test graph: Source → Claim.
-    for index, claim in enumerate(claims):
+    for index, claim in enumerate(semantic_claims):
         claim_node = f"claim:{index:03d}"
         for source_id in claim.get("source_ids") or [claim.get("source_id")]:
             if not source_id:
@@ -868,8 +954,81 @@ def _semantic_graph_from_claims(
             nodes.append({"id": condition_id, "type": "condition", "label": f"Evidence required for {qid}",
                           "coverage_status": "missing", "question_id": qid})
             edges.append({"source": f"q:{qid}", "target": condition_id, "rel": "REQUIRES_EVIDENCE"})
+    # A covered underwriting question forms a reviewable Case Position even
+    # before an archetype supplies executable model mappings.  This makes the
+    # semantic case visible in Foundations without treating it as runtime fact.
+    question_nodes = {str(q.get("id")): q for q in _load_questions(case_id)}
+    # Compiler-origin question nodes may use a different question-type ID from
+    # the Fund Lens. They still form explicit case positions; evidence links
+    # are added below where claim bindings are available.
+    for node in list(nodes):
+        if node.get("type") != "question" or not node.get("id"):
+            continue
+        qid = str(node["id"]).removeprefix("q:")
+        position_id = f"position:{qid}"
+        if position_id not in node_ids:
+            nodes.append({"id": position_id, "type": "case_position", "label": node.get("label") or qid,
+                          "statement": node.get("label") or qid, "question_id": qid,
+                          "decision_status": node.get("decision_status", "PENDING"),
+                          "epistemic_status": "EVIDENCE_FORMING"})
+            node_ids.add(position_id)
+            edges.append({"source": node["id"], "target": position_id, "rel": "FRAMES_POSITION"})
+    for edge in list(edges):
+        if edge.get("rel") not in {"BEARS_ON", "ANSWERS_TO"}:
+            continue
+        claim_id, qid = edge.get("source"), str(edge.get("target", "")).removeprefix("q:")
+        question = question_nodes.get(qid)
+        if not question or not claim_id:
+            continue
+        position_id = f"position:{qid}"
+        if position_id not in node_ids:
+            nodes.append({"id": position_id, "type": "case_position",
+                          "label": question.get("title") or qid,
+                          "statement": question.get("title") or qid,
+                          "question_id": qid, "decision_status": "PENDING",
+                          "epistemic_status": "EVIDENCE_FORMING"})
+            node_ids.add(position_id)
+            edges.append({"source": f"q:{qid}", "target": position_id, "rel": "FRAMES_POSITION"})
+        claim = nodes[next((i for i,n in enumerate(nodes) if n.get("id") == claim_id), -1)] if claim_id in node_ids else {}
+        direction = str(claim.get("direction", "")).lower()
+        edges.append({"source": claim_id, "target": position_id,
+                      "rel": "CONTRADICTS" if direction in {"against", "negative", "downside"} else "SUPPORTS"})
+    # Workbook formulas are deterministic source evidence.  Keep the complete
+    # cell/dependency graph in its sidecar (so a large model does not make the
+    # interactive semantic canvas unusable) and project one inspectable model
+    # node per admitted workbook into the main graph.
+    formula_graphs = _load_json_safe(_pipeline_out_for_case(case_id) / "workbook_formula_graphs.json")
+    formula_summaries = []
+    for workbook in formula_graphs.get("workbooks", []):
+        if not isinstance(workbook, dict):
+            continue
+        source_id = str(workbook.get("source_id") or workbook.get("source_filename") or "workbook")
+        summary = workbook.get("summary") or {}
+        model_node = f"workbook:{source_id}"
+        if model_node not in node_ids:
+            nodes.append({
+                "id": model_node, "type": "workbook_formula_graph",
+                "label": workbook.get("source_filename") or source_id,
+                "formula_count": int(summary.get("formula_count", 0)),
+                "precedent_edge_count": int(summary.get("precedent_edge_count", 0)),
+                "cached_formula_value_count": int(summary.get("cached_formula_value_count", 0)),
+                "coverage_status": "mapped",
+            })
+            node_ids.add(model_node)
+        source_node = f"source:{source_id}"
+        if source_node not in node_ids:
+            nodes.append({"id": source_node, "type": "source", "label": source_id,
+                          "title": source_id, "coverage_status": "mapped"})
+            node_ids.add(source_node)
+        edges.append({"source": source_node, "target": model_node, "rel": "CONTAINS_FORMULA_GRAPH"})
+        formula_summaries.append({
+            "source_id": source_id,
+            "source_filename": workbook.get("source_filename"),
+            **summary,
+        })
     graph["nodes"] = nodes
     graph["edges"] = edges
+    graph["workbook_formula_graphs"] = formula_summaries
     graph["kind"] = "semantic_current"
     graph["case_id"] = case_id
     model_graphs = _load_excel_model_graphs(case_id) if excel_models is None else excel_models
@@ -932,7 +1091,15 @@ def _build_semantic_current(claims: list[dict], case_id: str) -> dict:
     return graph
 
 def _semantic_rooms(graph: dict, question_spine: list[dict]) -> tuple[list[dict], dict, list[dict]]:
-    """Project semantic positions and evidence gaps into Foundations and Unknowns."""
+    """Project semantic positions and evidence gaps into Foundations and Unknowns.
+
+    Foundations = Case Position nodes plus their SUPPORTS/CONTRADICTS evidence,
+    plus CONDITION nodes -- declared coverage gaps a position's underlying
+    question still rests on (REQUIRES_EVIDENCE edges from ``_build_semantic_current``).
+    The Unknowns room returned here is a minimal fallback (question-spine gaps
+    only); ``_apply_decision_intelligence`` is the authority that ranks it and
+    folds in conflicts/runtime blockers, and always runs after this.
+    """
     nodes = {n.get("id"): n for n in graph.get("nodes", [])}
     evidence: dict[str, list[dict]] = {}
     for edge in graph.get("edges", []):
@@ -955,12 +1122,80 @@ def _semantic_rooms(graph: dict, question_spine: list[dict]) -> tuple[list[dict]
                             "strength": "contested" if node.get("decision_status") == "CONTESTED" else "weak",
                             "status": node.get("decision_status", "PENDING"), "evidence_options": opts,
                             "members": [x["claim_id"] for x in opts]})
+
+    for edge in graph.get("edges", []):
+        if edge.get("rel") != "REQUIRES_EVIDENCE":
+            continue
+        condition = nodes.get(edge.get("target"), {})
+        if condition.get("type") != "condition":
+            continue
+        foundations.append({
+            "id": condition["id"], "label": condition.get("label", condition["id"]),
+            "economic": "", "strength": "weak", "status": "MISSING_EVIDENCE",
+            "kind": "condition", "question_id": condition.get("question_id"),
+            "evidence_options": [], "members": [],
+        })
+
     unknowns = {"items": [
         {"id": f"unknown:{q['id']}", "label": q.get("label", q["id"]), "question_id": q["id"],
          "value": "No admitted evidence yet", "closure": "Admit source evidence or accept the residual risk."}
         for q in question_spine if q.get("coverage") == "gap"
     ]}
     return foundations, unknowns, positions
+
+
+def _scenario_lab(current_graph: dict | None) -> dict:
+    """Project mapped model nodes and support routes into the Scenario Lab room.
+
+    A 'scenario' here is a support route: an alternative, governed way a Case
+    Position's value is argued or computed from its member claims/positions,
+    together with the model nodes bound to that position. Nothing is invented
+    -- a position with no support route yet simply contributes no branch, and
+    a case with no compiled runtime bundle gets an empty lab, not a fixture.
+    """
+    if not isinstance(current_graph, dict):
+        return {"scenarios": []}
+    model_nodes = {
+        n.get("model_node_id"): n
+        for n in current_graph.get("model_nodes", []) or []
+        if isinstance(n, dict) and n.get("model_node_id")
+    }
+    positions = {
+        p.get("position_id"): p
+        for p in current_graph.get("case_positions", []) or []
+        if isinstance(p, dict) and p.get("position_id")
+    }
+    bindings_by_position: dict[str, list[dict]] = {}
+    for binding in current_graph.get("position_model_bindings", []) or []:
+        if isinstance(binding, dict) and binding.get("position_id"):
+            bindings_by_position.setdefault(str(binding["position_id"]), []).append(binding)
+
+    scenarios = []
+    for route in current_graph.get("support_routes", []) or []:
+        if not isinstance(route, dict):
+            continue
+        target_id = route.get("target_position_id")
+        position = positions.get(target_id, {})
+        bound_model_nodes = [
+            model_nodes[binding["model_node_id"]]
+            for binding in bindings_by_position.get(str(target_id), [])
+            if binding.get("model_node_id") in model_nodes
+        ]
+        scenarios.append({
+            "id": route.get("route_id"),
+            "label": position.get("statement") or position.get("metric") or route.get("route_id"),
+            "state": position.get("decision_status_at_ic", "MAPPED"),
+            "drivers": [*route.get("member_claim_ids", []), *route.get("member_position_ids", [])],
+            "metrics": [
+                {"label": mn.get("name", mn.get("model_node_id")), "value": mn.get("value")}
+                for mn in bound_model_nodes
+            ],
+            "trajectory": [
+                {"stage": mn.get("period_raw") or mn.get("period", ""), "value": mn.get("value")}
+                for mn in bound_model_nodes if mn.get("value") is not None
+            ],
+        })
+    return {"scenarios": scenarios}
 
 def _write_json_atomic(path: Path, payload: Any) -> None:
     """Persist one JSON artifact without exposing a partially written bundle."""
@@ -1458,16 +1693,20 @@ def _compile_live_runtime_bundle(claims: list[dict], case_id: str) -> dict[str, 
 
 
 def _runtime_current_graph(case_id: str) -> dict:
+    # The compiled graph's own ``case_id`` is institutional metadata from the
+    # execution manifest (e.g. keystone's is "PROJECT-KEYSTONE") and is not
+    # guaranteed to equal the URL case slug; _pipeline_out_for_case already
+    # gives every case its own bundle directory, so that isolation -- not a
+    # string match against embedded metadata -- is what guarantees this file
+    # belongs to this case. A strict equality check here previously made this
+    # function return empty on every call, silently discarding every prior
+    # settled state and recomputing a wrong baseline on each admission.
     pipeline_out = _pipeline_out_for_case(case_id)
     runtime_state = _load_json_safe(pipeline_out / "runtime_state.json")
-    if (
-        isinstance(runtime_state, dict)
-        and runtime_state.get("case_id") == case_id
-        and isinstance(runtime_state.get("current_graph"), dict)
-    ):
+    if isinstance(runtime_state, dict) and isinstance(runtime_state.get("current_graph"), dict):
         return copy.deepcopy(runtime_state["current_graph"])
     current = _load_json_safe(pipeline_out / "current_graph.json")
-    if isinstance(current, dict) and current.get("case_id") == case_id:
+    if isinstance(current, dict) and current:
         return copy.deepcopy(current)
     return {}
 
@@ -2180,6 +2419,49 @@ def _apply_decision_intelligence(projection: dict) -> dict:
                 "admitted_claim_count": int(question.get("claim_count") or 0),
             },
         })
+
+    # Conflicts: positions the runtime itself marked CONTESTED after a
+    # material CONTRADICTS landed (panta_transition_engine.py sets
+    # epistemic_status="CONTESTED" only on that path -- this is a real
+    # disagreement between admitted claims, not mere thin coverage).
+    for item in load_bearing:
+        if item["epistemic_status"] != "CONTESTED":
+            continue
+        unknowns.append({
+            "id": f"conflict:{item['position_id']}",
+            "label": f"Contested: {item['label']}",
+            "question_id": None,
+            "value": "Admitted claims disagree",
+            "closure": "Resolve the contradiction or accept the residual risk.",
+            "status": "CONTESTED",
+        })
+
+    # Runtime blockers: what the transition engine itself declared while
+    # computing the current Candidate, surfaced verbatim rather than
+    # re-derived, so Unknowns never claims a coverage state the runtime
+    # didn't actually report.
+    transition_output = deal.get("transition_output") if isinstance(deal.get("transition_output"), dict) else {}
+    for stop in transition_output.get("human_stops") or []:
+        if not isinstance(stop, dict):
+            continue
+        unknowns.append({
+            "id": f"blocker:{stop.get('stop_id') or stop.get('id') or len(unknowns)}",
+            "label": stop.get("reason") or stop.get("label") or stop.get("code") or "Runtime Human Stop",
+            "question_id": None, "value": stop.get("code", "HUMAN_STOP"),
+            "closure": stop.get("required_action") or "Requires an explicit human decision to proceed.",
+            "status": "HUMAN_STOP",
+        })
+    for limit in transition_output.get("coverage_limits") or []:
+        if not isinstance(limit, dict):
+            continue
+        unknowns.append({
+            "id": f"blocker:{limit.get('reason_code') or len(unknowns)}",
+            "label": limit.get("effect") or limit.get("reason_code") or "Runtime coverage limit",
+            "question_id": None, "value": limit.get("reason_code", "COVERAGE_LIMIT"),
+            "closure": limit.get("resolution") or "Requires review before dynamics can complete.",
+            "status": "COVERAGE_LIMIT",
+        })
+
     rooms = deal.setdefault("rooms", {})
     rooms.setdefault("foundations", {"sets": []})
     rooms["unknowns"] = {"items": unknowns}
@@ -2252,12 +2534,15 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     fund_lens = _active_fund_lens(case_id)
     question_spine = _build_question_spine(questions, claims)
     semantic_graph = _load_json_safe(pipeline_out / "semantic_current_graph.json")
-    foundations, unknowns, semantic_positions = _semantic_rooms(semantic_graph, question_spine) if semantic_graph else ([], {"items": []}, [])
-
     current_graph = _load_json_safe(pipeline_out / "current_graph.json")
     candidate_graph = _load_json_safe(pipeline_out / "candidate_graph.json")
     transition_output = _load_json_safe(pipeline_out / "transition_output.json")
     graph_versions = _list_graph_versions(case_id)
+    foundations, unknowns, semantic_positions = (
+        _semantic_rooms(semantic_graph, question_spine)
+        if semantic_graph else ([], {"items": []}, [])
+    )
+    scenario_lab = _scenario_lab(current_graph)
 
     if isinstance(current_graph, dict) and "case_positions" in current_graph:
         current_graph = {**current_graph, "positions": current_graph["case_positions"]}
@@ -2359,6 +2644,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
                 "unknowns": unknowns,
                 "shadowIC": {"theses": []},
             },
+            "scenarioLab": scenario_lab,
             "positions": semantic_positions,
             "semantic_current_graph": semantic_graph,
             "current_graph": current_graph,
@@ -2384,6 +2670,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
         result["deal"]["transition_output"] = transition_output
         result["deal"]["graph_versions"] = graph_versions
         result["deal"]["rooms"] = projection["deal"]["rooms"]
+        result["deal"]["scenarioLab"] = projection["deal"]["scenarioLab"]
         result["deal"]["positions"] = semantic_positions
         result["deal"]["semantic_current_graph"] = semantic_graph
         result["deal"]["replay"] = projection["deal"]["replay"]
@@ -2430,7 +2717,10 @@ def bootstrap_flat(case_id: str | None = None, actor: str | None = None) -> dict
     cid = case_id or "keystone"
     deal_md = VAULT / "deals" / cid / "deal.md"
     available_cases = _available_case_ids()
-    if not deal_md.exists():
+    # An explicit URL case is an operator choice.  It may be a newly opened
+    # clean case whose deal.md has not been materialized yet; never substitute
+    # a different live deal (previously the alphabetical Astrelia fallback).
+    if case_id is None and not deal_md.exists():
         # Try to find any deal
         cid = available_cases[0] if available_cases else cid
     if cid not in available_cases:
@@ -3134,14 +3424,19 @@ class UnsupportedUploadFormat(ValueError):
     """Raised when live intake cannot route an uploaded source safely."""
 
 
-def _extraction_command(source_path: Path | None, case_id: str, job_id: str) -> tuple[str, list[str]]:
+def _extraction_command(
+    source_path: Path | None,
+    case_id: str,
+    job_id: str,
+    source_envelope_path: Path | None = None,
+) -> tuple[str, list[str]]:
     """Select the extractor at the product boundary without executing it."""
     pipeline_out = _pipeline_out_for_case(case_id)
     if source_path is not None:
         suffix = source_path.suffix.lower()
-        if suffix in (".xlsx", ".xlsm"):
+        if suffix in (".xlsx", ".xlsm", ".md", ".txt", ".pdf"):
             run_dir = pipeline_out / "runs" / job_id
-            return "SINGLE_V2", [
+            command = [
                 sys.executable,
                 str(ROOT / "tools" / "extract_v2.py"),
                 "--source",
@@ -3151,21 +3446,13 @@ def _extraction_command(source_path: Path | None, case_id: str, job_id: str) -> 
                 "--output",
                 str(run_dir),
             ]
+            if source_envelope_path is not None:
+                command.extend(["--source-envelope", str(source_envelope_path)])
+            return "SINGLE_V2", command
         if suffix == ".xls":
             raise UnsupportedUploadFormat(
                 "Legacy .xls is not supported; convert the workbook to .xlsx before upload."
             )
-        if suffix in (".md", ".txt", ".pdf"):
-            run_dir = pipeline_out / "runs" / job_id
-            return "SINGLE", [
-                sys.executable,
-                str(ROOT / "tools" / "pipeline.py"),
-                str(source_path),
-                "--deal",
-                case_id,
-                "--out",
-                str(run_dir),
-            ]
     return "K-IC", [
         sys.executable,
         str(ROOT / "tools" / "extract.py"),
@@ -3183,12 +3470,19 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
     original_filename = ""
     stored_path: Path | None = None
     purpose = ""
+    declared_metadata: dict[str, Any] = {}
     content_type = request.headers.get("content-type", "")
 
     if "multipart/form-data" in content_type:
         form = await request.form()
         file_field = form.get("file")
         purpose = str(form.get("purpose", ""))
+        raw_metadata = form.get("source_metadata", "")
+        if raw_metadata:
+            try:
+                declared_metadata = json.loads(str(raw_metadata))
+            except json.JSONDecodeError as exc:
+                raise HTTPException(400, f"source_metadata must be JSON: {exc.msg}") from exc
         if file_field and hasattr(file_field, "filename"):
             original_filename = Path(file_field.filename or "upload").name
             content = await file_field.read()
@@ -3206,6 +3500,9 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
         filename = Path(payload.get("file_name") or payload.get("value") or payload.get("artifact") or "").name
         original_filename = filename
         purpose = payload.get("purpose", "")
+        declared_metadata = payload.get("source_metadata") or {}
+        if not isinstance(declared_metadata, dict):
+            raise HTTPException(400, "source_metadata must be a JSON object")
         encoded = payload.get("content_b64")
         if encoded and filename:
             try:
@@ -3217,12 +3514,23 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
             filename = stored_path.name
 
     job_id = str(uuid.uuid4())[:8]
+    source_path_for_envelope = stored_path or ((inbox_dir / filename) if filename else None)
+    source_envelope: dict[str, Any] | None = None
+    if source_path_for_envelope and source_path_for_envelope.exists():
+        source_envelope = build_source_envelope(
+            source_path_for_envelope,
+            case_id,
+            _now_iso(),
+            original_filename=original_filename or filename,
+            declared_metadata=declared_metadata,
+        )
     _store_job(job_id, {
         "status": "PENDING", "job_id": job_id,
         "artifact": filename, "case_id": case_id, "purpose": purpose,
         "label": filename or "extraction run",
         "stage": "Queued", "progress": 0,
         "created_at": _now_iso(),
+        "source_envelope": source_envelope,
     })
     if filename:
         with _inbox_lock:
@@ -3233,6 +3541,7 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                 "path": f"vault/inbox/{filename}",
                 "size": stored_path.stat().st_size if stored_path else None,
                 "purpose": purpose, "status": "PENDING", "stage": "Queued",
+                "source_envelope": source_envelope,
                 "uploaded_at": _now_iso(), "updated_at": _now_iso(),
                 "message": "Stored durably; waiting for extraction.",
             })
@@ -3248,7 +3557,11 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
         # Excel is routed to V2: unlike V1 it chunks a workbook by sheet/range
         # and retains formula + cached-value provenance. V1 flattens a workbook
         # to one prompt and therefore truncates non-trivial models.
-        manifest_label, cmd = _extraction_command(source_path, case_id, job_id)
+        envelope_path: Path | None = None
+        if source_envelope:
+            envelope_path = _pipeline_out_for_case(case_id) / "runs" / job_id / "source-envelope.json"
+            _write_json_atomic(envelope_path, source_envelope)
+        manifest_label, cmd = _extraction_command(source_path, case_id, job_id, envelope_path)
 
         # Pass the selected provider environment explicitly to the extractor.
         provider = _os.environ.get("PEOS_LLM_PROVIDER", "anthropic").lower()
@@ -3278,9 +3591,13 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                         if e3_out.exists():
                             e3 = json.loads(e3_out.read_text())
                             raw = e3.get("claims", [])
+                            workbook_formula_graphs = _load_json_safe(
+                                e3_out.parent / "workbook_formula_graphs.json"
+                            )
                         else:
                             e3 = {}
                             raw = json.loads(v1_out.read_text())
+                            workbook_formula_graphs = {}
                         fund_lens = _active_fund_lens(case_id)
                         _ensure_question_registry(case_id, fund_lens)
                         new_claims = _derive_bears_on(
@@ -3329,6 +3646,8 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                             question_proposals,
                             fund_lens,
                             excel_formula_graph,
+                            workbook_formula_graphs,
+                            source_envelope,
                         )
                         proposal_display_path = (
                             str(proposal.relative_to(ROOT))
@@ -3614,6 +3933,7 @@ def get_evidence_proposal(case_id: str, job_id: str) -> dict:
     )
     return {
         "proposal": proposal,
+        "workbook_formula_graphs": _proposal_workbook_formula_graphs(proposal_path, proposal),
         "questions": _build_question_spine(_load_questions(case_id), proposal.get("claims", [])),
         "semantic_preview": {
             "nodes": len(preview.get("nodes", [])),
@@ -3716,6 +4036,7 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     compiled = None
     runtime_event = None
     event_path = None
+    runtime_blocker = None
     prior_graph = _runtime_current_graph(case_id)
     if added:
         try:
@@ -3744,8 +4065,19 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
                 runtime_event,
             )
         except (DynamicsBundleError, ValueError, KeyError, OSError) as exc:
-            logger.exception("runtime compilation failed for evidence job %s", job_id)
-            raise HTTPException(422, f"Admitted evidence could not be compiled: {exc}") from exc
+            # A new case may have a valid semantic graph before its archetype
+            # runtime template exists. Admission must not lose reviewed source
+            # evidence merely because dynamics has no governed mapping yet.
+            if isinstance(exc, DynamicsBundleError) and "execution_graph_v7.json" in str(exc):
+                logger.info("runtime mapping pending for evidence job %s: %s", job_id, exc)
+                runtime_blocker = {
+                    "code": "RUNTIME_MAPPING_REQUIRED",
+                    "reason": str(exc),
+                    "required_action": "Configure an archetype runtime template and case execution mapping before dynamics.",
+                }
+            else:
+                logger.exception("runtime compilation failed for evidence job %s", job_id)
+                raise HTTPException(422, f"Admitted evidence could not be compiled: {exc}") from exc
 
     admitted_excel_model = _admit_excel_formula_graph(
         case_id,
@@ -3754,6 +4086,7 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     )
     _write_json_atomic(existing_path, merged)
     persisted = _persist_claims_to_vault(case_id, added, proposal.get("source_id", ""))
+    promoted_formula_graphs = _promote_workbook_formula_graphs(case_id, proposal_file, proposal)
     graph = _build_semantic_current(merged, case_id)
     proposal.update({"status": "ADMITTED", "reviewed_at": _now_iso(),
                      "reviewed_by": payload.get("actor_id", "professional-review"),
@@ -3766,9 +4099,11 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     _update_inbox_record(job_id, admission_status="ADMITTED", stage="Runtime event ready",
                          admitted_claim_count=len(added),
                          runtime_event_id=runtime_event.get("event_id") if runtime_event else None,
-                         message=(
-                             f"Admitted {len(added)} new claims and compiled the executable runtime event."
-                             if runtime_event else "Evidence was already represented; no new runtime event was required."
+                         runtime_blocker=runtime_blocker,
+        message=(
+             f"Admitted {len(added)} new claims and compiled the executable runtime event."
+                             if runtime_event else ("Evidence admitted into semantic Current; runtime mapping is required before dynamics."
+                             if runtime_blocker else "Evidence was already represented; no new runtime event was required.")
                          ))
     _store_job(job_id, admission_status="ADMITTED", stage="Runtime event ready",
                admitted_claim_count=len(added),
@@ -3798,6 +4133,11 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
                 "formula_nodes": len(graph.get("excel_formulas", [])),
                 "human_stops": len(graph.get("coverage_limits", [])),
             },
+            "workbook_formula_graphs": [
+                {"source_id": item.get("source_id"), "source_filename": item.get("source_filename"),
+                 **(item.get("summary") or {})}
+             for item in promoted_formula_graphs.get("workbooks", []) if isinstance(item, dict)
+            ],
             "runtime_event": ({
                 "event_id": runtime_event["event_id"],
                 "path": str(event_path),
@@ -3805,7 +4145,96 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
                 "mapped_claim_count": len(runtime_event["mapped_claim_ids"]),
                 "unmapped_claim_count": len(runtime_event["unmapped_claim_ids"]),
             } if runtime_event else None),
-            "message": "Evidence admitted into semantic Current and compiled for dynamics."}
+            "human_stops": [runtime_blocker] if runtime_blocker else [],
+            "message": ("Evidence admitted into semantic Current; dynamics is blocked until a runtime mapping is configured."
+                        if runtime_blocker else "Evidence admitted into semantic Current and compiled for dynamics.")}
+
+
+@v20.post("/cases/{case_id}/admit-all")
+async def admit_all_pending(
+    case_id: str,
+    background_tasks: BackgroundTasks,
+    payload: dict = {},
+) -> dict:
+    """Admit every PENDING_REVIEW proposal for a case, one at a time.
+
+    Each admission runs through dynamics and, when it compiles into a
+    Candidate with no Human Stops, is settled immediately before the next
+    proposal is admitted -- the same sequence a reviewer would run by hand
+    through /admit-evidence, /events/{id}/admit and /runs/{id}/settle. Stops
+    on the first proposal that can't proceed rather than silently skipping it,
+    so a batch run never hides a real blocker.
+    """
+    actor_id = str(payload.get("actor_id") or "batch-admit")
+    proposals_dir = _pipeline_out_for_case(case_id) / "proposals"
+    pending_job_ids = []
+    if proposals_dir.exists():
+        for path in sorted(proposals_dir.glob("evidence-*.json")):
+            data = _load_json_safe(path)
+            if (
+                isinstance(data, dict)
+                and data.get("status") == "PENDING_REVIEW"
+                and data.get("case_id") == case_id
+                and data.get("job_id")
+            ):
+                pending_job_ids.append((str(data.get("created_at") or ""), str(data["job_id"])))
+    pending_job_ids.sort()
+
+    processed: list[dict[str, Any]] = []
+    for _created_at, job_id in pending_job_ids:
+        entry: dict[str, Any] = {"job_id": job_id}
+        try:
+            admitted = await admit_evidence(case_id, job_id, {"decision": "ADMIT", "actor_id": actor_id})
+        except HTTPException as exc:
+            entry["stage"] = "admit_evidence"
+            entry["error"] = exc.detail
+            processed.append(entry)
+            break
+        entry["source_id"] = admitted.get("proposal_id")
+        entry["new_claim_count"] = admitted.get("new_claim_count")
+        entry["human_stops"] = admitted.get("human_stops") or []
+        runtime_event = admitted.get("runtime_event")
+        if not runtime_event or not runtime_event.get("event_id"):
+            entry["outcome"] = "ADMITTED_NO_DYNAMICS"
+            processed.append(entry)
+            continue
+        try:
+            transitioned = await admit(case_id, runtime_event["event_id"], background_tasks, {"actor_id": actor_id})
+        except HTTPException as exc:
+            entry["stage"] = "transition"
+            entry["error"] = exc.detail
+            processed.append(entry)
+            break
+        run_id = transitioned["run"]["run_id"]
+        transition_human_stops = transitioned["transition"].get("human_stops") or []
+        entry["run_id"] = run_id
+        if transition_human_stops:
+            entry["outcome"] = "CANDIDATE_AWAITING_HUMAN_STOP"
+            entry["human_stops"] = transition_human_stops
+            processed.append(entry)
+            break
+        try:
+            settled = await settle_run(run_id, background_tasks, {"actor_id": actor_id})
+        except HTTPException as exc:
+            entry["stage"] = "settle"
+            entry["error"] = exc.detail
+            processed.append(entry)
+            break
+        entry["outcome"] = "SETTLED"
+        entry["current_state_id"] = settled.get("current_state_id")
+        processed.append(entry)
+
+    settled_count = sum(1 for item in processed if item.get("outcome") == "SETTLED")
+    return {
+        "requested": len(pending_job_ids),
+        "processed": processed,
+        "settled_count": settled_count,
+        "message": (
+            f"Settled {settled_count} of {len(pending_job_ids)} pending source(s)."
+            if not processed or "error" not in processed[-1]
+            else f"Stopped after {len(processed)} source(s): {processed[-1].get('error')}"
+        ),
+    }
 
 
 @v20.get("/jobs/{job_id}")
@@ -4328,6 +4757,7 @@ def replay(case_id: str, as_of_date: str | None = None, event_id: str | None = N
             "unknowns": unknowns,
             "shadowIC": {"theses": []},
         },
+        "scenarioLab": _scenario_lab(current_graph),
         "positions": semantic_positions,
         "current_graph": current_graph,
         "candidate_graph": {},

@@ -1,0 +1,20 @@
+{
+  "schema_version": "panta.archetype-runtime/1.0",
+  "archetype_id": "buyout-v1",
+  "label": "Control buyout base template",
+  "case_position_contract": {
+    "source": "underwriting-question coverage",
+    "relations": ["SUPPORTS", "CONTRADICTS", "CONDITIONS"],
+    "default_status": "PENDING"
+  },
+  "runtime_contract": {
+    "mapping_required_for_candidate": true,
+    "unmapped_outcome": "HUMAN_STOP",
+    "required_case_artifacts": ["deal_profile.json", "execution_graph_v7.json"],
+    "forbidden_fallbacks": ["keystone perimeter", "keystone formula", "keystone policy"]
+  },
+  "governance": {
+    "admission_authority": "DEAL_TEAM_REVIEW",
+    "settlement_authority": "INVESTMENT_COMMITTEE"
+  }
+}

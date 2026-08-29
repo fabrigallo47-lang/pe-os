@@ -58,5 +58,3 @@ Cross-deal standard: concentration >15% at ultimate-parent level = material risk
 - [[c-keystone-397]] (keystone, asserted) — combined event impact on investment return: Business recovers operationally and remains solvent; combined event permanently reduces investment return and exit multiple
 - [[c-keystone-400]] (keystone, asserted) — IC risk adequacy judgment - compound event: Moderate opening leverage and $4m internal reserve considered sufficient for either Riverton or systems risk individually; compound materialization of both required $7.5m amendment
 - [[c-keystone-416]] (keystone, attested) — lender information rights post-amendment: Weekly 13-week cash flow; enhanced monthly statements; daily WIP and invoice reporting until stabilized; Riverton account remediation reporting
-- [[c-keystone-420]] (keystone, asserted) — largest ultimate-parent customer concentration: ACME Corp accounts for 30% of revenue
-- [[c-keystone-423]] (keystone, asserted) — largest billing-account customer concentration: ACME Corp, 30% of revenue

@@ -114,10 +114,10 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
         extraction_tasks = BackgroundTasks()
 
         def fake_extractor(command, **_kwargs):
-            output_dir = Path(command[command.index("--out") + 1])
+            output_dir = Path(command[command.index("--output") + 1]) / "SINGLE"
             output_dir.mkdir(parents=True, exist_ok=True)
-            (output_dir / "claims.json").write_text(
-                json.dumps([self.claim], indent=2) + "\n",
+            (output_dir / "e3_claims.json").write_text(
+                json.dumps({"deal": "keystone", "claims": [self.claim]}, indent=2) + "\n",
                 encoding="utf-8",
             )
             return SimpleNamespace(returncode=0, stdout="one real claim", stderr="")

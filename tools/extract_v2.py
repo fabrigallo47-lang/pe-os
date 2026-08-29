@@ -54,6 +54,7 @@ from tools.llm_provider import (  # noqa: E402
     missing_key_message,
     openrouter_extra_body,
 )
+from tools.source_envelope import extractor_source_record  # noqa: E402
 
 VAULT_INBOX = ROOT / "vault" / "inbox"
 MODEL = configured_model("claude-haiku-4-5-20251001")
@@ -568,8 +569,9 @@ def _split_words(text: str, max_words: int, locator_prefix: str,
     return chunks
 
 
-def parse_markdown(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
-    src = _source_record(path)
+def parse_markdown(path: Path, max_words: int = CHUNK_WORDS,
+                   source_record: dict | None = None) -> list[Chunk]:
+    src = source_record or _source_record(path)
     text = path.read_text(encoding="utf-8")
     parts = re.split(r"(?=^#{2,3} )", text, flags=re.MULTILINE)
     chunks: list[Chunk] = []
@@ -599,12 +601,13 @@ def parse_markdown(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
     return chunks
 
 
-def parse_pdf(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
+def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
+              source_record: dict | None = None) -> list[Chunk]:
     try:
         import pdfplumber
     except ImportError:
         sys.exit("pdfplumber required: pip install pdfplumber")
-    src = _source_record(path)
+    src = source_record or _source_record(path)
     chunks: list[Chunk] = []
     with pdfplumber.open(path) as pdf:
         for page_num, page in enumerate(pdf.pages, 1):
@@ -632,7 +635,8 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
     return chunks
 
 
-def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
+def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
+               source_record: dict | None = None) -> list[Chunk]:
     """Create reproducible, cell-addressable chunks from an Excel workbook.
 
     A workbook is not prose: formulas and their cached outputs carry different
@@ -648,10 +652,27 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
         values = openpyxl.load_workbook(path, data_only=True, read_only=True)
     except Exception as exc:
         sys.exit(f"Cannot read workbook {path.name}: {exc}")
-    src = _source_record(path)
+    src = source_record or _source_record(path)
     chunks: list[Chunk] = []
+    workbook_has_formulas = any(
+        isinstance(cell.value, str) and cell.value.startswith("=")
+        for ws in formulas.worksheets for row in ws.iter_rows() for cell in row
+    )
+    effective_max_words = max(max_words, 1200) if workbook_has_formulas else max_words
     for sheet_name in formulas.sheetnames:
         ws, value_ws = formulas[sheet_name], values[sheet_name]
+        # Models can contain thousands of raw input/output rows.  Their
+        # complete deterministic cell graph is captured separately; L2
+        # should see only the formula-bearing rows needed to name the
+        # economics, not every cell -- but only on sheets that actually
+        # compute (a dedicated Inputs sheet, by definition, has no formulas
+        # of its own; gating this per-workbook instead of per-sheet dropped
+        # every raw-value sheet whenever any other sheet in the file had a
+        # formula).
+        sheet_has_formulas = any(
+            isinstance(cell.value, str) and cell.value.startswith("=")
+            for row in ws.iter_rows() for cell in row
+        )
         pending: list[str] = []
         start_row = end_row = None
         def flush() -> None:
@@ -679,9 +700,12 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
                     cells.append(f"{cell.coordinate}={raw}")
             if not cells:
                 continue
+            has_formula = any("=FORMULA(" in value for value in cells)
+            if sheet_has_formulas and not has_formula:
+                continue
             line = " | ".join(cells)
             projected = len((" ".join(pending + [line])).split())
-            if pending and projected > max_words:
+            if pending and projected > effective_max_words:
                 flush()
             if start_row is None:
                 start_row = row_number
@@ -691,14 +715,15 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
     return chunks
 
 
-def parse_source(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
+def parse_source(path: Path, max_words: int = CHUNK_WORDS,
+                 source_record: dict | None = None) -> list[Chunk]:
     suffix = path.suffix.lower()
     if suffix == ".pdf":
-        return parse_pdf(path, max_words)
+        return parse_pdf(path, max_words, source_record)
     elif suffix in (".md", ".txt", ".html"):
-        return parse_markdown(path, max_words)
+        return parse_markdown(path, max_words, source_record)
     elif suffix in (".xlsx", ".xlsm"):
-        return parse_xlsx(path, max_words)
+        return parse_xlsx(path, max_words, source_record)
     elif suffix == ".xls":
         raise UnsupportedSourceError(
             "Legacy .xls is not supported; convert the workbook to .xlsx before extraction."
@@ -1049,7 +1074,8 @@ def assemble(claims: list[CanonicalClaim]) -> SubGraph:
 # ─────────────────────────────────────────────────────────────────────────────
 
 def _to_e3_manifest(graph: SubGraph, deal: str, manifest: str,
-                    sources_used: list[dict]) -> dict:
+                    sources_used: list[dict],
+                    workbook_graph_summary: list[dict[str, Any]] | None = None) -> dict:
     """
     Produce an E3 extraction manifest.
     Claims are in CAP-003 format: only the frozen fields, no compiler metadata.
@@ -1097,8 +1123,57 @@ def _to_e3_manifest(graph: SubGraph, deal: str, manifest: str,
                 }
                 for c in graph.claims
             ],
+            # Formula cells are captured deterministically at L1 and written
+            # beside this manifest.  Keep the E3 lightweight, but make the
+            # immutable workbook graph discoverable by the product/compiler.
+            "workbook_formula_graphs": workbook_graph_summary or [],
         },
     }
+
+
+def _capture_workbook_graphs(source_paths: list[Path],
+                             source_records: dict[Path, dict] | None = None) -> dict[str, Any]:
+    """Capture lossless formula graphs for every Open XML workbook in an intake.
+
+    V2 used to feed formula text to the LLM but then discarded the deterministic
+    cell/dependency graph.  That made a formula impossible to inspect or bind
+    after an upload.  The sidecar is deliberately separate from E3 claims:
+    formulas remain source evidence, never LLM-invented claims.
+    """
+    from tools.source_graph import capture
+
+    workbooks: list[dict[str, Any]] = []
+    for source_path in source_paths:
+        if source_path.suffix.lower() not in {".xlsx", ".xlsm"}:
+            continue
+        graph = capture(source_path).to_json()
+        stats = graph.get("stats", {})
+        workbooks.append({
+            "source_id": (source_records or {}).get(source_path, _source_record(source_path))["source_id"],
+            "source_path": str(source_path),
+            "source_filename": source_path.name,
+            "graph": graph,
+            "summary": {
+                "formula_count": int(stats.get("by_kind", {}).get("formula", 0)),
+                "precedent_edge_count": int(stats.get("precedent_edges", 0)),
+                "defined_name_count": int(stats.get("defined_names", 0)),
+                "cached_formula_value_count": sum(
+                    1 for cell in graph.get("cells", {}).values()
+                    if cell.get("kind") == "formula" and cell.get("cached_value") is not None
+                ),
+                "evaluated_formula_count": sum(
+                    1 for cell in graph.get("cells", {}).values()
+                    if cell.get("kind") == "formula"
+                    and cell.get("evaluation_status") == "CALCULATED_ACYCLIC"
+                ),
+                "cyclic_formula_count": sum(
+                    1 for cell in graph.get("cells", {}).values()
+                    if cell.get("kind") == "formula"
+                    and cell.get("evaluation_status") == "CYCLIC_COMPONENT"
+                ),
+            },
+        })
+    return {"schema": "workbook-formula-graphs-1.0", "workbooks": workbooks}
 
 
 def _compare_graphs(new_claims: list[dict], old_path: Path) -> dict:
@@ -1175,6 +1250,10 @@ def main() -> int:
         ),
     )
     ap.add_argument("--deal", required=True, help="Deal slug (e.g. keystone)")
+    ap.add_argument(
+        "--source-envelope", type=Path,
+        help="Path to a panta.source-envelope/1.0 JSON record for a --source intake.",
+    )
     ap.add_argument("--output", default="pipeline_out/e3",
                     help="Output directory (default: pipeline_out/e3)")
     ap.add_argument("--dry-run", action="store_true",
@@ -1221,6 +1300,22 @@ def main() -> int:
         source_paths = [source_path]
         manifest_label = "SINGLE"
 
+    source_records: dict[Path, dict] = {}
+    if args.source_envelope:
+        if args.manifest:
+            print("ERROR: --source-envelope can only be used with --source", file=sys.stderr)
+            return 2
+        try:
+            envelope = json.loads(args.source_envelope.read_text(encoding="utf-8"))
+            if envelope.get("schema") != "panta.source-envelope/1.0":
+                raise ValueError("unsupported source envelope schema")
+            if str(envelope.get("case_id")) != str(args.deal):
+                raise ValueError("source envelope case_id does not match --deal")
+            source_records[source_paths[0]] = extractor_source_record(envelope)
+        except (OSError, ValueError, json.JSONDecodeError) as exc:
+            print(f"ERROR: invalid --source-envelope: {exc}", file=sys.stderr)
+            return 2
+
     out_dir = ROOT / args.output / manifest_label
     out_dir.mkdir(parents=True, exist_ok=True)
 
@@ -1229,7 +1324,7 @@ def main() -> int:
     all_chunks: list[Chunk] = []
     for sp in source_paths:
         try:
-            chunks = parse_source(sp, args.chunk_words)
+            chunks = parse_source(sp, args.chunk_words, source_records.get(sp))
         except UnsupportedSourceError as exc:
             print(f"ERROR: {exc}", file=sys.stderr)
             return 2
@@ -1237,6 +1332,20 @@ def main() -> int:
         all_chunks.extend(chunks)
     print(f"  Total: {len(all_chunks)} chunks  "
           f"(avg {sum(c.word_count for c in all_chunks)//max(len(all_chunks),1)} w/chunk)")
+
+    # Persist the lossless workbook structure before L2.  This is essential
+    # even for a dry run or a later LLM failure: the formula text, precedents
+    # and cached values are facts contained in the uploaded source.
+    workbook_graphs = _capture_workbook_graphs(source_paths, source_records)
+    workbook_graph_path = out_dir / "workbook_formula_graphs.json"
+    _w(workbook_graph_path, workbook_graphs)
+    for workbook in workbook_graphs["workbooks"]:
+        summary = workbook["summary"]
+        print(
+            f"  {workbook['source_filename']:<50} "
+            f"{summary['formula_count']:5d} formulas  "
+            f"{summary['precedent_edge_count']:5d} precedent edges"
+        )
 
     chunks_debug = [
         {"chunk_id": c.chunk_id, "locator": c.locator,
@@ -1479,8 +1588,23 @@ def main() -> int:
 
     # ── Output ────────────────────────────────────────────────────────────
     print(f"\n[Output] Writing to {out_dir}/...")
-    sources_used = [_source_record(p) for p in source_paths]
-    e3 = _to_e3_manifest(graph, args.deal, manifest_label, sources_used)
+    sources_used = [source_records.get(p, _source_record(p)) for p in source_paths]
+    workbook_graph_summary = [
+        {
+            "source_id": item["source_id"],
+            "source_filename": item["source_filename"],
+            **item["summary"],
+            "artifact": "workbook_formula_graphs.json",
+        }
+        for item in workbook_graphs["workbooks"]
+    ]
+    e3 = _to_e3_manifest(
+        graph,
+        args.deal,
+        manifest_label,
+        sources_used,
+        workbook_graph_summary,
+    )
     if chunk_status_path.exists():
         l2_status = json.loads(chunk_status_path.read_text())
         e3["extraction_metadata"]["l2_complete"] = bool(

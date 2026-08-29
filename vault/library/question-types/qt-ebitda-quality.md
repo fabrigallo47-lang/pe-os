@@ -121,5 +121,3 @@ Cross-deal standard: any add-back >$1m or >10% of EBITDA requires independent co
 - [[c-keystone-396]] (keystone, asserted) — sponsor gross proceeds: $104.39m at March 2031 exit
 - [[c-keystone-406]] (keystone, attested) — covenant EBITDA: $10.80m as of June 30 2027 reference (unchanged by contribution)
 - [[c-keystone-413]] (keystone, attested) — covenant add-back cap: EBITDA add-back cap reduced from 20% to 15% under the amendment
-- [[c-keystone-419]] (keystone, asserted) — reported EBITDA: $8 million
-- [[c-keystone-422]] (keystone, asserted) — reported EBITDA: $8m

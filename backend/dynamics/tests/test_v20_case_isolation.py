@@ -103,7 +103,7 @@ class V20CaseIsolationTests(unittest.TestCase):
         )
 
         scout_bundle = router._pipeline_out_for_case("scout")
-        self.assertEqual(label, "SINGLE")
+        self.assertEqual(label, "SINGLE_V2")
         self.assertTrue(proposal.is_relative_to(scout_bundle))
         self.assertIn(str(scout_bundle / "runs" / "job-scout"), command)
         self.assertEqual(version["case_id"], "scout")

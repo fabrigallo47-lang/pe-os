@@ -197,6 +197,9 @@ class CellRecord:
     formula_status: str | None = None
     evaluation_status: str | None = None
     human_stop_reason: str | None = None
+    # Deterministically recomputed only when the formula lies in an acyclic
+    # region that the evaluator supports. Never substitutes source evidence.
+    evaluated_value: Any = None
 
 
 @dataclass
@@ -376,7 +379,42 @@ def capture(path: Path) -> SourceGraph:
                         else:
                             rec.evaluation_status = "CACHED_VALUE_AVAILABLE"
                 graph.cells[loc] = rec
+    _evaluate_acyclic_formulas(path, graph)
     return graph
+
+
+def _evaluate_acyclic_formulas(path: Path, graph: SourceGraph) -> None:
+    """Evaluate supported acyclic formulas without obscuring Excel evidence.
+
+    Workbooks created by code often have no cached formula result. Cyclic and
+    unsupported formulas remain explicit unknowns, never coerced to a value.
+    """
+    formula_cells = [cell for cell in graph.cells.values() if cell.kind == "formula"]
+    if not formula_cells:
+        return
+    try:
+        from tools.extract_v3 import compile_workbook
+        compiled = compile_workbook(path)
+    except Exception as exc:
+        for cell in formula_cells:
+            cell.evaluation_status = f"UNAVAILABLE:{type(exc).__name__}"
+        return
+
+    cyclic = compiled.cyclic_cells
+    for cell in formula_cells:
+        if cell.locator in cyclic:
+            cell.evaluation_status = "CYCLIC_COMPONENT"
+            continue
+        result = compiled.cells.get(cell.locator)
+        if result is None:
+            cell.evaluation_status = "UNAVAILABLE:NOT_IN_EVALUATOR_GRAPH"
+            continue
+        value = result.get("value")
+        if isinstance(value, str) and value.startswith("#"):
+            cell.evaluation_status = "UNAVAILABLE:EVALUATOR_ERROR"
+            continue
+        cell.evaluated_value = value
+        cell.evaluation_status = "CALCULATED_ACYCLIC"
 
 
 def main() -> int:

@@ -53,4 +53,3 @@ Cross-deal standard: <60% programmatic = underwrite more conservatively; check c
 - [[c-keystone-386]] (keystone, asserted) — Riverton annualized revenue scope: $8.8m annualized scope targeted for retention under the post-amendment recovery plan
 - [[c-keystone-395]] (keystone, asserted) — Riverton annualized revenue scope: Recovery plan does not assume Riverton scope is fully restored
 - [[c-keystone-418]] (keystone, asserted) — FY2025E revenue: $50 million
-- [[c-keystone-421]] (keystone, asserted) — LTM revenue: $50m

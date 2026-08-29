@@ -12,7 +12,11 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 import app.v20_router as router  # noqa: E402
-from tools.bind_questions_e3 import DEFAULT_FUND_LENS, validate_fund_lens  # noqa: E402
+from tools.bind_questions_e3 import (  # noqa: E402
+    DEFAULT_FUND_LENS,
+    ranked_bindings,
+    validate_fund_lens,
+)
 
 
 class V20FundLensTests(unittest.TestCase):
@@ -132,6 +136,29 @@ class V20FundLensTests(unittest.TestCase):
         with self.assertRaises(HTTPException) as conflict:
             router.configure_fund_lens("scout", self._manual_lens())
         self.assertEqual(conflict.exception.status_code, 409)
+
+    def test_case_profile_can_bind_without_keystone_question_ids_or_rules(self):
+        lens = self._manual_lens()
+        lens["binding_profile"] = "scout-commercial-v1"
+        lens["binding_config"] = {
+            "schema_version": "binding-config/1.0",
+            "metric_rules": [{
+                "aliases": ["Contracted Revenue", "ARR"],
+                "question_ids": ["SQ-01"], "confidence": 0.95, "rank": 10,
+            }],
+            "keyword_rules": [{
+                "pattern": "normaliz(ed|ation) EBITDA",
+                "question_ids": ["SQ-02"], "confidence": 0.8, "rank": 20,
+            }],
+        }
+        validated = validate_fund_lens(lens)
+        bindings = ranked_bindings(
+            {"statement": "The normalized EBITDA is still under review."},
+            {"metric": "Contracted Revenue"}, validated,
+        )
+        self.assertEqual([item["question_id"] for item in bindings], ["SQ-01", "SQ-02"])
+        self.assertEqual(bindings[0]["confidence"], 0.95)
+        self.assertEqual(bindings[1]["rule"], "keyword")
 
 
 if __name__ == "__main__":

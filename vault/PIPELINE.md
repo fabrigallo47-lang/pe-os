@@ -1,12 +1,12 @@
 ---
 type: pipeline-brief
 written-by: pipeline
-updated: 2026-08-28T17:30:25
+updated: 2026-08-28T22:53:04
 ---
 
 # Portfolio Pipeline
 
-_Updated 2026-08-28 17:30_
+_Updated 2026-08-28 22:53_
 
 | Deal | State | Phase | Critical Open | Last Event |
 |------|-------|-------|---------------|------------|

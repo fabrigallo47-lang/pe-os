@@ -1,14 +1,14 @@
 ---
 type: manifest
 id: vault-manifest
-last-intake: 2026-08-28T19:33:06
-last-intake-date: 2026-08-28
-node-count: 102
-edge-count: 76
+last-intake: 2026-08-29T21:19:13
+last-intake-date: 2026-08-29
+node-count: 366
+edge-count: 487
 written-by: indexer
 ---
 
 # Vault Manifest
 
-Last graph intake: 2026-08-28T19:33:06
-Nodes: 102 · Edges: 76
+Last graph intake: 2026-08-29T21:19:13
+Nodes: 366 · Edges: 487

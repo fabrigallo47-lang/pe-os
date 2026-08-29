@@ -305,7 +305,7 @@ class WorkbookV2ContractTests(unittest.TestCase):
         chunks = parse_source(FIXTURE, max_words=80)
         self.assertTrue(chunks)
         self.assertTrue(all(chunk.locator.startswith(FIXTURE.name + "::") for chunk in chunks))
-        self.assertTrue(any("Inputs!1:4" in chunk.locator for chunk in chunks))
+        self.assertTrue(any("Inputs!1:5" in chunk.locator for chunk in chunks))
         self.assertTrue(any("FORMULA(=Inputs!C2)" in chunk.body for chunk in chunks))
         self.assertTrue(all(chunk.section_heading for chunk in chunks))
 
@@ -315,7 +315,7 @@ class WorkbookV2ContractTests(unittest.TestCase):
             shutil.copyfile(FIXTURE, xlsm)
             chunks = parse_source(xlsm, max_words=80)
         self.assertTrue(chunks)
-        self.assertTrue(any("pan36_synthetic_model.xlsm::Inputs!1:4" in c.locator for c in chunks))
+        self.assertTrue(any("pan36_synthetic_model.xlsm::Inputs!1:5" in c.locator for c in chunks))
         self.assertTrue(any("FORMULA(=Inputs!C2)" in c.body for c in chunks))
 
     def test_legacy_xls_has_a_conversion_error(self) -> None:
@@ -361,6 +361,29 @@ class WorkbookV2ContractTests(unittest.TestCase):
                 self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
                 e3 = json.loads((cache_dir / "e3_claims.json").read_text())
                 self.assertEqual(len(e3["claims"]), 1)
+                formula_graphs = json.loads(
+                    (cache_dir / "workbook_formula_graphs.json").read_text()
+                )
+                workbook = formula_graphs["workbooks"][0]
+                self.assertGreater(workbook["summary"]["formula_count"], 0)
+                self.assertGreater(workbook["summary"]["precedent_edge_count"], 0)
+                formula = next(
+                    cell for cell in workbook["graph"]["cells"].values()
+                    if cell["kind"] == "formula"
+                )
+                self.assertTrue(formula["value"].startswith("="))
+                self.assertTrue(formula["precedents"])
+                self.assertEqual(formula["evaluation_status"], "CALCULATED_ACYCLIC")
+                self.assertIsNotNone(formula["evaluated_value"])
+                self.assertEqual(
+                    workbook["summary"]["evaluated_formula_count"],
+                    workbook["summary"]["formula_count"],
+                )
+                self.assertIn("workbook_formula_graphs", e3["extraction_metadata"])
+                self.assertEqual(
+                    e3["extraction_metadata"]["workbook_formula_graphs"][0]["artifact"],
+                    "workbook_formula_graphs.json",
+                )
                 claim = e3["claims"][0]
                 self.assertEqual(claim["period"], "FY2026E")
                 self.assertEqual(claim["perimeter"], "Synthetic standalone base scenario")

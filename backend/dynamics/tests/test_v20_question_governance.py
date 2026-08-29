@@ -123,6 +123,52 @@ class V20QuestionGovernanceTests(unittest.TestCase):
             )
         self.assertEqual(invalid.exception.status_code, 422)
 
+    def test_workbook_formula_graph_survives_proposal_and_is_projected_semantically(self):
+        lens = router._active_fund_lens("keystone")
+        router._ensure_question_registry("keystone", lens)
+        claim = self._claim("claim-model", "Model revenue is 120", "Revenue", "model.xlsx")
+        formula_graphs = {
+            "schema": "workbook-formula-graphs-1.0",
+            "workbooks": [{
+                "source_id": "model.xlsx",
+                "source_filename": "model.xlsx",
+                "summary": {
+                    "formula_count": 2,
+                    "precedent_edge_count": 3,
+                    "defined_name_count": 1,
+                    "cached_formula_value_count": 2,
+                },
+                "graph": {
+                    "cells": {
+                        "MODEL!C2": {
+                            "kind": "formula", "value": "=INPUTS!C2*1.2",
+                            "precedents": ["INPUTS!C2"], "cached_value": 120,
+                        },
+                    },
+                },
+            }],
+        }
+        proposal_file = router._write_evidence_proposal(
+            "job-model", "keystone", "model.xlsx", [claim], [], lens, formula_graphs
+        )
+        preview = router.get_evidence_proposal("keystone", "job-model")
+        self.assertTrue(preview["proposal"]["workbook_formula_graph"]["available"])
+        self.assertEqual(
+            preview["workbook_formula_graphs"]["workbooks"][0]["graph"]["cells"]["MODEL!C2"]["value"],
+            "=INPUTS!C2*1.2",
+        )
+
+        router._promote_workbook_formula_graphs("keystone", proposal_file, preview["proposal"])
+        graph = router._semantic_graph_from_claims([claim], "keystone")
+        formula_node = next(
+            item for item in graph["nodes"] if item["id"] == "workbook:model.xlsx"
+        )
+        self.assertEqual(formula_node["formula_count"], 2)
+        self.assertIn(
+            {"source": "source:model.xlsx", "target": "workbook:model.xlsx", "rel": "CONTAINS_FORMULA_GRAPH"},
+            graph["edges"],
+        )
+
     def test_accepting_deal_emergent_question_migrates_pending_binding(self):
         lens = router._active_fund_lens("keystone")
         router._ensure_question_registry("keystone", lens)

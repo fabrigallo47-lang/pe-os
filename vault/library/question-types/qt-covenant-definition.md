@@ -63,4 +63,3 @@ Cross-deal standard: document the lender's EBITDA definition and map it vs. mana
 - [[c-keystone-411]] (keystone, attested) — minimum liquidity covenant: $4.0m minimum liquidity covenant, effective August 15 2027
 - [[c-keystone-412]] (keystone, attested) — ECF sweep rate: 75% excess-cash-flow sweep until net leverage falls below 3.50x
 - [[c-keystone-413]] (keystone, attested) — covenant add-back cap: EBITDA add-back cap reduced from 20% to 15% under the amendment
-- [[c-keystone-419]] (keystone, asserted) — reported EBITDA: $8 million

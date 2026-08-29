@@ -22,7 +22,17 @@
     "label": {"type": "string", "minLength": 1},
     "description": {"type": "string"},
     "archetype": {"type": "string", "minLength": 1},
-    "binding_profile": {"const": "keystone-e3-v1"},
+    "binding_profile": {"type": "string", "pattern": "^[A-Za-z0-9._-]+$"},
+    "binding_config": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["schema_version"],
+      "properties": {
+        "schema_version": {"const": "binding-config/1.0"},
+        "metric_rules": {"type": "array"},
+        "keyword_rules": {"type": "array"}
+      }
+    },
     "effective_date": {"type": "string", "format": "date"},
     "questions": {
       "type": "array",

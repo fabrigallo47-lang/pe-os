@@ -54,13 +54,14 @@ def validate_fund_lens(value: Mapping[str, Any]) -> dict:
         "description",
         "archetype",
         "binding_profile",
+        "binding_config",
         "effective_date",
         "questions",
     }
     unexpected = sorted(set(lens) - allowed_fields)
     if unexpected:
         raise ValueError("Fund Lens has unsupported fields: " + ", ".join(unexpected))
-    required_strings = allowed_fields - {"questions", "description"}
+    required_strings = allowed_fields - {"questions", "description", "binding_config"}
     missing = [
         key
         for key in sorted(required_strings)
@@ -80,10 +81,8 @@ def validate_fund_lens(value: Mapping[str, Any]) -> dict:
         dt.date.fromisoformat(str(lens["effective_date"]))
     except ValueError as exc:
         raise ValueError("Fund Lens effective_date must be YYYY-MM-DD") from exc
-    if lens["binding_profile"] != "keystone-e3-v1":
-        raise ValueError(
-            f"Unsupported Fund Lens binding profile: {lens['binding_profile']}"
-        )
+    if not _LENS_ID.fullmatch(str(lens["binding_profile"])):
+        raise ValueError("Fund Lens binding_profile contains unsupported characters")
 
     questions = lens.get("questions")
     if not isinstance(questions, list) or not questions:
@@ -119,7 +118,60 @@ def validate_fund_lens(value: Mapping[str, Any]) -> dict:
         ids.append(qid)
     if len(ids) != len(set(ids)):
         raise ValueError("Fund Lens question IDs must be unique")
+    config = lens.get("binding_config")
+    if config is not None:
+        lens["binding_config"] = validate_binding_config(config, set(ids))
+    elif lens["binding_profile"] != "keystone-e3-v1":
+        raise ValueError("A non-Keystone binding_profile requires binding_config")
     return lens
+
+
+def validate_binding_config(value: Any, allowed_question_ids: set[str]) -> dict:
+    """Validate portable deterministic rules owned by a Fund Lens.
+
+    Rules only select questions declared by the same lens.  They do not create
+    questions or infer a conclusion; unmatched claims deliberately remain
+    unbound for the governed deal-emergent-question flow.
+    """
+    if not isinstance(value, Mapping):
+        raise ValueError("binding_config must be an object")
+    config = copy.deepcopy(dict(value))
+    if set(config) - {"schema_version", "metric_rules", "keyword_rules"}:
+        raise ValueError("binding_config has unsupported fields")
+    if config.get("schema_version") != "binding-config/1.0":
+        raise ValueError("binding_config must use schema_version binding-config/1.0")
+    for group in ("metric_rules", "keyword_rules"):
+        rules = config.get(group, [])
+        if not isinstance(rules, list):
+            raise ValueError(f"binding_config {group} must be a list")
+        for index, rule in enumerate(rules):
+            if not isinstance(rule, Mapping):
+                raise ValueError(f"binding_config {group}[{index}] must be an object")
+            permitted = {"question_ids", "confidence", "rank", "aliases"} if group == "metric_rules" else {"question_ids", "confidence", "rank", "pattern"}
+            if set(rule) - permitted:
+                raise ValueError(f"binding_config {group}[{index}] has unsupported fields")
+            qids = rule.get("question_ids")
+            if not isinstance(qids, list) or not qids or any(str(q) not in allowed_question_ids for q in qids):
+                raise ValueError(f"binding_config {group}[{index}] references an undeclared question")
+            confidence = rule.get("confidence", 0.8)
+            if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
+                raise ValueError(f"binding_config {group}[{index}] confidence must be between 0 and 1")
+            rank = rule.get("rank", 100)
+            if isinstance(rank, bool) or not isinstance(rank, int) or rank < 0:
+                raise ValueError(f"binding_config {group}[{index}] rank must be a non-negative integer")
+            if group == "metric_rules":
+                aliases = rule.get("aliases")
+                if not isinstance(aliases, list) or not aliases or any(not str(a).strip() for a in aliases):
+                    raise ValueError(f"binding_config metric_rules[{index}] needs aliases")
+            else:
+                pattern = rule.get("pattern")
+                if not isinstance(pattern, str) or not pattern:
+                    raise ValueError(f"binding_config keyword_rules[{index}] needs pattern")
+                try:
+                    re.compile(pattern, re.I)
+                except re.error as exc:
+                    raise ValueError(f"binding_config keyword_rules[{index}] has invalid pattern: {exc}") from exc
+    return config
 
 
 def load_fund_lens(path: Path | str = DEFAULT_FUND_LENS_PATH) -> dict:
@@ -292,27 +344,48 @@ KEYWORD_TO_Q: list[tuple[re.Pattern, list[str]]] = [
 ]
 
 
-def bind_claim(claim: dict, compiler_meta: dict, fund_lens: dict | None = None) -> list[str]:
-    """Return sorted list of question IDs this claim bears on."""
+def ranked_bindings(claim: dict, compiler_meta: dict,
+                    fund_lens: dict | None = None) -> list[dict]:
+    """Return deterministic binding evidence, ordered by policy rank/confidence."""
     lens = fund_lens or DEFAULT_FUND_LENS
-    if lens.get("binding_profile") != "keystone-e3-v1":
-        raise ValueError(f"Unsupported Fund Lens binding profile: {lens.get('binding_profile')}")
     allowed = {str(item["id"]) for item in lens["questions"]}
-    bound: set[str] = set()
-    metric = compiler_meta.get("metric", "")
-    stmt = claim.get("statement", "")
+    matches: dict[str, dict] = {}
 
-    # R1: metric lookup
-    if metric in METRIC_TO_Q:
-        bound.update(METRIC_TO_Q[metric])
+    def add(qids: list[str], rule: str, confidence: float, rank: int) -> None:
+        for qid in qids:
+            if qid not in allowed:
+                continue
+            candidate = {"question_id": qid, "rule": rule, "confidence": confidence, "rank": rank}
+            current = matches.get(qid)
+            if current is None or (rank, -confidence, rule) < (current["rank"], -current["confidence"], current["rule"]):
+                matches[qid] = candidate
 
-    # R2: keyword scan
-    text = stmt
-    for pat, qids in KEYWORD_TO_Q:
-        if pat.search(text):
-            bound.update(qids)
+    metric = str(compiler_meta.get("metric", ""))
+    stmt = str(claim.get("statement", ""))
+    config = lens.get("binding_config")
+    if config:
+        for rule in config.get("metric_rules", []):
+            aliases = {str(alias).casefold() for alias in rule["aliases"]}
+            if metric.casefold() in aliases:
+                add(rule["question_ids"], "metric", float(rule.get("confidence", 0.8)), int(rule.get("rank", 100)))
+        for rule in config.get("keyword_rules", []):
+            if re.search(rule["pattern"], stmt, re.I):
+                add(rule["question_ids"], "keyword", float(rule.get("confidence", 0.7)), int(rule.get("rank", 200)))
+    elif lens.get("binding_profile") == "keystone-e3-v1":
+        # Compatibility preset. New cases must carry binding_config in the lens.
+        if metric in METRIC_TO_Q:
+            add(METRIC_TO_Q[metric], "metric", 0.9, 100)
+        for pat, qids in KEYWORD_TO_Q:
+            if pat.search(stmt):
+                add(qids, "keyword", 0.7, 200)
+    else:
+        raise ValueError(f"Unsupported Fund Lens binding profile: {lens.get('binding_profile')}")
+    return sorted(matches.values(), key=lambda item: (item["rank"], -item["confidence"], item["question_id"]))
 
-    return sorted(bound & allowed)
+
+def bind_claim(claim: dict, compiler_meta: dict, fund_lens: dict | None = None) -> list[str]:
+    """Return ordered question IDs this claim bears on (legacy-compatible API)."""
+    return [item["question_id"] for item in ranked_bindings(claim, compiler_meta, fund_lens)]
 
 
 def main() -> None:

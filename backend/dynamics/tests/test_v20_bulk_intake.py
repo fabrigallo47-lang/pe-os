@@ -120,6 +120,7 @@ class V20BulkIntakeTests(unittest.TestCase):
                 self._request([
                     ("first.txt", b"first"),
                     ("fail.md", b"fail"),
+                    ("deck.pdf", b"pdf"),
                     ("model.xlsx", b"xlsx"),
                 ]),
                 background,
@@ -129,7 +130,7 @@ class V20BulkIntakeTests(unittest.TestCase):
         batch_id = queued["batch_id"]
         batch = router.get_ingest_batch("keystone", batch_id)["batch"]
         self.assertEqual(batch["status"], "PARTIAL_ERROR")
-        self.assertEqual(batch["counts"]["complete"], 2)
+        self.assertEqual(batch["counts"]["complete"], 3)
         self.assertEqual(batch["counts"]["error"], 1)
         self.assertEqual({job["batch_id"] for job in batch["jobs"]}, {batch_id})
         self.assertTrue(all(item.get("batch_id") == batch_id for item in router._read_inbox_manifest()))

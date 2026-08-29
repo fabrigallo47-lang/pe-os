@@ -21,3 +21,103 @@
 .evidence-review-claim select[multiple]{min-height:112px}
 .evidence-review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
 @media(max-width:900px){.evidence-review-grid{grid-template-columns:1fr}.evidence-review-list{max-height:none}}
+
+/* PAN-48/49 — every high-cardinality region owns its overflow. */
+html,body,#app,.v19-shell,.workspace,.workspace-content,.screen,
+.source-center,.source-panel,.ingest-layout,.unknown-layout,.impact-layout,
+.decision-grid,.execution-grid,.object-drawer,.drawer-body{
+  min-width:0;
+  min-height:0;
+  max-width:100%;
+  box-sizing:border-box;
+}
+html,body{max-width:100vw;overflow-x:hidden}
+.v19-shell{height:100vh;overflow:hidden}
+.workspace{height:100vh;overflow:hidden}
+.workspace-content{overflow:auto;overscroll-behavior:contain}
+.screen{width:100%}
+.screen *{min-width:0}
+.section-heading>*,.topbar-title,.topbar-actions,.source-card header>*,
+.job header>*,.batch-card header>*,.batch-job>*,.unknown-row>*,
+.registry-list article>*,.impact-row>*,.drawer-body>*{min-width:0}
+.source-card strong,.source-card p,.source-card dd,.job strong,.job small,
+.batch-card strong,.batch-card small,.batch-job strong,.batch-job small,
+.unknown-row strong,.unknown-row small,.registry-list strong,.registry-list p,
+.foundation-node h3,.foundation-node p,.evidence-variant,.aperture-list *,
+.artifact-card h3,.artifact-card p,.rail-card h3,.rail-card p{
+  overflow-wrap:anywhere;
+  word-break:break-word;
+}
+.table-scroll,.question-table,.source-file-list,.scenario-chart{
+  max-width:100%;
+  overflow-x:auto;
+  overscroll-behavior-inline:contain;
+}
+.table-scroll{max-height:min(68vh,760px);overflow:auto}
+.table-scroll .data-table{min-width:980px}
+.source-grid,.job-list,.batch-list,.unknown-list,.registry-list,
+.evidence-review-list,.pipeline-list,.aperture-list{
+  max-width:100%;
+  overscroll-behavior:contain;
+  scrollbar-width:thin;
+}
+.source-grid,.batch-list,.job-list{max-height:min(64vh,760px);overflow:auto;padding-right:4px}
+.unknown-list,.registry-list{max-height:min(70vh,820px);overflow:auto}
+
+/* Foundations keeps its title/actions visible while its populated floor scrolls. */
+.foundation-world{
+  height:min(68vh,720px);
+  min-height:440px;
+  display:grid;
+  grid-template-rows:auto minmax(0,1fr);
+  overflow:hidden;
+  padding:18px;
+}
+.foundation-core{
+  position:relative;
+  inset:auto;
+  left:auto;
+  top:auto;
+  transform:none;
+  width:min(420px,100%);
+  margin:0 auto 16px;
+  z-index:2;
+}
+.foundation-links{display:none}
+.foundation-nodes{
+  position:relative;
+  inset:auto;
+  left:auto;
+  right:auto;
+  top:auto;
+  grid-template-columns:repeat(auto-fit,minmax(min(280px,100%),1fr));
+  align-content:start;
+  overflow:auto;
+  padding:2px 6px 16px 2px;
+  overscroll-behavior:contain;
+}
+.foundation-node{min-height:0;height:max-content;max-width:100%}
+.foundation-heading{max-width:100%}
+.evidence-variants{max-height:260px;overflow:auto}
+
+/* PAN-52 — compact, independently scrollable batch monitor. */
+.batch-monitor{display:flex;flex-direction:column;max-height:min(72vh,820px);overflow:hidden}
+.batch-list{display:grid;gap:12px;flex:1}
+.batch-card{border:1px solid var(--line-soft);border-radius:12px;background:rgba(3,17,25,.58);padding:12px}
+.batch-card>header{display:flex;justify-content:space-between;gap:12px;align-items:flex-start}
+.batch-card>header>div{display:grid;gap:3px}
+.batch-progress{height:7px;border-radius:999px;background:#07131a;overflow:hidden;margin:10px 0}
+.batch-progress i{display:block;width:var(--progress);height:100%;background:linear-gradient(90deg,var(--cyan),var(--green))}
+.batch-job-list{display:grid;gap:6px;max-height:300px;overflow:auto}
+.batch-job{display:grid;grid-template-columns:minmax(0,1fr) auto auto;gap:8px;align-items:center;border-top:1px solid var(--line-soft);padding:8px 0}
+.batch-job>div{display:grid;gap:2px}
+.standalone-jobs{margin:10px 0}.standalone-jobs summary{cursor:pointer;color:var(--muted);font-size:11px}
+
+@media(max-width:768px){
+  .v19-shell,.workspace{height:auto;min-height:100vh;overflow:visible}
+  .source-grid,.job-list,.batch-list,.unknown-list,.registry-list{max-height:none}
+  .foundation-world{height:auto;min-height:0;overflow:visible;padding:12px}
+  .foundation-nodes{overflow:visible;grid-template-columns:1fr}
+  .batch-monitor{max-height:none;overflow:visible}
+  .batch-job{grid-template-columns:minmax(0,1fr) auto}.batch-job .btn{grid-column:1/3}
+}

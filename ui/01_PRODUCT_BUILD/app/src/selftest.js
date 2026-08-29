@@ -33,6 +33,7 @@
     test('Object deep links supported',()=>{assert(location.hash!==undefined,'Hash routing unavailable');return'case/view/object/run/as_of'});
     test('Typography baseline loaded',()=>{const px=parseFloat(getComputedStyle(document.body).fontSize);assert(px>=14,'Body text too small');return`${px}px`});
     test('Reduced motion respects system preference',()=>{assert(typeof s.reducedMotion==='boolean','Motion state missing');return String(s.reducedMotion)});
+    if(window.PantaOverflowQA?.enabled)test('Overflow QA fixture is contained',()=>{const results=window.PantaOverflowQA.run(),failed=results.filter(x=>x.status==='FAIL');assert(!failed.length,failed.map(x=>`${x.name}: ${x.detail}`).join('; '));return`${results.length} containment checks`});
     window.PANTA_V20_SELFTEST=tests;return tests;
   }
   function open(){const tests=run(),panel=document.getElementById('selftest');panel.innerHTML=`<header><strong>V20 self-test · ${tests.filter(x=>x.status==='PASS').length}/${tests.length}</strong><button onclick="this.closest('section').classList.remove('open')">×</button></header>${tests.map(t=>`<div class="${t.status.toLowerCase()}"><b>${t.status}</b><span>${t.name}<small>${t.detail}</small></span></div>`).join('')}`;panel.classList.add('open')}

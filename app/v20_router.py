@@ -9,6 +9,7 @@ All endpoints under /api/v20. Shapes derived from reading:
 from __future__ import annotations
 
 import datetime as dt
+import asyncio
 import base64
 import copy
 import hashlib
@@ -57,6 +58,7 @@ VAULT = ROOT / "vault"
 PIPELINE_OUT = ROOT / "pipeline_out" / "e3" / "K-IC" / "adapter_alpha"
 CASE_PIPELINE_ROOT = ROOT / "pipeline_out" / "cases"
 INGEST_JOBS_LOG = ROOT / "logs" / "ingest_jobs.json"
+INGEST_BATCHES_LOG = ROOT / "logs" / "ingest_batches.json"
 RUNS_LOG = ROOT / "logs" / "runs.json"
 _REGISTRY_LIMIT = 200
 
@@ -70,6 +72,9 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "listSources": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/sources"},
     "listInbox": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/inbox"},
     "ingest": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest"},
+    "bulkIngest": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest/batches"},
+    "getIngestBatch": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/ingest/batches/{batch_id}"},
+    "retryBatchJob": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest/batches/{batch_id}/jobs/{job_id}/retry"},
     "getJob": {"status": "AVAILABLE", "method": "GET", "path": "/jobs/{job_id}"},
     "getEvidenceProposal": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/ingest/{job_id}/proposal"},
     "admitEvidence": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest/{job_id}/admit"},
@@ -104,6 +109,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
 }
 
 _jobs: dict[str, dict] = {}
+_batches: dict[str, dict] = {}
 _runs: dict[str, dict] = {}   # run_id → {transition, candidate_graph, case_id}
 _inbox_lock = threading.Lock()
 _notes_lock = threading.Lock()
@@ -113,6 +119,7 @@ _compiler_reviews_lock = threading.Lock()
 _ic_records_lock = threading.Lock()
 _mission_drafts_lock = threading.Lock()
 _registry_lock = threading.RLock()
+_batch_lock = threading.RLock()
 _graph_versions_lock = threading.Lock()
 _fund_lens_lock = threading.Lock()
 
@@ -308,7 +315,7 @@ def _read_registry(path: Path, field: str) -> dict[str, dict]:
         return {}
     records = payload.get(field, {}) if isinstance(payload, dict) else {}
     if isinstance(records, list):
-        id_field = "job_id" if field == "jobs" else "run_id"
+        id_field = {"jobs": "job_id", "batches": "batch_id"}.get(field, "run_id")
         records = {
             str(item[id_field]): item
             for item in records
@@ -354,6 +361,19 @@ def _store_job(job_id: str, record: dict[str, Any] | None = None, **changes: Any
         return job
 
 
+def _store_batch(batch_id: str, record: dict[str, Any] | None = None, **changes: Any) -> dict:
+    """Persist one batch without embedding mutable copies of its jobs."""
+    with _batch_lock:
+        if record is not None:
+            _batches[batch_id] = dict(record)
+        batch = _batches.setdefault(batch_id, {"batch_id": batch_id})
+        batch.update(changes)
+        batch.setdefault("batch_id", batch_id)
+        batch["updated_at"] = _now_iso()
+        _write_registry(INGEST_BATCHES_LOG, "batches", _batches)
+        return batch
+
+
 def _store_run(run_id: str, record: dict[str, Any] | None = None, **changes: Any) -> dict:
     with _registry_lock:
         if record is not None:
@@ -371,6 +391,8 @@ def _load_durable_registries() -> None:
     with _registry_lock:
         _jobs.clear()
         _jobs.update(_read_registry(INGEST_JOBS_LOG, "jobs"))
+        _batches.clear()
+        _batches.update(_read_registry(INGEST_BATCHES_LOG, "batches"))
         _runs.clear()
         _runs.update(_read_registry(RUNS_LOG, "runs"))
 
@@ -3162,6 +3184,220 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
 
     background_tasks.add_task(_run)
     return {"job": _jobs[job_id], "job_id": job_id}
+
+
+class _InlineJSONRequest:
+    """Minimal request surface used to reuse the governed single-file intake."""
+
+    def __init__(self, payload: dict[str, Any]):
+        self.headers = {"content-type": "application/json"}
+        self._payload = payload
+
+    async def json(self) -> dict[str, Any]:
+        return self._payload
+
+
+def _job_snapshot(job_id: str) -> dict[str, Any]:
+    job = _jobs.get(job_id)
+    if job:
+        return dict(job)
+    return dict(next(
+        (item for item in _read_inbox_manifest() if item.get("job_id") == job_id),
+        {"job_id": job_id, "status": "UNKNOWN"},
+    ))
+
+
+def _batch_view(batch_id: str) -> dict[str, Any]:
+    batch = _batches.get(batch_id)
+    if not batch:
+        raise HTTPException(404, f"Ingest batch not found: {batch_id}")
+    jobs = [_job_snapshot(job_id) for job_id in batch.get("job_ids", [])]
+    statuses = [str(job.get("status", "UNKNOWN")).upper() for job in jobs]
+    terminal = {"COMPLETE", "FAILED", "ERROR", "CANCELLED"}
+    error_states = {"FAILED", "ERROR", "CANCELLED"}
+    if statuses and all(status in terminal for status in statuses):
+        if all(status in error_states for status in statuses):
+            status = "ERROR"
+        elif any(status in error_states for status in statuses):
+            status = "PARTIAL_ERROR"
+        else:
+            status = "COMPLETE"
+    elif any(status == "RUNNING" for status in statuses):
+        status = "RUNNING"
+    else:
+        status = "QUEUED"
+    counts = {
+        "total": len(jobs),
+        "queued": sum(status in {"PENDING", "QUEUED", "UNKNOWN"} for status in statuses),
+        "running": statuses.count("RUNNING"),
+        "complete": statuses.count("COMPLETE"),
+        "error": sum(status in error_states for status in statuses),
+        "proposal_ready": sum(job.get("admission_status") == "PENDING_REVIEW" for job in jobs),
+        "admitted": sum(job.get("admission_status") == "ADMITTED" for job in jobs),
+        "rejected": sum(job.get("admission_status") == "REJECTED" for job in jobs),
+    }
+    return {**batch, "status": status, "counts": counts, "jobs": jobs}
+
+
+async def _run_ingest_batch(
+    batch_id: str,
+    children: list[BackgroundTasks],
+    concurrency: int,
+) -> None:
+    """Run independent per-file jobs with a bounded concurrency ceiling."""
+    semaphore = asyncio.Semaphore(max(1, min(8, concurrency)))
+
+    async def run_child(child: BackgroundTasks) -> None:
+        async with semaphore:
+            for task in child.tasks:
+                await task()
+
+    _store_batch(batch_id, status="RUNNING")
+    await asyncio.gather(*(run_child(child) for child in children))
+    _store_batch(batch_id, status=_batch_view(batch_id)["status"])
+
+
+@v20.post("/cases/{case_id}/ingest/batches")
+async def bulk_ingest(case_id: str, request: Request, background_tasks: BackgroundTasks) -> dict:
+    """Queue multiple sources as one durable, idempotent intake batch."""
+    content_type = request.headers.get("content-type", "")
+    purpose = ""
+    concurrency = 3
+    idempotency_key = request.headers.get("idempotency-key", "")
+    payloads: list[dict[str, Any]] = []
+
+    if "multipart/form-data" in content_type:
+        form = await request.form()
+        purpose = str(form.get("purpose", ""))
+        idempotency_key = str(form.get("idempotency_key", idempotency_key))
+        concurrency = int(form.get("concurrency", 3) or 3)
+        uploads = list(form.getlist("files") or form.getlist("file"))
+        for upload in uploads:
+            if not hasattr(upload, "read"):
+                continue
+            filename = Path(getattr(upload, "filename", "upload") or "upload").name
+            payloads.append({
+                "file_name": filename,
+                "content_b64": base64.b64encode(await upload.read()).decode("ascii"),
+                "purpose": purpose,
+            })
+    else:
+        try:
+            payload = await request.json()
+        except Exception:
+            payload = {}
+        purpose = str(payload.get("purpose", ""))
+        idempotency_key = str(payload.get("idempotency_key", idempotency_key))
+        concurrency = int(payload.get("concurrency", 3) or 3)
+        for item in payload.get("files", []) or []:
+            if isinstance(item, dict):
+                payloads.append({**item, "purpose": item.get("purpose", purpose)})
+
+    if not payloads:
+        raise HTTPException(400, "At least one file is required for bulk intake")
+    if len(payloads) > 50:
+        raise HTTPException(413, "A bulk intake may contain at most 50 files")
+    concurrency = max(1, min(8, concurrency))
+    if not idempotency_key:
+        idempotency_key = f"BATCH-{uuid.uuid4().hex}"
+    for existing in _batches.values():
+        if (
+            existing.get("case_id") == case_id
+            and existing.get("idempotency_key") == idempotency_key
+        ):
+            return {"batch": _batch_view(existing["batch_id"]), "idempotent_replay": True}
+
+    batch_id = f"batch-{uuid.uuid4().hex[:12]}"
+    _store_batch(batch_id, {
+        "batch_id": batch_id,
+        "case_id": case_id,
+        "idempotency_key": idempotency_key,
+        "purpose": purpose,
+        "concurrency": concurrency,
+        "status": "QUEUED",
+        "job_ids": [],
+        "retry_history": [],
+        "created_at": _now_iso(),
+    })
+    children: list[BackgroundTasks] = []
+    job_ids: list[str] = []
+    for index, item in enumerate(payloads):
+        filename = Path(str(item.get("file_name") or item.get("name") or "")).name
+        encoded = item.get("content_b64")
+        if not filename or not encoded:
+            raise HTTPException(400, f"Batch file {index + 1} requires file_name and content_b64")
+        child = BackgroundTasks()
+        queued = await ingest(
+            case_id,
+            _InlineJSONRequest({
+                "file_name": filename,
+                "content_b64": encoded,
+                "purpose": item.get("purpose", purpose),
+            }),
+            child,
+        )
+        job_id = queued["job_id"]
+        _store_job(job_id, batch_id=batch_id, batch_index=index, original_filename=filename)
+        _update_inbox_record(job_id, batch_id=batch_id, batch_index=index)
+        job_ids.append(job_id)
+        children.append(child)
+    _store_batch(batch_id, job_ids=job_ids)
+    background_tasks.add_task(_run_ingest_batch, batch_id, children, concurrency)
+    return {"batch": _batch_view(batch_id), "batch_id": batch_id}
+
+
+@v20.get("/cases/{case_id}/ingest/batches/{batch_id}")
+def get_ingest_batch(case_id: str, batch_id: str) -> dict:
+    batch = _batch_view(batch_id)
+    if batch.get("case_id") != case_id:
+        raise HTTPException(404, f"Ingest batch not found for case: {batch_id}")
+    return {"batch": batch, **batch}
+
+
+@v20.post("/cases/{case_id}/ingest/batches/{batch_id}/jobs/{job_id}/retry")
+async def retry_batch_job(
+    case_id: str,
+    batch_id: str,
+    job_id: str,
+    background_tasks: BackgroundTasks,
+    payload: dict | None = None,
+) -> dict:
+    batch = _batches.get(batch_id)
+    if not batch or batch.get("case_id") != case_id or job_id not in batch.get("job_ids", []):
+        raise HTTPException(404, "Batch job not found")
+    failed = _job_snapshot(job_id)
+    if str(failed.get("status", "")).upper() not in {"FAILED", "ERROR", "CANCELLED"}:
+        raise HTTPException(409, "Only failed batch files can be retried")
+    artifact = str(failed.get("artifact") or "")
+    if not artifact or not (VAULT / "inbox" / artifact).exists():
+        raise HTTPException(409, "The durable source file is unavailable for retry")
+
+    child = BackgroundTasks()
+    queued = await ingest(
+        case_id,
+        _InlineJSONRequest({
+            "file_name": artifact,
+            "purpose": (payload or {}).get("purpose") or failed.get("purpose", batch.get("purpose", "")),
+        }),
+        child,
+    )
+    new_job_id = queued["job_id"]
+    index = int(failed.get("batch_index", batch["job_ids"].index(job_id)))
+    job_ids = list(batch["job_ids"])
+    job_ids[index] = new_job_id
+    history = list(batch.get("retry_history", []))
+    history.append({"job_id": job_id, "retry_job_id": new_job_id, "retried_at": _now_iso()})
+    _store_job(
+        new_job_id,
+        batch_id=batch_id,
+        batch_index=index,
+        retry_of=job_id,
+        original_filename=failed.get("original_filename") or failed.get("artifact"),
+    )
+    _update_inbox_record(new_job_id, batch_id=batch_id, batch_index=index, retry_of=job_id)
+    _store_batch(batch_id, job_ids=job_ids, retry_history=history, status="QUEUED")
+    background_tasks.add_task(_run_ingest_batch, batch_id, [child], 1)
+    return {"batch": _batch_view(batch_id), "job_id": new_job_id, "retry_of": job_id}
 
 
 @v20.get("/cases/{case_id}/ingest/{job_id}/proposal")

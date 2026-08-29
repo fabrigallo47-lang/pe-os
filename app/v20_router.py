@@ -2152,8 +2152,10 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
             cmd = [sys.executable, str(ROOT / "tools" / "extract.py"),
                    "--deal", case_id]
 
-        # Pass the API key explicitly so the subprocess is never denied
-        env = {**_os.environ, "ANTHROPIC_API_KEY": _os.environ.get("ANTHROPIC_API_KEY", "")}
+        # Pass the selected provider environment explicitly to the extractor.
+        provider = _os.environ.get("PEOS_LLM_PROVIDER", "anthropic").lower()
+        key_name = "OPENROUTER_API_KEY" if provider == "openrouter" else "ANTHROPIC_API_KEY"
+        env = {**_os.environ, key_name: _os.environ.get(key_name, "")}
         logger.info("JOB %s START label=%s file=%s", job_id, manifest_label, filename or "manifest")
         try:
             r = subprocess.run(cmd, capture_output=True, text=True, cwd=str(ROOT), env=env)

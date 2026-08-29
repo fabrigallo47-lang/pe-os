@@ -32,8 +32,17 @@ except ImportError:
     rt = None       # type: ignore[assignment]
     VAULT = pathlib.Path("vault")
 
-API_KEY = os.environ.get("ANTHROPIC_API_KEY", "")
-MODEL = os.environ.get("PEOS_MODEL", "claude-sonnet-5")
+from tools.llm_provider import (
+    configured_api_key,
+    configured_model,
+    missing_key_message,
+    openrouter_extra_body,
+    raw_messages_url,
+    request_headers,
+)
+
+API_KEY = configured_api_key()
+MODEL = configured_model("claude-sonnet-5")
 
 EPISTEMIC = {"asserted", "derived", "observed", "attested"}
 
@@ -175,11 +184,13 @@ def llm_extract(system: str, user: str, max_tokens: int = 16000) -> str:
         "system": system,
         "messages": [{"role": "user", "content": user}],
     }
+    extra_body = openrouter_extra_body()
+    if extra_body:
+        payload.update(extra_body)
     req = urllib.request.Request(
-        "https://api.anthropic.com/v1/messages",
+        raw_messages_url(),
         data=json.dumps(payload).encode(), method="POST",
-        headers={"Content-Type": "application/json", "x-api-key": API_KEY,
-                 "anthropic-version": "2023-06-01"})
+        headers=request_headers(API_KEY))
     with urllib.request.urlopen(req, timeout=300) as resp:
         blocks = json.loads(resp.read())["content"]
         text = "".join(b.get("text", "") for b in blocks if b.get("type") == "text")
@@ -481,7 +492,7 @@ def main():
     args = parser.parse_args()
 
     if not API_KEY:
-        sys.exit("ANTHROPIC_API_KEY not set — export it before running")
+        sys.exit(f"{missing_key_message()} — export it before running")
 
     # Reset mode
     if args.reset:

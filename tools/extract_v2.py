@@ -19,7 +19,7 @@ Manifest modes prevent temporal leakage between knowledge snapshots:
 Usage:
   python3 tools/extract_v2.py --manifest K-IC --deal keystone --dry-run
 
-  export ANTHROPIC_API_KEY=sk-...
+  export ANTHROPIC_API_KEY=sk-...  # or OPENROUTER_API_KEY with PEOS_LLM_PROVIDER=openrouter
   python3 tools/extract_v2.py --manifest K-PRE --deal keystone \\
       --output pipeline_out/e3/k_pre
 
@@ -45,7 +45,18 @@ from pathlib import Path
 from typing import Any
 
 ROOT = Path(__file__).resolve().parent.parent
+sys.path.insert(0, str(ROOT))
+
+from tools.llm_provider import (  # noqa: E402
+    anthropic_client_kwargs,
+    configured_api_key,
+    configured_model,
+    missing_key_message,
+    openrouter_extra_body,
+)
+
 VAULT_INBOX = ROOT / "vault" / "inbox"
+MODEL = configured_model("claude-haiku-4-5-20251001")
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Source registry — maps vault/inbox filenames to canonical SRC-xxx IDs.
@@ -677,14 +688,18 @@ def annotate_chunk(chunk: Chunk, client, deal: str,
         f"{chunk.body}"
     )
     try:
-        resp = client.messages.create(
-            model="claude-haiku-4-5-20251001",
-            max_tokens=1024,
-            system=SYSTEM_PROMPT,
-            tools=[CLAIM_TOOL],
-            tool_choice={"type": "tool", "name": "emit_claims"},
-            messages=[{"role": "user", "content": prompt}],
-        )
+        request = {
+            "model": MODEL,
+            "max_tokens": 1024,
+            "system": SYSTEM_PROMPT,
+            "tools": [CLAIM_TOOL],
+            "tool_choice": {"type": "tool", "name": "emit_claims"},
+            "messages": [{"role": "user", "content": prompt}],
+        }
+        extra_body = openrouter_extra_body()
+        if extra_body:
+            request["extra_body"] = extra_body
+        resp = client.messages.create(**request)
         time.sleep(rate_limit_delay)
     except Exception as e:
         print(f"  [L2 ERROR] {chunk.chunk_id}: {e}", file=sys.stderr)
@@ -1060,17 +1075,14 @@ def main() -> int:
         return 0
 
     # ── L2: Annotate ──────────────────────────────────────────────────────
-    api_key = os.environ.get("ANTHROPIC_API_KEY", "")
+    api_key = configured_api_key()
     if not api_key:
-        print("ERROR: ANTHROPIC_API_KEY not set.", file=sys.stderr)
-        print("  Run: export ANTHROPIC_API_KEY=sk-...")
+        print(f"ERROR: {missing_key_message()}.", file=sys.stderr)
         print("  Or use --dry-run to inspect chunks.")
         return 1
     try:
         import anthropic
-        workspace_id = os.environ.get("ANTHROPIC_WORKSPACE_ID", "")
-        default_headers = {"anthropic-workspace-id": workspace_id} if workspace_id else {}
-        client = anthropic.Anthropic(api_key=api_key, default_headers=default_headers)
+        client = anthropic.Anthropic(**anthropic_client_kwargs(api_key))
     except ImportError:
         print("ERROR: pip install anthropic", file=sys.stderr)
         return 1
@@ -1084,7 +1096,7 @@ def main() -> int:
         print(f"  Loaded {len(all_raw)} raw claims from cache")
     else:
         print(f"\n[L2] Annotating {len(all_chunks)} chunks "
-              f"(workers={args.workers}, model=claude-haiku-4-5-20251001)...")
+              f"(workers={args.workers}, model={MODEL})...")
         all_raw = []
         processed = 0
 

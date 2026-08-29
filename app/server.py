@@ -26,20 +26,23 @@ from pydantic import BaseModel
 
 import os
 
-# Load .env at project root so ANTHROPIC_API_KEY reaches the server
+# Load ignored local environment files so provider credentials reach the server
 # even when uvicorn is started without an explicit export in the shell.
 def _load_dotenv() -> None:
-    env_path = Path(__file__).resolve().parent.parent / ".env"
-    if not env_path.exists():
-        return
-    for line in env_path.read_text(encoding="utf-8").splitlines():
-        line = line.strip()
-        if not line or line.startswith("#") or "=" not in line:
+    root = Path(__file__).resolve().parent.parent
+    # Load the local override first; setdefault still preserves real shell vars.
+    for filename in (".env.local", ".env"):
+        env_path = root / filename
+        if not env_path.exists():
             continue
-        k, _, v = line.partition("=")
-        k = k.strip()
-        v = v.strip().strip('"').strip("'")
-        os.environ.setdefault(k, v)
+        for line in env_path.read_text(encoding="utf-8").splitlines():
+            line = line.strip()
+            if not line or line.startswith("#") or "=" not in line:
+                continue
+            k, _, v = line.partition("=")
+            k = k.strip()
+            v = v.strip().strip('"').strip("'")
+            os.environ.setdefault(k, v)
 
 _load_dotenv()
 

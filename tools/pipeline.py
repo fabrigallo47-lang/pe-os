@@ -23,8 +23,10 @@ Usage
 
 Environment
 -----------
-    ANTHROPIC_API_KEY   required for extraction step
-    PEOS_MODEL          model name (default: claude-sonnet-5)
+    PEOS_LLM_PROVIDER   anthropic (default) or openrouter
+    ANTHROPIC_API_KEY   required when provider=anthropic
+    OPENROUTER_API_KEY  required when provider=openrouter
+    PEOS_MODEL          provider model name
 """
 from __future__ import annotations
 
@@ -42,7 +44,8 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from tools.extract import SYSTEM_PROMPT, llm_extract, parse_json
+from tools.extract import API_KEY, SYSTEM_PROMPT, llm_extract, parse_json
+from tools.llm_provider import missing_key_message
 from vercel.api._claim_graph import claims_to_graph
 from tools.graph_store import DealGraph
 
@@ -369,8 +372,8 @@ def main() -> None:
 
         # ── 2. Extract claims ─────────────────────────────────────────────────
         print("[2/4] Running LLM extraction…")
-        if not os.environ.get("ANTHROPIC_API_KEY"):
-            print("ERROR: ANTHROPIC_API_KEY not set", file=sys.stderr)
+        if not API_KEY:
+            print(f"ERROR: {missing_key_message()}", file=sys.stderr)
             sys.exit(1)
 
         claims = extract_claims(text, args.deal, src.name)

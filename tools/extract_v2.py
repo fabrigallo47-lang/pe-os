@@ -121,6 +121,15 @@ SOURCE_REGISTRY: dict[str, dict] = {
         "known_at": "2026-03-05",
         "manifest": ["K-PRE", "K-IC", "K-LIVE"],
     },
+    "keystone_lbo_model_working": {
+        "source_id": "SRC-MODEL",
+        "name": "Keystone LBO model",
+        "party": "The Firm investment team",
+        "doc_type": "LBO Model",
+        "effective_date": "2026-03-05",
+        "known_at": "2026-03-05",
+        "manifest": ["K-PRE", "K-IC", "K-LIVE"],
+    },
     "keystone-model-part1": {
         "source_id": "SRC-MODEL",
         "name": "Keystone LBO model (part 1)",
@@ -446,9 +455,11 @@ SYSTEM_PROMPT = textwrap.dedent("""
     Source → class mapping (use this every time):
       IC memo         → attested  (the firm's own formal conclusion)
       QoE report      → attested  (third-party certifies)
+      Auditor opinion → attested  (formally certified conclusion)
       Initial assessment → attested  (firm's own preliminary underwriting)
       Data room management documents → asserted
       Data room transactional/workpaper observations → observed
+      Meeting notes / call transcript / DDQ → observed
       Seller CIM / IM → asserted  (seller's marketing claims)
       Management presentation → asserted
       Computed by you → derived
@@ -456,22 +467,28 @@ SYSTEM_PROMPT = textwrap.dedent("""
     PERIOD EXTRACTION — mandatory for every emitted claim:
     - Never leave period blank. Read the workbook column header, table header,
       section title, page heading, or source date when it is not repeated in the row.
-    - Preserve the source language: FY2025A, LTM Sep-25, Q2 2025, Opening,
-      Budget 2026, or 'as of 2025-10-27'.
+    - Preserve the source language: FY2024, FY2025A, LTM Sep-25, Q2 2025,
+      Opening Balance Sheet, Budget 2026, or 'as of 2025-10-27'.
+    - If the only available time reference is the source effective date, use
+      'as of {source effective date}' rather than leaving period blank.
     - Use 'cross-period' only for an explicitly time-invariant fact.
 
     PERIMETER INFERENCE — mandatory when the source determines scope:
-    - Infer the evidence view from document type: seller/management, independent
-      QoE, Firm underwriting, or statutory accounts.
+    - Use exactly one canonical evidence-view label from document type:
+      Seller View (CIM/management report), QoE View (QoE report),
+      Firm View (firm internal memo), or Statutory (audited accounts).
     - Combine that view with the entity and structural scope (standalone,
-      consolidated, deal level) rather than returning a generic label.
+      consolidated, deal level) rather than returning only the generic label.
     - For concentration, distinguish billing-account from ultimate-parent scope.
     - Use 'unknown' only when neither the fragment nor source metadata supports a scope.
 
     LOCATOR HINT:
-    - The deterministic fragment locator is always retained by the pipeline.
+    - The deterministic fragment locator is mandatory, never blank, and always
+      retained by the pipeline with section and page/slide metadata when available.
     - Add locator_hint only when the row, cell, table, or subsection inside the
-      fragment can be identified; never invent a page or cell address.
+      fragment can be identified. Accepted hints include 'slide 12', 'page 7',
+      'Sheet1!D42', 'section "Revenue Analysis"', 'table row 3', and
+      'timestamp 00:14:22'; never invent a page or cell address.
 
     Identity rule — write the FULL perimeter and FULL period, not a shorthand:
     - period: use the document's own language including context, e.g.
@@ -509,6 +526,8 @@ class Chunk:
     source_type: str
     source_record: dict
     word_count: int
+    section_heading: str | None = None
+    page_or_slide_number: int | None = None
 
 
 class UnsupportedSourceError(ValueError):
@@ -520,7 +539,9 @@ def _chunk_hash(body: str) -> str:
 
 
 def _split_words(text: str, max_words: int, locator_prefix: str,
-                 source_path: str, source_type: str, source_record: dict) -> list[Chunk]:
+                 source_path: str, source_type: str, source_record: dict,
+                 section_heading: str | None = None,
+                 page_or_slide_number: int | None = None) -> list[Chunk]:
     words = text.split()
     chunks = []
     for i in range(0, len(words), max_words):
@@ -534,6 +555,8 @@ def _split_words(text: str, max_words: int, locator_prefix: str,
             source_type=source_type,
             source_record=source_record,
             word_count=len(body.split()),
+            section_heading=section_heading,
+            page_or_slide_number=page_or_slide_number,
         ))
     return chunks
 
@@ -559,10 +582,12 @@ def parse_markdown(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
                 source_type="markdown",
                 source_record=src,
                 word_count=len(words),
+                section_heading=section_label,
             ))
         else:
             sub = _split_words(part, max_words, f"{path.name}::{section_label}",
-                               str(path), "markdown", src)
+                               str(path), "markdown", src,
+                               section_heading=section_label)
             chunks.extend(sub)
     return chunks
 
@@ -590,10 +615,12 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
                     source_type="pdf",
                     source_record=src,
                     word_count=len(words),
+                    page_or_slide_number=page_num,
                 ))
             else:
                 sub = _split_words(text, max_words, f"p{page_num}",
-                                   str(path), "pdf", src)
+                                   str(path), "pdf", src,
+                                   page_or_slide_number=page_num)
                 chunks.extend(sub)
     return chunks
 
@@ -630,6 +657,7 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
                 locator=f"{path.name}::{sheet_name}!{start_row}:{end_row}",
                 body=body, source_path=str(path), source_type="xlsx",
                 source_record=src, word_count=len(body.split()),
+                section_heading=sheet_name,
             ))
             pending, start_row, end_row = [], None, None
         for row_number, (row, cached_row) in enumerate(zip(ws.iter_rows(), value_ws.iter_rows()), start=1):
@@ -674,14 +702,18 @@ def parse_source(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
         )
 
 
-def load_manifest(manifest: str, deal: str) -> list[Path]:
+def load_manifest(
+    manifest: str,
+    deal: str,
+    source_dir: Path = VAULT_INBOX,
+) -> list[Path]:
     """Return ordered list of source files for the given manifest."""
     keys = MANIFEST_SOURCES.get(manifest, [])
     paths = []
     for key in keys:
         # Try stem match in vault/inbox
         for ext in (".md", ".txt", ".pdf", ".xlsx", ".xlsm"):
-            candidate = VAULT_INBOX / f"{key}{ext}"
+            candidate = source_dir / f"{key}{ext}"
             if candidate.exists():
                 paths.append(candidate)
                 break
@@ -712,14 +744,40 @@ class RawClaim:
     author: str | None = None
 
 
-def annotate_chunk(chunk: Chunk, client, deal: str,
-                   rate_limit_delay: float = 0.25) -> list[RawClaim]:
+def _is_fatal_provider_error(exc: Exception) -> bool:
+    """Return True when retrying more chunks with the same key cannot succeed."""
+    status_code = getattr(exc, "status_code", None)
+    if status_code in {401, 402, 403}:
+        return True
+    message = str(exc).lower()
+    return any(
+        marker in message
+        for marker in (
+            "billing_error",
+            "permission_error",
+            "key limit exceeded",
+            "invalid api key",
+        )
+    )
+
+
+def annotate_chunk(
+    chunk: Chunk,
+    client,
+    deal: str,
+    rate_limit_delay: float = 0.25,
+    *,
+    raise_errors: bool = False,
+) -> list[RawClaim]:
     src = chunk.source_record
     prompt = (
         f"DEAL: {deal}\n"
         f"SOURCE: {src['source_id']} ({src['name']}) — {src['doc_type']}\n"
+        f"EFFECTIVE DATE: {src.get('effective_date') or 'not available'}\n"
         f"KNOWN AT: {src['known_at']}\n"
         f"FRAGMENT LOCATOR: {chunk.locator}\n\n"
+        f"SECTION HEADING: {chunk.section_heading or 'not available'}\n"
+        f"PAGE OR SLIDE: {chunk.page_or_slide_number or 'not available'}\n\n"
         f"{chunk.body}"
     )
     try:
@@ -739,6 +797,8 @@ def annotate_chunk(chunk: Chunk, client, deal: str,
         resp = client.messages.create(**request)
         time.sleep(rate_limit_delay)
     except Exception as e:
+        if raise_errors:
+            raise
         print(f"  [L2 ERROR] {chunk.chunk_id}: {e}", file=sys.stderr)
         return []
 
@@ -1049,6 +1109,14 @@ def main() -> int:
     src_group.add_argument("--manifest", choices=["K-PRE", "K-IC", "K-LIVE", "ALL"],
                            help="Run over all sources in manifest (no temporal leakage)")
     src_group.add_argument("--source", help="Single source file (.pdf, .md, .txt, .xlsx, .xlsm)")
+    ap.add_argument(
+        "--input-dir",
+        type=Path,
+        help=(
+            "Directory containing manifest source files. Defaults to vault/inbox; "
+            "use this for external or sensitive corpora without copying them into the repo."
+        ),
+    )
     ap.add_argument("--deal", required=True, help="Deal slug (e.g. keystone)")
     ap.add_argument("--output", default="pipeline_out/e3",
                     help="Output directory (default: pipeline_out/e3)")
@@ -1060,14 +1128,25 @@ def main() -> int:
                     help="Parallel LLM workers (default: 3)")
     ap.add_argument("--chunk-words", type=int, default=CHUNK_WORDS,
                     help=f"Words per chunk (default: {CHUNK_WORDS})")
+    ap.add_argument(
+        "--resume-partial-cache",
+        action="store_true",
+        help=(
+            "Migrate a legacy/incomplete raw cache by treating chunks with "
+            "existing claims as complete and retrying the rest"
+        ),
+    )
     args = ap.parse_args()
 
     # ── Collect source paths ──────────────────────────────────────────────
     if args.manifest:
-        source_paths = load_manifest(args.manifest, args.deal)
+        source_dir = args.input_dir or VAULT_INBOX
+        if not source_dir.is_absolute():
+            source_dir = ROOT / source_dir
+        source_paths = load_manifest(args.manifest, args.deal, source_dir)
         manifest_label = args.manifest
         if not source_paths:
-            print(f"ERROR: No sources found for manifest {args.manifest} in {VAULT_INBOX}",
+            print(f"ERROR: No sources found for manifest {args.manifest} in {source_dir}",
                   file=sys.stderr)
             print(f"  Expected stems: {MANIFEST_SOURCES[args.manifest]}")
             return 1
@@ -1105,6 +1184,8 @@ def main() -> int:
     chunks_debug = [
         {"chunk_id": c.chunk_id, "locator": c.locator,
          "source_id": c.source_record["source_id"],
+         "section_heading": c.section_heading,
+         "page_or_slide_number": c.page_or_slide_number,
          "word_count": c.word_count, "preview": c.body[:100].replace("\n", " ") + "..."}
         for c in all_chunks
     ]
@@ -1116,50 +1197,175 @@ def main() -> int:
         return 0
 
     # ── L2: Annotate ──────────────────────────────────────────────────────
-    # Raw claims cache: if a previous run completed L2, reuse without re-calling the API.
+    # Raw claims cache: completed modern runs are reused. Interrupted/failed modern
+    # runs retain their successful chunks and retry only the outstanding chunk IDs.
+    # A cache without the companion status file is treated as a legacy complete cache.
     raw_cache_path = out_dir / "raw_claims_cache.json"
-    if raw_cache_path.exists():
+    chunk_status_path = out_dir / "l2_chunk_status.json"
+    failed_chunks_path = out_dir / "failed_chunks.json"
+    cached_raw: list[RawClaim] = []
+    completed_chunk_ids: set[str] = set()
+    pending_chunks = list(all_chunks)
+    modern_cache = raw_cache_path.exists() and chunk_status_path.exists()
+
+    if raw_cache_path.exists() and not modern_cache and not args.resume_partial_cache:
         print(f"\n[L2] Cache found — loading raw claims from {raw_cache_path.name} (skipping API calls)")
         cached = json.loads(raw_cache_path.read_text())
         all_raw = [RawClaim(**c) for c in cached]
         print(f"  Loaded {len(all_raw)} raw claims from cache")
     else:
-        api_key = configured_api_key()
-        if not api_key:
-            print(f"ERROR: {missing_key_message()}.", file=sys.stderr)
-            print("  Or use --dry-run to inspect chunks.")
-            return 1
-        try:
-            import anthropic
-            client = anthropic.Anthropic(**anthropic_client_kwargs(api_key))
-        except ImportError:
-            print("ERROR: pip install anthropic", file=sys.stderr)
-            return 1
-        print(f"\n[L2] Annotating {len(all_chunks)} chunks "
-              f"(workers={args.workers}, model={MODEL})...")
-        all_raw = []
-        processed = 0
+        if raw_cache_path.exists() and args.resume_partial_cache and not modern_cache:
+            cached = json.loads(raw_cache_path.read_text())
+            cached_raw = [RawClaim(**c) for c in cached]
+            cached_locators = {claim.locator for claim in cached_raw}
+            completed_chunk_ids = {
+                chunk.chunk_id
+                for chunk in all_chunks
+                if any(
+                    locator == chunk.locator
+                    or locator.startswith(chunk.locator + ":")
+                    for locator in cached_locators
+                )
+            }
+            pending_chunks = [
+                chunk for chunk in all_chunks
+                if chunk.chunk_id not in completed_chunk_ids
+            ]
+            print(
+                f"\n[L2] Migrating partial legacy cache — "
+                f"{len(completed_chunk_ids)}/{len(all_chunks)} chunks have claims, "
+                f"{len(pending_chunks)} to retry"
+            )
+        elif modern_cache:
+            cached = json.loads(raw_cache_path.read_text())
+            cached_raw = [RawClaim(**c) for c in cached]
+            status = json.loads(chunk_status_path.read_text())
+            completed_chunk_ids = set(status.get("completed_chunk_ids", []))
+            pending_chunks = [
+                chunk for chunk in all_chunks
+                if chunk.chunk_id not in completed_chunk_ids
+            ]
+            if not pending_chunks and status.get("complete"):
+                all_raw = cached_raw
+                print(
+                    f"\n[L2] Complete chunk cache found — loaded "
+                    f"{len(all_raw)} raw claims (skipping API calls)"
+                )
+            else:
+                print(
+                    f"\n[L2] Resuming partial cache — "
+                    f"{len(completed_chunk_ids)}/{len(all_chunks)} chunks complete, "
+                    f"{len(pending_chunks)} to retry"
+                )
 
-        def _process(chunk: Chunk) -> tuple[Chunk, list[RawClaim]]:
-            return chunk, annotate_chunk(chunk, client, args.deal)
+        if modern_cache and not pending_chunks and status.get("complete"):
+            pass
+        else:
+            api_key = configured_api_key()
+            if not api_key:
+                print(f"ERROR: {missing_key_message()}.", file=sys.stderr)
+                print("  Or use --dry-run to inspect chunks.")
+                return 1
+            try:
+                import anthropic
+                client = anthropic.Anthropic(**anthropic_client_kwargs(api_key))
+            except ImportError:
+                print("ERROR: pip install anthropic", file=sys.stderr)
+                return 1
+            print(f"\n[L2] Annotating {len(pending_chunks)} chunk(s) "
+                  f"(workers={args.workers}, model={MODEL})...")
+            all_raw = list(cached_raw)
+            processed = 0
+            batch_errors: list[dict[str, str]] = []
 
-        with ThreadPoolExecutor(max_workers=args.workers) as pool:
-            futures = {pool.submit(_process, c): c for c in all_chunks}
-            for fut in as_completed(futures):
-                chunk, raw_claims = fut.result()
-                all_raw.extend(raw_claims)
-                processed += 1
-                if raw_claims:
-                    print(f"  [{processed:03d}/{len(all_chunks):03d}] "
-                          f"{chunk.locator[:55]:<55} → {len(raw_claims)} claim(s)")
+            def _checkpoint(*, complete: bool = False) -> None:
+                from dataclasses import asdict
 
-        # Persist raw claims immediately so L3/L4 failures don't require re-running the API
-        from dataclasses import asdict
-        raw_cache_path.write_text(
-            json.dumps([asdict(r) for r in all_raw], indent=2, default=str),
-            encoding="utf-8"
-        )
-        print(f"  Raw claims cached → {raw_cache_path.name}")
+                raw_cache_path.write_text(
+                    json.dumps([asdict(r) for r in all_raw], indent=2, default=str),
+                    encoding="utf-8",
+                )
+                chunk_status_path.write_text(
+                    json.dumps(
+                        {
+                            "schema_version": "l2-chunk-status-1.0",
+                            "total_chunks": len(all_chunks),
+                            "completed_chunk_ids": sorted(completed_chunk_ids),
+                            "failed_chunks": batch_errors,
+                            "complete": complete,
+                        },
+                        indent=2,
+                    ),
+                    encoding="utf-8",
+                )
+                failed_chunks_path.write_text(
+                    json.dumps(batch_errors, indent=2),
+                    encoding="utf-8",
+                )
+
+            def _process(chunk: Chunk) -> tuple[Chunk, list[RawClaim]]:
+                return chunk, annotate_chunk(
+                    chunk,
+                    client,
+                    args.deal,
+                    raise_errors=True,
+                )
+
+            with ThreadPoolExecutor(max_workers=args.workers) as pool:
+                futures = {pool.submit(_process, c): c for c in pending_chunks}
+                for fut in as_completed(futures):
+                    chunk = futures[fut]
+                    processed += 1
+                    try:
+                        _, raw_claims = fut.result()
+                    except Exception as exc:
+                        message = str(exc).splitlines()[0][:1000]
+                        batch_errors.append(
+                            {
+                                "chunk_id": chunk.chunk_id,
+                                "locator": chunk.locator,
+                                "error_type": type(exc).__name__,
+                                "message": message,
+                            }
+                        )
+                        print(
+                            f"  [L2 ERROR] {chunk.chunk_id}: "
+                            f"{type(exc).__name__}: {message}",
+                            file=sys.stderr,
+                        )
+                        if _is_fatal_provider_error(exc):
+                            for queued in futures:
+                                if queued is not fut:
+                                    queued.cancel()
+                            print(
+                                "  [L2] Fatal provider/key error; remaining "
+                                "queued chunks were cancelled.",
+                                file=sys.stderr,
+                            )
+                            break
+                    else:
+                        all_raw.extend(raw_claims)
+                        completed_chunk_ids.add(chunk.chunk_id)
+                        if raw_claims:
+                            print(f"  [{processed:03d}/{len(pending_chunks):03d}] "
+                                  f"{chunk.locator[:55]:<55} → {len(raw_claims)} claim(s)")
+                    if processed % 25 == 0:
+                        _checkpoint()
+
+            is_complete = (
+                not batch_errors
+                and len(completed_chunk_ids) == len(all_chunks)
+            )
+            _checkpoint(complete=is_complete)
+            print(f"  Raw claims checkpointed → {raw_cache_path.name}")
+            if not is_complete:
+                outstanding = len(all_chunks) - len(completed_chunk_ids)
+                print(
+                    f"ERROR: L2 incomplete — {outstanding} chunk(s) outstanding; "
+                    "rerun the same command to retry only outstanding chunks.",
+                    file=sys.stderr,
+                )
+                return 3
 
     print(f"  Total raw: {len(all_raw)}")
 

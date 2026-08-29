@@ -75,6 +75,7 @@ class LLMProviderTests(unittest.TestCase):
                 "source_id": "SRC-MODEL",
                 "name": "Keystone model",
                 "doc_type": "LBO Model",
+                "effective_date": "2026-03-05",
                 "known_at": "2026-03-05",
             },
             word_count=8,
@@ -94,6 +95,10 @@ class LLMProviderTests(unittest.TestCase):
 
         self.assertEqual(claims, [])
         self.assertEqual(captured["max_tokens"], 4096)
+        self.assertIn(
+            "EFFECTIVE DATE: 2026-03-05",
+            captured["messages"][0]["content"],
+        )
         self.assertEqual(
             captured["tools"][0]["input_schema"]["properties"]["claims"]["maxItems"],
             20,

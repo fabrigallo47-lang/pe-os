@@ -22,7 +22,17 @@ from tools.adapter_alpha import (
     compile_e3_runtime_bundle,
     e3_to_extraction_graph,
 )
-from tools.extract_v2 import SYSTEM_PROMPT, UnsupportedSourceError, parse_source
+from tools.extract_v2 import (
+    Chunk,
+    SYSTEM_PROMPT,
+    UnsupportedSourceError,
+    _is_fatal_provider_error,
+    _source_record,
+    annotate_chunk,
+    load_manifest,
+    parse_markdown,
+    parse_source,
+)
 from tools.extraction_quality import score_e3
 
 
@@ -95,6 +105,45 @@ def _e3_manifest() -> dict:
 
 
 class WorkbookV2ContractTests(unittest.TestCase):
+    def test_fatal_key_and_billing_errors_stop_the_remaining_batch(self) -> None:
+        self.assertTrue(_is_fatal_provider_error(RuntimeError("billing_error")))
+        self.assertTrue(_is_fatal_provider_error(RuntimeError("Key limit exceeded")))
+        self.assertFalse(_is_fatal_provider_error(RuntimeError("temporary timeout")))
+
+    def test_l2_batch_can_escalate_provider_errors_for_checkpointing(self) -> None:
+        class FailingMessages:
+            def create(self, **_request):
+                raise RuntimeError("provider budget exhausted")
+
+        client = type(
+            "FailingClient",
+            (),
+            {"messages": FailingMessages()},
+        )()
+        chunk = Chunk(
+            chunk_id="ch-provider-failure",
+            locator="keystone_lbo_model_working.xlsx::Inputs!1:4",
+            body="A1=Revenue | B1=100",
+            source_path="keystone_lbo_model_working.xlsx",
+            source_type="xlsx",
+            source_record=_source_record(Path("keystone_lbo_model_working.xlsx")),
+            word_count=2,
+        )
+        with self.assertRaisesRegex(RuntimeError, "budget exhausted"):
+            annotate_chunk(
+                chunk,
+                client,
+                "keystone",
+                rate_limit_delay=0,
+                raise_errors=True,
+            )
+
+    def test_real_keystone_workbook_name_resolves_to_canonical_model_source(self) -> None:
+        record = _source_record(Path("keystone_lbo_model_working.xlsx"))
+        self.assertEqual(record["source_id"], "SRC-MODEL")
+        self.assertEqual(record["known_at"], "2026-03-05")
+        self.assertEqual(record["manifest"], ["K-PRE", "K-IC", "K-LIVE"])
+
     def test_l2_prompt_pins_period_perimeter_locator_and_epistemic_rules(self) -> None:
         for section in (
             "PERIOD EXTRACTION — mandatory",
@@ -103,6 +152,32 @@ class WorkbookV2ContractTests(unittest.TestCase):
             "Computed by you → derived",
         ):
             self.assertIn(section, SYSTEM_PROMPT)
+        for required_rule in (
+            "Meeting notes / call transcript / DDQ → observed",
+            "Opening Balance Sheet",
+            "Seller View",
+            "QoE View",
+            "Firm View",
+            "Statutory",
+            "timestamp 00:14:22",
+        ):
+            self.assertIn(required_rule, SYSTEM_PROMPT)
+
+    def test_l1_markdown_chunks_expose_section_metadata(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source = Path(tmp) / "keystone_seller_cim.md"
+            source.write_text("## Revenue Analysis\nRevenue was 100 in FY2024.", encoding="utf-8")
+            chunks = parse_markdown(source, max_words=80)
+        self.assertEqual(chunks[0].section_heading, "## Revenue Analysis")
+        self.assertIsNone(chunks[0].page_or_slide_number)
+
+    def test_manifest_can_read_external_sensitive_source_directory(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            source_dir = Path(tmp)
+            expected = source_dir / "keystone_seller_cim.md"
+            expected.write_text("## Revenue\nRevenue was 100.", encoding="utf-8")
+            paths = load_manifest("K-IC", "keystone", source_dir)
+        self.assertEqual(paths, [expected])
 
     def test_versioned_xlsx_fixture_has_cell_locators_and_formulas(self) -> None:
         chunks = parse_source(FIXTURE, max_words=80)
@@ -110,6 +185,7 @@ class WorkbookV2ContractTests(unittest.TestCase):
         self.assertTrue(all(chunk.locator.startswith(FIXTURE.name + "::") for chunk in chunks))
         self.assertTrue(any("Inputs!1:4" in chunk.locator for chunk in chunks))
         self.assertTrue(any("FORMULA(=Inputs!C2)" in chunk.body for chunk in chunks))
+        self.assertTrue(all(chunk.section_heading for chunk in chunks))
 
     def test_xlsm_uses_the_same_read_only_open_xml_contract(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:

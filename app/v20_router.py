@@ -569,6 +569,8 @@ def _derive_question_proposals(claims: list[dict], case_id: str) -> list[dict]:
             "label": f"Add deal-emergent question: {topic_label}",
             "reason": f"{len(claim_ids)} extracted claim(s) are not covered by the active Fund Lens.",
             "status": "PENDING_REVIEW",
+            "effective_date": _today(),
+            "known_at": _now_iso(),
             "required_authority_level": "DEAL_TEAM_REVIEW",
             "affected_artifact_ids": [],
             "proposed_question": {
@@ -1492,18 +1494,31 @@ def _load_bears_on_map(case_id: str = "keystone") -> dict[str, list[str]]:
 
 def _load_questions(case_id: str) -> list[dict]:
     q_dir = VAULT / "deals" / case_id / "questions"
-    if not q_dir.exists():
-        return []
     out = []
-    for md in sorted(q_dir.glob("*.md")):
-        fm = _read_frontmatter(md)
-        if fm:
-            # Migrate the initial Q-xx registry created before origins were
-            # recorded; it is archetype grammar, not deal-emergent evidence.
-            if not fm.get("origin") and str(fm.get("id", "")).startswith("Q-"):
-                fm["origin"] = "archetype"
-                fm.setdefault("question_version", 1)
-            out.append(fm)
+    if q_dir.exists():
+        for md in sorted(q_dir.glob("*.md")):
+            fm = _read_frontmatter(md)
+            if fm:
+                # Migrate the initial Q-xx registry created before origins were
+                # recorded; it is archetype grammar, not deal-emergent evidence.
+                if not fm.get("origin") and str(fm.get("id", "")).startswith("Q-"):
+                    fm["origin"] = "archetype"
+                    fm.setdefault("question_version", 1)
+                out.append(fm)
+    existing = {str(item.get("id")) for item in out}
+    lens = _active_fund_lens(case_id)
+    for question in lens["questions"]:
+        if str(question["id"]) in existing:
+            continue
+        out.append({
+            "type": "question", "id": question["id"], "deal": case_id,
+            "title": question["title"], "question": question["title"],
+            "state": "open", "status": "open", "critical": False,
+            "workstream": question.get("workstream", "underwriting"),
+            "origin": "fund_lens", "question_version": question.get("version", 1),
+            "fund_lens_id": lens["lens_id"], "fund_lens_version": lens["version"],
+        })
+    out.sort(key=lambda item: str(item.get("id") or ""))
     return out
 
 
@@ -2015,6 +2030,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
                 "question_order": [item["id"] for item in fund_lens["questions"]],
                 "required_question_ids": [item["id"] for item in fund_lens["questions"]],
                 "effective_date": fund_lens.get("effective_date"),
+                "known_at": str(fund_lens.get("effective_date") or _today()) + "T00:00:00Z",
             }],
             "default_lens_id": fund_lens["lens_id"],
             "active_lens_id": fund_lens["lens_id"],
@@ -2156,12 +2172,23 @@ def bootstrap(case_id: str) -> dict:
 
 
 @v20.get("/cases/{case_id}/projection")
-def projection(case_id: str, as_of_date: str | None = None) -> dict:
+def projection(
+    case_id: str,
+    as_of_date: str | None = None,
+    lens_id: str | None = None,
+) -> dict:
     if as_of_date:
         # The UI refreshes this route after choosing a replay date. Reuse the
         # same causal reconstruction so the rendered projection cannot regain
         # claims or graph state learned after the cutoff.
-        return replay(case_id, as_of_date=as_of_date)["projection"]
+        try:
+            return replay(case_id, as_of_date=as_of_date)["projection"]
+        except HTTPException as exc:
+            if exc.status_code != 404 or _load_projection_events(case_id):
+                raise
+            # A brand-new case has no event to replay yet. Returning its empty
+            # Current plus Fund Lens gaps keeps Connected bootable without
+            # pretending that a hand-authored temporal snapshot exists.
     try:
         proj = _build_projection(case_id, as_of_date)
     except Exception as exc:

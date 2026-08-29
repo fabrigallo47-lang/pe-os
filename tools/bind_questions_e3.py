@@ -23,6 +23,23 @@ import re
 import sys
 from pathlib import Path
 
+ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_FUND_LENS_PATH = ROOT / "vault" / "policy" / "fund_lens_buyout_keystone_v1.json"
+
+
+def load_fund_lens(path: Path | str = DEFAULT_FUND_LENS_PATH) -> dict:
+    """Load and validate the durable question/binding policy used by the binder."""
+    lens = json.loads(Path(path).read_text(encoding="utf-8"))
+    if lens.get("schema_version") != "fund-lens/1.0":
+        raise ValueError("Fund Lens must use schema_version fund-lens/1.0")
+    questions = lens.get("questions")
+    if not isinstance(questions, list) or not questions:
+        raise ValueError("Fund Lens must declare at least one question")
+    ids = [str(item.get("id") or "") for item in questions]
+    if any(not qid for qid in ids) or len(ids) != len(set(ids)):
+        raise ValueError("Fund Lens question IDs must be non-empty and unique")
+    return lens
+
 # ── 20 Keystone diligence questions ──────────────────────────────────────────
 QUESTIONS: dict[str, str] = {
     "Q-01": "Which billing accounts share parent-company relationships?",
@@ -45,6 +62,14 @@ QUESTIONS: dict[str, str] = {
     "Q-18": "What are the proposed limits on add-backs, cash netting, acquisition capacity and minimum liquidity?",
     "Q-19": "Which executives and branch leaders require retention arrangements?",
     "Q-20": "What board approvals should be required before acquisitions or major systems cutovers?",
+}
+
+# The public constants remain backwards compatible, but their active ID/title
+# set is owned by the versioned Fund Lens rather than by this module.
+DEFAULT_FUND_LENS = load_fund_lens()
+QUESTIONS = {
+    str(item["id"]): str(item["title"])
+    for item in DEFAULT_FUND_LENS["questions"]
 }
 
 # Vault question IDs → list of question IDs (for cross-reference reporting)
@@ -181,8 +206,12 @@ KEYWORD_TO_Q: list[tuple[re.Pattern, list[str]]] = [
 ]
 
 
-def bind_claim(claim: dict, compiler_meta: dict) -> list[str]:
+def bind_claim(claim: dict, compiler_meta: dict, fund_lens: dict | None = None) -> list[str]:
     """Return sorted list of question IDs this claim bears on."""
+    lens = fund_lens or DEFAULT_FUND_LENS
+    if lens.get("binding_profile") != "keystone-e3-v1":
+        raise ValueError(f"Unsupported Fund Lens binding profile: {lens.get('binding_profile')}")
+    allowed = {str(item["id"]) for item in lens["questions"]}
     bound: set[str] = set()
     metric = compiler_meta.get("metric", "")
     stmt = claim.get("statement", "")
@@ -197,13 +226,14 @@ def bind_claim(claim: dict, compiler_meta: dict) -> list[str]:
         if pat.search(text):
             bound.update(qids)
 
-    return sorted(bound)
+    return sorted(bound & allowed)
 
 
 def main() -> None:
     ap = argparse.ArgumentParser()
     ap.add_argument("--e3", required=True, help="e3_claims.json path")
     ap.add_argument("--out", required=True, help="output directory")
+    ap.add_argument("--fund-lens", default=str(DEFAULT_FUND_LENS_PATH), help="versioned Fund Lens JSON")
     args = ap.parse_args()
 
     e3_path = Path(args.e3)
@@ -212,6 +242,8 @@ def main() -> None:
 
     with open(e3_path) as f:
         e3 = json.load(f)
+    fund_lens = load_fund_lens(args.fund_lens)
+    questions = {str(item["id"]): str(item["title"]) for item in fund_lens["questions"]}
 
     claims = e3["claims"]
     compiler_fields = {
@@ -221,13 +253,13 @@ def main() -> None:
 
     # Build bindings
     bindings: list[dict] = []
-    q_to_claims: dict[str, list[str]] = {q: [] for q in QUESTIONS}
+    q_to_claims: dict[str, list[str]] = {q: [] for q in questions}
     unbound: list[str] = []
 
     for c in claims:
         cid = c["claim_id"]
         meta = compiler_fields.get(cid, {})
-        qids = bind_claim(c, meta)
+        qids = bind_claim(c, meta, fund_lens)
         bindings.append({
             "claim_id": cid,
             "statement": c["statement"],
@@ -245,22 +277,27 @@ def main() -> None:
     # ── Stats ─────────────────────────────────────────────────────────────────
     total = len(claims)
     bound_count = total - len(unbound)
-    covered_qs = [q for q in QUESTIONS if q_to_claims[q]]
-    uncovered_qs = [q for q in QUESTIONS if not q_to_claims[q]]
-    coverage = len(covered_qs) / len(QUESTIONS)
+    covered_qs = [q for q in questions if q_to_claims[q]]
+    uncovered_qs = [q for q in questions if not q_to_claims[q]]
+    coverage = len(covered_qs) / len(questions)
 
     # Write bindings JSON
     out = {
         "manifest_id": e3.get("manifest_id"),
         "deal": e3.get("deal"),
+        "fund_lens": {
+            "lens_id": fund_lens["lens_id"],
+            "version": fund_lens["version"],
+            "binding_profile": fund_lens["binding_profile"],
+        },
         "total_claims": total,
         "bound_claims": bound_count,
         "unbound_claims": len(unbound),
         "questions_covered": len(covered_qs),
-        "questions_total": len(QUESTIONS),
+        "questions_total": len(questions),
         "coverage_recall": round(coverage, 3),
         "bindings": bindings,
-        "q_coverage": {q: len(q_to_claims[q]) for q in QUESTIONS},
+        "q_coverage": {q: len(q_to_claims[q]) for q in questions},
     }
     (out_dir / "bindings.json").write_text(json.dumps(out, indent=2))
 
@@ -273,12 +310,12 @@ def main() -> None:
         f"  Total claims: {total}",
         f"  Bound claims: {bound_count} ({100*bound_count/total:.1f}%)",
         f"  Unbound     : {len(unbound)} ({100*len(unbound)/total:.1f}%)",
-        f"  Questions covered: {len(covered_qs)} / {len(QUESTIONS)}",
+        f"  Questions covered: {len(covered_qs)} / {len(questions)}",
         f"  Coverage recall : {coverage:.1%}",
         "",
         "Per-question claim counts:",
     ]
-    for qid, qtxt in QUESTIONS.items():
+    for qid, qtxt in questions.items():
         count = len(q_to_claims[qid])
         flag = "" if count > 0 else "  ← ZERO COVERAGE"
         lines.append(f"  {qid}: {count:3d}  {qtxt[:65]}{flag}")
@@ -286,7 +323,7 @@ def main() -> None:
     lines += ["", "Uncovered questions:"]
     if uncovered_qs:
         for qid in uncovered_qs:
-            lines.append(f"  {qid}: {QUESTIONS[qid]}")
+            lines.append(f"  {qid}: {questions[qid]}")
     else:
         lines.append("  None — full coverage.")
 

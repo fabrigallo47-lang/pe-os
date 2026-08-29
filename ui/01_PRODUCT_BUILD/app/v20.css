@@ -11,3 +11,13 @@
 .v20-object{padding:2px}.v20-object h3{font-size:18px;margin:6px 0 10px}.v20-object h4{font-size:12px;text-transform:uppercase;letter-spacing:.06em;margin:15px 0 6px}.v20-object blockquote{margin:12px 0;padding:13px;border-left:3px solid #8bd3ea;background:rgba(139,211,234,.06);font-size:15px;line-height:1.55}.v20-object pre{white-space:pre-wrap;font-size:11px}.v20-object button{border:1px solid rgba(139,211,234,.25);background:transparent;color:#cfeefa;border-radius:5px;padding:4px 6px;margin:2px}.v20-value-stack{display:grid;gap:7px}.v20-value-stack button{display:flex;justify-content:space-between;text-align:left;padding:9px}.v20-value-stack span{font-size:10px;color:var(--muted,#9aa8b7)}
 @media(max-width:1180px){.v20-axis-grid{grid-template-columns:1fr 1fr}.v20-compiler-grid{grid-template-columns:1fr}.v20-finance-summary{grid-template-columns:repeat(3,1fr)}}
 @media(max-width:768px){.v20-archetype,.v20-cap-table{grid-template-columns:1fr}.v20-axis-grid,.v20-finance-summary{grid-template-columns:1fr 1fr}.v20-card dl,.v20-object dl{grid-template-columns:1fr}.v20-lens-control{display:none}}
+.evidence-review{margin-bottom:24px;border:1px solid color-mix(in srgb,var(--accent,#b08b57) 55%,transparent);background:color-mix(in srgb,var(--panel,#151515) 92%,var(--accent,#b08b57))}
+.evidence-review-list{display:grid;gap:14px;max-height:68vh;overflow:auto;padding-right:6px}
+.evidence-review-claim{display:grid;gap:12px;padding:16px;border:1px solid var(--line,#343434);border-radius:10px;background:var(--surface,#101010)}
+.evidence-review-claim header{display:flex;align-items:center;justify-content:space-between;gap:12px}
+.evidence-review-claim label{display:grid;gap:6px;color:var(--muted,#aaa);font-size:12px}
+.evidence-review-claim textarea,.evidence-review-claim input,.evidence-review-claim select{width:100%;box-sizing:border-box}
+.evidence-review-claim textarea{min-height:74px;resize:vertical}
+.evidence-review-claim select[multiple]{min-height:112px}
+.evidence-review-grid{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}
+@media(max-width:900px){.evidence-review-grid{grid-template-columns:1fr}.evidence-review-list{max-height:none}}

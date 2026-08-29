@@ -58,6 +58,7 @@ from tools.llm_provider import (  # noqa: E402
 VAULT_INBOX = ROOT / "vault" / "inbox"
 MODEL = configured_model("claude-haiku-4-5-20251001")
 MAX_TOKENS = int(os.environ.get("PEOS_EXTRACT_V2_MAX_TOKENS", "4096"))
+MAX_PROVIDER_RETRIES = int(os.environ.get("PEOS_LLM_CHUNK_RETRIES", "3"))
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Source registry — maps vault/inbox filenames to canonical SRC-xxx IDs.
@@ -761,6 +762,29 @@ def _is_fatal_provider_error(exc: Exception) -> bool:
     )
 
 
+def _provider_retry_delay(exc: Exception, attempt: int) -> float | None:
+    """Return a bounded retry delay for transient provider failures."""
+    status_code = getattr(exc, "status_code", None)
+    if status_code not in {408, 409, 429, 500, 502, 503, 504, 529}:
+        return None
+
+    response = getattr(exc, "response", None)
+    headers = getattr(response, "headers", {}) if response is not None else {}
+    raw_delay = headers.get("Retry-After") if headers else None
+    if raw_delay is None:
+        match = re.search(
+            r"retry_after_seconds(?:_raw)?['\"\s:]+([0-9]+(?:\.[0-9]+)?)",
+            str(exc),
+            re.IGNORECASE,
+        )
+        raw_delay = match.group(1) if match else None
+    try:
+        delay = float(raw_delay) if raw_delay is not None else 2 ** attempt
+    except (TypeError, ValueError):
+        delay = 2 ** attempt
+    return max(1.0, min(delay, 30.0))
+
+
 def annotate_chunk(
     chunk: Chunk,
     client,
@@ -1205,6 +1229,7 @@ def main() -> int:
     failed_chunks_path = out_dir / "failed_chunks.json"
     cached_raw: list[RawClaim] = []
     completed_chunk_ids: set[str] = set()
+    completed_chunk_models: dict[str, str] = {}
     pending_chunks = list(all_chunks)
     modern_cache = raw_cache_path.exists() and chunk_status_path.exists()
 
@@ -1241,6 +1266,18 @@ def main() -> int:
             cached_raw = [RawClaim(**c) for c in cached]
             status = json.loads(chunk_status_path.read_text())
             completed_chunk_ids = set(status.get("completed_chunk_ids", []))
+            completed_chunk_models = {
+                str(chunk_id): str(model)
+                for chunk_id, model in status.get("completed_chunk_models", {}).items()
+                if chunk_id in completed_chunk_ids
+            }
+            if len(completed_chunk_models) < len(completed_chunk_ids):
+                existing_model = os.environ.get(
+                    "PEOS_EXISTING_CACHE_MODEL",
+                    "legacy-cache",
+                ).strip() or "legacy-cache"
+                for chunk_id in completed_chunk_ids:
+                    completed_chunk_models.setdefault(chunk_id, existing_model)
             pending_chunks = [
                 chunk for chunk in all_chunks
                 if chunk.chunk_id not in completed_chunk_ids
@@ -1291,6 +1328,10 @@ def main() -> int:
                             "schema_version": "l2-chunk-status-1.0",
                             "total_chunks": len(all_chunks),
                             "completed_chunk_ids": sorted(completed_chunk_ids),
+                            "completed_chunk_models": dict(
+                                sorted(completed_chunk_models.items())
+                            ),
+                            "models_used": sorted(set(completed_chunk_models.values())),
                             "failed_chunks": batch_errors,
                             "complete": complete,
                         },
@@ -1304,12 +1345,26 @@ def main() -> int:
                 )
 
             def _process(chunk: Chunk) -> tuple[Chunk, list[RawClaim]]:
-                return chunk, annotate_chunk(
-                    chunk,
-                    client,
-                    args.deal,
-                    raise_errors=True,
-                )
+                for attempt in range(MAX_PROVIDER_RETRIES + 1):
+                    try:
+                        return chunk, annotate_chunk(
+                            chunk,
+                            client,
+                            args.deal,
+                            raise_errors=True,
+                        )
+                    except Exception as exc:
+                        delay = _provider_retry_delay(exc, attempt)
+                        if delay is None or attempt >= MAX_PROVIDER_RETRIES:
+                            raise
+                        print(
+                            f"  [L2 RETRY] {chunk.chunk_id}: "
+                            f"{type(exc).__name__}; retry "
+                            f"{attempt + 1}/{MAX_PROVIDER_RETRIES} in {delay:g}s",
+                            file=sys.stderr,
+                        )
+                        time.sleep(delay)
+                raise AssertionError("unreachable provider retry state")
 
             with ThreadPoolExecutor(max_workers=args.workers) as pool:
                 futures = {pool.submit(_process, c): c for c in pending_chunks}
@@ -1346,10 +1401,11 @@ def main() -> int:
                     else:
                         all_raw.extend(raw_claims)
                         completed_chunk_ids.add(chunk.chunk_id)
+                        completed_chunk_models[chunk.chunk_id] = MODEL
                         if raw_claims:
                             print(f"  [{processed:03d}/{len(pending_chunks):03d}] "
                                   f"{chunk.locator[:55]:<55} → {len(raw_claims)} claim(s)")
-                    if processed % 25 == 0:
+                    if processed % 10 == 0:
                         _checkpoint()
 
             is_complete = (
@@ -1392,6 +1448,14 @@ def main() -> int:
     print(f"\n[Output] Writing to {out_dir}/...")
     sources_used = [_source_record(p) for p in source_paths]
     e3 = _to_e3_manifest(graph, args.deal, manifest_label, sources_used)
+    if chunk_status_path.exists():
+        l2_status = json.loads(chunk_status_path.read_text())
+        e3["extraction_metadata"]["l2_complete"] = bool(
+            l2_status.get("complete")
+        )
+        e3["extraction_metadata"]["llm_models"] = list(
+            l2_status.get("models_used", [])
+        )
     _w(out_dir / "e3_claims.json", e3)
     _w(out_dir / "rejected_claims.json", graph.rejected)
     _w(out_dir / "conflict_report.json", graph.conflicts)

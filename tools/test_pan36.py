@@ -27,6 +27,7 @@ from tools.extract_v2 import (
     SYSTEM_PROMPT,
     UnsupportedSourceError,
     _is_fatal_provider_error,
+    _provider_retry_delay,
     _source_record,
     annotate_chunk,
     load_manifest,
@@ -105,6 +106,12 @@ def _e3_manifest() -> dict:
 
 
 class WorkbookV2ContractTests(unittest.TestCase):
+    def test_transient_provider_errors_honor_retry_after(self) -> None:
+        error = RuntimeError("retry_after_seconds: 5")
+        error.status_code = 429
+        self.assertEqual(_provider_retry_delay(error, 0), 5.0)
+        self.assertIsNone(_provider_retry_delay(RuntimeError("bad request"), 0))
+
     def test_fatal_key_and_billing_errors_stop_the_remaining_batch(self) -> None:
         self.assertTrue(_is_fatal_provider_error(RuntimeError("billing_error")))
         self.assertTrue(_is_fatal_provider_error(RuntimeError("Key limit exceeded")))
@@ -244,6 +251,62 @@ class WorkbookV2ContractTests(unittest.TestCase):
                 self.assertEqual(claim["perimeter"], "Synthetic standalone base scenario")
                 self.assertEqual(claim["epistemic_class"], "attested")
                 self.assertIn(f"synthetic{suffix}::Inputs!", claim["locator"])
+
+    def test_completed_chunk_cache_records_model_provenance_in_e3(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            tmp_path = Path(tmp)
+            source = tmp_path / "keystone_lbo_model_working.xlsx"
+            shutil.copyfile(FIXTURE, source)
+            chunks = parse_source(source, max_words=80)
+            output = tmp_path / "out"
+            cache_dir = output / "SINGLE"
+            cache_dir.mkdir(parents=True)
+            (cache_dir / "raw_claims_cache.json").write_text(
+                json.dumps([_raw_dso_claim(source, chunks[0].locator)]),
+                encoding="utf-8",
+            )
+            (cache_dir / "l2_chunk_status.json").write_text(
+                json.dumps(
+                    {
+                        "total_chunks": len(chunks),
+                        "completed_chunk_ids": [chunk.chunk_id for chunk in chunks],
+                        "completed_chunk_models": {
+                            chunk.chunk_id: "test/provider" for chunk in chunks
+                        },
+                        "models_used": ["test/provider"],
+                        "failed_chunks": [],
+                        "complete": True,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            env = os.environ.copy()
+            for key in ("ANTHROPIC_API_KEY", "OPENROUTER_API_KEY"):
+                env.pop(key, None)
+            result = subprocess.run(
+                [
+                    sys.executable,
+                    str(ROOT / "tools" / "extract_v2.py"),
+                    "--source",
+                    str(source),
+                    "--deal",
+                    "keystone",
+                    "--output",
+                    str(output),
+                    "--chunk-words",
+                    "80",
+                ],
+                cwd=ROOT,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=120,
+            )
+            self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
+            e3 = json.loads((cache_dir / "e3_claims.json").read_text())
+            metadata = e3["extraction_metadata"]
+            self.assertTrue(metadata["l2_complete"])
+            self.assertEqual(metadata["llm_models"], ["test/provider"])
 
 
 class E3RuntimeAdapterContractTests(unittest.TestCase):

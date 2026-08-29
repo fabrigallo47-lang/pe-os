@@ -55,6 +55,7 @@ sys.path.insert(0, str(ROOT / "ui" / "07_ENGINEERING_CONTRACTS_AND_ADAPTERS" / "
 
 VAULT = ROOT / "vault"
 PIPELINE_OUT = ROOT / "pipeline_out" / "e3" / "K-IC" / "adapter_alpha"
+CASE_PIPELINE_ROOT = ROOT / "pipeline_out" / "cases"
 INGEST_JOBS_LOG = ROOT / "logs" / "ingest_jobs.json"
 RUNS_LOG = ROOT / "logs" / "runs.json"
 _REGISTRY_LIMIT = 200
@@ -126,6 +127,29 @@ def _now_iso() -> str:
 
 def _today() -> str:
     return dt.date.today().isoformat()
+
+
+def _pipeline_out_for_case(case_id: str) -> Path:
+    """Return the isolated runtime bundle for one case.
+
+    Keystone keeps its historical path so existing fixtures and deployments do
+    not move underneath callers. Every other case gets a dedicated bundle.
+    """
+    if not re.fullmatch(r"[A-Za-z0-9._-]+", case_id):
+        raise HTTPException(400, "case_id contains unsupported characters")
+    return PIPELINE_OUT if case_id == "keystone" else CASE_PIPELINE_ROOT / case_id
+
+
+def _available_case_ids() -> list[str]:
+    """Discover every durable case the connected UI can open."""
+    deals_dir = VAULT / "deals"
+    if not deals_dir.exists():
+        return []
+    return sorted(
+        path.name
+        for path in deals_dir.iterdir()
+        if path.is_dir() and re.fullmatch(r"[A-Za-z0-9._-]+", path.name)
+    )
 
 
 def _action_capability_manifest() -> dict:
@@ -455,13 +479,13 @@ def _ensure_question_registry(case_id: str) -> None:
         path.write_text("---\n" + yaml.safe_dump(fm, sort_keys=False, allow_unicode=True) + "---\n\n# " + title + "\n", encoding="utf-8")
 
 
-def _proposal_path(job_id: str) -> Path:
-    return PIPELINE_OUT / "proposals" / f"evidence-{job_id}.json"
+def _proposal_path(job_id: str, case_id: str = "keystone") -> Path:
+    return _pipeline_out_for_case(case_id) / "proposals" / f"evidence-{job_id}.json"
 
 
 def _write_evidence_proposal(job_id: str, case_id: str, filename: str, claims: list[dict]) -> Path:
     """Store extraction output as reviewable evidence, before it can affect Current."""
-    path = _proposal_path(job_id)
+    path = _proposal_path(job_id, case_id)
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "proposal_id": f"evidence-{job_id}", "job_id": job_id, "case_id": case_id,
@@ -550,7 +574,9 @@ def _build_semantic_current(claims: list[dict], case_id: str) -> dict:
     graph["edges"] = edges
     graph["kind"] = "semantic_current"
     graph["case_id"] = case_id
-    (PIPELINE_OUT / "semantic_current_graph.json").write_text(json.dumps(graph, indent=2, ensure_ascii=False) + "\n")
+    pipeline_out = _pipeline_out_for_case(case_id)
+    pipeline_out.mkdir(parents=True, exist_ok=True)
+    (pipeline_out / "semantic_current_graph.json").write_text(json.dumps(graph, indent=2, ensure_ascii=False) + "\n")
     return graph
 
 def _semantic_rooms(graph: dict, question_spine: list[dict]) -> tuple[list[dict], dict, list[dict]]:
@@ -595,12 +621,12 @@ def _write_json_atomic(path: Path, payload: Any) -> None:
     temporary.replace(path)
 
 
-def _graph_versions_dir() -> Path:
-    return PIPELINE_OUT / "graph_versions"
+def _graph_versions_dir(case_id: str) -> Path:
+    return _pipeline_out_for_case(case_id) / "graph_versions"
 
 
-def _graph_version_index_path() -> Path:
-    return _graph_versions_dir() / "index.json"
+def _graph_version_index_path(case_id: str) -> Path:
+    return _graph_versions_dir(case_id) / "index.json"
 
 
 def _graph_content_hash(graph: dict) -> str:
@@ -624,15 +650,15 @@ def _graph_counts(graph: dict) -> dict[str, int]:
     }
 
 
-def _read_graph_version_index() -> list[dict[str, Any]]:
-    payload = _load_json_safe(_graph_version_index_path())
+def _read_graph_version_index(case_id: str) -> list[dict[str, Any]]:
+    payload = _load_json_safe(_graph_version_index_path(case_id))
     versions = payload.get("versions", []) if isinstance(payload, dict) else []
     return [dict(item) for item in versions if isinstance(item, dict)]
 
 
 def _list_graph_versions(case_id: str) -> list[dict[str, Any]]:
     versions = [
-        item for item in _read_graph_version_index()
+        item for item in _read_graph_version_index(case_id)
         if str(item.get("case_id")) == str(case_id)
     ]
     return sorted(
@@ -682,7 +708,7 @@ def _archive_graph_version(
         + hashlib.sha256(archive_identity.encode("utf-8")).hexdigest()[:10]
         + ".json"
     )
-    path = _graph_versions_dir() / filename
+    path = _graph_versions_dir(case_id) / filename
     archived_at = dt.datetime.now(dt.timezone.utc).isoformat(
         timespec="microseconds"
     ).replace("+00:00", "Z")
@@ -715,7 +741,7 @@ def _archive_graph_version(
                 raise DynamicsBundleError(
                     f"graph version {version_id} already exists with different content"
                 )
-            versions = _read_graph_version_index()
+            versions = _read_graph_version_index(case_id)
             if not any(
                 item.get("case_id") == case_id
                 and item.get("version_id") == version_id
@@ -726,7 +752,7 @@ def _archive_graph_version(
                 }
                 versions.append(existing_metadata)
                 _write_json_atomic(
-                    _graph_version_index_path(),
+                    _graph_version_index_path(case_id),
                     {
                         "schema_version": "graph-version-index/1.0",
                         "updated_at": _now_iso(),
@@ -736,7 +762,7 @@ def _archive_graph_version(
             return {key: value for key, value in existing.items() if key != "graph"}
 
         _write_json_atomic(path, snapshot)
-        versions = _read_graph_version_index()
+        versions = _read_graph_version_index(case_id)
         if not any(
             item.get("case_id") == case_id
             and item.get("version_id") == version_id
@@ -744,7 +770,7 @@ def _archive_graph_version(
         ):
             versions.append(metadata)
         _write_json_atomic(
-            _graph_version_index_path(),
+            _graph_version_index_path(case_id),
             {
                 "schema_version": "graph-version-index/1.0",
                 "updated_at": _now_iso(),
@@ -765,7 +791,7 @@ def _load_graph_version(case_id: str, version_id: str) -> dict[str, Any]:
     if not metadata:
         raise HTTPException(404, f"Graph version not found: {version_id}")
     snapshot = _load_json_safe(
-        _graph_versions_dir() / Path(str(metadata["filename"])).name
+        _graph_versions_dir(case_id) / Path(str(metadata["filename"])).name
     )
     graph = snapshot.get("graph") if isinstance(snapshot, dict) else None
     if (
@@ -779,11 +805,15 @@ def _load_graph_version(case_id: str, version_id: str) -> dict[str, Any]:
 
 
 def _runtime_execution_graph(case_id: str) -> Path:
+    pipeline_out = _pipeline_out_for_case(case_id)
     candidates = (
         VAULT / "deals" / case_id / "models" / "execution_graph_v7.json",
-        PIPELINE_OUT / "execution_graph_v7.json",
-        ROOT / "pipeline_out" / "e3" / "K-PRE" / "adapter_alpha" / "execution_graph_v7.json",
+        pipeline_out / "execution_graph_v7.json",
     )
+    if case_id == "keystone":
+        candidates += (
+            ROOT / "pipeline_out" / "e3" / "K-PRE" / "adapter_alpha" / "execution_graph_v7.json",
+        )
     path = next((candidate for candidate in candidates if candidate.exists()), None)
     if path is None:
         raise DynamicsBundleError("execution_graph_v7.json is required to compile admitted evidence")
@@ -814,7 +844,7 @@ def _compile_live_runtime_bundle(claims: list[dict], case_id: str) -> dict[str, 
 
     from tools.adapter_alpha import compile_e3_runtime_bundle
 
-    runtime_dir = PIPELINE_OUT / "runtime"
+    runtime_dir = _pipeline_out_for_case(case_id) / "runtime"
     runtime_dir.mkdir(parents=True, exist_ok=True)
     compiler_fields = [
         {
@@ -863,14 +893,15 @@ def _compile_live_runtime_bundle(claims: list[dict], case_id: str) -> dict[str, 
 
 
 def _runtime_current_graph(case_id: str) -> dict:
-    runtime_state = _load_json_safe(PIPELINE_OUT / "runtime_state.json")
+    pipeline_out = _pipeline_out_for_case(case_id)
+    runtime_state = _load_json_safe(pipeline_out / "runtime_state.json")
     if (
         isinstance(runtime_state, dict)
         and runtime_state.get("case_id") == case_id
         and isinstance(runtime_state.get("current_graph"), dict)
     ):
         return copy.deepcopy(runtime_state["current_graph"])
-    current = _load_json_safe(PIPELINE_OUT / "current_graph.json")
+    current = _load_json_safe(pipeline_out / "current_graph.json")
     if isinstance(current, dict) and current.get("case_id") == case_id:
         return copy.deepcopy(current)
     return {}
@@ -1017,25 +1048,32 @@ def _build_admitted_runtime_event(
     }
 
 
-def _promote_live_runtime_bundle(compiled: dict, baseline_graph: dict, event: dict) -> Path:
+def _promote_live_runtime_bundle(
+    case_id: str,
+    compiled: dict,
+    baseline_graph: dict,
+    event: dict,
+) -> Path:
+    pipeline_out = _pipeline_out_for_case(case_id)
+    pipeline_out.mkdir(parents=True, exist_ok=True)
     runtime_dir = Path(compiled["runtime_dir"])
-    _write_json_atomic(PIPELINE_OUT / "current_graph.json", baseline_graph)
+    _write_json_atomic(pipeline_out / "current_graph.json", baseline_graph)
     for filename in (
         "execution_mapping.json",
         "adapter_report.json",
         "admission_manifest_v7.json",
     ):
-        _write_json_atomic(PIPELINE_OUT / filename, _load_json_safe(runtime_dir / filename))
+        _write_json_atomic(pipeline_out / filename, _load_json_safe(runtime_dir / filename))
     for filename in (
         "execution_graph_v7.json",
         "keystone_materiality_policy_v0.json",
         "keystone_authority_matrix_v0.json",
     ):
-        (PIPELINE_OUT / filename).write_bytes((runtime_dir / filename).read_bytes())
-    event_path = PIPELINE_OUT / f"event_evidence_admitted_{event['event_id'].removeprefix('EVIDENCE-ADMITTED-')}.json"
+        (pipeline_out / filename).write_bytes((runtime_dir / filename).read_bytes())
+    event_path = pipeline_out / f"event_evidence_admitted_{event['event_id'].removeprefix('EVIDENCE-ADMITTED-')}.json"
     _write_json_atomic(event_path, event)
-    _write_json_atomic(PIPELINE_OUT / "candidate_graph.json", {})
-    _write_json_atomic(PIPELINE_OUT / "transition_output.json", {})
+    _write_json_atomic(pipeline_out / "candidate_graph.json", {})
+    _write_json_atomic(pipeline_out / "transition_output.json", {})
     return event_path
 
 def _rebuild_index() -> None:
@@ -1127,10 +1165,11 @@ def _load_json_safe(path: Path) -> Any:
 
 def _current_state_id(case_id: str) -> str:
     """Use the settled runtime state as the authoritative Current version."""
-    runtime_state = _load_json_safe(PIPELINE_OUT / "runtime_state.json")
+    pipeline_out = _pipeline_out_for_case(case_id)
+    runtime_state = _load_json_safe(pipeline_out / "runtime_state.json")
     if isinstance(runtime_state, dict) and runtime_state.get("state_id"):
         return str(runtime_state["state_id"])
-    current_graph = _load_json_safe(PIPELINE_OUT / "current_graph.json")
+    current_graph = _load_json_safe(pipeline_out / "current_graph.json")
     if isinstance(current_graph, dict) and current_graph.get("state_id"):
         return str(current_graph["state_id"])
     return f"STATE-{case_id.upper()}-CURRENT"
@@ -1139,17 +1178,20 @@ def _load_profile(case_id: str) -> dict:
     p = VAULT / "deals" / case_id / "deal_profile.json"
     return json.loads(p.read_text()) if p.exists() else {}
 
-def _load_claims() -> list[dict]:
-    f = PIPELINE_OUT / "claims.json"
+def _load_claims(case_id: str = "keystone") -> list[dict]:
+    f = _pipeline_out_for_case(case_id) / "claims.json"
     return json.loads(f.read_text()) if f.exists() else []
 
-def _load_bears_on_map() -> dict[str, list[str]]:
-    db_path = ROOT / ".index" / "vault.db"
+def _load_bears_on_map(case_id: str = "keystone") -> dict[str, list[str]]:
+    db_path = INDEX_DB
     if not db_path.exists():
         return {}
     try:
         con = sqlite3.connect(str(db_path))
-        rows = con.execute("SELECT frontmatter FROM nodes WHERE type='claim'").fetchall()
+        rows = con.execute(
+            "SELECT frontmatter FROM nodes WHERE type='claim' AND LOWER(COALESCE(deal, '')) = LOWER(?)",
+            (case_id,),
+        ).fetchall()
         con.close()
         mapping: dict[str, list[str]] = {}
         for (fm_str,) in rows:
@@ -1330,20 +1372,21 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     """Build a full projection object that passes contracts.js validateProjection."""
     from compiler_projection_adapter import map_compiler_bundle
 
+    pipeline_out = _pipeline_out_for_case(case_id)
     profile = _load_profile(case_id)
-    raw_claims = _load_claims()
-    bears_on_map = _load_bears_on_map()
+    raw_claims = _load_claims(case_id)
+    bears_on_map = _load_bears_on_map(case_id)
     claims = _enrich_claims(raw_claims, bears_on_map)
     sources = _build_sources_from_claims(raw_claims, case_id)
     events = _load_projection_events(case_id)
     questions = _load_questions(case_id)
     question_spine = _build_question_spine(questions, claims)
-    semantic_graph = _load_json_safe(PIPELINE_OUT / "semantic_current_graph.json")
+    semantic_graph = _load_json_safe(pipeline_out / "semantic_current_graph.json")
     foundations, unknowns, semantic_positions = _semantic_rooms(semantic_graph, question_spine) if semantic_graph else ([], {"items": []}, [])
 
-    current_graph = _load_json_safe(PIPELINE_OUT / "current_graph.json")
-    candidate_graph = _load_json_safe(PIPELINE_OUT / "candidate_graph.json")
-    transition_output = _load_json_safe(PIPELINE_OUT / "transition_output.json")
+    current_graph = _load_json_safe(pipeline_out / "current_graph.json")
+    candidate_graph = _load_json_safe(pipeline_out / "candidate_graph.json")
+    transition_output = _load_json_safe(pipeline_out / "transition_output.json")
     graph_versions = _list_graph_versions(case_id)
 
     if isinstance(current_graph, dict) and "case_positions" in current_graph:
@@ -1499,18 +1542,20 @@ def action_capabilities() -> dict:
 def bootstrap_flat(case_id: str | None = None, actor: str | None = None) -> dict:
     cid = case_id or "keystone"
     deal_md = VAULT / "deals" / cid / "deal.md"
+    available_cases = _available_case_ids()
     if not deal_md.exists():
         # Try to find any deal
-        deals = [d.name for d in (VAULT / "deals").iterdir() if d.is_dir()] if (VAULT / "deals").exists() else []
-        cid = deals[0] if deals else cid
+        cid = available_cases[0] if available_cases else cid
+    if cid not in available_cases:
+        available_cases.insert(0, cid)
     profile = _load_profile(cid)
     today = _today()
     state_id = _current_state_id(cid)
     session_id = f"SES-{uuid.uuid4().hex[:8].upper()}"
     return {
         "session_id": session_id,
-        "available_cases": [cid],
-        "cases": [cid],
+        "available_cases": available_cases,
+        "cases": available_cases,
         "context": _make_context(cid, state_id, today),
         "action_capabilities": _action_capability_manifest(),
     }
@@ -1525,10 +1570,11 @@ def bootstrap(case_id: str) -> dict:
     today = _today()
     state_id = _current_state_id(case_id)
     session_id = f"SES-{uuid.uuid4().hex[:8].upper()}"
+    available_cases = _available_case_ids()
     return {
         "session_id": session_id,
-        "available_cases": [case_id],
-        "cases": [case_id],
+        "available_cases": available_cases,
+        "cases": available_cases,
         "context": _make_context(case_id, state_id, today),
         "action_capabilities": _action_capability_manifest(),
         "entity": profile.get("entity", case_id),
@@ -1573,14 +1619,28 @@ def get_graph_version(case_id: str, version_id: str) -> dict:
 
 @v20.get("/cases/{case_id}/sources")
 def sources(case_id: str) -> dict:
-    raw = _load_claims()
+    raw = _load_claims(case_id)
     srcs = _build_sources_from_claims(raw, case_id)
-    inbox_items = _read_inbox_manifest()
-    known_files = {item.get("stored_name") for item in inbox_items}
+    inbox_items = [
+        item for item in _read_inbox_manifest()
+        if item.get("case_id") == case_id
+    ]
+    known_files = {
+        item.get("stored_name")
+        for item in _read_inbox_manifest()
+    }
     inbox_dir = VAULT / "inbox"
     if inbox_dir.exists():
         for f in sorted(inbox_dir.glob("*")):
-            if f.is_file() and not f.name.startswith(".") and f.name not in known_files:
+            belongs_to_case = f.name.lower().startswith(
+                (f"{case_id.lower()}_", f"{case_id.lower()}-")
+            )
+            if (
+                f.is_file()
+                and not f.name.startswith(".")
+                and f.name not in known_files
+                and belongs_to_case
+            ):
                 inbox_items.append({
                     "id": f"legacy-{f.name}", "name": f.name, "stored_name": f.name,
                     "path": f"vault/inbox/{f.name}", "size": f.stat().st_size,
@@ -1598,7 +1658,7 @@ def inbox_v20(case_id: str) -> list:
 def retire_source(case_id: str, source_id: str, payload: dict | None = None) -> dict:
     """Retire a source from Current without deleting its claims or history."""
     payload = payload or {}
-    current_sources = _build_sources_from_claims(_load_claims(), case_id)
+    current_sources = _build_sources_from_claims(_load_claims(case_id), case_id)
     source = next((item for item in current_sources if item.get("source_id") == source_id), None)
     if not source:
         raise HTTPException(404, f"Source not found: {source_id}")
@@ -2059,10 +2119,11 @@ class UnsupportedUploadFormat(ValueError):
 
 def _extraction_command(source_path: Path | None, case_id: str, job_id: str) -> tuple[str, list[str]]:
     """Select the extractor at the product boundary without executing it."""
+    pipeline_out = _pipeline_out_for_case(case_id)
     if source_path is not None:
         suffix = source_path.suffix.lower()
         if suffix in (".xlsx", ".xlsm"):
-            run_dir = PIPELINE_OUT / "runs" / job_id
+            run_dir = pipeline_out / "runs" / job_id
             return "SINGLE_V2", [
                 sys.executable,
                 str(ROOT / "tools" / "extract_v2.py"),
@@ -2078,7 +2139,7 @@ def _extraction_command(source_path: Path | None, case_id: str, job_id: str) -> 
                 "Legacy .xls is not supported; convert the workbook to .xlsx before upload."
             )
         if suffix in (".md", ".txt", ".pdf"):
-            run_dir = PIPELINE_OUT / "runs" / job_id
+            run_dir = pipeline_out / "runs" / job_id
             return "SINGLE", [
                 sys.executable,
                 str(ROOT / "tools" / "pipeline.py"),
@@ -2187,7 +2248,8 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
             # Extraction produces a proposal.  It must not mutate the admitted
             # corpus or the semantic Current until a professional review admits it.
             if ok:
-                output_dir = (PIPELINE_OUT / "runs" / job_id) if manifest_label in {"SINGLE", "SINGLE_V2"} else (PIPELINE_OUT / manifest_label)
+                pipeline_out = _pipeline_out_for_case(case_id)
+                output_dir = (pipeline_out / "runs" / job_id) if manifest_label in {"SINGLE", "SINGLE_V2"} else (pipeline_out / manifest_label)
                 # V2 writes the manifest under its deterministic SINGLE label;
                 # V1 writes directly to its requested output directory.
                 e3_out = output_dir / "e3_claims.json"
@@ -2257,7 +2319,8 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     from the newly admitted extractor claims.  Candidate creation remains a
     separate explicit action at ``/events/{event_id}/admit``.
     """
-    proposal_file = _proposal_path(job_id)
+    pipeline_out = _pipeline_out_for_case(case_id)
+    proposal_file = _proposal_path(job_id, case_id)
     if not proposal_file.exists():
         raise HTTPException(404, "No evidence proposal exists for this ingestion job")
     proposal = _load_json_safe(proposal_file)
@@ -2284,10 +2347,10 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
     reviewed_claims = payload.get("claims") if isinstance(payload.get("claims"), list) else proposal.get("claims", [])
     reviewed_claims = [dict(c) for c in reviewed_claims if isinstance(c, dict)]
     _ensure_question_registry(case_id)
-    existing_path = PIPELINE_OUT / "claims.json"
+    existing_path = pipeline_out / "claims.json"
     existing = json.loads(existing_path.read_text()) if existing_path.exists() else []
     merged, added = _merge_claim_corpus(existing, reviewed_claims)
-    if added and (PIPELINE_OUT / "candidate_state.json").exists():
+    if added and (pipeline_out / "candidate_state.json").exists():
         raise HTTPException(
             409,
             "An unsettled Candidate already exists; settle it before admitting more evidence.",
@@ -2316,8 +2379,9 @@ async def admit_evidence(case_id: str, job_id: str, payload: dict = {}) -> dict:
                 baseline_graph,
             )
             if not prior_graph:
-                (PIPELINE_OUT / "runtime_state.json").unlink(missing_ok=True)
+                (pipeline_out / "runtime_state.json").unlink(missing_ok=True)
             event_path = _promote_live_runtime_bundle(
+                case_id,
                 compiled,
                 baseline_graph,
                 runtime_event,
@@ -2392,10 +2456,11 @@ async def admit(
     background_tasks: BackgroundTasks,
     payload: dict = {},
 ) -> dict:
+    pipeline_out = _pipeline_out_for_case(case_id)
     try:
-        event_batch = load_event_batch(PIPELINE_OUT, event_id, payload)
+        event_batch = load_event_batch(pipeline_out, event_id, payload)
         dynamics_result = run_bundle_transition(
-            PIPELINE_OUT,
+            pipeline_out,
             event_batch,
             persist_outputs=True,
         )
@@ -2417,7 +2482,7 @@ async def admit(
     )
     prior_state_id = transition_output.get("prior_state_id", "STATE-PRIOR")
     event_record = event_batch[0] if event_batch else {}
-    current_graph = _load_json_safe(PIPELINE_OUT / "current_graph.json")
+    current_graph = _load_json_safe(pipeline_out / "current_graph.json")
     try:
         current_graph_version = _archive_graph_version(
             case_id,
@@ -2454,7 +2519,7 @@ async def admit(
         "candidate_state_id": cand_state_id,
         "current_graph_version": current_graph_version,
         "candidate_graph_version": candidate_graph_version,
-        "bundle_dir": str(PIPELINE_OUT),
+        "bundle_dir": str(pipeline_out),
         "authority_records": [],
         "status": "CANDIDATE_READY",
         "created_at": _now_iso(),
@@ -2568,7 +2633,7 @@ async def settle_run(
     new_state_id = f"STATE-{case_id.upper()}-{ts}"
     try:
         settled_state = settle_candidate_state(
-            Path(run.get("bundle_dir", PIPELINE_OUT)),
+            Path(run.get("bundle_dir", _pipeline_out_for_case(case_id))),
             run["candidate_state"],
             run.get("history_append", []),
             current_state_id=new_state_id,
@@ -2658,9 +2723,10 @@ async def settle_event(
 ) -> dict:
     # Create a synthetic run and delegate
     run_id = f"RUN-DIRECT-{uuid.uuid4().hex[:8].upper()}"
-    candidate_graph = _load_json_safe(PIPELINE_OUT / "candidate_graph.json")
-    candidate_state = _load_json_safe(PIPELINE_OUT / "candidate_state.json")
-    to = _load_json_safe(PIPELINE_OUT / "transition_output.json")
+    pipeline_out = _pipeline_out_for_case(case_id)
+    candidate_graph = _load_json_safe(pipeline_out / "candidate_graph.json")
+    candidate_state = _load_json_safe(pipeline_out / "candidate_state.json")
+    to = _load_json_safe(pipeline_out / "transition_output.json")
     if not candidate_state:
         raise HTTPException(409, "No persisted Candidate state; run dynamics first")
     _store_run(run_id, {
@@ -2672,7 +2738,7 @@ async def settle_event(
         "candidate_state_id": candidate_state.get(
             "state_id", f"CAND-DIRECT-{uuid.uuid4().hex[:8].upper()}"
         ),
-        "bundle_dir": str(PIPELINE_OUT),
+        "bundle_dir": str(pipeline_out),
         "authority_records": [],
         "status": "CANDIDATE_READY",
         "created_at": _now_iso(),
@@ -2902,8 +2968,8 @@ def list_notes(case_id: str) -> dict:
 
 @v20.get("/cases/{case_id}/objects/{object_id:path}")
 def get_object(case_id: str, object_id: str) -> dict:
-    raw = _load_claims()
-    bears_on_map = _load_bears_on_map()
+    raw = _load_claims(case_id)
+    bears_on_map = _load_bears_on_map(case_id)
     claims = _enrich_claims(raw, bears_on_map)
     obj = next((c for c in claims if c.get("claim_id") == object_id or c.get("id") == object_id), None)
     if obj:

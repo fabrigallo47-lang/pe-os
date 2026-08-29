@@ -1,0 +1,22 @@
+{
+  "schema": "workbook-formula-graphs-1.0",
+  "workbooks": [
+    {
+      "source_filename": "synthetic_case.xlsx",
+      "graph": {
+        "schema": "source-graph-1",
+        "workbook": "synthetic_case.xlsx",
+        "cells": {
+          "MODEL!A1": {"locator": "MODEL!A1", "sheet": "MODEL", "ref": "A1", "row": 1, "col": 1, "kind": "text", "value": "Driver", "precedents": []},
+          "MODEL!B1": {"locator": "MODEL!B1", "sheet": "MODEL", "ref": "B1", "row": 1, "col": 2, "kind": "number", "value": 10, "precedents": []},
+          "MODEL!C1": {"locator": "MODEL!C1", "sheet": "MODEL", "ref": "C1", "row": 1, "col": 3, "kind": "formula", "value": "=B1*2", "precedents": ["MODEL!B1"], "evaluated_value": 20, "evaluation_status": "CALCULATED_ACYCLIC"},
+          "MODEL!D1": {"locator": "MODEL!D1", "sheet": "MODEL", "ref": "D1", "row": 1, "col": 4, "kind": "formula", "value": "=C1+1", "precedents": ["MODEL!C1"], "evaluated_value": 21, "evaluation_status": "CALCULATED_ACYCLIC"},
+          "MODEL!A3": {"locator": "MODEL!A3", "sheet": "MODEL", "ref": "A3", "row": 3, "col": 1, "kind": "text", "value": "Cycle A", "precedents": []},
+          "MODEL!B3": {"locator": "MODEL!B3", "sheet": "MODEL", "ref": "B3", "row": 3, "col": 2, "kind": "formula", "value": "=C3+1", "precedents": ["MODEL!C3"], "evaluation_status": "CYCLIC_COMPONENT"},
+          "MODEL!C3": {"locator": "MODEL!C3", "sheet": "MODEL", "ref": "C3", "row": 3, "col": 3, "kind": "formula", "value": "=B3+1", "precedents": ["MODEL!B3"], "evaluation_status": "CYCLIC_COMPONENT"},
+          "MODEL!F9": {"locator": "MODEL!F9", "sheet": "MODEL", "ref": "F9", "row": 9, "col": 6, "kind": "number", "value": 999, "precedents": []}
+        }
+      }
+    }
+  ]
+}

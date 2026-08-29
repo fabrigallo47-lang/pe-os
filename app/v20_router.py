@@ -542,9 +542,10 @@ def _merge_claim_corpus(existing: list[dict], incoming: list[dict]) -> tuple[lis
         prior["source_ids"] = sorted(s for s in prior_sources if s)
     return merged, added
 
-def _build_semantic_current(claims: list[dict], case_id: str) -> dict:
-    """Build the pre-runtime Current semantic graph from admitted source evidence."""
+def _semantic_graph_from_claims(claims: list[dict], case_id: str) -> dict:
+    """Derive a semantic graph without mutating the operational Current."""
     from vercel.api._claim_graph import claims_to_graph
+
     graph = claims_to_graph(claims, deal=case_id)
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
@@ -574,6 +575,12 @@ def _build_semantic_current(claims: list[dict], case_id: str) -> dict:
     graph["edges"] = edges
     graph["kind"] = "semantic_current"
     graph["case_id"] = case_id
+    return graph
+
+
+def _build_semantic_current(claims: list[dict], case_id: str) -> dict:
+    """Build and persist the pre-runtime Current semantic graph."""
+    graph = _semantic_graph_from_claims(claims, case_id)
     pipeline_out = _pipeline_out_for_case(case_id)
     pipeline_out.mkdir(parents=True, exist_ok=True)
     (pipeline_out / "semantic_current_graph.json").write_text(json.dumps(graph, indent=2, ensure_ascii=False) + "\n")
@@ -802,6 +809,31 @@ def _load_graph_version(case_id: str, version_id: str) -> dict[str, Any]:
     ):
         raise HTTPException(500, f"Graph version archive is inconsistent: {version_id}")
     return snapshot
+
+
+def _current_graph_as_of(
+    case_id: str,
+    cutoff: dt.datetime,
+) -> tuple[dict[str, Any], dict[str, Any] | None]:
+    """Return the latest immutable Current graph known by the cutoff."""
+    eligible = [
+        item
+        for item in _list_graph_versions(case_id)
+        if str(item.get("kind")) == "CURRENT" and _known_by(item, cutoff)
+    ]
+    if not eligible:
+        return {}, None
+    metadata = max(
+        eligible,
+        key=lambda item: (
+            _parse_temporal_instant(item.get("known_at"))
+            or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+            str(item.get("version_id") or ""),
+        ),
+    )
+    snapshot = _load_graph_version(case_id, str(metadata["version_id"]))
+    graph = snapshot.get("graph") if isinstance(snapshot, dict) else None
+    return (copy.deepcopy(graph), metadata) if isinstance(graph, dict) else ({}, metadata)
 
 
 def _runtime_execution_graph(case_id: str) -> Path:
@@ -1238,8 +1270,10 @@ def _load_projection_events(case_id: str) -> dict[str, dict]:
         events[event_id] = {
             "event_id": event_id, "id": event_id,
             "type": fm.get("type", "institutional_event"),
+            "kind": fm.get("kind", fm.get("type", "institutional_event")),
             "label": fm.get("label") or f"{fm.get('type', 'Event').replace('_', ' ').title()}: {fm.get('source', event_id)}",
             "source_title": fm.get("source", "PANTA evidence intake"),
+            "source_id": fm.get("source_id", fm.get("source", "")),
             "source_version_id": fm.get("proposal_id", fm.get("source", "")),
             "source_passage": fm.get("detail", "Evidence admitted after professional review."),
             "locator": fm.get("locator", ""), "definition": fm.get("definition_id", ""),
@@ -1247,8 +1281,93 @@ def _load_projection_events(case_id: str) -> dict[str, dict]:
             "effective_date": str(fm.get("effective_date") or known_at[:10]),
             "known_at": known_at, "proposed_treatment": fm.get("proposed_treatment", "Run dynamics against the admitted semantic Current."),
             "proposed_position": fm.get("proposed_position", "Run dynamics against the admitted semantic Current."),
+            "source_state_id": fm.get("source_state_id", fm.get("prior_state_id")),
+            "result_state_id": fm.get("result_state_id", fm.get("current_state_id")),
+            "run_id": fm.get("run_id"),
+            "actor": fm.get("actor"),
         }
     return events
+
+
+def _parse_temporal_instant(value: Any) -> dt.datetime | None:
+    raw = str(value or "").strip()
+    if not raw:
+        return None
+    if re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
+        raw += "T00:00:00Z"
+    try:
+        parsed = dt.datetime.fromisoformat(raw.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        parsed = parsed.replace(tzinfo=dt.timezone.utc)
+    return parsed.astimezone(dt.timezone.utc)
+
+
+def _known_by(record: dict, cutoff: dt.datetime) -> bool:
+    known_at = _parse_temporal_instant(record.get("known_at"))
+    return known_at is not None and known_at <= cutoff
+
+
+def _stable_json_hash(payload: Any) -> str:
+    canonical = json.dumps(
+        payload,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        default=str,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(canonical).hexdigest()
+
+
+def _event_replay_snapshots(events: list[dict]) -> list[dict]:
+    """Fold known events into the four replay quadrants."""
+    ordered = sorted(
+        events,
+        key=lambda item: (
+            _parse_temporal_instant(item.get("known_at")) or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+            str(item.get("event_id") or ""),
+        ),
+    )
+    state: dict[str, list[str]] = {
+        "known": [], "believed": [], "approved": [], "open": [],
+    }
+    snapshots = []
+    prior_state_id = "STATE-ORIGIN"
+    for index, event in enumerate(ordered, start=1):
+        kind = str(event.get("kind") or event.get("type") or "").upper()
+        summary = str(event.get("label") or event.get("event_id") or "Event")
+        if kind in {"SOURCE", "INGEST", "INGEST_REQUESTED", "EVIDENCE_ADMITTED", "COMPILER", "ORIGIN"}:
+            bucket = "known"
+        elif kind in {"AUTHORITY", "IC_RECORD", "DECISION", "SETTLEMENT"}:
+            bucket = "approved"
+        elif kind in {"COVERAGE", "BLOCK", "HUMAN_STOP"}:
+            bucket = "open"
+        else:
+            bucket = "believed"
+        state[bucket].append(summary)
+        event_id = str(event["event_id"])
+        result_state_id = str(event.get("result_state_id") or f"STATE-{event_id}")
+        source_state_id = str(event.get("source_state_id") or prior_state_id)
+        snapshots.append({
+            "id": result_state_id,
+            "event_id": event_id,
+            "date": event["effective_date"],
+            "effective_date": event["effective_date"],
+            "known_at": event["known_at"],
+            "label": summary,
+            "known": state["known"][-4:],
+            "believed": state["believed"][-4:],
+            "approved": state["approved"][-4:],
+            "open": state["open"][-4:],
+            "event_index": index,
+            "source_state_id": source_state_id,
+            "result_state_id": result_state_id,
+            "derived_from_event_log": True,
+            "stable_hash": _stable_json_hash(event),
+        })
+        prior_state_id = result_state_id
+    return snapshots
 
 def _enrich_claims(raw: list[dict], bears_on_map: dict) -> list[dict]:
     today = _today()
@@ -1402,13 +1521,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
         + [e.get("known_at", "")[:10] for e in events.values() if e.get("known_at")]
         + [today]
     ))
-    snapshots = [{
-        "id": f"STATE-{event_id}", "event_id": event_id,
-        "date": event["effective_date"], "effective_date": event["effective_date"],
-        "known_at": event["known_at"], "label": event["label"],
-        "known": [event["source_title"]], "believed": [], "approved": [], "open": [],
-        "stable_hash": "sha256:" + hashlib.sha256(event_id.encode()).hexdigest(),
-    } for event_id, event in events.items()]
+    snapshots = _event_replay_snapshots(list(events.values()))
 
     projection = {
         "schema_version": "frontend-projection/20.0",
@@ -1584,6 +1697,11 @@ def bootstrap(case_id: str) -> dict:
 
 @v20.get("/cases/{case_id}/projection")
 def projection(case_id: str, as_of_date: str | None = None) -> dict:
+    if as_of_date:
+        # The UI refreshes this route after choosing a replay date. Reuse the
+        # same causal reconstruction so the rendered projection cannot regain
+        # claims or graph state learned after the cutoff.
+        return replay(case_id, as_of_date=as_of_date)["projection"]
     try:
         proj = _build_projection(case_id, as_of_date)
     except Exception as exc:
@@ -2864,21 +2982,138 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
 
 @v20.get("/cases/{case_id}/replay")
 def replay(case_id: str, as_of_date: str | None = None, event_id: str | None = None) -> dict:
-    date = as_of_date or _today()
+    if as_of_date and event_id:
+        raise HTTPException(400, "Choose either as_of_date or event_id, not both")
+
+    all_events = _load_projection_events(case_id)
+    if event_id:
+        target_event = all_events.get(event_id)
+        if not target_event:
+            raise HTTPException(404, f"Replay event not found: {event_id}")
+        cutoff = _parse_temporal_instant(target_event.get("known_at"))
+        if cutoff is None:
+            raise HTTPException(422, f"Replay event has invalid known_at: {event_id}")
+        date = cutoff.date().isoformat()
+    else:
+        date = as_of_date or _today()
+        try:
+            parsed_date = dt.date.fromisoformat(date)
+        except ValueError as exc:
+            raise HTTPException(400, "as_of_date must be an ISO date (YYYY-MM-DD)") from exc
+        cutoff = dt.datetime.combine(
+            parsed_date,
+            dt.time.max,
+            tzinfo=dt.timezone.utc,
+        )
+        target_event = None
+
+    known_events = [
+        copy.deepcopy(event)
+        for event in all_events.values()
+        if _known_by(event, cutoff)
+    ]
+    snapshots = _event_replay_snapshots(known_events)
+    if not snapshots:
+        raise HTTPException(404, "No event was known by the requested replay cutoff")
+    snapshot = next(
+        (item for item in snapshots if item["event_id"] == event_id),
+        snapshots[-1],
+    )
+    if target_event is None:
+        target_event = all_events[snapshot["event_id"]]
+
     proj = _build_projection(case_id, date)
-    state_id = f"STATE-REPLAY-{date}"
+    deal = proj.get("deal", {})
+    filtered_claims = [
+        copy.deepcopy(claim)
+        for claim in deal.get("claims", [])
+        if _known_by(claim, cutoff)
+    ]
+    filtered_events = {
+        event["event_id"]: event
+        for event in known_events
+    }
+    questions = _load_questions(case_id)
+    question_spine = _build_question_spine(questions, filtered_claims)
+    semantic_graph = _semantic_graph_from_claims(filtered_claims, case_id)
+    foundations, unknowns, semantic_positions = _semantic_rooms(
+        semantic_graph,
+        question_spine,
+    )
+    sources = _build_sources_from_claims(filtered_claims)
+    retired_sources = {
+        str(event.get("source_id") or ""): event
+        for event in known_events
+        if str(event.get("type") or "").lower() == "source_retired"
+        and event.get("source_id")
+    }
+    for source in sources:
+        retirement = retired_sources.get(str(source.get("source_id") or ""))
+        source["status"] = "RETIRED" if retirement else "ACTIVE"
+        if retirement:
+            source["retired_at"] = retirement["known_at"]
+            source["retirement_event_id"] = retirement["event_id"]
+
+    current_graph, graph_metadata = _current_graph_as_of(case_id, cutoff)
+    if "case_positions" in current_graph:
+        current_graph = {
+            **current_graph,
+            "positions": current_graph["case_positions"],
+        }
+    state_id = str(
+        (graph_metadata or {}).get("state_id")
+        or snapshot.get("result_state_id")
+        or snapshot["id"]
+    )
+    snapshot = {**snapshot, "id": state_id, "result_state_id": state_id}
+    deal.update({
+        "as_of_date": date,
+        "as_of_state_id": state_id,
+        "claims": filtered_claims,
+        "question_spine": question_spine,
+        "source_center": {"sources": sources},
+        "semantic_current_graph": semantic_graph,
+        "rooms": {
+            "foundations": {"sets": foundations},
+            "unknowns": unknowns,
+            "shadowIC": {"theses": []},
+        },
+        "positions": semantic_positions,
+        "current_graph": current_graph,
+        "candidate_graph": {},
+        "transition_output": {},
+        "graph_versions": [
+            item for item in _list_graph_versions(case_id)
+            if _known_by(item, cutoff)
+        ],
+        "replay": {
+            "source": "REGISTRY_EVENTS",
+            "hand_authored_snapshots": False,
+            "snapshots": snapshots,
+        },
+    })
+    proj["events"] = filtered_events
+    stable_hash = _stable_json_hash({
+        "case_id": case_id,
+        "cutoff": cutoff.isoformat(),
+        "event_ids": [item["event_id"] for item in snapshots],
+        "claim_ids": sorted(str(item.get("claim_id") or "") for item in filtered_claims),
+        "graph_hash": (graph_metadata or {}).get("graph_hash"),
+        "state_id": state_id,
+    })
+    context = _make_context(case_id, state_id, date)
     return {
-        "snapshot": {"id": state_id, "date": date, "as_of_date": date},
-        "event": {"event_id": event_id or "ORIGIN", "known_at": f"{date}T00:00:00Z", "effective_date": date},
-        "source_state_id": state_id,
+        "snapshot": snapshot,
+        "event": target_event,
+        "source_state_id": snapshot["source_state_id"],
         "result_state_id": state_id,
-        "stable_hash": "sha256:replay",
-        "effective_date": date,
-        "known_at": f"{date}T00:00:00Z",
+        "stable_hash": stable_hash,
+        "effective_date": target_event["effective_date"],
+        "known_at": target_event["known_at"],
         "as_of_date": date,
         "read_only": True,
         "derived_from_event_log": True,
-        "projection": {"projection": proj, "context": _make_context(case_id, state_id, date), "registry": []},
+        "projection": {"projection": proj, "context": context, "registry": known_events},
     }
 
 

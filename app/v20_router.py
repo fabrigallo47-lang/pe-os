@@ -90,6 +90,8 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "settle": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/settle"},
     "replay": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/replay"},
     "loadReunderwrite": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/re-underwrite"},
+    "getFundLens": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/fund-lens"},
+    "configureFundLens": {"status": "AVAILABLE", "method": "PUT", "path": "/cases/{case_id}/fund-lens"},
     "prepareWork": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/work-items/{work_id}/prepare"},
     "compilerProposals": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/compiler-proposals"},
     "reviewCompilerProposal": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/compiler-proposals/{kind}/{proposal_id}/review"},
@@ -112,6 +114,7 @@ _ic_records_lock = threading.Lock()
 _mission_drafts_lock = threading.Lock()
 _registry_lock = threading.RLock()
 _graph_versions_lock = threading.Lock()
+_fund_lens_lock = threading.Lock()
 
 _COMPILER_PROPOSAL_COLLECTIONS = {
     "discrepancy": "discrepancy_candidates",
@@ -465,6 +468,90 @@ def _active_fund_lens(case_id: str) -> dict:
     return load_fund_lens(override if override.exists() else DEFAULT_FUND_LENS_PATH)
 
 
+def _fund_lens_archive_path(case_id: str, lens: dict) -> Path:
+    lens_id = str(lens["lens_id"])
+    version = str(lens["version"])
+    return _case_vault_dir(case_id) / "fund_lenses" / f"{lens_id}__{version}.json"
+
+
+def _fund_lens_hash(lens: dict) -> str:
+    encoded = json.dumps(
+        lens, sort_keys=True, separators=(",", ":"), ensure_ascii=False
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def _fund_lens_versions(case_id: str) -> list[dict]:
+    versions_dir = _case_vault_dir(case_id) / "fund_lenses"
+    versions: list[dict] = []
+    if not versions_dir.exists():
+        return versions
+    from bind_questions_e3 import validate_fund_lens
+
+    for path in sorted(versions_dir.glob("*.json")):
+        try:
+            lens = validate_fund_lens(json.loads(path.read_text(encoding="utf-8")))
+        except (OSError, json.JSONDecodeError, ValueError) as exc:
+            logger.warning("Ignoring invalid Fund Lens archive %s: %s", path, exc)
+            continue
+        versions.append({
+            "lens_id": lens["lens_id"],
+            "version": lens["version"],
+            "label": lens["label"],
+            "effective_date": lens["effective_date"],
+            "artifact_hash": _fund_lens_hash(lens),
+        })
+    versions.sort(key=lambda item: (item["effective_date"], item["lens_id"], item["version"]))
+    return versions
+
+
+def _configure_fund_lens(case_id: str, payload: dict) -> dict:
+    """Persist one manual Lens without permitting version mutation."""
+    from bind_questions_e3 import validate_fund_lens
+
+    _case_vault_dir(case_id)
+    try:
+        lens = validate_fund_lens(payload)
+    except ValueError as exc:
+        raise HTTPException(422, str(exc)) from exc
+
+    q_dir = _case_vault_dir(case_id) / "questions"
+    for question in lens["questions"]:
+        path = q_dir / f"{str(question['id']).lower()}.md"
+        if not path.exists():
+            continue
+        existing = _read_frontmatter(path)
+        if existing.get("origin") == "deal_emergent":
+            raise HTTPException(
+                409,
+                f"Fund Lens question {question['id']} conflicts with a deal-emergent question",
+            )
+
+    active_path = _case_vault_dir(case_id) / "fund_lens.json"
+    archive_path = _fund_lens_archive_path(case_id, lens)
+    with _fund_lens_lock:
+        archived = _load_json_safe(archive_path)
+        if archived and _fund_lens_hash(archived) != _fund_lens_hash(lens):
+            raise HTTPException(
+                409,
+                f"Fund Lens {lens['lens_id']} version {lens['version']} is immutable",
+            )
+        previous = _load_json_safe(active_path)
+        idempotent = bool(previous) and _fund_lens_hash(previous) == _fund_lens_hash(lens)
+        if not archived:
+            _write_json_atomic(archive_path, lens)
+        if not idempotent:
+            _write_json_atomic(active_path, lens)
+        _ensure_question_registry(case_id, lens)
+    return {
+        "case_id": case_id,
+        "active": lens,
+        "artifact_hash": _fund_lens_hash(lens),
+        "idempotent_replay": idempotent,
+        "versions": _fund_lens_versions(case_id),
+    }
+
+
 def _ensure_question_registry(case_id: str, fund_lens: dict | None = None) -> None:
     """Materialize versioned Fund Lens questions, never claim-derived facts."""
     lens = fund_lens or _active_fund_lens(case_id)
@@ -474,18 +561,26 @@ def _ensure_question_registry(case_id: str, fund_lens: dict | None = None) -> No
         qid = str(question["id"])
         title = str(question["title"])
         path = q_dir / f"{qid.lower()}.md"
-        if path.exists():
-            continue
+        existing = _read_frontmatter(path) if path.exists() else {}
+        if existing.get("origin") == "deal_emergent":
+            raise HTTPException(409, f"Fund Lens question {qid} conflicts with a deal-emergent question")
         fm = {
+            **existing,
             "type": "question", "id": qid, "deal": case_id,
-            "title": title, "question": title, "state": "open",
-            "status": "open", "critical": False,
+            "title": title, "question": title,
+            "state": existing.get("state", "open"),
+            "status": existing.get("status", "open"),
+            "critical": existing.get("critical", False),
             "workstream": question.get("workstream", "underwriting"),
-            "opened": _today(), "written-by": "fund-lens-registry",
+            "opened": existing.get("opened", _today()),
+            "written-by": "fund-lens-registry",
             "origin": "fund_lens", "question_version": question.get("version", 1),
             "fund_lens_id": lens["lens_id"], "fund_lens_version": lens["version"],
         }
-        path.write_text("---\n" + yaml.safe_dump(fm, sort_keys=False, allow_unicode=True) + "---\n\n# " + title + "\n", encoding="utf-8")
+        _write_text_atomic(
+            path,
+            "---\n" + yaml.safe_dump(fm, sort_keys=False, allow_unicode=True) + "---\n\n# " + title + "\n",
+        )
 
 
 def _proposal_path(job_id: str, case_id: str = "keystone") -> Path:
@@ -701,6 +796,14 @@ def _write_json_atomic(path: Path, payload: Any) -> None:
         json.dumps(payload, indent=2, ensure_ascii=False, default=str) + "\n",
         encoding="utf-8",
     )
+    temporary.replace(path)
+
+
+def _write_text_atomic(path: Path, content: str) -> None:
+    """Persist one UTF-8 text artifact without exposing a partial write."""
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    temporary.write_text(content, encoding="utf-8")
     temporary.replace(path)
 
 
@@ -1494,6 +1597,9 @@ def _load_bears_on_map(case_id: str = "keystone") -> dict[str, list[str]]:
 
 def _load_questions(case_id: str) -> list[dict]:
     q_dir = VAULT / "deals" / case_id / "questions"
+    lens = _active_fund_lens(case_id)
+    lens_questions = {str(item["id"]): item for item in lens["questions"]}
+    lens_order = {str(item["id"]): index for index, item in enumerate(lens["questions"])}
     out = []
     if q_dir.exists():
         for md in sorted(q_dir.glob("*.md")):
@@ -1504,9 +1610,22 @@ def _load_questions(case_id: str) -> list[dict]:
                 if not fm.get("origin") and str(fm.get("id", "")).startswith("Q-"):
                     fm["origin"] = "archetype"
                     fm.setdefault("question_version", 1)
+                qid = str(fm.get("id") or "")
+                if fm.get("origin") in {"fund_lens", "archetype"}:
+                    active = lens_questions.get(qid)
+                    if not active:
+                        continue
+                    fm.update({
+                        "title": active["title"],
+                        "question": active["title"],
+                        "workstream": active.get("workstream", "underwriting"),
+                        "origin": "fund_lens",
+                        "question_version": active.get("version", 1),
+                        "fund_lens_id": lens["lens_id"],
+                        "fund_lens_version": lens["version"],
+                    })
                 out.append(fm)
     existing = {str(item.get("id")) for item in out}
-    lens = _active_fund_lens(case_id)
     for question in lens["questions"]:
         if str(question["id"]) in existing:
             continue
@@ -1518,7 +1637,11 @@ def _load_questions(case_id: str) -> list[dict]:
             "origin": "fund_lens", "question_version": question.get("version", 1),
             "fund_lens_id": lens["lens_id"], "fund_lens_version": lens["version"],
         })
-    out.sort(key=lambda item: str(item.get("id") or ""))
+    out.sort(key=lambda item: (
+        0 if str(item.get("id") or "") in lens_order else 1,
+        lens_order.get(str(item.get("id") or ""), 10**9),
+        str(item.get("id") or ""),
+    ))
     return out
 
 
@@ -1917,6 +2040,7 @@ def _apply_decision_intelligence(projection: dict) -> dict:
 
 def _make_context(case_id: str, as_of_state_id: str, as_of_date: str) -> dict:
     """Build a context object that passes contracts.js validateContext."""
+    active_lens_id = _active_fund_lens(case_id)["lens_id"]
     return {
         "mode": "CONNECTED",
         "action_capability": "READ_WRITE",
@@ -1936,7 +2060,7 @@ def _make_context(case_id: str, as_of_state_id: str, as_of_date: str) -> dict:
         "synthetic": False,
         "no_external_effects": False,
         "contract_version": "20.0",
-        "active_lens_id": None,
+        "active_lens_id": active_lens_id,
     }
 
 def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
@@ -2177,6 +2301,12 @@ def projection(
     as_of_date: str | None = None,
     lens_id: str | None = None,
 ) -> dict:
+    active_lens_id = _active_fund_lens(case_id)["lens_id"]
+    if lens_id and lens_id != active_lens_id:
+        raise HTTPException(
+            409,
+            f"Fund Lens {lens_id} is not active for {case_id}; active lens is {active_lens_id}",
+        )
     if as_of_date:
         # The UI refreshes this route after choosing a replay date. Reuse the
         # same causal reconstruction so the rendered projection cannot regain
@@ -2215,6 +2345,24 @@ def list_graph_versions(case_id: str) -> dict:
         "case_id": case_id,
         "versions": _list_graph_versions(case_id),
     }
+
+
+@v20.get("/cases/{case_id}/fund-lens")
+def get_fund_lens(case_id: str) -> dict:
+    active_path = _case_vault_dir(case_id) / "fund_lens.json"
+    lens = _active_fund_lens(case_id)
+    return {
+        "case_id": case_id,
+        "active": lens,
+        "source": "case_override" if active_path.exists() else "repository_default",
+        "artifact_hash": _fund_lens_hash(lens),
+        "versions": _fund_lens_versions(case_id),
+    }
+
+
+@v20.put("/cases/{case_id}/fund-lens")
+def configure_fund_lens(case_id: str, payload: dict) -> dict:
+    return _configure_fund_lens(case_id, payload)
 
 
 @v20.get("/cases/{case_id}/graph-versions/{version_id:path}")

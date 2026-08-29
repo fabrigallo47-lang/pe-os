@@ -18,27 +18,113 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import copy
+import datetime as dt
 import json
 import re
 import sys
 from pathlib import Path
+from typing import Any, Mapping
 
 ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_FUND_LENS_PATH = ROOT / "vault" / "policy" / "fund_lens_buyout_keystone_v1.json"
+FUND_LENS_SCHEMA_PATH = ROOT / "vault" / "policy" / "fund_lens.schema.json"
+
+
+_SEMVER = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
+_LENS_ID = re.compile(r"^[A-Za-z0-9._-]+$")
+_QUESTION_ID = re.compile(r"^[A-Za-z0-9._:-]+$")
+
+
+def validate_fund_lens(value: Mapping[str, Any]) -> dict:
+    """Validate and detach one versioned Fund Lens configuration.
+
+    This deliberately stays dependency-free so the same governance check runs
+    in the CLI, API and serverless deployment.  ``fund_lens.schema.json`` is
+    the portable contract; these checks are its executable counterpart.
+    """
+    if not isinstance(value, Mapping):
+        raise ValueError("Fund Lens must be a JSON object")
+    lens = copy.deepcopy(dict(value))
+    allowed_fields = {
+        "schema_version",
+        "lens_id",
+        "version",
+        "label",
+        "description",
+        "archetype",
+        "binding_profile",
+        "effective_date",
+        "questions",
+    }
+    unexpected = sorted(set(lens) - allowed_fields)
+    if unexpected:
+        raise ValueError("Fund Lens has unsupported fields: " + ", ".join(unexpected))
+    required_strings = allowed_fields - {"questions", "description"}
+    missing = [
+        key
+        for key in sorted(required_strings)
+        if not isinstance(lens.get(key), str) or not lens[key].strip()
+    ]
+    if missing:
+        raise ValueError("Fund Lens missing required fields: " + ", ".join(missing))
+    if "description" not in lens or not isinstance(lens["description"], str):
+        raise ValueError("Fund Lens description must be a string")
+    if lens["schema_version"] != "fund-lens/1.0":
+        raise ValueError("Fund Lens must use schema_version fund-lens/1.0")
+    if not _LENS_ID.fullmatch(str(lens["lens_id"])):
+        raise ValueError("Fund Lens lens_id contains unsupported characters")
+    if not _SEMVER.fullmatch(str(lens["version"])):
+        raise ValueError("Fund Lens version must be semantic x.y.z")
+    try:
+        dt.date.fromisoformat(str(lens["effective_date"]))
+    except ValueError as exc:
+        raise ValueError("Fund Lens effective_date must be YYYY-MM-DD") from exc
+    if lens["binding_profile"] != "keystone-e3-v1":
+        raise ValueError(
+            f"Unsupported Fund Lens binding profile: {lens['binding_profile']}"
+        )
+
+    questions = lens.get("questions")
+    if not isinstance(questions, list) or not questions:
+        raise ValueError("Fund Lens must declare at least one question")
+    ids: list[str] = []
+    for index, question in enumerate(questions):
+        if not isinstance(question, Mapping):
+            raise ValueError(f"Fund Lens question {index} must be an object")
+        unexpected_question_fields = sorted(
+            set(question) - {"id", "version", "workstream", "title"}
+        )
+        if unexpected_question_fields:
+            raise ValueError(
+                f"Fund Lens question {index} has unsupported fields: "
+                + ", ".join(unexpected_question_fields)
+            )
+        qid = str(question.get("id") or "").strip()
+        title = str(question.get("title") or "").strip()
+        workstream = str(question.get("workstream") or "").strip()
+        question_version = question.get("version")
+        if not qid or not _QUESTION_ID.fullmatch(qid):
+            raise ValueError(f"Fund Lens question {index} has an invalid id")
+        if not title:
+            raise ValueError(f"Fund Lens question {qid} must have a title")
+        if not workstream:
+            raise ValueError(f"Fund Lens question {qid} must have a workstream")
+        if (
+            isinstance(question_version, bool)
+            or not isinstance(question_version, int)
+            or question_version < 1
+        ):
+            raise ValueError(f"Fund Lens question {qid} version must be a positive integer")
+        ids.append(qid)
+    if len(ids) != len(set(ids)):
+        raise ValueError("Fund Lens question IDs must be unique")
+    return lens
 
 
 def load_fund_lens(path: Path | str = DEFAULT_FUND_LENS_PATH) -> dict:
     """Load and validate the durable question/binding policy used by the binder."""
-    lens = json.loads(Path(path).read_text(encoding="utf-8"))
-    if lens.get("schema_version") != "fund-lens/1.0":
-        raise ValueError("Fund Lens must use schema_version fund-lens/1.0")
-    questions = lens.get("questions")
-    if not isinstance(questions, list) or not questions:
-        raise ValueError("Fund Lens must declare at least one question")
-    ids = [str(item.get("id") or "") for item in questions]
-    if any(not qid for qid in ids) or len(ids) != len(set(ids)):
-        raise ValueError("Fund Lens question IDs must be non-empty and unique")
-    return lens
+    return validate_fund_lens(json.loads(Path(path).read_text(encoding="utf-8")))
 
 # ── 20 Keystone diligence questions ──────────────────────────────────────────
 QUESTIONS: dict[str, str] = {

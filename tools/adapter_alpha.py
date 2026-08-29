@@ -34,7 +34,10 @@ import argparse
 import hashlib
 import json
 import sys
+import tempfile
+from dataclasses import dataclass
 from pathlib import Path
+from typing import Any, Mapping
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -42,6 +45,18 @@ sys.path.insert(0, str(ROOT))
 from tools.bridge_v7 import compile_v7_bundle
 
 EXECUTION_DEFAULT = ROOT / "vault" / "deals" / "keystone" / "models" / "execution_graph_v7.json"
+
+
+class E3AdapterInputError(ValueError):
+    """Raised when an E3 manifest cannot cross the runtime boundary safely."""
+
+
+@dataclass(frozen=True)
+class E3RuntimeArtifacts:
+    """The explicit E3 → runtime adapter result used by CLI and live intake."""
+
+    extraction_graph: dict[str, Any]
+    bundle: dict[str, Any]
 
 # Source ID → source_doc string used by bridge_v7._known_at()
 _SRC_TO_SOURCE_DOC: dict[str, str] = {
@@ -62,7 +77,89 @@ _SRC_TO_SOURCE_DOC: dict[str, str] = {
 }
 
 
-def _e3_to_extraction_graph(e3: dict) -> dict:
+def _canonical_sha256(value: Mapping[str, Any]) -> str:
+    encoded = json.dumps(
+        value,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return hashlib.sha256(encoded).hexdigest()
+
+
+def validate_e3_manifest(e3: Mapping[str, Any]) -> None:
+    """Validate the fields the semantic/runtime compiler relies on.
+
+    The extractor schema is deliberately wider than the runtime boundary. This
+    check pins the small contract between them so malformed or ambiguous E3
+    payloads fail before they can become an institutional graph.
+    """
+    if not isinstance(e3, Mapping):
+        raise E3AdapterInputError("E3 manifest must be an object")
+    claims = e3.get("claims")
+    if not isinstance(claims, list):
+        raise E3AdapterInputError("E3 manifest must contain claims[]")
+
+    required = (
+        "claim_id",
+        "statement",
+        "source_id",
+        "locator",
+        "epistemic_class",
+        "period",
+        "perimeter",
+    )
+    claim_ids: set[str] = set()
+    for index, claim in enumerate(claims):
+        if not isinstance(claim, Mapping):
+            raise E3AdapterInputError(f"claims[{index}] must be an object")
+        missing = [field for field in required if field not in claim]
+        if missing:
+            raise E3AdapterInputError(
+                f"claims[{index}] is missing required fields: {', '.join(missing)}"
+            )
+        claim_id = claim.get("claim_id")
+        if not isinstance(claim_id, str) or not claim_id.strip():
+            raise E3AdapterInputError(f"claims[{index}].claim_id must be a non-empty string")
+        if claim_id in claim_ids:
+            raise E3AdapterInputError(f"duplicate E3 claim_id: {claim_id}")
+        claim_ids.add(claim_id)
+        epistemic = claim.get("epistemic_class")
+        if epistemic not in {"asserted", "observed", "derived", "attested"}:
+            raise E3AdapterInputError(
+                f"claims[{index}].epistemic_class is invalid: {epistemic!r}"
+            )
+
+    metadata = e3.get("extraction_metadata", {})
+    if metadata is None:
+        metadata = {}
+    if not isinstance(metadata, Mapping):
+        raise E3AdapterInputError("extraction_metadata must be an object")
+    compiler_fields = metadata.get("compiler_fields_per_claim", [])
+    if not isinstance(compiler_fields, list):
+        raise E3AdapterInputError("compiler_fields_per_claim must be an array")
+    seen_compiler_ids: set[str] = set()
+    for index, fields in enumerate(compiler_fields):
+        if not isinstance(fields, Mapping):
+            raise E3AdapterInputError(
+                f"compiler_fields_per_claim[{index}] must be an object"
+            )
+        claim_id = fields.get("claim_id")
+        if claim_id not in claim_ids:
+            raise E3AdapterInputError(
+                f"compiler fields reference unknown claim_id: {claim_id!r}"
+            )
+        if claim_id in seen_compiler_ids:
+            raise E3AdapterInputError(f"duplicate compiler fields for claim_id: {claim_id}")
+        seen_compiler_ids.add(str(claim_id))
+
+
+def e3_to_extraction_graph(
+    e3: Mapping[str, Any],
+    *,
+    e3_claims_sha256: str | None = None,
+) -> dict[str, Any]:
     """
     Convert E3 CAP-003 JSON to the NetworkX extraction graph format
     expected by bridge_v7._enrich_claims().
@@ -71,6 +168,7 @@ def _e3_to_extraction_graph(e3: dict) -> dict:
       type, id, value, unit, epistemic, direction, statement, locator,
       derivation, deal, metric, period (optional), source_doc (optional)
     """
+    validate_e3_manifest(e3)
     claims = e3["claims"]
     compiler_fields = {
         cf["claim_id"]: cf
@@ -119,12 +217,55 @@ def _e3_to_extraction_graph(e3: dict) -> dict:
             "manifest_id":   e3.get("manifest_id"),
             "schema_version": e3.get("schema_version"),
             "extractor":     "extract_v2",
-            "e3_claims_sha256": None,  # filled below
+            "e3_claims_sha256": e3_claims_sha256 or _canonical_sha256(e3),
         },
         "nodes": nodes,
         "edges": [],   # metric/period edges not needed — fields are on nodes
     }
     return graph
+
+
+def compile_e3_runtime_bundle(
+    e3: Mapping[str, Any],
+    execution_path: Path,
+    *,
+    status: str = "ALPHA",
+    deal: str | None = None,
+    e3_claims_sha256: str | None = None,
+    extraction_graph_path: Path | None = None,
+) -> E3RuntimeArtifacts:
+    """Compile a validated E3 manifest into the definitive V7 runtime inputs.
+
+    Callers receive both the auditable intermediate graph and the compiled
+    Current/mapping/manifest bundle. When ``extraction_graph_path`` is given,
+    the exact graph compiled by the bridge is persisted there.
+    """
+    graph = e3_to_extraction_graph(e3, e3_claims_sha256=e3_claims_sha256)
+    resolved_deal = deal or str(e3.get("deal") or "unknown")
+    if extraction_graph_path is not None:
+        extraction_graph_path.parent.mkdir(parents=True, exist_ok=True)
+        _write(extraction_graph_path, graph)
+        bundle = compile_v7_bundle(
+            extraction_graph_path,
+            execution_path,
+            status=status,
+            deal=resolved_deal,
+        )
+    else:
+        with tempfile.TemporaryDirectory(prefix="panta-e3-adapter-") as tmp:
+            graph_path = Path(tmp) / "extraction_graph.json"
+            _write(graph_path, graph)
+            bundle = compile_v7_bundle(
+                graph_path,
+                execution_path,
+                status=status,
+                deal=resolved_deal,
+            )
+    return E3RuntimeArtifacts(extraction_graph=graph, bundle=bundle)
+
+
+# Compatibility for older local callers; new code must use the public contract.
+_e3_to_extraction_graph = e3_to_extraction_graph
 
 
 def _write(path: Path, obj: dict, indent: int = 2) -> int:
@@ -168,15 +309,21 @@ def main() -> None:
 
     # Step 1 — convert E3 → extraction graph
     print("[adapter_alpha] Step 1: converting E3 → extraction graph ...")
-    extraction_graph = _e3_to_extraction_graph(e3)
-
-    # Embed e3 sha256 in graph metadata
     e3_sha = hashlib.sha256(e3_path.read_bytes()).hexdigest()
-    extraction_graph["graph"]["e3_claims_sha256"] = e3_sha
-
-    # Write intermediate extraction graph (auditable)
     eg_path = out_dir / "extraction_graph.json"
-    eg_size = _write(eg_path, extraction_graph)
+    try:
+        artifacts = compile_e3_runtime_bundle(
+            e3,
+            exec_path,
+            status=args.status,
+            deal=args.deal,
+            e3_claims_sha256=e3_sha,
+            extraction_graph_path=eg_path,
+        )
+    except (E3AdapterInputError, ValueError) as exc:
+        sys.exit(f"[adapter_alpha] Bridge validation error:\n{exc}")
+    extraction_graph = artifacts.extraction_graph
+    eg_size = eg_path.stat().st_size
     print(f"[adapter_alpha]   → extraction_graph.json ({eg_size // 1024}KB, {claim_count} claim nodes)")
 
     # Step 1b — grounding gate. Reports what could not be verified against the
@@ -194,12 +341,8 @@ def main() -> None:
         print(f"[adapter_alpha]   grounding gate skipped: {exc}")
 
     # Step 2 — run bridge_v7.compile_v7_bundle()
-    print("[adapter_alpha] Step 2: running bridge_v7.compile_v7_bundle() ...")
-    try:
-        bundle = compile_v7_bundle(eg_path, exec_path, status=args.status,
-                                   deal=args.deal)
-    except ValueError as exc:
-        sys.exit(f"[adapter_alpha] Bridge validation error:\n{exc}")
+    print("[adapter_alpha] Step 2: V7 bundle compiled via the public E3 runtime contract.")
+    bundle = artifacts.bundle
     bundle["adapter_report"]["grounding"] = {
         k: v for k, v in gg_rep.items() if k != "review_queue"
     }
@@ -220,22 +363,28 @@ def main() -> None:
     bundle["_deal"] = args.deal
     event_src = Path(args.event) if getattr(args, "event", None) else ROOT / "event_ebitda_correction.json"
     try:
-        assemble(out_dir, bundle, event_src, kit=None)
+        assemble(out_dir, bundle, event_src, kit=None, execution_src=exec_path)
     except Exception as exc:
         sys.exit(f"[adapter_alpha] Bundle assembly error: {exc}")
 
     cg = bundle["current_graph"]
     mf = bundle["manifest"]
 
+    def _count(value: Any) -> int:
+        if isinstance(value, (list, tuple, dict, set)):
+            return len(value)
+        return int(value or 0)
+
     admitted_count  = mf.get("admitted_claim_count", 0)
-    position_count  = cg.get("case_positions", 0)
-    edge_count      = cg.get("claim_position_edges", 0)
-    pm_dir_count    = cg.get("position_model_directions", 0)
+    position_count  = _count(cg.get("case_positions"))
+    edge_count      = _count(cg.get("claim_position_edges"))
+    pm_dir_count    = _count(cg.get("position_model_directions"))
 
     # Step 4 — human-readable report
     cp_dict = bundle.get("_cp_dict", {})
-    unbound_mn = cg.get("unbound_model_nodes", 0)
-    pm_bindings = cg.get("position_model_bindings", 0)
+    unbound_mn = _count(cg.get("unbound_model_nodes"))
+    pm_bindings = _count(cg.get("position_model_bindings"))
+    model_node_count = _count(cg.get("model_nodes"))
 
     lines = [
         f"Adapter Alpha Report — {manifest_label}",
@@ -255,7 +404,7 @@ def main() -> None:
         f"  CP edges        : {edge_count}",
         f"  PM directions   : {pm_dir_count}",
         f"  PM bindings     : {pm_bindings}",
-        f"  Unbound MN      : {unbound_mn} of {cg.get('model_nodes', 0)} total",
+        f"  Unbound MN      : {unbound_mn} of {model_node_count} total",
         "",
         "Output files:",
         f"  extraction_graph.json     {eg_size // 1024}KB",

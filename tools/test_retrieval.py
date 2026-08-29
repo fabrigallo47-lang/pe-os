@@ -18,6 +18,7 @@ import argparse
 import json
 import re
 import sys
+import tempfile
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -28,6 +29,33 @@ import runtime as rt
 import indexer
 
 VAULT = indexer.VAULT
+
+
+def test_synthetic_cascade() -> None:
+    """Clean-checkout proof with no deal claims or private model graph."""
+    graph = {
+        "MN-QOE-EBITDA": ["MN-BASE-MOIC", "MN-BASE-IRR"],
+        "MN-BASE-MOIC": ["MN-EXIT"],
+        "MN-BASE-IRR": [],
+        "MN-EXIT": [],
+    }
+    with tempfile.TemporaryDirectory(prefix="panta-retrieval-") as tmp:
+        original = rt.VAULT
+        try:
+            rt.VAULT = Path(tmp)
+            model_dir = rt.VAULT / "deals" / "synthetic" / "models"
+            model_dir.mkdir(parents=True)
+            (model_dir / "model_graph.json").write_text(
+                json.dumps(graph, indent=2), encoding="utf-8"
+            )
+            node_id = rt._node_for_subject(graph, "QoE-normalized EBITDA")
+            stale = rt._mark_model_node_stale("synthetic", graph, node_id)
+        finally:
+            rt.VAULT = original
+    print("\n=== Synthetic retrieval + staleness cascade ===")
+    print(f"Model node affected: {node_id}")
+    print(f"Stale model nodes: {len(stale)}")
+    print("Chain: " + " -> ".join(stale))
 
 
 def _bar(frac: float, width: int = 20) -> str:
@@ -246,8 +274,13 @@ def main():
     ap = argparse.ArgumentParser(description="PE OS retrieval + staleness cascade test")
     ap.add_argument("--deal", default="keystone")
     ap.add_argument("--reset", action="store_true", help="Reset stale markers before test")
+    ap.add_argument("--synthetic", action="store_true",
+                    help="Run the self-contained clean-checkout cascade proof")
     args = ap.parse_args()
-    test_retrieval(args.deal, args.reset)
+    if args.synthetic:
+        test_synthetic_cascade()
+    else:
+        test_retrieval(args.deal, args.reset)
 
 
 if __name__ == "__main__":

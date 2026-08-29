@@ -812,8 +812,7 @@ def _compile_live_runtime_bundle(claims: list[dict], case_id: str) -> dict[str, 
     if not claims:
         raise DynamicsBundleError("at least one admitted claim is required for runtime compilation")
 
-    from tools.adapter_alpha import _e3_to_extraction_graph
-    from tools.bridge_v7 import compile_v7_bundle
+    from tools.adapter_alpha import compile_e3_runtime_bundle
 
     runtime_dir = PIPELINE_OUT / "runtime"
     runtime_dir.mkdir(parents=True, exist_ok=True)
@@ -834,20 +833,17 @@ def _compile_live_runtime_bundle(claims: list[dict], case_id: str) -> dict[str, 
     }
     e3_path = runtime_dir / "admitted_e3_claims.json"
     _write_json_atomic(e3_path, e3)
-    extraction_graph = _e3_to_extraction_graph(e3)
-    extraction_graph["graph"]["e3_claims_sha256"] = hashlib.sha256(
-        e3_path.read_bytes()
-    ).hexdigest()
     extraction_path = runtime_dir / "extraction_graph.json"
-    _write_json_atomic(extraction_path, extraction_graph)
-
     execution_path = _runtime_execution_graph(case_id)
-    bundle = compile_v7_bundle(
-        extraction_path,
+    artifacts = compile_e3_runtime_bundle(
+        e3,
         execution_path,
         status="LIVE",
         deal=case_id,
+        e3_claims_sha256=hashlib.sha256(e3_path.read_bytes()).hexdigest(),
+        extraction_graph_path=extraction_path,
     )
+    bundle = artifacts.bundle
     staged = {
         "current_graph.json": bundle["current_graph"],
         "execution_mapping.json": bundle["execution_mapping"],
@@ -2057,6 +2053,49 @@ def run_mission_unavailable(case_id: str, mission_id: str) -> JSONResponse:
     return _capability_unavailable("runMission")
 
 
+class UnsupportedUploadFormat(ValueError):
+    """Raised when live intake cannot route an uploaded source safely."""
+
+
+def _extraction_command(source_path: Path | None, case_id: str, job_id: str) -> tuple[str, list[str]]:
+    """Select the extractor at the product boundary without executing it."""
+    if source_path is not None:
+        suffix = source_path.suffix.lower()
+        if suffix in (".xlsx", ".xlsm"):
+            run_dir = PIPELINE_OUT / "runs" / job_id
+            return "SINGLE_V2", [
+                sys.executable,
+                str(ROOT / "tools" / "extract_v2.py"),
+                "--source",
+                str(source_path),
+                "--deal",
+                case_id,
+                "--output",
+                str(run_dir),
+            ]
+        if suffix == ".xls":
+            raise UnsupportedUploadFormat(
+                "Legacy .xls is not supported; convert the workbook to .xlsx before upload."
+            )
+        if suffix in (".md", ".txt", ".pdf"):
+            run_dir = PIPELINE_OUT / "runs" / job_id
+            return "SINGLE", [
+                sys.executable,
+                str(ROOT / "tools" / "pipeline.py"),
+                str(source_path),
+                "--deal",
+                case_id,
+                "--out",
+                str(run_dir),
+            ]
+    return "K-IC", [
+        sys.executable,
+        str(ROOT / "tools" / "extract.py"),
+        "--deal",
+        case_id,
+    ]
+
+
 @v20.post("/cases/{case_id}/ingest")
 async def ingest(case_id: str, request: Request, background_tasks: BackgroundTasks) -> dict:
     inbox_dir = VAULT / "inbox"
@@ -2131,26 +2170,7 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
         # Excel is routed to V2: unlike V1 it chunks a workbook by sheet/range
         # and retains formula + cached-value provenance. V1 flattens a workbook
         # to one prompt and therefore truncates non-trivial models.
-        if source_path and source_path.exists() and source_path.suffix.lower() in (".xlsx", ".xlsm"):
-            manifest_label = "SINGLE_V2"
-            run_dir = PIPELINE_OUT / "runs" / job_id
-            cmd = [sys.executable, str(ROOT / "tools" / "extract_v2.py"),
-                   "--source", str(source_path), "--deal", case_id,
-                   "--output", str(run_dir)]
-        # For PDF and narrative files, V1 is the lightweight extraction path.
-        elif source_path and source_path.exists() and source_path.suffix.lower() in (".md", ".txt", ".pdf"):
-            manifest_label = "SINGLE"
-            run_dir = PIPELINE_OUT / "runs" / job_id
-            # Use the proven V1 extractor for the live V20 path.  pipeline.py
-            # accepts PDF directly (via pdftotext) and writes canonical claims
-            # plus the semantic graph under the requested output directory.
-            cmd = [sys.executable, str(ROOT / "tools" / "pipeline.py"),
-                   str(source_path), "--deal", case_id,
-                   "--out", str(run_dir)]
-        else:
-            manifest_label = "K-IC"
-            cmd = [sys.executable, str(ROOT / "tools" / "extract.py"),
-                   "--deal", case_id]
+        manifest_label, cmd = _extraction_command(source_path, case_id, job_id)
 
         # Pass the selected provider environment explicitly to the extractor.
         provider = _os.environ.get("PEOS_LLM_PROVIDER", "anthropic").lower()

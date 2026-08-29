@@ -447,10 +447,31 @@ SYSTEM_PROMPT = textwrap.dedent("""
       IC memo         → attested  (the firm's own formal conclusion)
       QoE report      → attested  (third-party certifies)
       Initial assessment → attested  (firm's own preliminary underwriting)
-      Data room docs  → observed  (raw third-party data)
+      Data room management documents → asserted
+      Data room transactional/workpaper observations → observed
       Seller CIM / IM → asserted  (seller's marketing claims)
       Management presentation → asserted
       Computed by you → derived
+
+    PERIOD EXTRACTION — mandatory for every emitted claim:
+    - Never leave period blank. Read the workbook column header, table header,
+      section title, page heading, or source date when it is not repeated in the row.
+    - Preserve the source language: FY2025A, LTM Sep-25, Q2 2025, Opening,
+      Budget 2026, or 'as of 2025-10-27'.
+    - Use 'cross-period' only for an explicitly time-invariant fact.
+
+    PERIMETER INFERENCE — mandatory when the source determines scope:
+    - Infer the evidence view from document type: seller/management, independent
+      QoE, Firm underwriting, or statutory accounts.
+    - Combine that view with the entity and structural scope (standalone,
+      consolidated, deal level) rather than returning a generic label.
+    - For concentration, distinguish billing-account from ultimate-parent scope.
+    - Use 'unknown' only when neither the fragment nor source metadata supports a scope.
+
+    LOCATOR HINT:
+    - The deterministic fragment locator is always retained by the pipeline.
+    - Add locator_hint only when the row, cell, table, or subsection inside the
+      fragment can be identified; never invent a page or cell address.
 
     Identity rule — write the FULL perimeter and FULL period, not a shorthand:
     - period: use the document's own language including context, e.g.
@@ -488,6 +509,10 @@ class Chunk:
     source_type: str
     source_record: dict
     word_count: int
+
+
+class UnsupportedSourceError(ValueError):
+    """Raised when V2 cannot safely parse an input format."""
 
 
 def _chunk_hash(body: str) -> str:
@@ -639,8 +664,14 @@ def parse_source(path: Path, max_words: int = CHUNK_WORDS) -> list[Chunk]:
         return parse_markdown(path, max_words)
     elif suffix in (".xlsx", ".xlsm"):
         return parse_xlsx(path, max_words)
+    elif suffix == ".xls":
+        raise UnsupportedSourceError(
+            "Legacy .xls is not supported; convert the workbook to .xlsx before extraction."
+        )
     else:
-        sys.exit(f"Unsupported source type: {suffix}. Use .pdf, .md, .txt, .xlsx, or .xlsm")
+        raise UnsupportedSourceError(
+            f"Unsupported source type: {suffix}. Use .pdf, .md, .txt, .xlsx, or .xlsm"
+        )
 
 
 def load_manifest(manifest: str, deal: str) -> list[Path]:
@@ -1061,7 +1092,11 @@ def main() -> int:
     print(f"\n[L1] Parsing {len(source_paths)} source(s)...")
     all_chunks: list[Chunk] = []
     for sp in source_paths:
-        chunks = parse_source(sp, args.chunk_words)
+        try:
+            chunks = parse_source(sp, args.chunk_words)
+        except UnsupportedSourceError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            return 2
         print(f"  {sp.name:<50} {len(chunks):3d} chunks")
         all_chunks.extend(chunks)
     print(f"  Total: {len(all_chunks)} chunks  "
@@ -1081,18 +1116,6 @@ def main() -> int:
         return 0
 
     # ── L2: Annotate ──────────────────────────────────────────────────────
-    api_key = configured_api_key()
-    if not api_key:
-        print(f"ERROR: {missing_key_message()}.", file=sys.stderr)
-        print("  Or use --dry-run to inspect chunks.")
-        return 1
-    try:
-        import anthropic
-        client = anthropic.Anthropic(**anthropic_client_kwargs(api_key))
-    except ImportError:
-        print("ERROR: pip install anthropic", file=sys.stderr)
-        return 1
-
     # Raw claims cache: if a previous run completed L2, reuse without re-calling the API.
     raw_cache_path = out_dir / "raw_claims_cache.json"
     if raw_cache_path.exists():
@@ -1101,6 +1124,17 @@ def main() -> int:
         all_raw = [RawClaim(**c) for c in cached]
         print(f"  Loaded {len(all_raw)} raw claims from cache")
     else:
+        api_key = configured_api_key()
+        if not api_key:
+            print(f"ERROR: {missing_key_message()}.", file=sys.stderr)
+            print("  Or use --dry-run to inspect chunks.")
+            return 1
+        try:
+            import anthropic
+            client = anthropic.Anthropic(**anthropic_client_kwargs(api_key))
+        except ImportError:
+            print("ERROR: pip install anthropic", file=sys.stderr)
+            return 1
         print(f"\n[L2] Annotating {len(all_chunks)} chunks "
               f"(workers={args.workers}, model={MODEL})...")
         all_raw = []

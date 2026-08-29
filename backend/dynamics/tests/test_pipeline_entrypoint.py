@@ -5,11 +5,26 @@ import tempfile
 import unittest
 from pathlib import Path
 
-
 REPO_ROOT = Path(__file__).resolve().parents[3]
+sys.path.insert(0, str(REPO_ROOT))
+
+from app.v20_router import UnsupportedUploadFormat, _extraction_command
 
 
 class PipelineEntrypointTests(unittest.TestCase):
+    def test_live_intake_routes_open_xml_to_v2_and_rejects_legacy_xls(self):
+        for suffix in (".xlsx", ".xlsm"):
+            with self.subTest(suffix=suffix):
+                label, command = _extraction_command(
+                    Path("/tmp") / f"synthetic{suffix}", "keystone", "job-36"
+                )
+                self.assertEqual(label, "SINGLE_V2")
+                self.assertIn("extract_v2.py", " ".join(command))
+                self.assertIn(f"synthetic{suffix}", " ".join(command))
+
+        with self.assertRaisesRegex(UnsupportedUploadFormat, r"convert.*\.xlsx"):
+            _extraction_command(Path("/tmp/legacy.xls"), "keystone", "job-36")
+
     def test_standalone_pipeline_reaches_api_boundary(self):
         """The live PDF/text entry point must import and convert before API use."""
         with tempfile.TemporaryDirectory() as tmp:

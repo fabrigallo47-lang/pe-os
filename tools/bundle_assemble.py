@@ -75,8 +75,14 @@ def run_embedded_runtime(bundle: Path) -> dict:
     )
 
 
-def assemble(bundle_dir: Path, bundle: dict, event_src: Path,
-             kit: Path | None = None, verbose: bool = True) -> dict:
+def assemble(
+    bundle_dir: Path,
+    bundle: dict,
+    event_src: Path,
+    kit: Path | None = None,
+    verbose: bool = True,
+    execution_src: Path | None = None,
+) -> dict:
     # ``kit`` is retained as a compatibility argument for older callers. The
     # production runtime is now embedded and the value is intentionally unused.
     bundle_dir.mkdir(parents=True, exist_ok=True)
@@ -112,7 +118,8 @@ def assemble(bundle_dir: Path, bundle: dict, event_src: Path,
     say("nodes.csv / edges.csv / graph.db")
 
     # ── 4-6. canonical copies ────────────────────────────────────────────────
-    for src, name in ((EXEC_GRAPH_SRC, "execution_graph_v7.json"),
+    execution_source = execution_src or EXEC_GRAPH_SRC
+    for src, name in ((execution_source, "execution_graph_v7.json"),
                       (POLICY_MATERIALITY, "keystone_materiality_policy_v0.json"),
                       (POLICY_AUTHORITY, "keystone_authority_matrix_v0.json")):
         if not src.exists():

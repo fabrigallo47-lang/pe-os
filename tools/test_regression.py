@@ -22,13 +22,18 @@ from tools import minigraph as mg
 from tools import grounding_gate as gg
 from tools.deal_profile import DealProfile
 
-PASS, FAIL = [], []
+PASS, FAIL, SKIP = [], [], []
 
 
 def check(name: str, cond: bool, detail: str = "") -> None:
     (PASS if cond else FAIL).append(name)
     mark = "✓" if cond else "✗"
     print(f"  {mark} {name}" + (f"  [{detail}]" if detail else ""))
+
+
+def skip(name: str, reason: str) -> None:
+    SKIP.append(name)
+    print(f"\n  ⊙ {name} skipped  [{reason}]")
 
 
 # ── 1. Model-graph shape: the staleness cascade ──────────────────────────────
@@ -85,15 +90,21 @@ def test_cascade() -> None:
 
 def test_benchmark_field() -> None:
     print("\n2. Benchmark reads the epistemic field the extractor writes")
-    src = (ROOT / "tools" / "benchmark_runner.py").read_text()
-    check("scorer accepts epistemic_class",
-          'item.get("epistemic_class")' in src)
-    e3 = json.loads((ROOT / "pipeline_out/e3/K-IC/e3_claims.json").read_text())
-    claims = e3.get("claims", [])
-    if claims:
-        keys = set(claims[0])
-        check("extractor really emits 'epistemic_class', not 'epistemic'",
-              "epistemic_class" in keys and "epistemic" not in keys)
+    from tools.extraction_quality import score_e3
+    e3 = {
+        "claims": [{
+            "claim_id": "synthetic-1",
+            "period": "FY2025A",
+            "perimeter": "Synthetic standalone",
+            "epistemic_class": "attested",
+            "locator": "fixture.xlsx::Inputs!1:4",
+        }],
+        "extraction_metadata": {"compiler_fields_per_claim": []},
+    }
+    score = score_e3(e3)
+    check("scorer accepts epistemic_class", score["rates"]["epistemic"] == 1.0)
+    check("scorer recognises cell-addressable Excel locators",
+          score["rates"]["excel_locator"] == 1.0)
 
 
 # ── 3. Deal profile: no cross-deal perimeter leakage ─────────────────────────
@@ -115,15 +126,20 @@ def test_deal_profile() -> None:
     check("no deal-specific literal remains in bridge_v7",
           "Alderstone" not in (ROOT / "tools" / "bridge_v7.py").read_text())
 
-    ks = dp.load_profile("keystone")
-    check("keystone profile loads", ks.loaded)
-    check("keystone maps all 27 positions", len(ks.cp_institutional) == 27,
-          f"{len(ks.cp_institutional)}")
-    check("CP-EBITDA-FIRM keeps its event-conformant perimeter",
-          ks.cp_perimeter("CP-EBITDA-FIRM", None)
-          == "Alderstone standalone, firm underwriting definition")
-    check("CP-EBITDA-FIRM keeps its time-frequency unit",
-          ks.cp_unit("CP-EBITDA-FIRM", "$m") == "$m/year")
+    synthetic = DealProfile("synthetic", {
+        "cp_institutional": {
+            "CP-EBITDA-FIRM": {
+                "perimeter": "Synthetic standalone, firm underwriting definition",
+                "unit": "$m/year",
+            }
+        }
+    })
+    check("versioned synthetic profile loads", synthetic.loaded)
+    check("declared perimeter wins over claim ambiguity",
+          synthetic.cp_perimeter("CP-EBITDA-FIRM", "unknown")
+          == "Synthetic standalone, firm underwriting definition")
+    check("declared time-frequency unit is preserved",
+          synthetic.cp_unit("CP-EBITDA-FIRM", "$m") == "$m/year")
 
     try:
         dp.load_profile("no-such-deal", strict=True)
@@ -138,17 +154,30 @@ def test_deal_profile() -> None:
 
 def test_grounding_gate() -> None:
     print("\n4. Grounding gate catches mis-scoped and unsourced claims")
-    prof = dp.load_profile("keystone")
+    prof = DealProfile("synthetic", {
+        "entity_aliases": ["Alderstone"],
+        "counterparty_entities": {"Riverton": "customer"},
+        "perimeter_vocabulary": [
+            "Alderstone standalone",
+            "Alderstone standalone, firm underwriting definition",
+        ],
+    })
+    source_texts = {
+        "keystone_ic_memo.md": (
+            "Alderstone prices the Riverton transaction on $11.4m EBITDA. "
+            "Firm-underwritten EBITDA at entry is $11.4m."
+        )
+    }
 
     riverton = {
         "claim_id": "t-1",
-        "statement": "The Firm prices the Riverton transaction on $11.4m EBITDA.",
+        "statement": "Alderstone prices the Riverton transaction on $11.4m EBITDA.",
         "perimeter": "Riverton Group",
         "epistemic_class": "attested",
         "value": "11.4",
         "locator": "keystone_ic_memo.md::## Concern block",
     }
-    codes = {f["code"] for f in gg.check_claim(riverton, prof)}
+    codes = {f["code"] for f in gg.check_claim(riverton, prof, source_texts)}
     check("counterparty-as-perimeter is caught",
           "PERIMETER_IS_COUNTERPARTY" in codes, str(sorted(codes)))
     check("that finding blocks admission",
@@ -163,7 +192,8 @@ def test_grounding_gate() -> None:
         "locator": "keystone_ic_memo.md::## Concern block",
     }
     check("a well-scoped, sourced claim is clean",
-          gg.check_claim(good, prof) == [], str(gg.check_claim(good, prof)))
+          gg.check_claim(good, prof, source_texts) == [],
+          str(gg.check_claim(good, prof, source_texts)))
 
     derived = {
         "claim_id": "t-3", "statement": "Total debt is $9.4m.",
@@ -677,14 +707,27 @@ def main() -> int:
     print("=" * 62)
     print("REGRESSION SUITE — 2026-08-25 audit")
     print("=" * 62)
-    for t in (test_cascade, test_benchmark_field, test_deal_profile,
-              test_grounding_gate, test_minigraph, test_excel,
-              test_resolver, test_classifier, test_live, test_gate_sources,
-              test_cell_engine):
-        t()
+    tests = (
+        (test_cascade, None),
+        (test_benchmark_field, None),
+        (test_deal_profile, None),
+        (test_grounding_gate, None),
+        (test_minigraph, None),
+        (test_excel, None),
+        (test_resolver, ROOT / "tools" / "binding_resolver.py"),
+        (test_classifier, None),
+        (test_live, None),
+        (test_gate_sources, None),
+        (test_cell_engine, ROOT / "tools" / "cell_engine.py"),
+    )
+    for test, private_dependency in tests:
+        if private_dependency is not None and not private_dependency.exists():
+            skip(test.__name__, f"private optional module not installed: {private_dependency.name}")
+            continue
+        test()
     print()
     print("=" * 62)
-    print(f"  {len(PASS)} passed, {len(FAIL)} failed")
+    print(f"  {len(PASS)} passed, {len(FAIL)} failed, {len(SKIP)} skipped")
     if FAIL:
         for f in FAIL:
             print(f"    FAILED: {f}")

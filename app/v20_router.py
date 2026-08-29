@@ -71,6 +71,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "listInbox": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/inbox"},
     "ingest": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest"},
     "getJob": {"status": "AVAILABLE", "method": "GET", "path": "/jobs/{job_id}"},
+    "getEvidenceProposal": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/ingest/{job_id}/proposal"},
     "admitEvidence": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest/{job_id}/admit"},
     "removeSource": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/sources/{source_id}/remove"},
     "addNote": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/notes"},
@@ -455,26 +456,33 @@ def _persist_claims_to_vault(case_id: str, claims: list[dict], source_filename: 
         written += 1
     return written
 
-def _ensure_question_registry(case_id: str) -> None:
-    """Materialize the archetype question grammar, never a claim-derived fact.
+def _active_fund_lens(case_id: str) -> dict:
+    """Return the case override or the repository's versioned buyout Fund Lens."""
+    from bind_questions_e3 import DEFAULT_FUND_LENS_PATH, load_fund_lens
 
-    These are the opening questions supplied by the investment archetype.  They
-    are deliberately marked as such so future Fund Lens and deal-emergent
-    questions can live beside them without pretending all questions were fixed.
-    """
-    from bind_questions_e3 import QUESTIONS
+    override = VAULT / "deals" / case_id / "fund_lens.json"
+    return load_fund_lens(override if override.exists() else DEFAULT_FUND_LENS_PATH)
+
+
+def _ensure_question_registry(case_id: str, fund_lens: dict | None = None) -> None:
+    """Materialize versioned Fund Lens questions, never claim-derived facts."""
+    lens = fund_lens or _active_fund_lens(case_id)
     q_dir = VAULT / "deals" / case_id / "questions"
     q_dir.mkdir(parents=True, exist_ok=True)
-    for qid, title in QUESTIONS.items():
+    for question in lens["questions"]:
+        qid = str(question["id"])
+        title = str(question["title"])
         path = q_dir / f"{qid.lower()}.md"
         if path.exists():
             continue
         fm = {
             "type": "question", "id": qid, "deal": case_id,
             "title": title, "question": title, "state": "open",
-            "status": "open", "critical": False, "workstream": "underwriting",
-            "opened": _today(), "written-by": "archetype-grammar",
-            "origin": "archetype", "question_version": 1,
+            "status": "open", "critical": False,
+            "workstream": question.get("workstream", "underwriting"),
+            "opened": _today(), "written-by": "fund-lens-registry",
+            "origin": "fund_lens", "question_version": question.get("version", 1),
+            "fund_lens_id": lens["lens_id"], "fund_lens_version": lens["version"],
         }
         path.write_text("---\n" + yaml.safe_dump(fm, sort_keys=False, allow_unicode=True) + "---\n\n# " + title + "\n", encoding="utf-8")
 
@@ -483,7 +491,14 @@ def _proposal_path(job_id: str, case_id: str = "keystone") -> Path:
     return _pipeline_out_for_case(case_id) / "proposals" / f"evidence-{job_id}.json"
 
 
-def _write_evidence_proposal(job_id: str, case_id: str, filename: str, claims: list[dict]) -> Path:
+def _write_evidence_proposal(
+    job_id: str,
+    case_id: str,
+    filename: str,
+    claims: list[dict],
+    question_proposals: list[dict] | None = None,
+    fund_lens: dict | None = None,
+) -> Path:
     """Store extraction output as reviewable evidence, before it can affect Current."""
     path = _proposal_path(job_id, case_id)
     path.parent.mkdir(parents=True, exist_ok=True)
@@ -491,11 +506,17 @@ def _write_evidence_proposal(job_id: str, case_id: str, filename: str, claims: l
         "proposal_id": f"evidence-{job_id}", "job_id": job_id, "case_id": case_id,
         "source_id": filename, "source_path": f"vault/inbox/{filename}",
         "status": "PENDING_REVIEW", "created_at": _now_iso(), "claims": claims,
+        "question_proposals": question_proposals or [],
+        "fund_lens": {
+            "lens_id": (fund_lens or {}).get("lens_id"),
+            "version": (fund_lens or {}).get("version"),
+            "binding_profile": (fund_lens or {}).get("binding_profile"),
+        },
     }
     path.write_text(json.dumps(payload, indent=2, ensure_ascii=False) + "\n", encoding="utf-8")
     return path
 
-def _derive_bears_on(claims: list[dict], e3: dict) -> list[dict]:
+def _derive_bears_on(claims: list[dict], e3: dict, fund_lens: dict | None = None) -> list[dict]:
     """Apply the same deterministic metric/keyword graph used by bind_questions_e3."""
     from bind_questions_e3 import bind_claim
     metadata = {x.get("claim_id"): x for x in e3.get("extraction_metadata", {}).get("compiler_fields_per_claim", [])}
@@ -503,11 +524,63 @@ def _derive_bears_on(claims: list[dict], e3: dict) -> list[dict]:
     for claim in claims:
         c = dict(claim)
         meta = metadata.get(c.get("claim_id"), c)
-        c["bears_on"] = bind_claim(c, meta)
+        c["bears_on"] = bind_claim(c, meta, fund_lens or _active_fund_lens(str(e3.get("deal") or "keystone")))
         if metadata.get(c.get("claim_id")):
             c.update({k: v for k, v in metadata[c["claim_id"]].items() if k not in c or not c.get(k)})
         out.append(c)
     return out
+
+
+def _derive_question_proposals(claims: list[dict], case_id: str) -> list[dict]:
+    """Turn unbound evidence into deterministic, review-only spine proposals."""
+    groups: dict[str, list[dict]] = {}
+    for claim in claims:
+        if claim.get("bears_on"):
+            continue
+        topic = str(
+            claim.get("topic")
+            or claim.get("metric")
+            or claim.get("subject")
+            or "uncategorised evidence"
+        ).strip()
+        normalized = re.sub(r"[^a-z0-9]+", "-", topic.lower()).strip("-") or "evidence"
+        groups.setdefault(normalized[:64], []).append(claim)
+
+    proposals = []
+    for topic_key, bearing in sorted(groups.items()):
+        claim_ids = sorted(
+            str(item.get("claim_id") or item.get("id")) for item in bearing
+            if item.get("claim_id") or item.get("id")
+        )
+        seed = f"{case_id}|{topic_key}|{'|'.join(claim_ids)}"
+        suffix = hashlib.sha256(seed.encode("utf-8")).hexdigest()[:10].upper()
+        question_id = f"DQ-{suffix}"
+        topic_label = str(
+            bearing[0].get("topic")
+            or bearing[0].get("metric")
+            or bearing[0].get("subject")
+            or "this evidence"
+        ).strip()
+        proposals.append({
+            "proposal_id": f"SPINE-{suffix}",
+            "id": f"SPINE-{suffix}",
+            "proposal_type": "ADD_QUESTION",
+            "label": f"Add deal-emergent question: {topic_label}",
+            "reason": f"{len(claim_ids)} extracted claim(s) are not covered by the active Fund Lens.",
+            "status": "PENDING_REVIEW",
+            "required_authority_level": "DEAL_TEAM_REVIEW",
+            "affected_artifact_ids": [],
+            "proposed_question": {
+                "id": question_id,
+                "title": f"What must we establish about {topic_label}?",
+                "workstream": "deal-emergent",
+                "origin": "deal_emergent",
+                "question_version": 1,
+            },
+            "binding_migration": {"claim_ids": claim_ids, "target_question_id": question_id},
+            "case_id": case_id,
+        })
+    return proposals
 
 def _normalise_v1_claims(claims: list[dict], source_filename: str) -> list[dict]:
     """Give V1 records stable, content-addressed identities for the V20 corpus."""
@@ -1253,6 +1326,27 @@ def _load_questions(case_id: str) -> list[dict]:
     return out
 
 
+def _load_spine_change_proposals(case_id: str) -> list[dict]:
+    """Collect deal-emergent question proposals from durable evidence reviews."""
+    proposals_dir = _pipeline_out_for_case(case_id) / "proposals"
+    if not proposals_dir.exists():
+        return []
+    collected: dict[str, dict] = {}
+    for path in sorted(proposals_dir.glob("evidence-*.json")):
+        evidence = _load_json_safe(path)
+        if not isinstance(evidence, dict) or evidence.get("case_id") != case_id:
+            continue
+        for raw in evidence.get("question_proposals", []) or []:
+            if not isinstance(raw, dict) or not raw.get("proposal_id"):
+                continue
+            item = dict(raw)
+            item["evidence_proposal_id"] = evidence.get("proposal_id")
+            item["evidence_job_id"] = evidence.get("job_id")
+            item["source_id"] = evidence.get("source_id")
+            collected[str(item["proposal_id"])] = item
+    return [collected[key] for key in sorted(collected)]
+
+
 def _load_projection_events(case_id: str) -> dict[str, dict]:
     """Project durable vault events into the V20 change-arrival contract."""
     events_dir = VAULT / "deals" / case_id / "events"
@@ -1457,11 +1551,173 @@ def _build_question_spine(questions: list[dict], claims: list[dict]) -> list[dic
             "claim_count": count,
             "coverage": "gap" if count == 0 else ("full" if count >= 3 else "partial"),
             "workstream": q.get("workstream", ""),
+            "critical": bool(q.get("critical", False)),
+            "owner": q.get("owner", "Unassigned"),
             "origin": q.get("origin", "deal_emergent"),
             "question_version": q.get("question_version", 1),
-            "work_plan": [],
+            "work_plan": q.get("work_plan", []) if isinstance(q.get("work_plan"), list) else [],
         })
     return spine
+
+
+def _apply_decision_intelligence(projection: dict) -> dict:
+    """Add transparent structural rankings without inventing business weights."""
+    deal = projection.get("deal") if isinstance(projection, dict) else None
+    if not isinstance(deal, dict):
+        return projection
+
+    graph = deal.get("current_graph") if isinstance(deal.get("current_graph"), dict) else {}
+    positions = graph.get("case_positions", graph.get("positions", [])) or []
+    bindings = graph.get("position_model_bindings", []) or []
+    dependencies = graph.get("position_dependencies", []) or []
+    load_bearing = []
+    for position in positions:
+        position_id = str(position.get("position_id") or position.get("id") or "")
+        if not position_id:
+            continue
+        model_node_ids = {
+            str(item)
+            for item in position.get("model_node_ids", [])
+            if item
+        }
+        model_node_ids.update(
+            str(binding.get("model_node_id"))
+            for binding in bindings
+            if binding.get("position_id") == position_id
+            and str(binding.get("status", "ACTIVE")).upper() == "ACTIVE"
+            and binding.get("model_node_id")
+        )
+        dependent_position_ids = sorted({
+            str(edge.get("target_position_id") or edge.get("target") or "")
+            for edge in dependencies
+            if str(edge.get("source_position_id") or edge.get("source") or "") == position_id
+            and (edge.get("target_position_id") or edge.get("target"))
+        })
+        decision_status = str(
+            position.get("decision_status")
+            or position.get("decision_status_at_ic")
+            or "PENDING"
+        ).upper()
+        epistemic_status = str(
+            position.get("epistemic_status")
+            or position.get("epistemic_status_at_ic")
+            or "UNKNOWN"
+        ).upper()
+        gate_relevant = decision_status in {
+            "BLOCKED", "PENDING", "CONTESTED", "ACCEPTED_WITH_CONDITIONS",
+        }
+        contested = epistemic_status in {"CONTESTED", "WEAK", "UNKNOWN"}
+        load_bearing.append({
+            "position_id": position_id,
+            "id": position_id,
+            "label": position.get("label") or position.get("metric") or position_id,
+            "statement": position.get("statement", ""),
+            "decision_status": decision_status,
+            "epistemic_status": epistemic_status,
+            "active_model_node_ids": sorted(model_node_ids),
+            "dependent_position_ids": dependent_position_ids,
+            "gate_relevant": gate_relevant,
+            "contested": contested,
+            "ranking_basis": {
+                "ordering": [
+                    "gate_relevant descending",
+                    "active_model_node_count descending",
+                    "dependent_position_count descending",
+                    "contested descending",
+                    "position_id ascending",
+                ],
+                "gate_relevant": gate_relevant,
+                "active_model_node_count": len(model_node_ids),
+                "dependent_position_count": len(dependent_position_ids),
+                "contested": contested,
+            },
+        })
+    load_bearing.sort(key=lambda item: (
+        not item["gate_relevant"],
+        -item["ranking_basis"]["active_model_node_count"],
+        -item["ranking_basis"]["dependent_position_count"],
+        not item["contested"],
+        item["position_id"],
+    ))
+    for rank, item in enumerate(load_bearing, start=1):
+        item["rank"] = rank
+        item["explanation"] = (
+            f"gate_relevant={str(item['gate_relevant']).lower()}; "
+            f"active_model_nodes={item['ranking_basis']['active_model_node_count']}; "
+            f"dependent_positions={item['ranking_basis']['dependent_position_count']}; "
+            f"contested={str(item['contested']).lower()}"
+        )
+    deal["load_bearing_assumptions"] = load_bearing
+
+    spine = deal.get("question_spine", []) or []
+    open_questions = [
+        item for item in spine
+        if item.get("coverage") in {"gap", "partial"}
+        and str(item.get("status", "open")).lower() not in {"closed", "resolved"}
+    ]
+    open_questions.sort(key=lambda item: (
+        not bool(item.get("critical")),
+        item.get("coverage") != "gap",
+        int(item.get("claim_count") or 0),
+        str(item.get("id") or ""),
+    ))
+    unknowns = []
+    for rank, question in enumerate(open_questions, start=1):
+        question_id = str(question.get("id") or question.get("question_id") or "")
+        work_plan = question.get("work_plan", []) or []
+        first_work = work_plan[0] if work_plan and isinstance(work_plan[0], dict) else {}
+        unknowns.append({
+            "id": f"unknown:{question_id}",
+            "label": question.get("label", question_id),
+            "question_id": question_id,
+            "value": "Critical evidence gap" if question.get("critical") else "Open evidence gap",
+            "closure": first_work.get("label") or first_work.get("task") or f"Admit evidence that bears on {question_id}.",
+            "owner": first_work.get("owner") or question.get("owner") or "Unassigned",
+            "rank": rank,
+            "status": "OPEN",
+            "ranking_basis": {
+                "ordering": [
+                    "critical descending",
+                    "coverage gap before partial",
+                    "admitted claim count ascending",
+                    "question_id ascending",
+                ],
+                "critical": bool(question.get("critical")),
+                "coverage": question.get("coverage"),
+                "admitted_claim_count": int(question.get("claim_count") or 0),
+            },
+        })
+    rooms = deal.setdefault("rooms", {})
+    rooms.setdefault("foundations", {"sets": []})
+    rooms["unknowns"] = {"items": unknowns}
+    rooms.setdefault("shadowIC", {"theses": []})
+
+    if unknowns:
+        first = unknowns[0]
+        basis = first["ranking_basis"]
+        deal["next_best_work"] = {
+            "id": f"NBW-{first['question_id']}",
+            "question_id": first["question_id"],
+            "label": first["closure"],
+            "reason": (
+                f"Ranked first by declared lexicographic policy: critical={str(basis['critical']).lower()}, "
+                f"coverage={basis['coverage']}, admitted_claims={basis['admitted_claim_count']}."
+            ),
+            "owner": first["owner"],
+            "duration": "Not estimated",
+            "unlocks": [first["question_id"]],
+            "ranking_basis": basis,
+        }
+    else:
+        deal["next_best_work"] = {
+            "id": None,
+            "label": "No unresolved evidence gap",
+            "reason": "Every open question has full admitted-claim coverage.",
+            "owner": "Unassigned",
+            "duration": "Not applicable",
+            "unlocks": [],
+        }
+    return projection
 
 def _make_context(case_id: str, as_of_state_id: str, as_of_date: str) -> dict:
     """Build a context object that passes contracts.js validateContext."""
@@ -1499,6 +1755,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     sources = _build_sources_from_claims(raw_claims, case_id)
     events = _load_projection_events(case_id)
     questions = _load_questions(case_id)
+    fund_lens = _active_fund_lens(case_id)
     question_spine = _build_question_spine(questions, claims)
     semantic_graph = _load_json_safe(pipeline_out / "semantic_current_graph.json")
     foundations, unknowns, semantic_positions = _semantic_rooms(semantic_graph, question_spine) if semantic_graph else ([], {"items": []}, [])
@@ -1545,7 +1802,11 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
         "deal": {
             "case_id": case_id,
             "entity": profile.get("entity", case_id),
-            "archetype": {"id": "buyout", "label": "Buyout", "is_default": True},
+            "archetype": {
+                "id": "buyout", "label": "Buyout", "is_default": True,
+                "fund_lens": fund_lens["lens_id"],
+                "fund_lens_version": fund_lens["version"],
+            },
             "objective": profile.get("objective", ""),
             "as_of_state_id": state_id,
             "as_of_date": as_of_date,
@@ -1564,7 +1825,18 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
             "claims": claims,
             "question_spine": question_spine,
             "artifacts": [],
-            "lenses": [],
+            "lenses": [{
+                "lens_id": fund_lens["lens_id"],
+                "id": fund_lens["lens_id"],
+                "version": fund_lens["version"],
+                "label": fund_lens["label"],
+                "description": fund_lens.get("description", ""),
+                "question_order": [item["id"] for item in fund_lens["questions"]],
+                "required_question_ids": [item["id"] for item in fund_lens["questions"]],
+                "effective_date": fund_lens.get("effective_date"),
+            }],
+            "default_lens_id": fund_lens["lens_id"],
+            "active_lens_id": fund_lens["lens_id"],
             "participants": [
                 {
                     "participant_id": "partner-001",
@@ -1583,7 +1855,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
             "discrepancy_candidates": [],
             "hypotheses": [],
             "agent_missions": [],
-            "spine_change_proposals": [],
+            "spine_change_proposals": _load_spine_change_proposals(case_id),
             "condition_edges": [],
             "validation_envelopes": [],
             "source_center": {"sources": sources},
@@ -1625,16 +1897,23 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
         result["deal"]["as_of_date"] = as_of_date
         result["deal"]["objective"] = projection["deal"]["objective"]
         result["deal"]["artifacts"] = []
-        result["deal"]["lenses"] = []
+        result["deal"]["lenses"] = projection["deal"]["lenses"]
+        result["deal"]["default_lens_id"] = projection["deal"]["default_lens_id"]
+        result["deal"]["active_lens_id"] = projection["deal"]["active_lens_id"]
+        result["deal"]["spine_change_proposals"] = projection["deal"]["spine_change_proposals"]
         result["deal"]["participants"] = projection["deal"]["participants"]
         result["fund"] = projection["fund"]
         result["events"] = projection["events"]
         result["actor_directory"] = projection["actor_directory"]
         result["disclosure"] = projection["disclosure"]
-        return _apply_compiler_reviews(result, case_id)
+        return _apply_decision_intelligence(
+            _apply_compiler_reviews(result, case_id)
+        )
     except Exception as exc:
         projection["_adapter_error"] = str(exc)
-        return _apply_compiler_reviews(projection, case_id)
+        return _apply_decision_intelligence(
+            _apply_compiler_reviews(projection, case_id)
+        )
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -2051,6 +2330,75 @@ def compiler_proposals(case_id: str) -> dict:
     }
 
 
+def _accept_spine_change(case_id: str, proposal: dict) -> dict:
+    """Materialize an explicitly approved deal-emergent question and bindings."""
+    question = proposal.get("proposed_question") or {}
+    question_id = str(question.get("id") or "").strip()
+    title = str(question.get("title") or "").strip()
+    if not question_id or not title:
+        raise HTTPException(422, "Spine proposal does not contain a valid proposed_question")
+
+    question_dir = _case_vault_dir(case_id) / "questions"
+    question_path = question_dir / f"{question_id.lower()}.md"
+    created = not question_path.exists()
+    if created:
+        question_dir.mkdir(parents=True, exist_ok=True)
+        metadata = {
+            "type": "question", "id": question_id, "deal": case_id,
+            "title": title, "question": title, "state": "open", "status": "open",
+            "critical": False, "workstream": question.get("workstream", "deal-emergent"),
+            "opened": _today(), "written-by": "professional-spine-review",
+            "origin": "deal_emergent", "question_version": question.get("question_version", 1),
+            "source_proposal_id": proposal.get("proposal_id"),
+        }
+        question_path.write_text(
+            "---\n" + yaml.safe_dump(metadata, sort_keys=False, allow_unicode=True)
+            + f"---\n\n# {title}\n",
+            encoding="utf-8",
+        )
+
+    migration = proposal.get("binding_migration") or {}
+    claim_ids = {str(value) for value in migration.get("claim_ids", []) if value}
+    evidence_job_id = str(proposal.get("evidence_job_id") or "")
+    evidence_path = _proposal_path(evidence_job_id, case_id) if evidence_job_id else None
+    if evidence_path and evidence_path.exists():
+        evidence = _load_json_safe(evidence_path)
+        for claim in evidence.get("claims", []) or []:
+            if str(claim.get("claim_id") or claim.get("id")) in claim_ids:
+                claim["bears_on"] = sorted(set(claim.get("bears_on", [])) | {question_id})
+        _write_json_atomic(evidence_path, evidence)
+
+    claims_path = _pipeline_out_for_case(case_id) / "claims.json"
+    admitted = _load_json_safe(claims_path)
+    admitted = admitted if isinstance(admitted, list) else []
+    migrated = 0
+    for claim in admitted:
+        if str(claim.get("claim_id") or claim.get("id")) not in claim_ids:
+            continue
+        before = set(claim.get("bears_on", []))
+        claim["bears_on"] = sorted(before | {question_id})
+        migrated += int(question_id not in before)
+        safe_id = re.sub(r"[^A-Za-z0-9._-]+", "-", str(claim.get("claim_id") or claim.get("id")))
+        note_path = _case_vault_dir(case_id) / "claims" / f"c-{case_id}-{safe_id}.md"
+        if note_path.exists():
+            text = note_path.read_text(encoding="utf-8")
+            end = text.find("\n---", 3)
+            if end != -1:
+                frontmatter = yaml.safe_load(text[3:end]) or {}
+                frontmatter["bears-on"] = claim["bears_on"]
+                note_path.write_text(
+                    "---\n" + yaml.safe_dump(frontmatter, sort_keys=False, allow_unicode=True)
+                    + "---" + text[end + 4:],
+                    encoding="utf-8",
+                )
+    if admitted:
+        _write_json_atomic(claims_path, admitted)
+        if migrated:
+            _build_semantic_current(admitted, case_id)
+    _rebuild_index()
+    return {"question_id": question_id, "question_created": created, "bindings_migrated": migrated}
+
+
 @v20.post("/cases/{case_id}/compiler-proposals/{kind}/{proposal_id}/review")
 def review_compiler_proposal(
     case_id: str,
@@ -2094,6 +2442,7 @@ def review_compiler_proposal(
             replayed = True
         else:
             known_at = _now_iso()
+            structural_effect = kind == "spine" and decision in {"ACCEPTED", "ADMITTED"}
             review = {
                 "type": "compiler_review",
                 "id": review_id,
@@ -2107,7 +2456,9 @@ def review_compiler_proposal(
                 "effective_date": payload.get("effective_date") or known_at[:10],
                 "known_at": known_at,
                 "idempotency_key": idempotency_key or None,
-                "institutional_effect": "REVIEW_RECORDED_ONLY",
+                "institutional_effect": (
+                    "QUESTION_SPINE_UPDATED" if structural_effect else "REVIEW_RECORDED_ONLY"
+                ),
                 "current_mutation": False,
                 "written-by": "v20-api",
             }
@@ -2121,6 +2472,10 @@ def review_compiler_proposal(
                 )
             replayed = False
 
+    spine_result = None
+    if kind == "spine" and review.get("decision") in {"ACCEPTED", "ADMITTED"}:
+        spine_result = _accept_spine_change(case_id, proposal)
+
     updated_projection = _apply_compiler_reviews(_build_projection(case_id), case_id)
     as_of_date = updated_projection.get("deal", {}).get("as_of_date") or _today()
     state_id = updated_projection.get("deal", {}).get("as_of_state_id") or _current_state_id(case_id)
@@ -2130,6 +2485,7 @@ def review_compiler_proposal(
         "context": _make_context(case_id, state_id, as_of_date),
         "registry": [],
         "idempotent_replay": replayed,
+        "spine_change": spine_result,
     }
 
 
@@ -2382,8 +2738,20 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                         else:
                             e3 = {}
                             raw = json.loads(v1_out.read_text())
-                        new_claims = _derive_bears_on(_normalise_v1_claims(raw, filename), e3)
-                        proposal = _write_evidence_proposal(job_id, case_id, filename, new_claims)
+                        fund_lens = _active_fund_lens(case_id)
+                        _ensure_question_registry(case_id, fund_lens)
+                        new_claims = _derive_bears_on(
+                            _normalise_v1_claims(raw, filename), e3, fund_lens
+                        )
+                        question_proposals = _derive_question_proposals(new_claims, case_id)
+                        proposal = _write_evidence_proposal(
+                            job_id,
+                            case_id,
+                            filename,
+                            new_claims,
+                            question_proposals,
+                            fund_lens,
+                        )
                         proposal_display_path = (
                             str(proposal.relative_to(ROOT))
                             if proposal.is_relative_to(ROOT)
@@ -3093,6 +3461,7 @@ def replay(case_id: str, as_of_date: str | None = None, event_id: str | None = N
         },
     })
     proj["events"] = filtered_events
+    proj = _apply_decision_intelligence(proj)
     stable_hash = _stable_json_hash({
         "case_id": case_id,
         "cutoff": cutoff.isoformat(),

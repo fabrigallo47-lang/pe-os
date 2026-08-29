@@ -1,4 +1,4 @@
-.PHONY: setup index report check state watch dev verify dynamics-test baseline
+.PHONY: setup index report check state watch dev verify dynamics-test baseline stage2-score stage2-score-test
 
 PY := .venv/bin/python3
 
@@ -63,3 +63,9 @@ dynamics-test: ## Run the embedded state-transition runtime and backend integrat
 grounding: ## Grounding gate over extracted claims (usage: make grounding DEAL=keystone)
 	$(PY) tools/grounding_gate.py --claims pipeline_out/e3/K-IC/e3_claims.json \
 		--deal $(or $(DEAL),keystone) --out pipeline_out/e3/K-IC/grounding_review.json
+
+stage2-score: ## Public Stage-2 score (usage: make stage2-score MANIFEST=... CLAIMS_LIVE=...)
+	$(PY) tools/stage2_scorer.py --e3-manifest $(MANIFEST) --claims-live $(CLAIMS_LIVE) $(ARGS)
+
+stage2-score-test: ## Test the public deterministic Stage-2 scorer
+	$(PY) -m unittest tools.test_stage2_scorer -v

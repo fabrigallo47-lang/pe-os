@@ -224,6 +224,86 @@ def _execution_course(case_id: str, course_id: str) -> tuple[dict, dict]:
     return course, execution_room
 
 
+def _default_decision_room(case_id: str) -> dict[str, Any]:
+    """Return the conservative Connected-mode course exposed by the live API."""
+
+    return {
+        "request_id": f"AR-{case_id.upper()}-CURRENT-ADOPTION",
+        "verb": "ADOPT_CURRENT",
+        "title": "Review and adopt the settled Candidate scope",
+        "deadline": None,
+        "holder": "Assigned professional reviewer",
+        "rule": "Only the explicitly prepared, authority-attested scope may enter Current.",
+        "evidence_for": [],
+        "evidence_against": [],
+        "courses": [
+            {
+                "id": "ADOPT-CANDIDATE",
+                "label": "Adopt prepared Candidate scope",
+                "economics": "Promotes only the selected settled components.",
+                "conditions": [
+                    "Candidate and Current hashes still match",
+                    "Every Human Stop has a scoped authority record",
+                ],
+                "policy": "WITHIN DECLARED AUTHORITY",
+                "recommended": False,
+                "effect_type": "INTERNAL",
+                "execution": None,
+            }
+        ],
+    }
+
+
+def _default_execution_room() -> dict[str, Any]:
+    return {
+        "type": "Internal Current-state adoption",
+        "recipient": None,
+        "sender": None,
+        "subject": None,
+        "message": None,
+        "attachments": [],
+        "checks": [
+            "Prepared selection hash matched",
+            "Candidate compare-and-swap matched",
+            "Authority records remained Candidate-scoped",
+        ],
+        "externality": "No external effect is created by the default course.",
+    }
+
+
+def _authority_actor(case_id: str, actor_id: str) -> dict[str, Any] | None:
+    """Resolve authority from server-owned assignments, never from payload roles."""
+
+    projection = _build_projection(case_id)
+    actors = projection.get("actor_directory", [])
+    actor = next(
+        (
+            dict(item)
+            for item in actors
+            if isinstance(item, dict)
+            and str(item.get("actor_id") or item.get("participant_id") or item.get("id"))
+            == actor_id
+        ),
+        None,
+    )
+    if actor is not None:
+        return actor
+    default_actor = _make_context(case_id, _current_state_id(case_id), _today()).get(
+        "authenticated_actor", {}
+    )
+    if str(default_actor.get("actor_id") or "") == actor_id:
+        return dict(default_actor)
+    return None
+
+
+def _actor_satisfies_role(actor: dict[str, Any], required_role: str) -> bool:
+    granted = {
+        str(actor.get("role") or ""),
+        *(str(item) for item in actor.get("authority_roles", [])),
+    }
+    return required_role in granted
+
+
 def _package_payload_hash(package: dict) -> str:
     mutable = {"status", "ack_id", "acknowledged_at", "failed_at"}
     payload = {key: value for key, value in package.items() if key not in mutable | {"artifact_hash"}}
@@ -1233,6 +1313,363 @@ def _graph_content_hash(graph: dict) -> str:
         default=str,
     ).encode("utf-8")
     return "sha256:" + hashlib.sha256(canonical).hexdigest()
+
+
+_GRAPH_OBJECT_COLLECTIONS = (
+    ("claims", "claim_id"),
+    ("case_positions", "position_id"),
+    ("model_nodes", "model_node_id"),
+    ("support_routes", "route_id"),
+    ("artifacts", "artifact_id"),
+)
+
+
+def _frontend_authority_verb(stop: dict[str, Any]) -> str:
+    """Map a runtime Human Stop to one stable application authority verb."""
+
+    if stop.get("authority_verb"):
+        return str(stop["authority_verb"])
+    reason_code = str(stop.get("reason_code") or "")
+    object_id = str(stop.get("object_or_component_id") or "")
+    if reason_code == "APPROVED_FROZEN" or object_id == "approved-snapshot":
+        return "APPROVE"
+    if reason_code in {"NON_WAIVABLE_AXIOM", "HARD_POLICY_BLOCKER"}:
+        return "RESOLVE_BLOCKER"
+    if reason_code in {
+        "BATCH_VALUE_CONFLICT",
+        "PRIOR_VALUE_MISMATCH",
+        "UNKNOWN_OBJECT_ID",
+        "UNKNOWN_TARGET_POSITION_ID",
+        "OBJECT_TYPE_MISMATCH",
+        "IMMUTABLE_HISTORICAL_FIELD",
+    }:
+        return "CORRECT_INPUT"
+    if reason_code == "CIRCULAR_SUPPORT":
+        return "ADMIT_GROUNDED_EVIDENCE"
+    if reason_code in {
+        "DECISION_REQUIRES_HUMAN",
+        "APPLICABLE_MATERIAL_CONTRADICTION",
+        "SELF_ADOPTION_FORBIDDEN",
+    }:
+        return "ADOPT_CURRENT"
+    return "RESOLVE_HUMAN_STOP"
+
+
+def _frontend_human_stop(stop: dict[str, Any]) -> dict[str, Any]:
+    result = copy.deepcopy(stop)
+    result.setdefault(
+        "reason",
+        str(stop.get("requested_action") or stop.get("reason_code") or "Human review required."),
+    )
+    result.setdefault("status", "OPEN")
+    result.setdefault("authority_verb", _frontend_authority_verb(stop))
+    result.setdefault(
+        "required_authority_level",
+        str(stop.get("required_role") or "PROFESSIONAL_REVIEWER"),
+    )
+    result.setdefault("downstream_scope", [])
+    return result
+
+
+def _frontend_blocked_component(component: dict[str, Any]) -> dict[str, Any]:
+    result = copy.deepcopy(component)
+    missing = component.get("missing_assumption_or_condition")
+    result.setdefault(
+        "reason",
+        str(missing or component.get("reason_code") or "The component cannot settle."),
+    )
+    result.setdefault("status", "BLOCKED")
+    result.setdefault("downstream_scope", copy.deepcopy(component.get("dependent_ids", [])))
+    result.setdefault(
+        "resolvable_by",
+        str(missing or "Resolve the declared blocking condition and replay the event."),
+    )
+    return result
+
+
+def _candidate_deltas(transition_output: dict[str, Any]) -> list[dict[str, Any]]:
+    delta = transition_output.get("candidate_current_approved_delta", {}).get("candidate", [])
+    if isinstance(delta, dict):
+        delta = delta.get("deltas", [])
+    return [dict(item) for item in delta if isinstance(item, dict)]
+
+
+def _blocked_scope_ids(transition_output: dict[str, Any]) -> set[str]:
+    blocked: set[str] = set()
+    for component in transition_output.get("blocked_components", []):
+        if not isinstance(component, dict):
+            continue
+        blocked.update(str(item) for item in component.get("member_ids", []))
+        blocked.update(str(item) for item in component.get("dependent_ids", []))
+    for component in transition_output.get("ordered_transitions", []):
+        if isinstance(component, dict) and component.get("result") != "SETTLED":
+            blocked.update(str(item) for item in component.get("member_ids", []))
+    return blocked
+
+
+def _build_transition_change_sets(
+    transition_output: dict[str, Any],
+    *,
+    candidate_state_id: str,
+) -> list[dict[str, Any]]:
+    """Build one safe, canonical settlement scope from settled Candidate deltas.
+
+    The live runtime does not own artifact presentation.  The API therefore
+    exposes one explicit state-change set whose object scope is derived only
+    from SETTLED components.  This avoids representing affected-but-unchanged
+    or blocked objects as adoptable work.
+    """
+
+    settled_ids = {
+        str(member_id)
+        for component in transition_output.get("ordered_transitions", [])
+        if isinstance(component, dict) and component.get("result") == "SETTLED"
+        for member_id in component.get("member_ids", [])
+    }
+    blocked_ids = _blocked_scope_ids(transition_output)
+    partial_status = transition_output.get("partial_settlement_status", {})
+    if (
+        partial_status.get("candidate") == "FULL"
+        and not partial_status.get("unsettled_component_ids")
+        and not blocked_ids
+    ):
+        # Direct/sub-tolerance mutations can be fully reconciled without an
+        # executable propagation component.  They are still real Candidate
+        # deltas and must remain explicitly selectable.
+        settled_ids.update(
+            str(item.get("object_id"))
+            for item in _candidate_deltas(transition_output)
+            if item.get("object_id")
+        )
+    deltas = [
+        item
+        for item in _candidate_deltas(transition_output)
+        if str(item.get("object_id")) in settled_ids
+        and str(item.get("object_id")) not in blocked_ids
+    ]
+    if not deltas:
+        return []
+    deltas.sort(
+        key=lambda item: (
+            str(item.get("object_type") or ""),
+            str(item.get("object_id") or ""),
+            str(item.get("field") or ""),
+        )
+    )
+    object_ids = sorted({str(item["object_id"]) for item in deltas})
+    blocking_stop_ids = sorted(
+        {
+            str(stop.get("stop_id"))
+            for stop in transition_output.get("human_stops", [])
+            if isinstance(stop, dict)
+            and stop.get("stop_id")
+            and (
+                str(stop.get("object_or_component_id") or "")
+                in set(object_ids) | {"candidate-change-set"}
+                or bool(
+                    set(str(item) for item in stop.get("downstream_scope", []))
+                    & set(object_ids)
+                )
+            )
+        }
+    )
+    identity = {
+        "replay_hash": transition_output.get("replay_hash"),
+        "candidate_state_id": candidate_state_id,
+        "deltas": [
+            {
+                "object_id": item.get("object_id"),
+                "field": item.get("field"),
+                "from": item.get("from"),
+                "to": item.get("to"),
+            }
+            for item in deltas
+        ],
+    }
+    token = hashlib.sha256(
+        json.dumps(identity, sort_keys=True, separators=(",", ":"), default=str).encode("utf-8")
+    ).hexdigest()[:16].upper()
+    partial = (
+        transition_output.get("partial_settlement_status", {}).get("candidate") != "FULL"
+        or bool(blocked_ids)
+    )
+    return [
+        {
+            "artifact_id": f"CHANGESET-{token}",
+            "change_set_id": f"CHANGESET-{token}",
+            "selection_kind": "CANONICAL_STATE_SCOPE",
+            "title": (
+                "Adopt settled Candidate scope"
+                if partial
+                else "Adopt Candidate into Current"
+            ),
+            "version_before": str(transition_output.get("prior_state_id") or "CURRENT"),
+            "version_after": candidate_state_id,
+            "status": "PARTIAL_READY" if partial else "READY",
+            "partial": partial,
+            "object_ids": object_ids,
+            "blocking_stop_ids": blocking_stop_ids,
+            "changes": [
+                {
+                    "label": f"{item.get('object_id')}.{item.get('field')}",
+                    "before": copy.deepcopy(item.get("from")),
+                    "after": copy.deepcopy(item.get("to")),
+                    "trace_id": str(item.get("object_id")),
+                    "object_type": item.get("object_type"),
+                    "field": item.get("field"),
+                    "reason_code": item.get("reason_code"),
+                }
+                for item in deltas
+            ],
+        }
+    ]
+
+
+def _normalise_selected_change_ids(value: Any) -> list[str]:
+    if not isinstance(value, list):
+        raise HTTPException(400, "selected_change_ids must be an array")
+    selected: list[str] = []
+    seen: set[str] = set()
+    for raw in value:
+        if not isinstance(raw, str) or not raw.strip():
+            raise HTTPException(400, "selected_change_ids must contain non-empty strings")
+        change_id = raw.strip()
+        if change_id in seen:
+            raise HTTPException(409, f"Duplicate selected change id: {change_id}")
+        seen.add(change_id)
+        selected.append(change_id)
+    return selected
+
+
+def _change_set_index(run: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    return {
+        str(item["artifact_id"]): item
+        for item in run.get("artifact_change_sets", [])
+        if isinstance(item, dict) and item.get("artifact_id")
+    }
+
+
+def _selected_object_ids(run: dict[str, Any], selected_ids: list[str]) -> set[str]:
+    index = _change_set_index(run)
+    return {
+        str(object_id)
+        for change_id in selected_ids
+        for object_id in index[change_id].get("object_ids", [])
+    }
+
+
+def _required_human_stop_ids(
+    run: dict[str, Any],
+    selected_ids: list[str],
+    selected_object_ids: set[str],
+) -> set[str]:
+    """Return only Human Stops governing the explicitly selected scope."""
+
+    index = _change_set_index(run)
+    explicitly_scoped = all(
+        "blocking_stop_ids" in index[change_id] for change_id in selected_ids
+    )
+    if explicitly_scoped:
+        return {
+            str(stop_id)
+            for change_id in selected_ids
+            for stop_id in index[change_id].get("blocking_stop_ids", [])
+            if stop_id
+        }
+
+    # Backward-compatible derivation for pre-V20.1 stored runs.
+    required: set[str] = set()
+    for stop in run.get("transition_output", {}).get("human_stops", []):
+        if not isinstance(stop, dict) or not stop.get("stop_id"):
+            continue
+        object_id = str(stop.get("object_or_component_id") or "")
+        downstream = {str(item) for item in stop.get("downstream_scope", [])}
+        if (
+            object_id == "candidate-change-set"
+            or object_id in selected_object_ids
+            or bool(downstream & selected_object_ids)
+        ):
+            required.add(str(stop["stop_id"]))
+    return required
+
+
+def _bounded_settlement_graph(
+    current_graph: dict[str, Any],
+    candidate_graph: dict[str, Any],
+    selected_object_ids: set[str],
+) -> dict[str, Any]:
+    """Overlay only explicitly selected Candidate objects onto Current."""
+
+    graph = copy.deepcopy(current_graph)
+    for collection, id_field in _GRAPH_OBJECT_COLLECTIONS:
+        candidate_items = [
+            item
+            for item in candidate_graph.get(collection, [])
+            if isinstance(item, dict)
+            and str(item.get(id_field) or "") in selected_object_ids
+        ]
+        if collection not in graph and not candidate_items:
+            continue
+        current_items = graph.setdefault(collection, [])
+        positions = {
+            str(item.get(id_field)): index
+            for index, item in enumerate(current_items)
+            if isinstance(item, dict) and item.get(id_field)
+        }
+        for candidate_item in candidate_items:
+            object_id = str(candidate_item.get(id_field) or "")
+            if object_id in positions:
+                current_items[positions[object_id]] = copy.deepcopy(candidate_item)
+            else:
+                positions[object_id] = len(current_items)
+                current_items.append(copy.deepcopy(candidate_item))
+
+    edge_specs = (
+        ("claim_position_edges", "edge_id", ("claim_id", "position_id")),
+        ("position_dependencies", "edge_id", ("from_position_id", "to_position_id")),
+        ("position_model_bindings", "binding_id", ("position_id", "model_node_id")),
+    )
+    for collection, id_field, endpoints in edge_specs:
+        candidate_items = [
+            item
+            for item in candidate_graph.get(collection, [])
+            if isinstance(item, dict)
+            and any(
+                str(item.get(field) or "") in selected_object_ids
+                for field in endpoints
+            )
+        ]
+        if collection not in graph and not candidate_items:
+            continue
+        current_items = graph.setdefault(collection, [])
+        positions = {
+            str(item.get(id_field)): index
+            for index, item in enumerate(current_items)
+            if isinstance(item, dict) and item.get(id_field)
+        }
+        graph_object_ids = {
+            str(item.get(id_name) or "")
+            for object_collection, id_name in _GRAPH_OBJECT_COLLECTIONS
+            for item in graph.get(object_collection, [])
+            if isinstance(item, dict) and item.get(id_name)
+        }
+        for candidate_item in candidate_items:
+            edge_id = str(candidate_item.get(id_field) or "")
+            if not edge_id:
+                continue
+            endpoint_ids = [str(candidate_item.get(field) or "") for field in endpoints]
+            if not all(endpoint_id in graph_object_ids for endpoint_id in endpoint_ids):
+                continue
+            if edge_id in positions:
+                # Existing relations are changed only when their complete scope
+                # was explicitly selected.  Unchanged one-sided relations need
+                # no overlay and cannot import a blocked endpoint.
+                if all(endpoint_id in selected_object_ids for endpoint_id in endpoint_ids):
+                    current_items[positions[edge_id]] = copy.deepcopy(candidate_item)
+            else:
+                positions[edge_id] = len(current_items)
+                current_items.append(copy.deepcopy(candidate_item))
+    return graph
 
 
 def _graph_counts(graph: dict) -> dict[str, int]:
@@ -2536,6 +2973,23 @@ def _make_context(case_id: str, as_of_state_id: str, as_of_date: str) -> dict:
             "actor_id": "partner-001",
             "name": "Deal Partner",
             "role": "DEAL_PARTNER",
+            "authority_roles": [
+                "WORKSTREAM_REVIEWER",
+                "QUALIFIED_PROFESSIONAL_REVIEWER",
+                "FINANCIAL_OR_WORKSTREAM_REVIEWER",
+                "PROFESSIONAL_REVIEWER",
+                "AUTHORITY_HOLDER",
+                "PARTNER",
+                "DEAL_PARTNER",
+            ],
+            "authority_verbs": [
+                "ADOPT_CURRENT",
+                "APPROVE",
+                "CORRECT_INPUT",
+                "ADMIT_GROUNDED_EVIDENCE",
+                "RESOLVE_BLOCKER",
+                "RESOLVE_HUMAN_STOP",
+            ],
         },
         "viewer_projection": "partner",
         "authority_assignments": [],
@@ -2601,6 +3055,23 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
                 "id": "partner-001",
                 "name": "Deal Partner",
                 "role": "DEAL_PARTNER",
+                "authority_roles": [
+                    "WORKSTREAM_REVIEWER",
+                    "QUALIFIED_PROFESSIONAL_REVIEWER",
+                    "FINANCIAL_OR_WORKSTREAM_REVIEWER",
+                    "PROFESSIONAL_REVIEWER",
+                    "AUTHORITY_HOLDER",
+                    "PARTNER",
+                    "DEAL_PARTNER",
+                ],
+                "authority_verbs": [
+                    "ADOPT_CURRENT",
+                    "APPROVE",
+                    "CORRECT_INPUT",
+                    "ADMIT_GROUNDED_EVIDENCE",
+                    "RESOLVE_BLOCKER",
+                    "RESOLVE_HUMAN_STOP",
+                ],
                 "effective_date": "2024-01-01T00:00:00Z",
                 "known_at": "2024-01-01T00:00:00Z",
             }
@@ -2631,6 +3102,8 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
             "claims": claims,
             "question_spine": question_spine,
             "artifacts": [],
+            "decisionRoom": _default_decision_room(case_id),
+            "executionRoom": _default_execution_room(),
             "lenses": [{
                 "lens_id": fund_lens["lens_id"],
                 "id": fund_lens["lens_id"],
@@ -2706,6 +3179,8 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
         result["deal"]["as_of_date"] = as_of_date
         result["deal"]["objective"] = projection["deal"]["objective"]
         result["deal"]["artifacts"] = []
+        result["deal"]["decisionRoom"] = projection["deal"]["decisionRoom"]
+        result["deal"]["executionRoom"] = projection["deal"]["executionRoom"]
         result["deal"]["lenses"] = projection["deal"]["lenses"]
         result["deal"]["default_lens_id"] = projection["deal"]["default_lens_id"]
         result["deal"]["active_lens_id"] = projection["deal"]["active_lens_id"]
@@ -4298,13 +4773,25 @@ async def admit(
     candidate_graph = dynamics_result["candidate_graph"]
     candidate_state = dynamics_result["candidate_state"]
 
-    human_stops = transition_output.get("human_stops", [])
-    blocked = transition_output.get("blocked_components", [])
+    human_stops = [
+        _frontend_human_stop(item)
+        for item in transition_output.get("human_stops", [])
+        if isinstance(item, dict)
+    ]
+    blocked = [
+        _frontend_blocked_component(item)
+        for item in transition_output.get("blocked_components", [])
+        if isinstance(item, dict)
+    ]
     run_id = transition_output.get("run_id", f"RUN-{uuid.uuid4().hex[:8].upper()}")
     cand_state_id = candidate_state.get(
         "state_id", f"CAND-{uuid.uuid4().hex[:8].upper()}"
     )
     prior_state_id = transition_output.get("prior_state_id", "STATE-PRIOR")
+    artifact_change_sets = _build_transition_change_sets(
+        transition_output,
+        candidate_state_id=cand_state_id,
+    )
     event_record = event_batch[0] if event_batch else {}
     current_graph = _load_json_safe(pipeline_out / "current_graph.json")
     try:
@@ -4341,6 +4828,11 @@ async def admit(
         "history_append": dynamics_result.get("history_append", []),
         "transition_output": transition_output,
         "candidate_state_id": cand_state_id,
+        "prior_state_id": prior_state_id,
+        "prior_graph_hash": _graph_content_hash(current_graph),
+        "candidate_state_hash": _graph_content_hash(candidate_state),
+        "candidate_graph_hash": candidate_state.get("candidate_graph_hash"),
+        "artifact_change_sets": artifact_change_sets,
         "current_graph_version": current_graph_version,
         "candidate_graph_version": candidate_graph_version,
         "bundle_dir": str(pipeline_out),
@@ -4381,16 +4873,22 @@ async def admit(
         "partial_settlement_status": transition_output.get("partial_settlement_status", {}),
         "replay_hash": transition_output.get("replay_hash", "sha256:live"),
         "source_event_id": event_id,
+        "artifact_change_sets": artifact_change_sets,
     }
 
     return {
-        "run": {"run_id": run_id, "status": "CANDIDATE_READY"},
+        "run": {
+            "run_id": run_id,
+            "status": "CANDIDATE_READY",
+            "candidate_state_id": cand_state_id,
+            "prior_state_id": prior_state_id,
+        },
         "transition": transition,
         "candidate_graph": candidate_graph,
         "current_graph_version": current_graph_version,
         "candidate_graph_version": candidate_graph_version,
         "context": {
-            **_make_context(case_id, cand_state_id, _today()),
+            **_make_context(case_id, prior_state_id, _today()),
             "run_id": run_id,
             "candidate_state_id": cand_state_id,
             "human_stop_id": human_stops[0].get("stop_id") if human_stops else None,
@@ -4406,64 +4904,328 @@ async def settle_run(
     background_tasks: BackgroundTasks,
     payload: dict = {},
 ) -> dict:
-    run = _runs.get(run_id)
-    if not run:
-        raise HTTPException(404, f"Run not found: {run_id}. Call /admit first to create a run.")
-    if run.get("settled_state_id"):
-        raise HTTPException(409, f"Run {run_id} is already settled")
+    idempotency_key = str(payload.get("idempotency_key") or "").strip()
+    if not idempotency_key:
+        raise HTTPException(
+            409,
+            "Settlement requires a non-empty idempotency_key for durable recovery",
+        )
+    recover_committed = False
+    retry_settling = False
+    with _registry_lock:
+        run = _runs.get(run_id)
+        if not run:
+            raise HTTPException(
+                404,
+                f"Run not found: {run_id}. Call /admit first to create a run.",
+            )
+        if run.get("status") == "SETTLED" or run.get("settled_state_id"):
+            if (
+                idempotency_key
+                and idempotency_key == run.get("settlement_idempotency_key")
+                and run.get("settlement_response")
+            ):
+                response = copy.deepcopy(run["settlement_response"])
+                today = _today()
+                context = _make_context(
+                    run["case_id"], response["current_state_id"], today
+                )
+                response.update(
+                    projection={
+                        "projection": _build_projection(run["case_id"]),
+                        "context": context,
+                        "registry": [],
+                    },
+                    context=context,
+                    registry=[],
+                )
+                return response
+            if (
+                idempotency_key
+                and idempotency_key == run.get("settlement_idempotency_key")
+                and run.get("settlement_state_id")
+            ):
+                recover_committed = True
+            else:
+                raise HTTPException(409, f"Run {run_id} is already settled")
+        if run.get("status") == "SETTLING":
+            if not idempotency_key or idempotency_key != run.get(
+                "settlement_idempotency_key"
+            ):
+                raise HTTPException(409, f"Run {run_id} settlement is already in progress")
+            runtime_state = _load_json_safe(
+                Path(run.get("bundle_dir", _pipeline_out_for_case(run["case_id"])))
+                / "runtime_state.json"
+            )
+            settlement_bundle = Path(
+                run.get("bundle_dir", _pipeline_out_for_case(run["case_id"]))
+            )
+            if (settlement_bundle / "settlement_journal.json").exists():
+                retry_settling = True
+            elif runtime_state.get("state_id") == run.get("settlement_state_id"):
+                recover_committed = True
+            else:
+                # A caught pre-commit failure may leave the durable run marker
+                # behind.  Only return it to PREPARED when Current is still the
+                # exact Candidate base; every other state needs investigation.
+                current_graph = _load_json_safe(
+                    Path(run.get("bundle_dir", _pipeline_out_for_case(run["case_id"])))
+                    / "current_graph.json"
+                )
+                if (
+                    runtime_state.get("state_id") == run.get("prior_state_id")
+                    and _graph_content_hash(current_graph) == run.get("prior_graph_hash")
+                ):
+                    run["status"] = "PREPARED"
+                    _store_run(run_id, run)
+                else:
+                    raise HTTPException(
+                        409,
+                        "Settlement recovery found an indeterminate Current state",
+                    )
+        if (
+            run.get("status") != "PREPARED"
+            and not recover_committed
+            and not retry_settling
+        ):
+            raise HTTPException(409, "Run must be PREPARED before settlement")
 
     case_id = run["case_id"]
     event_id = run["event_id"]
-    decision = "accepted"
-    actor = payload.get("actor_id", "partner-001")
-    selected_change_ids = payload.get("selected_change_ids")
-    if selected_change_ids is None:
-        selected_change_ids = run.get("selected_change_ids", [])
-    if not isinstance(selected_change_ids, list):
-        raise HTTPException(400, "selected_change_ids must be an array")
-    selected_change_ids = [str(change_id) for change_id in selected_change_ids]
+    transition_output = run.get("transition_output", {})
+    supplied_candidate_id = str(payload.get("candidate_state_id") or "")
+    if supplied_candidate_id != str(run.get("candidate_state_id") or ""):
+        raise HTTPException(409, "Settlement Candidate does not match the PREPARED run")
 
-    supplied_record_ids = set(payload.get("authority_record_ids", []))
+    if "selected_change_ids" not in payload:
+        raise HTTPException(409, "Settlement must repeat the explicit PREPARED selection")
+    selected_change_ids = _normalise_selected_change_ids(payload["selected_change_ids"])
+    prepared_ids = list(run.get("selected_change_ids", []))
+    if sorted(selected_change_ids) != sorted(prepared_ids):
+        raise HTTPException(409, "Settlement scope does not match the PREPARED selection")
+    available = _change_set_index(run)
+    unknown = sorted(set(selected_change_ids) - set(available))
+    if unknown:
+        raise HTTPException(
+            409,
+            "Settlement contains an unknown prepared change id: " + ", ".join(unknown),
+        )
+    expected_selection_hash = _graph_content_hash(
+        {
+            "run_id": run_id,
+            "candidate_state_id": run.get("candidate_state_id"),
+            "selected_change_ids": sorted(selected_change_ids),
+        }
+    )
+    if run.get("prepared_selection_hash") != expected_selection_hash:
+        raise HTTPException(409, "Prepared selection hash no longer matches the run")
+
+    partial_status = transition_output.get("partial_settlement_status", {})
+    candidate_status = str(partial_status.get("candidate") or "NONE")
+    blocked_components = [
+        _frontend_blocked_component(item)
+        for item in transition_output.get("blocked_components", [])
+        if isinstance(item, dict)
+    ]
+    unsettled_component_ids = sorted(
+        {
+            str(item)
+            for item in partial_status.get("unsettled_component_ids", [])
+            if item
+        }
+        | {
+            str(item.get("component_id"))
+            for item in transition_output.get("ordered_transitions", [])
+            if isinstance(item, dict)
+            and item.get("component_id")
+            and item.get("result") != "SETTLED"
+        }
+    )
+    if candidate_status == "NONE":
+        raise HTTPException(409, "Candidate has no settleable state delta")
+    partial = bool(
+        candidate_status != "FULL"
+        or blocked_components
+        or unsettled_component_ids
+        or any(bool(available[item].get("partial")) for item in selected_change_ids)
+    )
+    if partial and payload.get("allow_partial_settlement") is not True:
+        raise HTTPException(
+            409,
+            "Candidate contains partial or blocked scope; explicit partial settlement is required",
+        )
+
+    selected_object_ids = _selected_object_ids(run, selected_change_ids)
+    if not selected_object_ids:
+        raise HTTPException(409, "Prepared change set has no settleable object scope")
+
+    raw_record_ids = payload.get("authority_record_ids", [])
+    if not isinstance(raw_record_ids, list):
+        raise HTTPException(400, "authority_record_ids must be an array")
+    supplied_record_ids = [str(item) for item in raw_record_ids]
+    if len(supplied_record_ids) != len(set(supplied_record_ids)):
+        raise HTTPException(409, "Duplicate authority_record_id in settlement")
     recorded = {
-        item["authority_record_id"]: item
+        str(item["authority_record_id"]): item
         for item in run.get("authority_records", [])
+        if isinstance(item, dict) and item.get("authority_record_id")
     }
-    human_stops = run["transition_output"].get("human_stops", [])
-    if human_stops:
-        covered_stops = {
-            recorded[record_id].get("human_stop_id")
-            for record_id in supplied_record_ids
-            if record_id in recorded
-        }
-        required_stops = {
-            item.get("stop_id") for item in human_stops if item.get("stop_id")
-        }
-        if not required_stops.issubset(covered_stops):
-            missing = sorted(required_stops - covered_stops)
-            raise HTTPException(
-                409,
-                "Candidate requires recorded human approval before settlement: "
-                + ", ".join(missing),
-            )
+    unknown_records = sorted(set(supplied_record_ids) - set(recorded))
+    if unknown_records:
+        raise HTTPException(409, "Settlement contains an unknown authority record")
+    scoped_records = [recorded[record_id] for record_id in supplied_record_ids]
+    for record in scoped_records:
+        if (
+            record.get("run_id") != run_id
+            or record.get("candidate_state_id") != run.get("candidate_state_id")
+            or record.get("status") != "ATTESTED"
+            or record.get("artifact_hash") != transition_output.get("replay_hash")
+            or record.get("prepared_selection_hash") != run.get("prepared_selection_hash")
+        ):
+            raise HTTPException(409, "Authority record is not scoped to this prepared Candidate")
+        if record.get("effect_type") == "DEFER":
+            raise HTTPException(409, "A DEFER authority record cannot settle Candidate scope")
 
-    scoped_records = [recorded[record_id] for record_id in supplied_record_ids if record_id in recorded]
-    package_ids = [str(item) for item in payload.get("execution_package_ids", [])]
+    all_stop_ids = {
+        str(item.get("stop_id"))
+        for item in transition_output.get("human_stops", [])
+        if isinstance(item, dict) and item.get("stop_id")
+    }
+    required_stops = _required_human_stop_ids(
+        run,
+        selected_change_ids,
+        selected_object_ids,
+    )
+    if "human_stop_ids" in payload:
+        supplied_stop_ids = {str(item) for item in payload.get("human_stop_ids", [])}
+        if supplied_stop_ids != required_stops:
+            raise HTTPException(409, "Settlement Human Stop scope does not match the Candidate")
+    covered_stops = {
+        str(record.get("human_stop_id")) for record in scoped_records
+    }
+    if not required_stops.issubset(covered_stops):
+        missing = sorted(required_stops - covered_stops)
+        raise HTTPException(
+            409,
+            "Candidate requires recorded human approval before settlement: "
+            + ", ".join(missing),
+        )
+
+    raw_package_ids = payload.get("execution_package_ids", [])
+    if not isinstance(raw_package_ids, list):
+        raise HTTPException(400, "execution_package_ids must be an array")
+    package_ids = [str(item) for item in raw_package_ids]
     _validate_execution_package_scope(run, scoped_records, package_ids)
 
-    settled_at = dt.datetime.now(dt.timezone.utc)
+    bundle_dir = Path(run.get("bundle_dir", _pipeline_out_for_case(case_id)))
+    current_graph = _load_json_safe(bundle_dir / "current_graph.json")
+    if not current_graph:
+        raise HTTPException(409, "Persisted Current graph is missing")
+    candidate_graph = run.get("candidate_graph")
+    candidate_state = run.get("candidate_state")
+    if not isinstance(candidate_graph, dict) or not isinstance(candidate_state, dict):
+        raise HTTPException(409, "Prepared Candidate artifacts are missing")
+    settlement_graph = _bounded_settlement_graph(
+        current_graph,
+        candidate_graph,
+        selected_object_ids,
+    )
+
+    prior_runtime = _load_json_safe(bundle_dir / "runtime_state.json")
+    settlement_runtime_flags = copy.deepcopy(
+        dict(prior_runtime.get("runtime_flags", {}))
+    )
+    candidate_runtime_flags = candidate_state.get("runtime_flags", {})
+    for object_id in selected_object_ids:
+        if object_id in candidate_runtime_flags:
+            settlement_runtime_flags[object_id] = copy.deepcopy(
+                candidate_runtime_flags[object_id]
+            )
+
+    pending_settlement = None
+    if partial:
+        pending_settlement = {
+            "status": "OPEN",
+            "source_run_id": run_id,
+            "candidate_state_id": run["candidate_state_id"],
+            "candidate_state_hash": run.get("candidate_state_hash")
+            or _graph_content_hash(candidate_state),
+            "candidate_graph_hash": run.get("candidate_graph_hash")
+            or _graph_content_hash(candidate_graph),
+            "candidate_graph_version_id": (
+                run.get("candidate_graph_version") or {}
+            ).get("version_id"),
+            "settled_change_set_ids": list(selected_change_ids),
+            "settled_object_ids": sorted(selected_object_ids),
+            "unsettled_component_ids": unsettled_component_ids,
+            "unresolved_human_stop_ids": sorted(all_stop_ids - required_stops),
+            "blocked_components": copy.deepcopy(blocked_components),
+            "coverage_limits": copy.deepcopy(
+                transition_output.get("coverage_limits", [])
+            ),
+            "known_at": _now_iso(),
+        }
+
+    settled_started = str(run.get("settlement_started_at") or "")
+    if settled_started:
+        try:
+            settled_at = dt.datetime.fromisoformat(
+                settled_started.replace("Z", "+00:00")
+            )
+        except ValueError:
+            settled_at = dt.datetime.now(dt.timezone.utc)
+    else:
+        settled_at = dt.datetime.now(dt.timezone.utc)
     ts = settled_at.strftime("%Y%m%dT%H%M%S%fZ")
     settled_known_at = settled_at.isoformat().replace("+00:00", "Z")
     today = _today()
-    new_state_id = f"STATE-{case_id.upper()}-{ts}"
-    try:
-        settled_state = settle_candidate_state(
-            Path(run.get("bundle_dir", _pipeline_out_for_case(case_id))),
-            run["candidate_state"],
-            run.get("history_append", []),
-            current_state_id=new_state_id,
-        )
-    except DynamicsBundleError as exc:
-        raise HTTPException(409, str(exc)) from exc
+    new_state_id = str(
+        run.get("settlement_state_id") or f"STATE-{case_id.upper()}-{ts}"
+    )
+
+    if recover_committed:
+        settled_state = _load_json_safe(bundle_dir / "runtime_state.json")
+    else:
+        if not retry_settling:
+            with _registry_lock:
+                if run.get("status") != "PREPARED":
+                    raise HTTPException(409, "Run settlement state changed concurrently")
+                run["status"] = "SETTLING"
+                run["settlement_state_id"] = new_state_id
+                run["settlement_idempotency_key"] = idempotency_key
+                run["settlement_started_at"] = settled_known_at
+                _store_run(run_id, run)
+        try:
+            settled_state = settle_candidate_state(
+                bundle_dir,
+                candidate_state,
+                run.get("history_append", []),
+                current_state_id=new_state_id,
+                settlement_graph=settlement_graph,
+                expected_prior_state_id=run.get("prior_state_id"),
+                expected_prior_graph_hash=run.get("prior_graph_hash"),
+                expected_candidate_state_id=run.get("candidate_state_id"),
+                expected_candidate_state_hash=(
+                    run.get("candidate_state_hash")
+                    or _graph_content_hash(candidate_state)
+                ),
+                expected_candidate_graph_hash=(
+                    run.get("candidate_graph_hash")
+                    or _graph_content_hash(candidate_graph)
+                ),
+                settlement_runtime_flags=settlement_runtime_flags,
+                pending_settlement=pending_settlement,
+            )
+        except DynamicsBundleError as exc:
+            with _registry_lock:
+                if (
+                    run.get("status") == "SETTLING"
+                    and not (bundle_dir / "settlement_journal.json").exists()
+                ):
+                    run["status"] = "PREPARED"
+                    _store_run(run_id, run)
+            raise HTTPException(409, str(exc)) from exc
+
     try:
         settled_graph_version = _archive_graph_version(
             case_id,
@@ -4472,22 +5234,31 @@ async def settle_run(
             settled_state["current_graph"],
             run_id=run_id,
             event_id=event_id,
-            prior_state_id=run["transition_output"].get("prior_state_id"),
+            prior_state_id=run.get("prior_state_id"),
             effective_date=payload.get("effective_date", today),
             known_at=settled_known_at,
         )
-    except DynamicsBundleError as exc:
-        raise HTTPException(500, f"Settled graph versioning failed: {exc}") from exc
-    run["settled_state_id"] = new_state_id
-    run["settled_graph_version"] = settled_graph_version
-    run["status"] = "SETTLED"
-    run["selected_change_ids"] = list(selected_change_ids)
-    _store_run(run_id, run)
+        archive_warning = None
+    except Exception as exc:
+        # Current already advanced.  Preserve that institutional truth and make
+        # the archive fault explicit instead of returning the run to PREPARED.
+        settled_graph_version = None
+        archive_warning = str(exc)
+        logger.exception("settled graph version archive failed for %s", run_id)
 
-    # Append the institutional settlement event only after runtime persistence
-    # succeeds, so the audit trail can never claim a failed promotion occurred.
+    actor = str(payload.get("actor_id") or "partner-001")
+    with _registry_lock:
+        run["settled_state_id"] = new_state_id
+        run["settled_graph_version"] = settled_graph_version
+        run["status"] = "SETTLED"
+        run["selected_change_ids"] = list(selected_change_ids)
+        run["partial"] = partial
+        run["pending_settlement"] = copy.deepcopy(pending_settlement)
+        if archive_warning:
+            run["settlement_warning"] = archive_warning
+        _store_run(run_id, run)
+
     events_dir = VAULT / "deals" / case_id / "events"
-    events_dir.mkdir(parents=True, exist_ok=True)
     settle_file = events_dir / f"e-{case_id}-settle-{ts}.md"
     settlement_fm = {
         "id": f"e-{case_id}-settle-{ts}",
@@ -4497,46 +5268,78 @@ async def settle_run(
         "candidate_state_id": run["candidate_state_id"],
         "current_state_id": new_state_id,
         "selected-change-ids": list(selected_change_ids),
-        "replay_hash": run["transition_output"].get("replay_hash", "sha256:settled"),
-        "decision": decision,
+        "settled-object-ids": sorted(selected_object_ids),
+        "partial": partial,
+        "unsettled-component-ids": unsettled_component_ids,
+        "replay_hash": transition_output.get("replay_hash", "sha256:settled"),
+        "decision": "accepted",
         "actor": actor,
         "timestamp": settled_known_at,
         "written-by": "v20-api",
     }
-    settle_file.write_text(
-        "---\n" + yaml.safe_dump(settlement_fm, sort_keys=False, allow_unicode=True)
-        + "---\n",
-        encoding="utf-8",
-    )
+    try:
+        events_dir.mkdir(parents=True, exist_ok=True)
+        _write_text_atomic(
+            settle_file,
+            "---\n"
+            + yaml.safe_dump(settlement_fm, sort_keys=False, allow_unicode=True)
+            + "---\n",
+        )
+        audit_warning = None
+    except OSError as exc:
+        audit_warning = str(exc)
+        logger.exception("settlement audit event write failed for %s", run_id)
     background_tasks.add_task(_rebuild_index)
 
-    updated_projection = _build_projection(case_id)
-
-    # contracts.js validateSettlement shape
-    return {
+    context = _make_context(case_id, new_state_id, today)
+    response = {
         "settlement_id": f"SETTLE-{run_id}",
         "case_id": case_id,
         "run_id": run_id,
         "candidate_state_id": run["candidate_state_id"],
-        "prior_state_id": run["transition_output"].get("prior_state_id", "STATE-PRIOR"),
+        "prior_state_id": run.get("prior_state_id", "STATE-PRIOR"),
         "current_state_id": new_state_id,
         "selected_change_ids": list(selected_change_ids),
-        "partial": run["transition_output"].get("partial_settlement_status", {}).get(
-            "candidate"
-        ) == "PARTIAL",
-        "summary": f"Settled {event_id} → new Current {new_state_id}",
-        "replay_hash": run["transition_output"].get("replay_hash", "sha256:settled"),
+        "settled_change_set_ids": list(selected_change_ids),
+        "settled_object_ids": sorted(selected_object_ids),
+        "partial": partial,
+        "blocked_components": blocked_components,
+        "unsettled_component_ids": unsettled_component_ids,
+        "pending_settlement": pending_settlement,
+        "summary": (
+            f"Partially settled {event_id} into Current {new_state_id}"
+            if partial
+            else f"Settled {event_id} into Current {new_state_id}"
+        ),
+        "replay_hash": transition_output.get("replay_hash", "sha256:settled"),
         "timestamp": settled_known_at,
         "effective_date": payload.get("effective_date", today),
         "known_at": settled_known_at,
         "as_of_state_id": new_state_id,
         "as_of_date": today,
-        "projection": {"projection": updated_projection, "context": _make_context(case_id, new_state_id, today), "registry": []},
-        "context": _make_context(case_id, new_state_id, today),
+        "context": context,
         "registry": [],
         "runtime_state_id": settled_state["state_id"],
         "graph_version": settled_graph_version,
     }
+    if archive_warning:
+        response["warning"] = "Current settled, but graph-version archive failed: " + archive_warning
+    if audit_warning:
+        response["warning"] = (
+            str(response.get("warning") or "")
+            + ("; " if response.get("warning") else "")
+            + "Current settled, but audit-event write failed: "
+            + audit_warning
+        )
+    run["settlement_response"] = copy.deepcopy(response)
+    _store_run(run_id, run)
+    updated_projection = _build_projection(case_id)
+    response["projection"] = {
+        "projection": updated_projection,
+        "context": context,
+        "registry": [],
+    }
+    return response
 
 # Also keep the event-based settle for direct calls
 @v20.post("/cases/{case_id}/events/{event_id}/settle")
@@ -4545,70 +5348,156 @@ async def settle_event(
     background_tasks: BackgroundTasks,
     payload: dict = {},
 ) -> dict:
-    # Create a synthetic run and delegate
-    run_id = f"RUN-DIRECT-{uuid.uuid4().hex[:8].upper()}"
-    pipeline_out = _pipeline_out_for_case(case_id)
-    candidate_graph = _load_json_safe(pipeline_out / "candidate_graph.json")
-    candidate_state = _load_json_safe(pipeline_out / "candidate_state.json")
-    to = _load_json_safe(pipeline_out / "transition_output.json")
-    if not candidate_state:
-        raise HTTPException(409, "No persisted Candidate state; run dynamics first")
-    _store_run(run_id, {
-        "case_id": case_id, "event_id": event_id,
-        "candidate_graph": candidate_graph,
-        "candidate_state": candidate_state,
-        "history_append": to.get("history_append", []),
-        "transition_output": to if isinstance(to, dict) else {},
-        "candidate_state_id": candidate_state.get(
-            "state_id", f"CAND-DIRECT-{uuid.uuid4().hex[:8].upper()}"
-        ),
-        "bundle_dir": str(pipeline_out),
-        "authority_records": [],
-        "status": "CANDIDATE_READY",
-        "created_at": _now_iso(),
-    })
-    return await settle_run(run_id, background_tasks, payload)
+    raise HTTPException(
+        409,
+        "Direct event settlement is disabled; admit the event, prepare its explicit "
+        "change set, attest every Human Stop, then settle the resulting run",
+    )
 
 
-@v20.post("/runs/{run_id}/prepare")
-async def prepare_run(run_id: str, payload: dict = {}) -> dict:
-    run = _runs.get(run_id)
-    if not run:
-        raise HTTPException(404, f"Run not found: {run_id}")
-    selected_change_ids = payload.get("selected_change_ids", [])
-    if not isinstance(selected_change_ids, list):
-        raise HTTPException(400, "selected_change_ids must be an array")
-    selected_change_ids = [str(change_id) for change_id in selected_change_ids]
-    run["selected_change_ids"] = selected_change_ids
-    run["status"] = "PREPARED"
-    _store_run(run_id, run)
+def _write_run_prepared_event(
+    run_id: str,
+    run: dict,
+    selected_change_ids: list[str],
+    selection_hash: str,
+) -> str:
+    """Durably bind one PREPARED selection to its audit event.
 
-    ts = dt.datetime.now(dt.timezone.utc).strftime("%Y%m%dT%H%M%SZ")
-    case_id = run["case_id"]
-    event_record_id = f"e-{case_id}-run-prepared-{ts}-{uuid.uuid4().hex[:8]}"
-    events_dir = VAULT / "deals" / case_id / "events"
-    events_dir.mkdir(parents=True, exist_ok=True)
+    The identifier is deterministic, so a retry can repair a missing legacy
+    event without creating a second preparation record.  Callers write this
+    event before persisting the PREPARED state.
+    """
+
+    case_id = str(run["case_id"])
+    digest = selection_hash.removeprefix("sha256:")[:20]
+    event_record_id = str(
+        run.get("prepared_event_id")
+        or f"e-{case_id}-run-prepared-{digest}"
+    )
     event_fm = {
         "id": event_record_id,
         "type": "run_prepared",
         "run_id": run_id,
         "candidate_state_id": run["candidate_state_id"],
-        "selected-change-ids": selected_change_ids,
-        "replay_hash": run["transition_output"].get("replay_hash", "sha256:live"),
-        "actor": payload.get("actor_id", "preparer-001"),
-        "timestamp": ts,
+        "selected-change-ids": list(selected_change_ids),
+        "replay_hash": run["transition_output"].get(
+            "replay_hash", "sha256:live"
+        ),
+        "selection_hash": selection_hash,
+        "actor": run.get("prepared_by") or "system-preparer",
+        "timestamp": run.get("prepared_at") or _now_iso(),
         "written-by": "v20-api",
     }
-    (events_dir / f"{event_record_id}.md").write_text(
-        "---\n" + yaml.safe_dump(event_fm, sort_keys=False, allow_unicode=True)
-        + "---\n",
-        encoding="utf-8",
+    event_path = (
+        VAULT / "deals" / case_id / "events" / f"{event_record_id}.md"
     )
-    return {
-        "run_id": run_id,
-        "status": "PREPARED",
-        "selected_change_ids": selected_change_ids,
-    }
+    _write_text_atomic(
+        event_path,
+        "---\n"
+        + yaml.safe_dump(event_fm, sort_keys=False, allow_unicode=True)
+        + "---\n",
+    )
+    return event_record_id
+
+
+@v20.post("/runs/{run_id}/prepare")
+async def prepare_run(run_id: str, payload: dict = {}) -> dict:
+    with _registry_lock:
+        run = _runs.get(run_id)
+        if not run:
+            raise HTTPException(404, f"Run not found: {run_id}")
+        if run.get("settled_state_id") or run.get("status") in {"SETTLING", "SETTLED"}:
+            raise HTTPException(409, f"Run {run_id} can no longer be prepared")
+
+        supplied_candidate_id = payload.get("candidate_state_id")
+        if (
+            supplied_candidate_id is not None
+            and str(supplied_candidate_id) != str(run.get("candidate_state_id"))
+        ):
+            raise HTTPException(409, "Prepare request Candidate does not match the run")
+
+        selected_change_ids = _normalise_selected_change_ids(
+            payload.get("selected_change_ids", [])
+        )
+        if not selected_change_ids:
+            raise HTTPException(409, "Select at least one Candidate change before prepare")
+        available = _change_set_index(run)
+        if not available:
+            raise HTTPException(409, "Candidate contains no settleable change set")
+        unknown = sorted(set(selected_change_ids) - set(available))
+        if unknown:
+            raise HTTPException(
+                409,
+                "Unknown or out-of-scope Candidate change id(s): " + ", ".join(unknown),
+            )
+
+        selection_hash = _graph_content_hash(
+            {
+                "run_id": run_id,
+                "candidate_state_id": run.get("candidate_state_id"),
+                "selected_change_ids": sorted(selected_change_ids),
+            }
+        )
+        if run.get("status") == "PREPARED":
+            if run.get("prepared_selection_hash") != selection_hash:
+                raise HTTPException(409, "Run is already PREPARED with another selection")
+            try:
+                prepared_event_id = _write_run_prepared_event(
+                    run_id,
+                    run,
+                    list(run["selected_change_ids"]),
+                    selection_hash,
+                )
+            except OSError as exc:
+                raise HTTPException(
+                    503,
+                    "PREPARED audit event could not be persisted; retry is safe",
+                ) from exc
+            if run.get("prepared_event_id") != prepared_event_id:
+                run["prepared_event_id"] = prepared_event_id
+                _store_run(run_id, run)
+            return {
+                "run_id": run_id,
+                "candidate_state_id": run["candidate_state_id"],
+                "status": "PREPARED",
+                "selected_change_ids": list(run["selected_change_ids"]),
+                "selection_hash": selection_hash,
+            }
+        if run.get("status") != "CANDIDATE_READY":
+            raise HTTPException(
+                409,
+                f"Run must be CANDIDATE_READY before prepare; found {run.get('status')}",
+            )
+
+        prepared_run = copy.deepcopy(run)
+        prepared_run["selected_change_ids"] = selected_change_ids
+        prepared_run["prepared_selection_hash"] = selection_hash
+        prepared_run["prepared_by"] = str(
+            payload.get("actor_id") or "system-preparer"
+        )
+        prepared_run["prepared_at"] = _now_iso()
+        prepared_run["status"] = "PREPARED"
+        try:
+            prepared_run["prepared_event_id"] = _write_run_prepared_event(
+                run_id,
+                prepared_run,
+                selected_change_ids,
+                selection_hash,
+            )
+        except OSError as exc:
+            raise HTTPException(
+                503,
+                "Prepare audit event could not be persisted; run remains CANDIDATE_READY",
+            ) from exc
+        run = _store_run(run_id, prepared_run)
+
+        return {
+            "run_id": run_id,
+            "candidate_state_id": run["candidate_state_id"],
+            "status": "PREPARED",
+            "selected_change_ids": selected_change_ids,
+            "selection_hash": selection_hash,
+        }
 
 
 @v20.post("/runs/{run_id}/authority/attest")
@@ -4620,56 +5509,109 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
         raise HTTPException(409, "Run must be PREPARED before authority attestation")
     ts = _now_iso()
     today = _today()
-    human_stop_id = payload.get("human_stop_id", "")
+    human_stop_id = str(payload.get("human_stop_id") or "")
     declared_stops = {
-        item.get("stop_id")
+        str(item.get("stop_id")): _frontend_human_stop(item)
         for item in run["transition_output"].get("human_stops", [])
-        if item.get("stop_id")
+        if isinstance(item, dict) and item.get("stop_id")
     }
-    if declared_stops and human_stop_id not in declared_stops:
+    if not declared_stops:
+        raise HTTPException(409, "Candidate has no Human Stop to attest")
+    if human_stop_id not in declared_stops:
         raise HTTPException(409, "human_stop_id is not part of this Candidate")
+    human_stop = declared_stops[human_stop_id]
     if payload.get("candidate_state_id") != run.get("candidate_state_id"):
         raise HTTPException(409, "Authority request Candidate does not match the run")
     course_id = str(payload.get("course_id") or "")
     if not course_id:
         raise HTTPException(400, "course_id is required")
-    if not payload.get("artifact_hash"):
+    artifact_hash = str(payload.get("artifact_hash") or "")
+    if not artifact_hash:
         raise HTTPException(400, "artifact_hash is required")
+    replay_hash = str(run["transition_output"].get("replay_hash") or "")
+    if not replay_hash or artifact_hash != replay_hash:
+        raise HTTPException(409, "Authority artifact hash does not match this Candidate replay")
     course, _ = _execution_course(run["case_id"], course_id)
-    effect_type = str(course.get("effect_type") or "INTERNAL")
+    if not course:
+        raise HTTPException(409, "course_id is not available for this decision")
+    effect_type = str(course.get("effect_type") or "")
     if effect_type not in {"EXTERNAL_PACKAGE", "INTERNAL", "DEFER"}:
         raise HTTPException(409, f"Unsupported course effect_type: {effect_type}")
+
+    actor_id = str(payload.get("actor_id") or "partner-001")
+    actor = _authority_actor(run["case_id"], actor_id)
+    if actor is None:
+        raise HTTPException(403, "Actor has no server-side authority assignment for this case")
+    required_role = str(
+        human_stop.get("required_role")
+        or human_stop.get("required_authority_level")
+        or "PROFESSIONAL_REVIEWER"
+    )
+    if not _actor_satisfies_role(actor, required_role):
+        raise HTTPException(403, f"Actor lacks required authority role: {required_role}")
+    authority_verb = str(human_stop.get("authority_verb") or "RESOLVE_HUMAN_STOP")
+    if authority_verb not in {
+        str(item) for item in actor.get("authority_verbs", [])
+    }:
+        raise HTTPException(403, f"Actor lacks required authority verb: {authority_verb}")
+    distinct_from = str(human_stop.get("required_actor_distinct_from") or "")
+    if distinct_from and actor_id == distinct_from:
+        raise HTTPException(409, "Human Stop requires an independent authority actor")
+
     record_key = "|".join(
         (
             run_id,
             human_stop_id,
-            str(payload.get("actor_id", "partner-001")),
+            actor_id,
             course_id,
         )
     )
     record_id = "AUTH-" + hashlib.sha256(record_key.encode("utf-8")).hexdigest()[:12].upper()
+    records_for_stop = [
+        item
+        for item in run.get("authority_records", [])
+        if item.get("human_stop_id") == human_stop_id
+        and item.get("status") == "ATTESTED"
+    ]
     existing = next(
-        (item for item in run.get("authority_records", []) if item.get("authority_record_id") == record_id),
+        (item for item in records_for_stop if item.get("authority_record_id") == record_id),
         None,
     )
     if existing:
         package = None
         if existing.get("effect_type") == "EXTERNAL_PACKAGE":
             package = _build_execution_package(run_id, existing)
-        return {"authority_record": existing, "execution_package": package, "registry": []}
+        remaining = sorted(
+            set(declared_stops)
+            - {
+                str(item.get("human_stop_id"))
+                for item in run.get("authority_records", [])
+                if item.get("status") == "ATTESTED"
+            }
+        )
+        return {
+            "authority_record": existing,
+            "execution_package": package,
+            "remaining_open_stop_ids": remaining,
+            "registry": [],
+        }
+    if records_for_stop:
+        raise HTTPException(409, "Human Stop already has a conflicting authority record")
     authority_record = {
         "authority_record_id": record_id,
         "run_id": run_id,
         "candidate_state_id": run["candidate_state_id"],
         "human_stop_id": human_stop_id,
         "course_id": course_id,
-        "actor_id": payload.get("actor_id", "partner-001"),
-        "actor_role": payload.get("actor_role", "DEAL_PARTNER"),
+        "actor_id": actor_id,
+        "actor_role": actor.get("role"),
         "timestamp": ts,
         "effective_date": today,
         "known_at": ts,
-        "artifact_hash": payload["artifact_hash"],
-        "authority_verb": "APPROVE",
+        "artifact_hash": artifact_hash,
+        "authority_verb": authority_verb,
+        "required_role": required_role,
+        "prepared_selection_hash": run.get("prepared_selection_hash"),
         "effect_type": effect_type,
         "status": "ATTESTED",
         "synthetic": False,
@@ -4679,9 +5621,18 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
     execution_package = None
     if effect_type == "EXTERNAL_PACKAGE":
         execution_package = _build_execution_package(run_id, authority_record)
+    remaining = sorted(
+        set(declared_stops)
+        - {
+            str(item.get("human_stop_id"))
+            for item in run.get("authority_records", [])
+            if item.get("status") == "ATTESTED"
+        }
+    )
     return {
         "authority_record": authority_record,
         "execution_package": execution_package,
+        "remaining_open_stop_ids": remaining,
         "registry": [],
     }
 

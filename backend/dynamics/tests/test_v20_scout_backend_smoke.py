@@ -305,14 +305,101 @@ class V20ScoutBackendSmokeTests(unittest.TestCase):
             ["CURRENT", "CANDIDATE"],
         )
 
+        transition = candidate["transition"]
+        change_sets = transition["artifact_change_sets"]
+        self.assertTrue(change_sets)
+        selected_change_ids = [item["artifact_id"] for item in change_sets]
+        candidate_state_id = transition["candidate_state_id"]
+        prepared = asyncio.run(
+            router.prepare_run(
+                run_id,
+                {
+                    "actor_id": "partner-001",
+                    "candidate_state_id": candidate_state_id,
+                    "selected_change_ids": selected_change_ids,
+                },
+            )
+        )
+        self.assertEqual(prepared["status"], "PREPARED")
+        self.assertEqual(prepared["selected_change_ids"], selected_change_ids)
+
+        human_stops = transition["human_stops"]
+        authority_record_ids = []
+        if human_stops:
+            connected = router.projection(self.case_id)["projection"]
+            courses = connected["deal"]["decisionRoom"]["courses"]
+            course = next(
+                (item for item in courses if item.get("effect_type") == "INTERNAL"),
+                None,
+            )
+            self.assertIsNotNone(course)
+
+            actors = connected["actor_directory"]
+            for human_stop in human_stops:
+                required_role = human_stop["required_role"]
+                authority_verb = human_stop["authority_verb"]
+                distinct_from = human_stop.get("required_actor_distinct_from")
+                actor = next(
+                    (
+                        item
+                        for item in actors
+                        if required_role
+                        in {item.get("role"), *item.get("authority_roles", [])}
+                        and authority_verb in item.get("authority_verbs", [])
+                        and str(
+                            item.get("actor_id")
+                            or item.get("participant_id")
+                            or item.get("id")
+                        )
+                        != distinct_from
+                    ),
+                    None,
+                )
+                self.assertIsNotNone(actor)
+                actor_id = str(
+                    actor.get("actor_id")
+                    or actor.get("participant_id")
+                    or actor["id"]
+                )
+                attested = asyncio.run(
+                    router.attest(
+                        run_id,
+                        {
+                            "actor_id": actor_id,
+                            "candidate_state_id": candidate_state_id,
+                            "human_stop_id": human_stop["stop_id"],
+                            "course_id": course["id"],
+                            "artifact_hash": transition["replay_hash"],
+                        },
+                    )
+                )
+                authority_record_ids.append(
+                    attested["authority_record"]["authority_record_id"]
+                )
+
+        partial_status = transition.get("partial_settlement_status", {})
+        partial = bool(
+            partial_status.get("candidate") != "FULL"
+            or partial_status.get("unsettled_component_ids")
+            or transition["blocked_components"]
+            or any(item.get("partial") for item in change_sets)
+        )
+        settlement_payload = {
+            "actor_id": "partner-001",
+            "candidate_state_id": candidate_state_id,
+            "selected_change_ids": selected_change_ids,
+            "human_stop_ids": [item["stop_id"] for item in human_stops],
+            "authority_record_ids": authority_record_ids,
+            "idempotency_key": f"SETTLE-{run_id}",
+        }
+        if partial:
+            settlement_payload["allow_partial_settlement"] = True
+
         settled = asyncio.run(
             router.settle_run(
                 run_id,
                 BackgroundTasks(),
-                {
-                    "actor_id": "scout-reviewer",
-                    "selected_change_ids": [self.claim_id],
-                },
+                settlement_payload,
             )
         )
         self.assertEqual(settled["runtime_state_id"], settled["current_state_id"])

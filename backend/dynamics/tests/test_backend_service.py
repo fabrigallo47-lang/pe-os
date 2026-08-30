@@ -3,6 +3,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 
 DYNAMICS_ROOT = Path(__file__).resolve().parents[1]
@@ -15,6 +16,7 @@ from backend.dynamics import (  # noqa: E402
     run_bundle_transition,
     settle_candidate_state,
 )
+import backend.dynamics.service as dynamics_service  # noqa: E402
 
 
 def load_json(path: Path):
@@ -93,6 +95,82 @@ class BackendDynamicsServiceTests(unittest.TestCase):
         )
         with self.assertRaises(DynamicsBundleError):
             load_event_batch(self.bundle, "EVENT-DOES-NOT-EXIST")
+
+    def test_expected_candidate_envelope_rejects_persisted_tampering(self):
+        current_before = load_json(self.bundle / "current_graph.json")
+        result = run_bundle_transition(self.bundle, self.events, persist_outputs=True)
+        state_hash = dynamics_service._canonical_hash(result["candidate_state"])
+        graph_hash = dynamics_service._canonical_hash(result["candidate_graph"])
+        tampered = load_json(self.bundle / "candidate_state.json")
+        tampered["approved_snapshot"] = {"tampered": True}
+        (self.bundle / "candidate_state.json").write_text(
+            json.dumps(tampered), encoding="utf-8"
+        )
+
+        with self.assertRaisesRegex(DynamicsBundleError, "modified"):
+            settle_candidate_state(
+                self.bundle,
+                result["candidate_state"],
+                result["history_append"],
+                current_state_id="STATE-TAMPER-REFUSED",
+                expected_prior_state_id=result["transition_output"]["prior_state_id"],
+                expected_prior_graph_hash=dynamics_service._canonical_hash(current_before),
+                expected_candidate_state_id=result["candidate_state"]["state_id"],
+                expected_candidate_state_hash=state_hash,
+                expected_candidate_graph_hash=graph_hash,
+            )
+        self.assertEqual(load_json(self.bundle / "current_graph.json"), current_before)
+        self.assertFalse((self.bundle / "settlement_journal.json").exists())
+
+    def test_interrupted_multi_file_commit_recovers_on_same_retry(self):
+        current_before = load_json(self.bundle / "current_graph.json")
+        result = run_bundle_transition(self.bundle, self.events, persist_outputs=True)
+        kwargs = {
+            "current_state_id": "STATE-RECOVERED",
+            "expected_prior_state_id": result["transition_output"]["prior_state_id"],
+            "expected_prior_graph_hash": dynamics_service._canonical_hash(current_before),
+            "expected_candidate_state_id": result["candidate_state"]["state_id"],
+            "expected_candidate_state_hash": dynamics_service._canonical_hash(
+                result["candidate_state"]
+            ),
+            "expected_candidate_graph_hash": dynamics_service._canonical_hash(
+                result["candidate_graph"]
+            ),
+        }
+        original_write = dynamics_service._atomic_write_json
+        failed = False
+
+        def fail_runtime_once(path, payload):
+            nonlocal failed
+            if Path(path).name == "runtime_state.json" and not failed:
+                failed = True
+                raise OSError("injected runtime-state write failure")
+            return original_write(path, payload)
+
+        with patch.object(
+            dynamics_service, "_atomic_write_json", side_effect=fail_runtime_once
+        ):
+            with self.assertRaisesRegex(DynamicsBundleError, "interrupted"):
+                settle_candidate_state(
+                    self.bundle,
+                    result["candidate_state"],
+                    result["history_append"],
+                    **kwargs,
+                )
+
+        self.assertTrue((self.bundle / "settlement_journal.json").exists())
+        recovered = settle_candidate_state(
+            self.bundle,
+            result["candidate_state"],
+            result["history_append"],
+            **kwargs,
+        )
+        self.assertEqual(recovered["state_id"], "STATE-RECOVERED")
+        self.assertEqual(
+            load_json(self.bundle / "current_graph.json"), result["candidate_graph"]
+        )
+        self.assertFalse((self.bundle / "settlement_journal.json").exists())
+        self.assertFalse((self.bundle / "candidate_state.json").exists())
 
 
 if __name__ == "__main__":

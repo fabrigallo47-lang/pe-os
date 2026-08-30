@@ -148,6 +148,33 @@ class V20ExecutionPackageTests(unittest.TestCase):
             )
         self.assertEqual(stale.exception.status_code, 409)
 
+    def test_attestation_rejects_unbound_course_hash_actor_and_self_adoption(self):
+        base = {
+            "candidate_state_id": "CAND-001",
+            "human_stop_id": "STOP-001",
+            "course_id": "COURSE-EXTERNAL",
+            "actor_id": "partner-001",
+            "artifact_hash": "sha256:candidate",
+        }
+        invalid_payloads = (
+            ({**base, "course_id": "COURSE-INVENTED"}, 409),
+            ({**base, "artifact_hash": "sha256:invented"}, 409),
+            ({**base, "actor_id": "invented-actor"}, 403),
+        )
+        for payload, status_code in invalid_payloads:
+            with self.subTest(payload=payload):
+                with self.assertRaises(HTTPException) as rejected:
+                    asyncio.run(router.attest(self.run_id, payload))
+                self.assertEqual(rejected.exception.status_code, status_code)
+        self.assertEqual(router._runs[self.run_id]["authority_records"], [])
+
+        router._runs[self.run_id]["transition_output"]["human_stops"][0][
+            "required_actor_distinct_from"
+        ] = "partner-001"
+        with self.assertRaises(HTTPException) as self_adoption:
+            asyncio.run(router.attest(self.run_id, base))
+        self.assertEqual(self_adoption.exception.status_code, 409)
+
 
 if __name__ == "__main__":
     unittest.main()

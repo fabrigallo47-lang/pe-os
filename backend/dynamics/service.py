@@ -8,9 +8,12 @@ atomic persistence so API and pipeline code do not reconstruct runtime output.
 from __future__ import annotations
 
 import copy
+import functools
+import hashlib
 import json
 import os
 import tempfile
+import threading
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
@@ -27,6 +30,19 @@ REQUIRED_INPUTS = {
     "materiality_policy": "keystone_materiality_policy_v0.json",
     "authority_policy": "keystone_authority_matrix_v0.json",
 }
+
+_SETTLEMENT_LOCK = threading.RLock()
+
+
+def _settlement_serialized(function):
+    """Serialize in-process compare-and-swap checks with their file commit."""
+
+    @functools.wraps(function)
+    def locked(*args: Any, **kwargs: Any) -> Any:
+        with _SETTLEMENT_LOCK:
+            return function(*args, **kwargs)
+
+    return locked
 
 
 def _read_json(path: Path) -> Any:
@@ -56,6 +72,17 @@ def _atomic_write_json(path: Path, payload: Any) -> None:
     except Exception:
         temporary.unlink(missing_ok=True)
         raise
+
+
+def _canonical_hash(payload: Any) -> str:
+    encoded = json.dumps(
+        payload,
+        ensure_ascii=False,
+        sort_keys=True,
+        separators=(",", ":"),
+        allow_nan=False,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
 
 
 def load_bundle_inputs(bundle_dir: Path) -> dict[str, Any]:
@@ -127,6 +154,7 @@ def _serializable_transition(result: Mapping[str, Any]) -> tuple[dict[str, Any],
     return candidate_state, transition_output
 
 
+@_settlement_serialized
 def run_bundle_transition(
     bundle_dir: Path,
     event_batch: Sequence[Mapping[str, Any]],
@@ -168,12 +196,21 @@ def _absorbed_k_t(candidate_graph: Mapping[str, Any]) -> dict[str, Any]:
     }
 
 
+@_settlement_serialized
 def settle_candidate_state(
     bundle_dir: Path,
     candidate_state: Mapping[str, Any],
     history_append: Sequence[Mapping[str, Any]],
     *,
     current_state_id: str,
+    settlement_graph: Mapping[str, Any] | None = None,
+    expected_prior_state_id: str | None = None,
+    expected_prior_graph_hash: str | None = None,
+    expected_candidate_state_id: str | None = None,
+    expected_candidate_state_hash: str | None = None,
+    expected_candidate_graph_hash: str | None = None,
+    settlement_runtime_flags: Mapping[str, Mapping[str, Any]] | None = None,
+    pending_settlement: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Explicitly adopt a Candidate as Current and persist replay state.
 
@@ -181,9 +218,164 @@ def settle_candidate_state(
     after its human-review/authority checks have completed.
     """
 
-    graph = copy.deepcopy(dict(candidate_state.get("current_graph", {})))
+    bundle_dir = Path(bundle_dir)
+    journal_path = bundle_dir / "settlement_journal.json"
+    if journal_path.exists():
+        journal = _read_json(journal_path)
+        if str(journal.get("current_state_id") or "") != str(current_state_id):
+            raise DynamicsBundleError(
+                "another interrupted settlement owns the runtime bundle"
+            )
+        expected_pairs = (
+            ("prior_state_id", expected_prior_state_id),
+            ("prior_graph_hash", expected_prior_graph_hash),
+            ("candidate_state_id", expected_candidate_state_id),
+            ("candidate_state_hash", expected_candidate_state_hash),
+            ("candidate_graph_hash", expected_candidate_graph_hash),
+        )
+        if any(
+            expected is not None and str(journal.get(field)) != str(expected)
+            for field, expected in expected_pairs
+        ):
+            raise DynamicsBundleError(
+                "interrupted settlement journal does not match this prepared run"
+            )
+        target_graph = journal.get("target_graph")
+        target_state = journal.get("target_runtime_state")
+        if not isinstance(target_graph, Mapping) or not isinstance(target_state, Mapping):
+            raise DynamicsBundleError("interrupted settlement journal is incomplete")
+        current_before_recovery = _read_json(bundle_dir / "current_graph.json")
+        runtime_before_recovery = (
+            _read_json(bundle_dir / "runtime_state.json")
+            if (bundle_dir / "runtime_state.json").exists()
+            else {}
+        )
+        allowed_graph_hashes = {
+            str(journal.get("prior_graph_hash") or ""),
+            _canonical_hash(target_graph),
+        }
+        if _canonical_hash(current_before_recovery) not in allowed_graph_hashes:
+            raise DynamicsBundleError(
+                "interrupted settlement cannot recover over an unrelated Current graph"
+            )
+        runtime_id = str(runtime_before_recovery.get("state_id") or "")
+        if runtime_id and runtime_id not in {
+            str(journal.get("prior_state_id") or ""),
+            str(current_state_id),
+        }:
+            raise DynamicsBundleError(
+                "interrupted settlement cannot recover over an unrelated runtime state"
+            )
+        candidate_graph_path = bundle_dir / "candidate_graph.json"
+        candidate_state_path = bundle_dir / "candidate_state.json"
+        if not candidate_graph_path.exists():
+            raise DynamicsBundleError(
+                "interrupted settlement Candidate graph has disappeared"
+            )
+        persisted_candidate_graph = _read_json(candidate_graph_path)
+        candidate_graph_safe = _canonical_hash(persisted_candidate_graph) in {
+            str(journal.get("candidate_graph_hash") or ""),
+            _canonical_hash({}),
+        }
+        candidate_state_safe = not candidate_state_path.exists()
+        if candidate_state_path.exists():
+            candidate_state_safe = (
+                _canonical_hash(_read_json(candidate_state_path))
+                == str(journal.get("candidate_state_hash") or "")
+            )
+        if not candidate_graph_safe or not candidate_state_safe:
+            raise DynamicsBundleError(
+                "interrupted settlement Candidate artifacts were modified"
+            )
+
+        try:
+            _atomic_write_json(bundle_dir / "current_graph.json", target_graph)
+            _atomic_write_json(bundle_dir / "runtime_state.json", target_state)
+            _atomic_write_json(candidate_graph_path, {})
+            candidate_state_path.unlink(missing_ok=True)
+            _atomic_write_json(bundle_dir / "transition_output.json", {})
+            journal_path.unlink(missing_ok=True)
+        except OSError as exc:
+            raise DynamicsBundleError(
+                "settlement recovery was interrupted; retry the same request"
+            ) from exc
+        return copy.deepcopy(dict(target_state))
+
+    persisted_graph = _read_json(bundle_dir / "current_graph.json")
+    runtime_state_path = bundle_dir / "runtime_state.json"
+    persisted_state = (
+        _read_json(runtime_state_path)
+        if runtime_state_path.exists()
+        else build_runtime_state(persisted_graph)
+    )
+    runtime_graph = persisted_state.get("current_graph")
+    if not isinstance(runtime_graph, Mapping):
+        raise DynamicsBundleError("runtime_state.current_graph is required for settlement")
+    if _canonical_hash(runtime_graph) != _canonical_hash(persisted_graph):
+        raise DynamicsBundleError(
+            "runtime_state and current_graph disagree; settlement refused"
+        )
+    if (
+        expected_prior_state_id is not None
+        and str(persisted_state.get("state_id")) != str(expected_prior_state_id)
+    ):
+        raise DynamicsBundleError(
+            "stale Candidate: Current state no longer matches prior_state_id"
+        )
+    if (
+        expected_prior_graph_hash is not None
+        and _canonical_hash(persisted_graph) != str(expected_prior_graph_hash)
+    ):
+        raise DynamicsBundleError(
+            "stale Candidate: Current graph no longer matches the Candidate base"
+        )
+
+    if expected_candidate_state_id is not None:
+        supplied_candidate_id = str(candidate_state.get("state_id") or "")
+        if supplied_candidate_id != str(expected_candidate_state_id):
+            raise DynamicsBundleError("Candidate state_id does not match the prepared run")
+        persisted_candidate_path = bundle_dir / "candidate_state.json"
+        if not persisted_candidate_path.exists():
+            raise DynamicsBundleError("persisted Candidate state is missing")
+        persisted_candidate = _read_json(persisted_candidate_path)
+        if str(persisted_candidate.get("state_id") or "") != supplied_candidate_id:
+            raise DynamicsBundleError("persisted Candidate does not match the prepared run")
+
+    if expected_candidate_state_hash is not None:
+        if _canonical_hash(candidate_state) != str(expected_candidate_state_hash):
+            raise DynamicsBundleError("Candidate state envelope does not match the prepared run")
+        persisted_candidate_path = bundle_dir / "candidate_state.json"
+        if not persisted_candidate_path.exists():
+            raise DynamicsBundleError("persisted Candidate state is missing")
+        persisted_candidate = _read_json(persisted_candidate_path)
+        if _canonical_hash(persisted_candidate) != str(expected_candidate_state_hash):
+            raise DynamicsBundleError("persisted Candidate state envelope was modified")
+
+    candidate_graph = candidate_state.get("current_graph", {})
+    if expected_candidate_graph_hash is not None:
+        if _canonical_hash(candidate_graph) != str(expected_candidate_graph_hash):
+            raise DynamicsBundleError("Candidate graph hash does not match the prepared run")
+        persisted_candidate_graph_path = bundle_dir / "candidate_graph.json"
+        if not persisted_candidate_graph_path.exists():
+            raise DynamicsBundleError("persisted Candidate graph is missing")
+        persisted_candidate_graph = _read_json(persisted_candidate_graph_path)
+        if _canonical_hash(persisted_candidate_graph) != str(expected_candidate_graph_hash):
+            raise DynamicsBundleError("persisted Candidate graph is internally inconsistent")
+
+    if str(candidate_state.get("case_id") or "") != str(persisted_state.get("case_id") or ""):
+        raise DynamicsBundleError("Candidate case_id does not match the persisted Current")
+    for immutable_field in ("approved_snapshot", "history", "K_t"):
+        if candidate_state.get(immutable_field) != persisted_state.get(immutable_field):
+            raise DynamicsBundleError(
+                f"Candidate {immutable_field} diverges from its persisted Current base"
+            )
+
+    graph_source = settlement_graph if settlement_graph is not None else candidate_graph
+    graph = copy.deepcopy(dict(graph_source))
     if not graph:
         raise DynamicsBundleError("candidate_state.current_graph is required for settlement")
+    if graph.get("case_id") != persisted_state.get("case_id"):
+        raise DynamicsBundleError("Candidate case_id does not match the persisted Current")
     history = copy.deepcopy(list(candidate_state.get("history", [])))
     history.extend(copy.deepcopy(list(history_append)))
     settled = build_runtime_state(
@@ -192,10 +384,44 @@ def settle_candidate_state(
         approved_snapshot=candidate_state.get("approved_snapshot", {}),
         history=history,
         k_t=_absorbed_k_t(graph),
+        runtime_flags=(
+            settlement_runtime_flags
+            if settlement_runtime_flags is not None
+            else candidate_state.get("runtime_flags", {})
+        ),
+        pending_settlement=(
+            pending_settlement
+            if pending_settlement is not None
+            else candidate_state.get("pending_settlement")
+        ),
     )
-    bundle_dir = Path(bundle_dir)
-    _atomic_write_json(bundle_dir / "current_graph.json", graph)
-    _atomic_write_json(bundle_dir / "runtime_state.json", settled)
-    _atomic_write_json(bundle_dir / "candidate_graph.json", {})
-    (bundle_dir / "candidate_state.json").unlink(missing_ok=True)
+    journal = {
+        "schema_version": "settlement-journal/1.0",
+        "status": "SETTLING",
+        "current_state_id": current_state_id,
+        "prior_state_id": persisted_state.get("state_id"),
+        "prior_graph_hash": _canonical_hash(persisted_graph),
+        "candidate_state_id": candidate_state.get("state_id"),
+        "candidate_state_hash": _canonical_hash(candidate_state),
+        "candidate_graph_hash": _canonical_hash(candidate_graph),
+        "target_graph": graph,
+        "target_runtime_state": settled,
+    }
+    try:
+        _atomic_write_json(journal_path, journal)
+    except OSError as exc:
+        raise DynamicsBundleError(
+            "settlement journal could not be created; Current is unchanged"
+        ) from exc
+    try:
+        _atomic_write_json(bundle_dir / "current_graph.json", graph)
+        _atomic_write_json(bundle_dir / "runtime_state.json", settled)
+        _atomic_write_json(bundle_dir / "candidate_graph.json", {})
+        (bundle_dir / "candidate_state.json").unlink(missing_ok=True)
+        _atomic_write_json(bundle_dir / "transition_output.json", {})
+        journal_path.unlink(missing_ok=True)
+    except OSError as exc:
+        raise DynamicsBundleError(
+            "settlement commit was interrupted; retry the same idempotent request"
+        ) from exc
     return settled

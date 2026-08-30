@@ -259,11 +259,13 @@ def build_runtime_state(
     approved_snapshot: Mapping[str, Any] | None = None,
     history: Sequence[Mapping[str, Any]] | None = None,
     k_t: Mapping[str, Any] | None = None,
+    runtime_flags: Mapping[str, Mapping[str, Any]] | None = None,
+    pending_settlement: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     """Wrap a conforming Canonical Case graph in the runtime state envelope."""
 
     _validate_case_graph(current_graph)
-    return {
+    state = {
         "schema_version": RUNTIME_STATE_VERSION,
         "state_id": state_id or _graph_state_id(current_graph),
         "case_id": current_graph["case_id"],
@@ -274,6 +276,13 @@ def build_runtime_state(
         "history": copy.deepcopy(list(history or [])),
         "K_t": copy.deepcopy(dict(k_t or _initial_k_t(current_graph))),
     }
+    # Lifecycle flags are part of replay state only when there is something to
+    # preserve.  Omitting the empty map keeps historical replay hashes stable.
+    if runtime_flags:
+        state["runtime_flags"] = copy.deepcopy(dict(runtime_flags))
+    if pending_settlement:
+        state["pending_settlement"] = copy.deepcopy(dict(pending_settlement))
+    return state
 
 
 def _coerce_runtime_state(prior_state: Mapping[str, Any]) -> dict[str, Any]:
@@ -2666,7 +2675,9 @@ def apply_state_transition(
     contradictions: list[dict[str, Any]] = []
     epistemic_candidate_deltas: list[dict[str, Any]] = []
     sub_tolerance_mutations: list[dict[str, Any]] = []
-    runtime_flags: dict[str, dict[str, Any]] = {}
+    runtime_flags: dict[str, dict[str, Any]] = copy.deepcopy(
+        dict(state.get("runtime_flags", {}))
+    )
     history_append: list[dict[str, Any]] = []
     trigger_ids: set[str] = set()
     conflict_seed_ids: set[str] = set()
@@ -3613,6 +3624,10 @@ def apply_state_transition(
         "pending_history_append": history_append,
         "candidate_graph_hash": _sha256(candidate_graph),
     }
+    if state.get("pending_settlement"):
+        candidate_state["pending_settlement"] = copy.deepcopy(
+            state["pending_settlement"]
+        )
     return {
         "candidate_state": candidate_state,
         "transition_output": transition_output,

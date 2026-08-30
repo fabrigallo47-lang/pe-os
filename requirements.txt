@@ -3,3 +3,6 @@ httpx
 pyyaml
 python-multipart
 openpyxl
+requests
+jsonschema
+referencing

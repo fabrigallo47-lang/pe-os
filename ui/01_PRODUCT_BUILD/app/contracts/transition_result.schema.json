@@ -369,7 +369,14 @@
       "type": "object",
       "properties": {
         "candidate": {
-          "type": "object",
+          "type": [
+            "object",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          },
           "properties": {
             "state_id": {
               "type": "string",
@@ -387,7 +394,14 @@
           ]
         },
         "current": {
-          "type": "object",
+          "type": [
+            "object",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          },
           "properties": {
             "state_id": {
               "type": "string",
@@ -408,7 +422,14 @@
           ]
         },
         "approved": {
-          "type": "object",
+          "type": [
+            "object",
+            "array"
+          ],
+          "items": {
+            "type": "object",
+            "additionalProperties": true
+          },
           "properties": {
             "state_id": {
               "type": "string",
@@ -570,6 +591,13 @@
           "title",
           "status"
         ]
+      }
+    },
+    "change_sets": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": true
       }
     },
     "policy_result": {

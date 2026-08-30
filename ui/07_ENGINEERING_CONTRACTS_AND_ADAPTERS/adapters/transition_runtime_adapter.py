@@ -78,6 +78,203 @@ def _normalise_affected(items: list[Any]) -> list[dict[str, Any]]:
     return sorted(result, key=lambda item: (item["order"], item["object_id"]))
 
 
+_NON_ATTESTABLE_STOP_REASONS = {
+    "BATCH_VALUE_CONFLICT",
+    "CIRCULAR_SUPPORT",
+    "MISSING_RULE_PROVENANCE",
+    "NON_WAIVABLE_AXIOM",
+    "UPSTREAM_INPUT_BLOCKED",
+}
+
+
+def _normalise_human_stops(items: list[Any]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for index, raw in enumerate(items):
+        item = _require_mapping(raw, f"human_stops[{index}]")
+        stop_id = str(item.get("stop_id") or "")
+        object_id = str(
+            item.get("object_id")
+            or item.get("object_or_component_id")
+            or item.get("component_id")
+            or ""
+        )
+        if not stop_id or not object_id:
+            raise TransitionMappingError(
+                f"human_stops[{index}] lacks stop_id or object/component identity"
+            )
+        required_role = str(item.get("required_role") or "UNSPECIFIED_REVIEWER")
+        reason_code = str(item.get("reason_code") or "HUMAN_REVIEW_REQUIRED")
+        requested_action = str(
+            item.get("requested_action")
+            or item.get("reason")
+            or reason_code
+        )
+        reason = str(item.get("reason") or requested_action or reason_code)
+        attestable = item.get("attestable")
+        if not isinstance(attestable, bool):
+            attestable = (
+                required_role != "PREPARER"
+                and reason_code not in _NON_ATTESTABLE_STOP_REASONS
+            )
+        if item.get("resolution_kind"):
+            resolution_kind = str(item["resolution_kind"])
+        elif reason_code == "NON_WAIVABLE_AXIOM":
+            resolution_kind = "NON_WAIVABLE_BLOCK"
+        elif not attestable:
+            resolution_kind = "INPUT_OR_MODEL_CORRECTION"
+        else:
+            resolution_kind = "AUTHORITY_ATTESTATION"
+        result.append(
+            {
+                **copy.deepcopy(dict(item)),
+                "stop_id": stop_id,
+                "object_id": object_id,
+                "reason_code": reason_code,
+                "requested_action": requested_action,
+                "reason": reason,
+                "required_role": required_role,
+                # These compatibility fallbacks make the application contract
+                # renderable; the server remains authoritative for permission.
+                "required_authority_level": str(
+                    item.get("required_authority_level") or required_role
+                ),
+                "authority_verb": str(
+                    item.get("authority_verb") or "RESOLVE_HUMAN_STOP"
+                ),
+                "status": str(item.get("status") or "OPEN"),
+                "downstream_scope": list(item.get("downstream_scope") or []),
+                "resolution_kind": resolution_kind,
+                "attestable": attestable,
+            }
+        )
+    return result
+
+
+def _normalise_blocked_components(items: list[Any]) -> list[dict[str, Any]]:
+    result: list[dict[str, Any]] = []
+    for index, raw in enumerate(items):
+        item = _require_mapping(raw, f"blocked_components[{index}]")
+        component_id = str(item.get("component_id") or "")
+        if not component_id:
+            raise TransitionMappingError(
+                f"blocked_components[{index}] lacks component_id"
+            )
+        reason_code = str(item.get("reason_code") or "BLOCKED")
+        resolution = item.get("resolvable_by")
+        if resolution is None:
+            resolution = item.get("missing_assumption_or_condition")
+        result.append(
+            {
+                **copy.deepcopy(dict(item)),
+                "component_id": component_id,
+                "member_ids": list(item.get("member_ids") or []),
+                "reason_code": reason_code,
+                "reason": str(item.get("reason") or resolution or reason_code),
+                "downstream_scope": list(
+                    item.get("downstream_scope")
+                    or item.get("dependent_ids")
+                    or []
+                ),
+                "resolvable_by": None if resolution is None else str(resolution),
+                "status": str(item.get("status") or "BLOCKED"),
+            }
+        )
+    return result
+
+
+def _normalise_change_sets(
+    raw: Mapping[str, Any],
+    candidate_deltas: list[Mapping[str, Any]],
+    human_stops: list[Mapping[str, Any]],
+    blocked_components: list[Mapping[str, Any]],
+) -> list[dict[str, Any]]:
+    supplied = raw.get("change_sets") or raw.get("artifact_change_sets") or []
+    if supplied:
+        supplied = _require_list(supplied, "change_sets")
+        result: list[dict[str, Any]] = []
+        for index, value in enumerate(supplied):
+            item = _require_mapping(value, f"change_sets[{index}]")
+            change_set_id = str(
+                item.get("change_set_id")
+                or item.get("artifact_id")
+                or item.get("change_id")
+                or item.get("id")
+                or ""
+            )
+            if not change_set_id:
+                raise TransitionMappingError(f"change_sets[{index}] lacks an id")
+            changes = copy.deepcopy(list(item.get("changes") or []))
+            result.append(
+                {
+                    **copy.deepcopy(dict(item)),
+                    "change_set_id": change_set_id,
+                    "artifact_id": change_set_id,
+                    "title": str(item.get("title") or item.get("label") or change_set_id),
+                    "status": str(item.get("status") or "PREPARED"),
+                    "changes": changes,
+                    "object_ids": list(item.get("object_ids") or []),
+                    "component_ids": list(item.get("component_ids") or []),
+                    "blocking_stop_ids": list(item.get("blocking_stop_ids") or []),
+                    "blocked_component_ids": list(
+                        item.get("blocked_component_ids") or []
+                    ),
+                }
+            )
+        return result
+
+    ordered = raw.get("ordered_transitions") or []
+    result = []
+    for delta in candidate_deltas:
+        object_id = str(delta.get("object_id") or "")
+        if not object_id:
+            continue
+        component_ids = [
+            str(item.get("component_id"))
+            for item in ordered
+            if object_id in (item.get("member_ids") or []) and item.get("component_id")
+        ]
+        blocked_ids = [
+            str(item["component_id"])
+            for item in blocked_components
+            if object_id in (item.get("member_ids") or [])
+            or object_id in (item.get("downstream_scope") or [])
+        ]
+        stop_ids = [
+            str(item["stop_id"])
+            for item in human_stops
+            if object_id in (item.get("downstream_scope") or [])
+            or object_id == item.get("object_id")
+        ]
+        before = delta.get("before", delta.get("from", delta.get("old_value")))
+        after = delta.get("after", delta.get("to", delta.get("new_value")))
+        result.append(
+            {
+                "change_set_id": object_id,
+                # Compatibility alias retained until the existing Action Frontier
+                # is renamed from artifact-specific terminology.
+                "artifact_id": object_id,
+                "title": f"{str(delta.get('object_type') or 'OBJECT')} {object_id}",
+                "status": "BLOCKED" if blocked_ids else "PREPARED",
+                "object_ids": [object_id],
+                "component_ids": component_ids,
+                "blocking_stop_ids": stop_ids,
+                "blocked_component_ids": blocked_ids,
+                "changes": [
+                    {
+                        "change_id": str(delta.get("change_id") or object_id),
+                        "object_id": object_id,
+                        "field": delta.get("field"),
+                        "label": str(delta.get("label") or delta.get("field") or object_id),
+                        "before": copy.deepcopy(before),
+                        "after": copy.deepcopy(after),
+                        "reason_code": delta.get("reason_code"),
+                    }
+                ],
+            }
+        )
+    return result
+
+
 def map_engine_output(engine_output: Mapping[str, Any]) -> dict[str, Any]:
     """Map one frozen engine result into the browser transition projection.
 
@@ -102,17 +299,54 @@ def map_engine_output(engine_output: Mapping[str, Any]) -> dict[str, Any]:
     ):
         _require_list(raw[field], field)
     delta = _require_mapping(raw["candidate_current_approved_delta"], "candidate_current_approved_delta")
-    candidate = _require_mapping(delta.get("candidate"), "candidate_current_approved_delta.candidate")
+    candidate_value = delta.get("candidate")
+    if isinstance(candidate_value, Mapping):
+        candidate_metadata: Mapping[str, Any] = candidate_value
+        candidate_deltas: list[Mapping[str, Any]] = []
+    elif isinstance(candidate_value, list):
+        candidate_metadata = {}
+        candidate_deltas = [
+            _require_mapping(item, f"candidate_current_approved_delta.candidate[{index}]")
+            for index, item in enumerate(candidate_value)
+        ]
+    else:
+        raise TransitionMappingError(
+            "candidate_current_approved_delta.candidate must be an object or array"
+        )
     partial = _require_mapping(raw["partial_settlement_status"], "partial_settlement_status")
 
     output = copy.deepcopy(dict(raw))
     output["affected_set"] = _normalise_affected(raw["affected_set"])
-    output["candidate_state_id"] = str(raw.get("candidate_state_id") or candidate.get("state_id") or "")
-    if not output["candidate_state_id"]:
-        raise TransitionMappingError("candidate_state_id cannot be derived from candidate_current_approved_delta")
+    candidate_state_id = str(
+        raw.get("candidate_state_id") or candidate_metadata.get("state_id") or ""
+    )
+    if candidate_state_id:
+        output["candidate_state_id"] = candidate_state_id
+    else:
+        output.pop("candidate_state_id", None)
     output["as_of_state_id"] = str(raw.get("as_of_state_id") or raw["prior_state_id"])
-    output["status"] = str(raw.get("status") or partial.get("candidate") or candidate.get("status") or "UNKNOWN")
-    output["artifact_change_sets"] = copy.deepcopy(raw.get("artifact_change_sets") or [])
+    output["status"] = str(
+        raw.get("status")
+        or partial.get("candidate")
+        or candidate_metadata.get("status")
+        or "UNKNOWN"
+    )
+    human_stops = _normalise_human_stops(raw["human_stops"])
+    blocked_components = _normalise_blocked_components(raw["blocked_components"])
+    change_sets = _normalise_change_sets(
+        raw, candidate_deltas, human_stops, blocked_components
+    )
+    output["human_stops"] = human_stops
+    output["blocked_components"] = blocked_components
+    output["change_sets"] = change_sets
+    output["artifact_change_sets"] = copy.deepcopy(change_sets)
+    output["invariant_checks"] = [
+        {
+            **copy.deepcopy(dict(item)),
+            "check_id": str(item.get("check_id") or item.get("invariant_id") or ""),
+        }
+        for item in raw["invariant_checks"]
+    ]
     output["policy_result"] = copy.deepcopy(raw.get("policy_result") or {})
     output["mapping_contract"] = {
         "name": "frozen-engine-output-to-frontend-transition",

@@ -18,6 +18,27 @@ Candidate graph and transition output atomically. Promotion to Current is a
 separate call to ``settle_candidate_state`` after the API has satisfied the
 human stops returned by the engine.
 
+## Governed settlement boundary
+
+The V20 API promotes a Candidate only through the explicit sequence
+`admit -> prepare -> attest (when required) -> settle`:
+
+- `prepare` accepts one or more IDs emitted in `artifact_change_sets`; empty,
+  duplicate, unknown or Candidate-mismatched selections are rejected;
+- authority records are bound to the run, Candidate, replay hash, Human Stop,
+  server-owned actor assignment, authority verb and prepared selection;
+- `settle` must repeat the exact prepared Candidate and selection. A
+  compare-and-swap checks both the prior state ID and graph hash, plus the
+  persisted Candidate graph and state-envelope hashes;
+- partial settlement requires an explicit opt-in and overlays only the selected
+  unblocked object scope. Blocked components and unrelated Human Stops remain
+  in `pending_settlement` for replay;
+- a durable settlement journal makes a multi-file Current/runtime commit
+  recoverable by replaying the same idempotency key after interruption.
+
+The legacy direct event-settlement route is intentionally disabled because it
+cannot prove the prepared selection or scoped authority records.
+
 The runtime consumes a conforming Live Investment Case graph. It does not
 consume or mutate the raw extraction database.
 

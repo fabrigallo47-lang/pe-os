@@ -83,18 +83,28 @@ class V20DynamicsIntegrationTests(unittest.TestCase):
         self.assertEqual(transition["replay_hash"], router._runs[run_id]["transition_output"]["replay_hash"])
         self.assertTrue((self.bundle / "candidate_state.json").exists())
         self.assertTrue(router.RUNS_LOG.exists())
-        stop_id = transition["human_stops"][0]["stop_id"]
+        selected_change_ids = [
+            item["artifact_id"] for item in transition["artifact_change_sets"]
+        ]
+        self.assertTrue(selected_change_ids)
+        stop_ids = [item["stop_id"] for item in transition["human_stops"]]
+        partial_required = (
+            transition["partial_settlement_status"].get("candidate") != "FULL"
+            or bool(transition["blocked_components"])
+            or any(item.get("partial") for item in transition["artifact_change_sets"])
+        )
 
         prepared = asyncio.run(
             router.prepare_run(
                 run_id,
                 {
-                    "selected_change_ids": ["CL-028"],
+                    "candidate_state_id": transition["candidate_state_id"],
+                    "selected_change_ids": selected_change_ids,
                     "actor_id": "preparer-001",
                 },
             )
         )
-        self.assertEqual(prepared["selected_change_ids"], ["CL-028"])
+        self.assertEqual(prepared["selected_change_ids"], selected_change_ids)
         self.assertEqual(
             len(list((router.VAULT / "deals/keystone/events").glob("*run-prepared*.md"))),
             1,
@@ -104,45 +114,79 @@ class V20DynamicsIntegrationTests(unittest.TestCase):
         router._runs.clear()
         router._load_durable_registries()
         self.assertIn(run_id, router._runs)
-        self.assertEqual(router._runs[run_id]["selected_change_ids"], ["CL-028"])
+        self.assertEqual(
+            router._runs[run_id]["selected_change_ids"], selected_change_ids
+        )
 
         with self.assertRaisesRegex(Exception, "recorded human approval"):
-            asyncio.run(router.settle_run(run_id, BackgroundTasks(), {}))
-
-        attestation = asyncio.run(
-            router.attest(
-                run_id,
-                {
-                    "candidate_state_id": transition["candidate_state_id"],
-                    "human_stop_id": stop_id,
-                    "course_id": "ADOPT-CANDIDATE",
-                    "actor_id": "reviewer-001",
-                    "actor_role": "PROFESSIONAL_REVIEWER",
-                    "artifact_hash": transition["replay_hash"],
-                },
+            asyncio.run(
+                router.settle_run(
+                    run_id,
+                    BackgroundTasks(),
+                    {
+                        "candidate_state_id": transition["candidate_state_id"],
+                        "selected_change_ids": selected_change_ids,
+                        "human_stop_ids": stop_ids,
+                        "authority_record_ids": [],
+                        "execution_package_ids": [],
+                        "actor_id": "partner-001",
+                        "allow_partial_settlement": partial_required,
+                        "idempotency_key": f"SETTLE-NO-AUTH-{run_id}",
+                    },
+                )
             )
-        )
-        record_id = attestation["authority_record"]["authority_record_id"]
+
+        record_ids = []
+        package_ids = []
+        for stop_id in stop_ids:
+            attestation = asyncio.run(
+                router.attest(
+                    run_id,
+                    {
+                        "candidate_state_id": transition["candidate_state_id"],
+                        "human_stop_id": stop_id,
+                        "course_id": "ADOPT-CANDIDATE",
+                        "actor_id": "partner-001",
+                        "artifact_hash": transition["replay_hash"],
+                    },
+                )
+            )
+            record_ids.append(
+                attestation["authority_record"]["authority_record_id"]
+            )
+            if attestation.get("execution_package"):
+                package_ids.append(
+                    attestation["execution_package"]["execution_package_id"]
+                )
 
         # The authority record must survive another restart before settlement.
         router._runs.clear()
         router._load_durable_registries()
         self.assertEqual(
-            router._runs[run_id]["authority_records"][0]["authority_record_id"],
-            record_id,
+            [
+                item["authority_record_id"]
+                for item in router._runs[run_id]["authority_records"]
+            ],
+            record_ids,
         )
         settled = asyncio.run(
             router.settle_run(
                 run_id,
                 BackgroundTasks(),
                 {
-                    "actor_id": "reviewer-001",
-                    "authority_record_ids": [record_id],
+                    "candidate_state_id": transition["candidate_state_id"],
+                    "selected_change_ids": selected_change_ids,
+                    "human_stop_ids": stop_ids,
+                    "authority_record_ids": record_ids,
+                    "execution_package_ids": package_ids,
+                    "actor_id": "partner-001",
+                    "allow_partial_settlement": partial_required,
+                    "idempotency_key": f"SETTLE-{run_id}",
                 },
             )
         )
         self.assertEqual(settled["runtime_state_id"], settled["current_state_id"])
-        self.assertEqual(settled["selected_change_ids"], ["CL-028"])
+        self.assertEqual(settled["selected_change_ids"], selected_change_ids)
         self.assertTrue((self.bundle / "runtime_state.json").exists())
         self.assertEqual(json.loads((self.bundle / "candidate_graph.json").read_text()), {})
         settlement_files = list(
@@ -150,14 +194,18 @@ class V20DynamicsIntegrationTests(unittest.TestCase):
         )
         self.assertEqual(len(settlement_files), 1)
         settlement_event = router._read_frontmatter(settlement_files[0])
-        self.assertEqual(settlement_event["selected-change-ids"], ["CL-028"])
+        self.assertEqual(
+            settlement_event["selected-change-ids"], selected_change_ids
+        )
         self.assertEqual(settlement_event["current_state_id"], settled["current_state_id"])
 
         router._runs.clear()
         router._load_durable_registries()
         self.assertEqual(router._runs[run_id]["status"], "SETTLED")
         self.assertEqual(router._runs[run_id]["settled_state_id"], settled["current_state_id"])
-        self.assertEqual(router._runs[run_id]["selected_change_ids"], ["CL-028"])
+        self.assertEqual(
+            router._runs[run_id]["selected_change_ids"], selected_change_ids
+        )
 
         refreshed = router.projection("keystone")
         self.assertEqual(refreshed["context"]["as_of_state_id"], settled["current_state_id"])

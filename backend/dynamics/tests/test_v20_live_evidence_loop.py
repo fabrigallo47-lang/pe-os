@@ -202,20 +202,74 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
             candidate["candidate_graph"],
         )
 
+        selected_change_ids = [
+            item["artifact_id"] for item in transition["artifact_change_sets"]
+        ]
+        self.assertTrue(selected_change_ids)
+        stop_ids = [item["stop_id"] for item in transition["human_stops"]]
+        partial_required = (
+            transition["partial_settlement_status"].get("candidate") != "FULL"
+            or bool(transition["blocked_components"])
+            or any(item.get("partial") for item in transition["artifact_change_sets"])
+        )
+
         router._runs.clear()
         router._load_durable_registries()
+        prepared = asyncio.run(
+            router.prepare_run(
+                run_id,
+                {
+                    "candidate_state_id": transition["candidate_state_id"],
+                    "selected_change_ids": selected_change_ids,
+                    "actor_id": "preparer-001",
+                },
+            )
+        )
+        self.assertEqual(prepared["status"], "PREPARED")
+        self.assertEqual(prepared["selected_change_ids"], selected_change_ids)
+
+        authority_record_ids = []
+        execution_package_ids = []
+        for stop_id in stop_ids:
+            attested = asyncio.run(
+                router.attest(
+                    run_id,
+                    {
+                        "candidate_state_id": transition["candidate_state_id"],
+                        "human_stop_id": stop_id,
+                        "course_id": "ADOPT-CANDIDATE",
+                        "actor_id": "partner-001",
+                        "artifact_hash": transition["replay_hash"],
+                    },
+                )
+            )
+            authority_record_ids.append(
+                attested["authority_record"]["authority_record_id"]
+            )
+            if attested.get("execution_package"):
+                execution_package_ids.append(
+                    attested["execution_package"]["execution_package_id"]
+                )
+
         settled = asyncio.run(
             router.settle_run(
                 run_id,
                 BackgroundTasks(),
                 {
-                    "actor_id": "reviewer-001",
-                    "selected_change_ids": [self.claim["claim_id"]],
+                    "candidate_state_id": transition["candidate_state_id"],
+                    "selected_change_ids": selected_change_ids,
+                    "human_stop_ids": stop_ids,
+                    "authority_record_ids": authority_record_ids,
+                    "execution_package_ids": execution_package_ids,
+                    "actor_id": "partner-001",
+                    "allow_partial_settlement": partial_required,
+                    "idempotency_key": f"SETTLE-{run_id}",
                 },
             )
         )
         self.assertEqual(settled["runtime_state_id"], settled["current_state_id"])
         self.assertEqual(settled["replay_hash"], transition["replay_hash"])
+        self.assertEqual(settled["selected_change_ids"], selected_change_ids)
 
         router._runs.clear()
         router._load_durable_registries()

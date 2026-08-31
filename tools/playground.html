@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>PANTA — Banco di prova estrazione</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#f7f5f0; --panel:#fff; --ink:#1c1b19; --sub:#5b564c; --line:#d8d2c4;
+    --new:#3a3a68; --new-fill:#e9e9f4;
+    --corr:#2e5c4f; --corr-fill:#e7efe9;
+    --contr:#a3341f; --contr-fill:#fbe9e4;
+    --warn:#8a6d1f; --warn-fill:#f6efd9;
+    --mono:"SFMono-Regular",Consolas,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{--bg:#15171a;--panel:#1c1f23;--ink:#eae7de;--sub:#a9a396;--line:#33363b;
+      --new:#9b9bd6;--new-fill:#212236;--corr:#7fbfa4;--corr-fill:#1a2b24;
+      --contr:#e2705a;--contr-fill:#2e1c18;--warn:#d9b95f;--warn-fill:#2b2510;}
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;line-height:1.5}
+  .wrap{max-width:1180px;margin:0 auto;padding:26px 22px 70px}
+  h1{font-size:22px;margin:0 0 4px}
+  .sub{color:var(--sub);font-size:13.5px;margin:0 0 20px;max-width:780px}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px;margin-bottom:16px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin:0 0 12px}
+  textarea{width:100%;min-height:110px;font-family:var(--mono);font-size:13px;padding:11px;border:1px solid var(--line);border-radius:8px;background:var(--bg);color:var(--ink);resize:vertical}
+  .row{display:flex;gap:9px;align-items:center;flex-wrap:wrap;margin-top:11px}
+  button{font:inherit;font-size:13px;padding:8px 15px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;cursor:pointer}
+  button.primary{background:var(--new-fill);border-color:var(--new);color:var(--new);font-weight:600}
+  button:disabled{opacity:.45;cursor:default}
+  .hint{font-size:12px;color:var(--sub)}
+  .ex{font-size:12px;padding:5px 10px}
+  .stage{border-left:3px solid var(--line);padding:2px 0 2px 13px;margin-bottom:14px}
+  .stage b{font-size:13px}
+  .stage .d{font-size:12.5px;color:var(--sub)}
+  .stage .it{font-family:var(--mono);font-size:11.5px;color:var(--sub);margin-top:5px;padding:5px 8px;background:var(--bg);border-radius:5px;white-space:pre-wrap;word-break:break-word}
+  .claim{border:1px solid var(--line);border-radius:10px;padding:14px;margin-bottom:11px}
+  .claim.CONTRADICTS{border-color:var(--contr);background:var(--contr-fill)}
+  .claim.CORROBORATES{border-color:var(--corr);background:var(--corr-fill)}
+  .ev{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:20px;margin-bottom:8px}
+  .ev.NEW_IDENTITY{background:var(--new-fill);color:var(--new)}
+  .ev.CORROBORATES{background:var(--corr-fill);color:var(--corr)}
+  .ev.CONTRADICTS{background:var(--contr-fill);color:var(--contr)}
+  .stmt{font-size:14px;margin:0 0 9px}
+  .dims{display:flex;flex-wrap:wrap;gap:5px;margin:9px 0}
+  .dim{font-family:var(--mono);font-size:11px;background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:2px 7px}
+  .dim.empty{opacity:.4;font-style:italic}
+  .why{font-size:12.5px;color:var(--sub);border-left:3px solid var(--line);padding-left:10px;margin-top:9px}
+  .why.bad{border-color:var(--warn);color:var(--warn)}
+  .err{background:var(--contr-fill);border:1px solid var(--contr);color:var(--contr);border-radius:9px;padding:12px;font-family:var(--mono);font-size:12px;white-space:pre-wrap}
+  .empty{color:var(--sub);font-style:italic;font-size:13px}
+  #busy{display:none;color:var(--sub);font-size:13px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Banco di prova — estrazione pezzo per pezzo</h1>
+  <p class="sub">Metti una frase, un documento o un workbook e guarda cosa fa ogni strato: dove taglia, cosa propone il modello, che identità ne esce e — soprattutto — cosa <b>si rifiuta</b> di fare. Nulla viene scritto nel vault: lo stato vive in memoria e sparisce al riavvio.</p>
+
+  <div class="card">
+    <h2>1 · Cosa gli dai</h2>
+    <textarea id="text" placeholder="Incolla una frase o un paragrafo…&#10;&#10;Es: L'EBITDA rettificato FY2025 è pari a 11,4 milioni di dollari secondo la QoE indipendente."></textarea>
+    <div class="row">
+      <button class="primary" id="run">Estrai</button>
+      <input type="file" id="file" style="display:none" accept=".md,.txt,.html,.pdf,.xlsx,.xlsm">
+      <button id="pick">Carica file (md · txt · pdf · xlsx)</button>
+      <button id="reset">Svuota sessione</button>
+      <span id="busy">estraggo…</span>
+      <span class="hint" id="count"></span>
+    </div>
+    <div class="row">
+      <span class="hint">prova rapida:</span>
+      <button class="ex" data-t="L'EBITDA rettificato FY2025 è 11,4 milioni di dollari secondo la QoE indipendente.">EBITDA QoE 11,4</button>
+      <button class="ex" data-t="Il venditore dichiara un EBITDA rettificato FY2025 di 12,7 milioni di dollari.">poi venditore 12,7 →conflitto</button>
+      <button class="ex" data-t="Il fatturato della linea di servizio field inspection è previsto a 14,1 milioni di dollari per il FY2025.">una linea di servizio</button>
+      <button class="ex" data-t="Il margine è migliorato significativamente rispetto all'anno scorso.">senza periodo →irrisolvibile</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>2 · Cosa ha fatto ogni strato</h2>
+    <div id="stages"><p class="empty">Ancora niente.</p></div>
+  </div>
+
+  <div class="card">
+    <h2>3 · I claim, con la loro identità</h2>
+    <div id="claims"><p class="empty">Ancora niente.</p></div>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+
+function busy(on){ $('busy').style.display = on ? 'inline' : 'none';
+  $('run').disabled = on; $('pick').disabled = on; }
+
+function show(d){
+  if (d.error){ $('stages').innerHTML = `<div class="err">${esc(d.error)}</div>`; return; }
+
+  $('stages').innerHTML = (d.stages||[]).map(s =>
+    `<div class="stage"><b>${esc(s.layer)}</b><div class="d">${esc(s.detail)}</div>`
+    + (s.items||[]).map(i => `<div class="it">${esc(i.locator)}${i.preview ? '\n' + esc(i.preview) : ''}</div>`).join('')
+    + `</div>`).join('') || '<p class="empty">nessuno stadio</p>';
+
+  const cs = d.claims || [];
+  $('claims').innerHTML = cs.length ? cs.map(c => {
+    const ev = c.relation.event;
+    const dims = c.identity.dimensions.map(x =>
+      `<span class="dim${x.value ? '' : ' empty'}">${esc(x.name)}: ${esc(x.value || '—')}</span>`).join('');
+    const peers = (c.relation.peers||[]).length
+      ? `<div class="dims">${c.relation.peers.map(p=>`<span class="dim">${esc(p)}</span>`).join('')}</div>` : '';
+    return `<div class="claim ${ev}">
+      <span class="ev ${ev}">${ev}</span>
+      <p class="stmt">${esc(c.statement)}</p>
+      <div class="dims"><span class="dim">valore: ${esc(c.value ?? '—')} ${esc(c.unit||'')}</span>
+        <span class="dim">epistemico: ${esc(c.epistemic)}</span>
+        <span class="dim">locator: ${esc(c.locator)}</span></div>
+      ${dims ? `<div class="dims">${dims}</div>` : ''}
+      <div class="why${c.identity.resolvable ? '' : ' bad'}">${esc(c.identity.why)}</div>
+      <div class="why">${esc(c.relation.why)}</div>
+      ${peers}
+      ${(c.validation_errors||[]).length ? `<div class="why bad">validazione: ${esc(c.validation_errors.join('; '))}</div>` : ''}
+    </div>`;
+  }).join('') : '<p class="empty">nessun claim proposto per questo input</p>';
+
+  if (d.session_size != null) $('count').textContent = `${d.session_size} claim nella sessione`;
+}
+
+async function post(body, isForm){
+  busy(true);
+  try{
+    const r = await fetch('/', isForm ? {method:'POST', body} : {
+      method:'POST', headers:{'Content-Type':'application/json'}, body:JSON.stringify(body)});
+    show(await r.json());
+  }catch(e){ $('stages').innerHTML = `<div class="err">${esc(e.message)}</div>`; }
+  finally{ busy(false); }
+}
+
+$('run').onclick = () => { const t=$('text').value.trim(); if(t) post({text:t}); };
+$('pick').onclick = () => $('file').click();
+$('file').onchange = e => { const f=e.target.files[0]; if(!f) return;
+  const fd=new FormData(); fd.append('file', f); post(fd, true); e.target.value=''; };
+$('reset').onclick = async () => { await fetch('/reset');
+  $('count').textContent='0 claim nella sessione';
+  $('claims').innerHTML='<p class="empty">sessione svuotata</p>'; };
+document.querySelectorAll('.ex').forEach(b =>
+  b.onclick = () => { $('text').value = b.dataset.t; $('run').click(); });
+</script>
+</body>
+</html>

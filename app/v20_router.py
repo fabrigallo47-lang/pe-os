@@ -49,7 +49,12 @@ from backend.dynamics import (
     settle_candidate_state,
 )
 from tools.source_envelope import build_source_envelope
-from tools.archetype_pack import UNASSIGNED_WORKSTREAM, normalize_workstream
+from tools.archetype_pack import (
+    UNASSIGNED_WORKSTREAM,
+    canonical_question_spine,
+    load_pack,
+    normalize_workstream,
+)
 
 ROOT = Path(__file__).resolve().parent.parent
 INDEX_DB = Path(os.environ["PEOS_DB"]) if os.environ.get("PEOS_DB") else ROOT / ".index" / "vault.db"
@@ -573,6 +578,23 @@ def _active_fund_lens(case_id: str) -> dict:
     return load_fund_lens(override if override.exists() else DEFAULT_FUND_LENS_PATH)
 
 
+def _registry_fund_lens(case_id: str) -> dict | None:
+    """Return only a Lens that may extend this case's question registry.
+
+    A case override is an explicit, validated Lens.  The repository default is
+    Keystone-specific and remains a provisional input for that demo case; it
+    must never silently become another deal's institutional spine.
+    """
+    from bind_questions_e3 import DEFAULT_FUND_LENS_PATH, load_fund_lens
+
+    override = VAULT / "deals" / case_id / "fund_lens.json"
+    if override.exists():
+        return load_fund_lens(override)
+    if case_id.lower() == "keystone":
+        return load_fund_lens(DEFAULT_FUND_LENS_PATH)
+    return None
+
+
 def _fund_lens_archive_path(case_id: str, lens: dict) -> Path:
     lens_id = str(lens["lens_id"])
     version = str(lens["version"])
@@ -617,11 +639,12 @@ def _configure_fund_lens(case_id: str, payload: dict) -> dict:
     _case_vault_dir(case_id)
     try:
         lens = validate_fund_lens(payload)
+        registry_records = _question_registry_records(case_id, lens)
     except ValueError as exc:
         raise HTTPException(422, str(exc)) from exc
 
     q_dir = _case_vault_dir(case_id) / "questions"
-    for question in lens["questions"]:
+    for question in registry_records:
         path = q_dir / f"{str(question['id']).lower()}.md"
         if not path.exists():
             continue
@@ -629,7 +652,7 @@ def _configure_fund_lens(case_id: str, payload: dict) -> dict:
         if existing.get("origin") == "deal_emergent":
             raise HTTPException(
                 409,
-                f"Fund Lens question {question['id']} conflicts with a deal-emergent question",
+                f"Registry question {question['id']} conflicts with a deal-emergent question",
             )
 
     active_path = _case_vault_dir(case_id) / "fund_lens.json"
@@ -657,35 +680,125 @@ def _configure_fund_lens(case_id: str, payload: dict) -> dict:
     }
 
 
+def _question_registry_records(case_id: str, fund_lens: dict | None = None) -> list[dict]:
+    """Merge the canonical archetype spine with optional Lens refinements."""
+    pack_questions = canonical_question_spine(load_pack("buyout"))
+    records: dict[str, dict] = {}
+    canonical_ids: dict[str, str] = {}
+    order: list[str] = []
+    for question in pack_questions:
+        qid = str(question["id"])
+        order.append(qid)
+        canonical_ids[qid.casefold()] = qid
+        records[qid] = {
+            "type": "question", "id": qid, "deal": case_id,
+            "title": question["title"], "question": question["title"],
+            "state": "open", "status": "open", "critical": False,
+            "workstream": question["workstream"],
+            "origin": "archetype", "question_version": question["question_version"],
+            "governing_question": question["governing_question"],
+            "archetype_id": question["archetype_id"],
+            "archetype_pack_version": question["archetype_pack_version"],
+            "archetype_question_family_id": question["question_family_id"],
+            "provenance": {
+                "archetype": {
+                    "archetype_id": question["archetype_id"],
+                    "pack_version": question["archetype_pack_version"],
+                    "question_family_id": question["question_family_id"],
+                },
+            },
+        }
+
+    lens = fund_lens
+    if lens is not None:
+        override = VAULT / "deals" / case_id / "fund_lens.json"
+        lens_status = "validated_case_override" if override.exists() else "provisional_input"
+        for question in lens["questions"]:
+            configured_qid = str(question["id"])
+            qid = canonical_ids.get(configured_qid.casefold(), configured_qid)
+            lens_provenance = {
+                "lens_id": lens["lens_id"],
+                "lens_version": lens["version"],
+                "question_version": question.get("version", 1),
+                "configured_question_id": configured_qid,
+                "status": lens_status,
+            }
+            if qid in records:
+                base = records[qid]
+                if base["origin"] != "archetype":
+                    raise ValueError(
+                        "Fund Lens question IDs collide on the case-insensitive registry path: "
+                        f"{base['id']} and {configured_qid}"
+                    )
+                base.update({
+                    "title": str(question["title"]),
+                    "question": str(question["title"]),
+                    "question_version": question.get("version", 1),
+                    "archetype_title": base["title"],
+                    "refined_by": "fund_lens",
+                    "fund_lens_id": lens["lens_id"],
+                    "fund_lens_version": lens["version"],
+                    "fund_lens_question_version": question.get("version", 1),
+                    "fund_lens_status": lens_status,
+                    "fund_lens_workstream": normalize_workstream(question.get("workstream")),
+                })
+                base["provenance"] = {
+                    **base["provenance"], "fund_lens": lens_provenance,
+                }
+                continue
+
+            order.append(qid)
+            canonical_ids[qid.casefold()] = qid
+            records[qid] = {
+                "type": "question", "id": qid, "deal": case_id,
+                "title": str(question["title"]), "question": str(question["title"]),
+                "state": "open", "status": "open", "critical": False,
+                "workstream": normalize_workstream(question.get("workstream")),
+                "origin": "fund_lens", "question_version": question.get("version", 1),
+                "fund_lens_id": lens["lens_id"], "fund_lens_version": lens["version"],
+                "fund_lens_question_version": question.get("version", 1),
+                "fund_lens_status": lens_status,
+                "provenance": {"fund_lens": lens_provenance},
+            }
+    return [records[qid] for qid in order]
+
+
 def _ensure_question_registry(case_id: str, fund_lens: dict | None = None) -> None:
-    """Materialize versioned Fund Lens questions, never claim-derived facts."""
-    lens = fund_lens or _active_fund_lens(case_id)
+    """Materialize archetype questions, then optional Lens refinements/extensions."""
+    lens = fund_lens if fund_lens is not None else _registry_fund_lens(case_id)
     q_dir = VAULT / "deals" / case_id / "questions"
     q_dir.mkdir(parents=True, exist_ok=True)
-    for question in lens["questions"]:
+    for question in _question_registry_records(case_id, lens):
         qid = str(question["id"])
         title = str(question["title"])
         path = q_dir / f"{qid.lower()}.md"
         existing = _read_frontmatter(path) if path.exists() else {}
         if existing.get("origin") == "deal_emergent":
-            raise HTTPException(409, f"Fund Lens question {qid} conflicts with a deal-emergent question")
+            raise HTTPException(409, f"Registry question {qid} conflicts with a deal-emergent question")
+        registry_managed = {
+            "type", "id", "deal", "title", "question", "workstream", "origin",
+            "question_version", "governing_question", "archetype_id",
+            "archetype_pack_version", "archetype_question_family_id", "archetype_title",
+            "refined_by", "fund_lens_id", "fund_lens_version",
+            "fund_lens_question_version", "fund_lens_status", "fund_lens_workstream",
+            "provenance", "written-by",
+        }
+        preserved = {key: value for key, value in existing.items() if key not in registry_managed}
         fm = {
-            **existing,
-            "type": "question", "id": qid, "deal": case_id,
-            "title": title, "question": title,
+            **preserved,
+            **question,
             "state": existing.get("state", "open"),
             "status": existing.get("status", "open"),
             "critical": existing.get("critical", False),
-            "workstream": normalize_workstream(question.get("workstream")),
             "opened": existing.get("opened", _today()),
-            "written-by": "fund-lens-registry",
-            "origin": "fund_lens", "question_version": question.get("version", 1),
-            "fund_lens_id": lens["lens_id"], "fund_lens_version": lens["version"],
+            "written-by": "question-registry",
         }
-        _write_text_atomic(
-            path,
-            "---\n" + yaml.safe_dump(fm, sort_keys=False, allow_unicode=True) + "---\n\n# " + title + "\n",
+        content = (
+            "---\n" + yaml.safe_dump(fm, sort_keys=False, allow_unicode=True)
+            + "---\n\n# " + title + "\n"
         )
+        if not path.exists() or path.read_text(encoding="utf-8") != content:
+            _write_text_atomic(path, content)
 
 
 def _proposal_path(job_id: str, case_id: str = "keystone") -> Path:
@@ -2488,9 +2601,9 @@ def _load_bears_on_map(case_id: str = "keystone") -> dict[str, list[str]]:
 
 def _load_questions(case_id: str) -> list[dict]:
     q_dir = VAULT / "deals" / case_id / "questions"
-    lens = _active_fund_lens(case_id)
-    lens_questions = {str(item["id"]): item for item in lens["questions"]}
-    lens_order = {str(item["id"]): index for index, item in enumerate(lens["questions"])}
+    desired = _question_registry_records(case_id, _registry_fund_lens(case_id))
+    desired_by_id = {str(item["id"]): item for item in desired}
+    desired_order = {str(item["id"]): index for index, item in enumerate(desired)}
     out = []
     if q_dir.exists():
         for md in sorted(q_dir.glob("*.md")):
@@ -2503,34 +2616,24 @@ def _load_questions(case_id: str) -> list[dict]:
                     fm.setdefault("question_version", 1)
                 qid = str(fm.get("id") or "")
                 if fm.get("origin") in {"fund_lens", "archetype"}:
-                    active = lens_questions.get(qid)
+                    active = desired_by_id.get(qid)
                     if not active:
                         continue
-                    fm.update({
-                        "title": active["title"],
-                        "question": active["title"],
-                        "workstream": normalize_workstream(active.get("workstream")),
-                        "origin": "fund_lens",
-                        "question_version": active.get("version", 1),
-                        "fund_lens_id": lens["lens_id"],
-                        "fund_lens_version": lens["version"],
-                    })
+                    operational = {
+                        key: fm[key] for key in ("state", "status", "critical", "opened")
+                        if key in fm
+                    }
+                    fm.update(active)
+                    fm.update(operational)
                 out.append(fm)
     existing = {str(item.get("id")) for item in out}
-    for question in lens["questions"]:
+    for question in desired:
         if str(question["id"]) in existing:
             continue
-        out.append({
-            "type": "question", "id": question["id"], "deal": case_id,
-            "title": question["title"], "question": question["title"],
-            "state": "open", "status": "open", "critical": False,
-            "workstream": normalize_workstream(question.get("workstream")),
-            "origin": "fund_lens", "question_version": question.get("version", 1),
-            "fund_lens_id": lens["lens_id"], "fund_lens_version": lens["version"],
-        })
+        out.append(dict(question))
     out.sort(key=lambda item: (
-        0 if str(item.get("id") or "") in lens_order else 1,
-        lens_order.get(str(item.get("id") or ""), 10**9),
+        0 if str(item.get("id") or "") in desired_order else 1,
+        desired_order.get(str(item.get("id") or ""), 10**9),
         str(item.get("id") or ""),
     ))
     return out
@@ -2765,6 +2868,15 @@ def _build_question_spine(questions: list[dict], claims: list[dict]) -> list[dic
             "owner": q.get("owner", "Unassigned"),
             "origin": q.get("origin", "deal_emergent"),
             "question_version": q.get("question_version", 1),
+            "governing_question": q.get("governing_question"),
+            "archetype_id": q.get("archetype_id"),
+            "archetype_pack_version": q.get("archetype_pack_version"),
+            "archetype_question_family_id": q.get("archetype_question_family_id"),
+            "refined_by": q.get("refined_by"),
+            "fund_lens_id": q.get("fund_lens_id"),
+            "fund_lens_version": q.get("fund_lens_version"),
+            "fund_lens_status": q.get("fund_lens_status"),
+            "provenance": copy.deepcopy(q.get("provenance", {})),
             "work_plan": q.get("work_plan", []) if isinstance(q.get("work_plan"), list) else [],
         })
     return spine
@@ -4114,8 +4226,11 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                             e3 = {}
                             raw = json.loads(v1_out.read_text())
                             workbook_formula_graphs = {}
+                        # The repository default may still provide provisional
+                        # binding rules, but only a case-qualified Lens may
+                        # extend this deal's canonical question registry.
                         fund_lens = _active_fund_lens(case_id)
-                        _ensure_question_registry(case_id, fund_lens)
+                        _ensure_question_registry(case_id, _registry_fund_lens(case_id))
                         new_claims = _derive_bears_on(
                             _normalise_v1_claims(raw, filename), e3, fund_lens
                         )

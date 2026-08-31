@@ -53,6 +53,17 @@ class ArchetypePackTests(unittest.TestCase):
 
         self.assertEqual(len(family_ids), len(set(family_ids)))
 
+    def test_question_families_project_to_a_stable_governed_spine(self):
+        spine = archetype_pack.canonical_question_spine(archetype_pack.load_pack())
+
+        self.assertEqual(len(spine), 54)
+        self.assertEqual(spine[0]["id"], "BF-COM-01")
+        self.assertEqual(spine[0]["question_family_id"], "BF-COM-01")
+        self.assertEqual(spine[0]["archetype_id"], "buyout")
+        self.assertEqual(spine[0]["archetype_pack_version"], "0.2.0")
+        self.assertTrue(spine[0]["governing_question"])
+        self.assertEqual(len({item["id"] for item in spine}), len(spine))
+
     def test_missing_pack_names_the_expected_path(self):
         with tempfile.TemporaryDirectory() as directory:
             missing_path = Path(directory) / "missing-pack.yaml"

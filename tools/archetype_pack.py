@@ -54,6 +54,54 @@ def question_families(pack: dict[str, Any], workstream_id: str) -> list[dict[str
     return families
 
 
+def canonical_question_spine(pack: dict[str, Any]) -> list[dict[str, Any]]:
+    """Project the pack's question families into a stable question spine.
+
+    A question-family id is already the pack's durable semantic identifier, so
+    the registry must use it directly rather than minting title-derived ids.
+    The governing question remains explicit routing context on every family;
+    it is not turned into a deal fact or a synthesized position.
+    """
+    metadata = pack.get("metadata")
+    if not isinstance(metadata, dict) or not str(metadata.get("version") or "").strip():
+        raise ValueError("Archetype pack has no metadata.version")
+
+    strategy = pack.get("strategy_definition")
+    if not isinstance(strategy, dict) or not str(strategy.get("strategy") or "").strip():
+        raise ValueError("Archetype pack has no strategy_definition.strategy")
+
+    archetype_id = str(strategy["strategy"]).strip().lower()
+    pack_version = str(metadata["version"]).strip()
+    spine: list[dict[str, Any]] = []
+    seen: set[str] = set()
+    for workstream_id in workstream_ids(pack):
+        workstream = pack["workstreams"][workstream_id]
+        governing_question = str(workstream.get("governing_question") or "").strip()
+        if not governing_question:
+            raise ValueError(f"Workstream {workstream_id} has no governing_question")
+        for family in question_families(pack, workstream_id):
+            question_id = str(family.get("id") or "").strip()
+            title = str(family.get("question") or "").strip()
+            if not question_id or not title:
+                raise ValueError(
+                    f"Workstream {workstream_id} has a question family without id or question"
+                )
+            if question_id in seen:
+                raise ValueError(f"Duplicate archetype question-family id: {question_id}")
+            seen.add(question_id)
+            spine.append({
+                "id": question_id,
+                "title": title,
+                "workstream": workstream_id,
+                "governing_question": governing_question,
+                "archetype_id": archetype_id,
+                "archetype_pack_version": pack_version,
+                "question_family_id": question_id,
+                "question_version": 1,
+            })
+    return spine
+
+
 # ── Reconciling the vocabularies that already exist ───────────────────────────
 # Three names for the same field were in use before the pack arrived:
 #

@@ -56,8 +56,10 @@ class V20QuestionGovernanceTests(unittest.TestCase):
         router._ensure_question_registry("keystone", lens)
 
         question_paths = sorted((router.VAULT / "deals/keystone/questions").glob("*.md"))
-        self.assertEqual(len(question_paths), 20)
-        metadata = router._read_frontmatter(question_paths[0])
+        self.assertEqual(len(question_paths), 74)
+        metadata = router._read_frontmatter(
+            router.VAULT / "deals/keystone/questions/q-04.md"
+        )
         self.assertEqual(metadata["origin"], "fund_lens")
         self.assertEqual(metadata["fund_lens_id"], lens["lens_id"])
         self.assertEqual(metadata["fund_lens_version"], lens["version"])
@@ -93,7 +95,7 @@ class V20QuestionGovernanceTests(unittest.TestCase):
         self.assertEqual(len(router._load_spine_change_proposals("keystone")), 1)
         preview = router.get_evidence_proposal("keystone", "job-insurance")
         self.assertFalse(preview["semantic_preview"]["current_mutated"])
-        self.assertEqual(len(preview["questions"]), 20)
+        self.assertEqual(len(preview["questions"]), 74)
         self.assertFalse((router.PIPELINE_OUT / "current_graph.json").exists())
         self.assertFalse((router.VAULT / "deals/keystone/claims").exists())
 
@@ -187,6 +189,97 @@ class V20QuestionGovernanceTests(unittest.TestCase):
         self.assertEqual(router._read_frontmatter(question_path)["origin"], "deal_emergent")
         evidence = json.loads(router._proposal_path("job-cyber", "keystone").read_text())
         self.assertEqual(evidence["claims"][0]["bears_on"], [question_id])
+
+    def test_pack_only_case_has_canonical_spine_without_keystone_lens(self):
+        router._ensure_question_registry("scout")
+
+        questions = router._load_questions("scout")
+        self.assertEqual(len(questions), 54)
+        self.assertEqual(questions[0]["id"], "BF-COM-01")
+        self.assertNotIn("Q-04", {item["id"] for item in questions})
+        self.assertTrue(all(item["origin"] == "archetype" for item in questions))
+        first = router._read_frontmatter(
+            router.VAULT / "deals/scout/questions/bf-com-01.md"
+        )
+        self.assertEqual(first["archetype_pack_version"], "0.2.0")
+        self.assertEqual(
+            first["provenance"]["archetype"]["question_family_id"], "BF-COM-01"
+        )
+        self.assertTrue(first["governing_question"])
+        for forbidden in ("claim", "value", "position", "case_reading"):
+            self.assertNotIn(forbidden, first)
+
+    def test_lens_refines_collision_extends_spine_and_versions_in_place(self):
+        first_lens = {
+            "lens_id": "FL-SCOUT-V1",
+            "version": "1.0.0",
+            "questions": [
+                {
+                    "id": "BF-COM-01", "version": 1, "workstream": "commercial",
+                    "title": "Which market perimeter is material under our house definition?",
+                },
+                {
+                    "id": "SQ-01", "version": 1, "workstream": "financial",
+                    "title": "What is the house-defined adjustment policy?",
+                },
+            ],
+        }
+        router._ensure_question_registry("scout", first_lens)
+        collision_path = router.VAULT / "deals/scout/questions/bf-com-01.md"
+        extension_path = router.VAULT / "deals/scout/questions/sq-01.md"
+        collision = router._read_frontmatter(collision_path)
+        extension = router._read_frontmatter(extension_path)
+
+        self.assertEqual(collision["origin"], "archetype")
+        self.assertEqual(collision["refined_by"], "fund_lens")
+        self.assertNotEqual(collision["archetype_title"], collision["title"])
+        self.assertEqual(collision["provenance"]["archetype"]["question_family_id"], "BF-COM-01")
+        self.assertEqual(collision["provenance"]["fund_lens"]["lens_id"], "FL-SCOUT-V1")
+        self.assertEqual(extension["origin"], "fund_lens")
+
+        collision["state"] = "investigating"
+        router._write_text_atomic(
+            collision_path,
+            "---\n" + router.yaml.safe_dump(collision, sort_keys=False, allow_unicode=True)
+            + "---\n\n# " + collision["title"] + "\n",
+        )
+        second_lens = {
+            **first_lens,
+            "version": "1.1.0",
+            "questions": [
+                {**first_lens["questions"][0], "version": 2, "title": "Which market perimeter is in scope?"},
+                first_lens["questions"][1],
+            ],
+        }
+        router._ensure_question_registry("scout", second_lens)
+        revised = router._read_frontmatter(collision_path)
+        self.assertEqual(revised["id"], "BF-COM-01")
+        self.assertEqual(revised["state"], "investigating")
+        self.assertEqual(revised["question_version"], 2)
+        self.assertEqual(revised["fund_lens_version"], "1.1.0")
+        self.assertEqual(revised["title"], "Which market perimeter is in scope?")
+
+        before = {path.name: path.read_bytes() for path in sorted(collision_path.parent.glob("*.md"))}
+        mtimes = {path.name: path.stat().st_mtime_ns for path in sorted(collision_path.parent.glob("*.md"))}
+        router._ensure_question_registry("scout", second_lens)
+        after = {path.name: path.read_bytes() for path in sorted(collision_path.parent.glob("*.md"))}
+        self.assertEqual(after, before)
+        self.assertEqual(
+            {path.name: path.stat().st_mtime_ns for path in sorted(collision_path.parent.glob("*.md"))},
+            mtimes,
+        )
+
+    def test_archetype_id_cannot_overwrite_deal_emergent_question(self):
+        q_dir = router.VAULT / "deals/scout/questions"
+        q_dir.mkdir(parents=True)
+        (q_dir / "bf-com-01.md").write_text(
+            "---\nid: BF-COM-01\norigin: deal_emergent\n---\n\n# Existing\n",
+            encoding="utf-8",
+        )
+
+        with self.assertRaises(HTTPException) as conflict:
+            router._ensure_question_registry("scout")
+        self.assertEqual(conflict.exception.status_code, 409)
 
 
 if __name__ == "__main__":

@@ -51,6 +51,29 @@ MUTATION_OBJECT_TYPES = frozenset(
     {"CLAIM", "POSITION", "MODEL_NODE", "SUPPORT_ROUTE", "ARTIFACT"}
 )
 
+# Fields only a recorded human decision may write. The engine can compute how
+# well supported a position is (epistemic_status); whether the firm has decided
+# is not a computation and must never be reached by inference.
+HUMAN_ONLY_FIELDS = frozenset({"decision_status"})
+
+# Event types that carry a human decision. An event outside this set may compute
+# anything it likes, but it cannot move a position's decision status.
+HUMAN_DECISION_EVENTS = frozenset(
+    {"IC_DECISION", "AUTHORITY_DECISION", "PROFESSIONAL_ADOPTION", "HUMAN_DECISION"}
+)
+
+
+def _is_recorded_human_decision(event: Mapping[str, Any]) -> bool:
+    """True when this event is a decision a named person made and signed.
+
+    Both halves are required. An event typed as a decision but carrying no actor
+    is a decision nobody made, which is exactly the shape an automated write
+    would take if it tried to pass itself off as one.
+    """
+    if str(event.get("event", "")).upper() not in HUMAN_DECISION_EVENTS:
+        return False
+    return bool(event.get("actor_id") or event.get("decided_by"))
+
 
 class StateInputError(ValueError):
     """Raised when the Current Live Investment Case is structurally invalid."""
@@ -2879,6 +2902,24 @@ def apply_state_transition(
                         "object_id": object_id,
                         "field": field,
                         "reason_code": "IMMUTABLE_HISTORICAL_FIELD",
+                    }
+                )
+                conflict_seed_ids.add(object_id)
+                continue
+            if field in HUMAN_ONLY_FIELDS and not _is_recorded_human_decision(event):
+                # The system may compute how well supported a position is; whether
+                # the firm has decided is not a computation. The _at_ic guard above
+                # already freezes decision_status_at_ic, but the unsuffixed field is
+                # what _truth_status reads first and what the router writes, so
+                # without this a transition could move a position to ACCEPTED with
+                # no human ever having decided — the one thing the case model must
+                # never do.
+                rejected_mutations.append(
+                    {
+                        "object_type": mutation["object_type"],
+                        "object_id": object_id,
+                        "field": field,
+                        "reason_code": "DECISION_STATUS_HUMAN_ONLY",
                     }
                 )
                 conflict_seed_ids.add(object_id)

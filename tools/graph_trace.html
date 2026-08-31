@@ -1,0 +1,209 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<title>PANTA — Come si costruisce il grafo</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{
+    --bg:#f7f5f0; --panel:#fff; --ink:#1c1b19; --sub:#5b564c; --line:#d8d2c4;
+    --new:#3a3a68; --new-fill:#e9e9f4;
+    --corr:#2e5c4f; --corr-fill:#e7efe9;
+    --contr:#a3341f; --contr-fill:#fbe9e4;
+    --unres:#8a6d1f; --unres-fill:#f6efd9;
+    --mono:"SFMono-Regular",Consolas,Menlo,monospace;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{
+      --bg:#15171a; --panel:#1c1f23; --ink:#eae7de; --sub:#a9a396; --line:#33363b;
+      --new:#9b9bd6; --new-fill:#212236;
+      --corr:#7fbfa4; --corr-fill:#1a2b24;
+      --contr:#e2705a; --contr-fill:#2e1c18;
+      --unres:#d9b95f; --unres-fill:#2b2510;
+    }
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--bg);color:var(--ink);font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Helvetica,sans-serif;line-height:1.5}
+  .wrap{max-width:1280px;margin:0 auto;padding:26px 22px 70px}
+  h1{font-size:22px;margin:0 0 4px;letter-spacing:-.01em}
+  .sub{color:var(--sub);font-size:13.5px;margin:0 0 18px;max-width:760px}
+  .controls{position:sticky;top:0;z-index:5;background:var(--bg);border-bottom:1px solid var(--line);padding:12px 0 14px;margin-bottom:18px}
+  .row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+  button{font:inherit;font-size:13px;padding:7px 13px;border:1px solid var(--line);background:var(--panel);color:var(--ink);border-radius:8px;cursor:pointer}
+  button:hover{border-color:var(--sub)}
+  button:disabled{opacity:.4;cursor:default}
+  button.primary{background:var(--new-fill);border-color:var(--new);color:var(--new);font-weight:600}
+  input[type=range]{flex:1;min-width:220px;accent-color:var(--new)}
+  .pos{font-family:var(--mono);font-size:12.5px;color:var(--sub);white-space:nowrap;min-width:96px}
+  .totals{display:flex;gap:8px;flex-wrap:wrap;margin-top:12px}
+  .tot{background:var(--panel);border:1px solid var(--line);border-radius:9px;padding:7px 12px;min-width:96px}
+  .tot b{display:block;font-size:17px;line-height:1.2}
+  .tot span{font-size:10.5px;color:var(--sub);text-transform:uppercase;letter-spacing:.04em}
+  .tot.contr b{color:var(--contr)} .tot.corr b{color:var(--corr)} .tot.unres b{color:var(--unres)}
+  .grid{display:grid;grid-template-columns:1fr 1fr;gap:18px}
+  @media(max-width:900px){.grid{grid-template-columns:1fr}}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:12px;padding:16px 18px}
+  .card h2{font-size:12px;text-transform:uppercase;letter-spacing:.05em;color:var(--sub);margin:0 0 12px}
+  .ev{display:inline-block;font-size:10px;font-weight:700;letter-spacing:.04em;padding:3px 9px;border-radius:20px;margin-bottom:8px}
+  .ev.NEW_IDENTITY{background:var(--new-fill);color:var(--new)}
+  .ev.CORROBORATES{background:var(--corr-fill);color:var(--corr)}
+  .ev.CONTRADICTS{background:var(--contr-fill);color:var(--contr)}
+  .ev.UNRESOLVABLE{background:var(--unres-fill);color:var(--unres)}
+  .stmt{font-size:14px;margin:0 0 12px}
+  .why{font-size:13px;color:var(--sub);border-left:3px solid var(--line);padding-left:11px;margin:12px 0 0}
+  .ident{font-family:var(--mono);font-size:11.5px;display:flex;flex-wrap:wrap;gap:5px;margin:10px 0}
+  .dim{background:var(--bg);border:1px solid var(--line);border-radius:5px;padding:2px 7px}
+  .dim.empty{opacity:.4;font-style:italic}
+  .peers{display:flex;flex-wrap:wrap;gap:5px;margin-top:8px}
+  .chip{font-family:var(--mono);font-size:11px;padding:3px 8px;border-radius:5px;background:var(--bg);border:1px solid var(--line)}
+  .chip.self{background:var(--new-fill);border-color:var(--new);color:var(--new);font-weight:700}
+  #groups{max-height:460px;overflow-y:auto}
+  .grp{border:1px solid var(--line);border-radius:9px;padding:9px 12px;margin-bottom:8px;font-size:12.5px}
+  .grp.hot{border-color:var(--contr);background:var(--contr-fill)}
+  .grp.active{border-color:var(--new);box-shadow:0 0 0 2px var(--new-fill)}
+  .grp .k{font-family:var(--mono);font-size:11px;color:var(--sub);word-break:break-all}
+  .grp .n{float:right;font-weight:700}
+  .empty{color:var(--sub);font-size:13px;font-style:italic}
+  footer{margin-top:34px;padding-top:16px;border-top:1px solid var(--line);color:var(--sub);font-size:12px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>Come si costruisce il grafo</h1>
+  <p class="sub">Un claim alla volta. Da solo un claim è solo un nodo: è l'<b>arrivo del secondo</b> claim sulla stessa identità che decide se il caso ha guadagnato una conferma o un conflitto. Quel momento è invisibile in un grafo finito.</p>
+
+  <div class="controls">
+    <div class="row">
+      <button id="first">⏮</button>
+      <button id="prev">◀ indietro</button>
+      <button id="play" class="primary">▶ riproduci</button>
+      <button id="next">avanti ▶</button>
+      <button id="nextEvent">↷ prossimo conflitto</button>
+      <span class="pos" id="pos">0 / 0</span>
+    </div>
+    <div class="row" style="margin-top:10px">
+      <input type="range" id="slider" min="0" value="0">
+    </div>
+    <div class="totals" id="totals"></div>
+  </div>
+
+  <div class="grid">
+    <div class="card">
+      <h2>Passo corrente</h2>
+      <div id="step"><p class="empty">Carico la traccia…</p></div>
+    </div>
+    <div class="card">
+      <h2>Identità formate <span id="grpCount" style="color:var(--sub);font-weight:400"></span></h2>
+      <div id="groups"><p class="empty">—</p></div>
+    </div>
+  </div>
+
+  <footer>
+    Generato da <code>tools/graph_trace.py</code>. Il confronto dei valori qui è volutamente grezzo:
+    decide cosa vede un lettore, non cosa il motore ammette — il rilevamento reale delle contraddizioni
+    appartiene al transition engine, che pesa anche la materialità.
+  </footer>
+</div>
+
+<script>
+let TRACE = null, i = 0, timer = null;
+const $ = id => document.getElementById(id);
+
+async function load() {
+  try {
+    const r = await fetch('../pipeline_out/trace/trace.json');
+    if (!r.ok) throw new Error('HTTP ' + r.status);
+    TRACE = await r.json();
+  } catch (e) {
+    // A file:// page cannot fetch a sibling file in most browsers. Say so, with
+    // the fix, rather than showing an empty page that looks like no data.
+    $('step').innerHTML = '<p class="empty">Non riesco a leggere <code>pipeline_out/trace/trace.json</code>'
+      + ' (' + e.message + ').<br><br>Se hai aperto il file con doppio clic, il browser blocca la lettura'
+      + ' di file vicini. Servi la cartella:<br><br><code>cd ' + '/Users/fabriziogallo/Desktop/pe-os'
+      + ' && python3 -m http.server 8900</code><br>poi apri <code>http://localhost:8900/tools/graph_trace.html</code></p>';
+    return;
+  }
+  $('slider').max = TRACE.steps.length - 1;
+  render();
+}
+
+function fmtDim(v, i) {
+  const names = ['entità','metrica','periodo','ambito','base','misura','scenario','unità','valuta'];
+  return v ? `<span class="dim">${names[i]}: ${v}</span>`
+           : `<span class="dim empty">${names[i]}: —</span>`;
+}
+
+function render() {
+  if (!TRACE) return;
+  const s = TRACE.steps[i];
+  $('pos').textContent = `${s.n} / ${TRACE.claim_count}`;
+  $('slider').value = i;
+
+  const t = s.totals;
+  $('totals').innerHTML = [
+    ['identità', t.identities, ''],
+    ['confrontabili', t.comparable_claims, ''],
+    ['conflitti', t.contradictions, 'contr'],
+    ['conferme', t.corroborations, 'corr'],
+    ['irrisolvibili', t.unresolvable, 'unres'],
+  ].map(([l, v, c]) => `<div class="tot ${c}"><b>${v}</b><span>${l}</span></div>`).join('');
+
+  const ident = s.identity
+    ? `<div class="ident">${s.identity.map(fmtDim).join('')}</div>` : '';
+  const peers = s.peers && s.peers.length
+    ? `<div class="peers"><span class="chip self">${s.claim_id}</span>`
+      + s.peers.map(p => `<span class="chip">${p}</span>`).join('') + '</div>'
+    : '';
+  $('step').innerHTML = `<span class="ev ${s.event}">${s.event}</span>`
+    + `<p class="stmt">${esc(s.statement) || '<i>(senza testo)</i>'}</p>`
+    + (s.value ? `<div class="ident"><span class="dim">valore: ${esc(s.value)}</span></div>` : '')
+    + ident + peers
+    + `<p class="why">${esc(s.why)}</p>`;
+
+  // Only groups that exist at this step, biggest first — the graph as it stands now.
+  const seen = new Map();
+  for (let k = 0; k <= i; k++) {
+    const st = TRACE.steps[k];
+    if (!st.group_key) continue;
+    const g = seen.get(st.group_key) || { n: 0, conflict: false, ident: st.identity };
+    g.n++;
+    if (st.event === 'CONTRADICTS') g.conflict = true;
+    seen.set(st.group_key, g);
+  }
+  const rows = [...seen.entries()].sort((a, b) => b[1].n - a[1].n).slice(0, 40);
+  $('grpCount').textContent = `(${seen.size}, mostro le 40 più grandi)`;
+  $('groups').innerHTML = rows.map(([k, g]) => {
+    const cls = (g.conflict ? ' hot' : '') + (k === s.group_key ? ' active' : '');
+    const label = g.ident.filter(Boolean).join(' · ');
+    return `<div class="grp${cls}"><span class="n">${g.n}</span><div class="k">${esc(label)}</div></div>`;
+  }).join('') || '<p class="empty">nessuna ancora</p>';
+}
+
+const esc = t => String(t ?? '').replace(/[&<>"]/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
+const go = n => { i = Math.max(0, Math.min(TRACE.steps.length - 1, n)); render(); };
+
+$('first').onclick = () => go(0);
+$('prev').onclick  = () => go(i - 1);
+$('next').onclick  = () => go(i + 1);
+$('slider').oninput = e => go(+e.target.value);
+$('nextEvent').onclick = () => {
+  for (let k = i + 1; k < TRACE.steps.length; k++) {
+    if (TRACE.steps[k].event === 'CONTRADICTS') return go(k);
+  }
+};
+$('play').onclick = () => {
+  if (timer) { clearInterval(timer); timer = null; $('play').textContent = '▶ riproduci'; return; }
+  $('play').textContent = '⏸ pausa';
+  timer = setInterval(() => {
+    if (i >= TRACE.steps.length - 1) { clearInterval(timer); timer = null; $('play').textContent = '▶ riproduci'; return; }
+    go(i + 1);
+  }, 220);
+};
+document.addEventListener('keydown', e => {
+  if (e.key === 'ArrowRight') go(i + 1);
+  if (e.key === 'ArrowLeft') go(i - 1);
+});
+load();
+</script>
+</body>
+</html>

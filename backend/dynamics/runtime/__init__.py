@@ -7,6 +7,7 @@ from .panta_transition_engine import (
     build_runtime_state,
     compare_incremental_global,
     compute_affected_set,
+    compute_operative_claims,
     normalize_event_batch,
 )
 from .extraction_adapter import (
@@ -32,6 +33,7 @@ __all__ = [
     "build_runtime_state",
     "compare_incremental_global",
     "compute_affected_set",
+    "compute_operative_claims",
     "normalize_event_batch",
     "ADAPTER_VERSION",
     "AdmissionInputError",

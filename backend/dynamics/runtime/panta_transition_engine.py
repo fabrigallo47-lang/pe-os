@@ -31,10 +31,19 @@ import hashlib
 import heapq
 import json
 import re
+import sys
 from collections import defaultdict, deque
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation, localcontext
+from pathlib import Path
 from typing import Any, Iterable, Mapping, MutableMapping, Sequence
+
+# Runtime tests are intentionally runnable with only ``backend/dynamics`` on
+# PYTHONPATH.  The canonical identity owner lives at the repository root.
+_REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
+if str(_REPOSITORY_ROOT) not in sys.path:
+    sys.path.append(str(_REPOSITORY_ROOT))
+from tools.object_identity import is_resolvable, metric_identity
 
 
 ENGINE_VERSION = "0.4.0-conformance"
@@ -95,6 +104,190 @@ def _canonical_json(value: Any) -> str:
 
 def _sha256(value: Any) -> str:
     return "sha256:" + hashlib.sha256(_canonical_json(value).encode("utf-8")).hexdigest()
+
+
+_EPISTEMIC_TIER = {"asserted": 0, "derived": 1, "observed": 2, "attested": 3}
+
+
+def _operative_claim_id(claim: Mapping[str, Any], index: int) -> str:
+    """Return a stable display ID without adding one to an input claim."""
+    return str(claim.get("claim_id") or claim.get("id") or f"claim-index-{index:06d}")
+
+
+def _operative_known_at(value: Any) -> datetime | None:
+    """Parse an ISO timestamp, treating a timezone-less value as UTC."""
+    if not isinstance(value, str) or not value:
+        return None
+    try:
+        parsed = datetime.fromisoformat(value.replace("Z", "+00:00"))
+    except ValueError:
+        return None
+    if parsed.tzinfo is None:
+        return parsed.replace(tzinfo=timezone.utc)
+    return parsed
+
+
+def _superseded_ids(claim: Mapping[str, Any]) -> set[str]:
+    """Normalize the claim IDs expressed by a claim's supersedes link(s)."""
+    raw = claim.get("supersedes", claim.get("supersedes_claim_ids", []))
+    values = raw if isinstance(raw, (list, tuple, set)) else [raw]
+    result: set[str] = set()
+    for value in values:
+        if value is None:
+            continue
+        text = str(value).strip()
+        match = re.fullmatch(r"\[\[([^\]]+)\]\]", text)
+        result.add(match.group(1) if match else text)
+    return result
+
+
+def compute_operative_claims(graph: Mapping[str, Any], *, as_of: str | None = None) -> dict[str, Any]:
+    """Compute, without mutating ``graph``, which claims are operative per metric.
+
+    Explicit supersession is a pairwise instruction: it removes its target from
+    consideration.  The epistemic hierarchy and, only then, known-at recency
+    choose among any claims not explicitly superseded.
+    """
+    cutoff = _operative_known_at(as_of) if as_of is not None else None
+    if as_of is not None and cutoff is None:
+        raise ValueError(f"as_of must be an ISO datetime: {as_of!r}")
+
+    claims = graph.get("claims", [])
+    if not isinstance(claims, Sequence) or isinstance(claims, (str, bytes)):
+        raise ValueError("graph.claims must be an array of claim objects")
+
+    grouped: dict[tuple[str, ...], list[dict[str, Any]]] = defaultdict(list)
+    unresolvable: list[str] = []
+    excluded_as_of = 0
+    for index, claim in enumerate(claims):
+        if not isinstance(claim, Mapping):
+            continue
+        known_at = _operative_known_at(claim.get("known_at"))
+        if cutoff is not None and (known_at is None or known_at > cutoff):
+            excluded_as_of += 1
+            continue
+        claim_id = _operative_claim_id(claim, index)
+        if not is_resolvable(dict(claim)):
+            unresolvable.append(claim_id)
+            continue
+        grouped[metric_identity(dict(claim))].append(
+            {"claim": claim, "claim_id": claim_id, "known_at": known_at}
+        )
+
+    groups: list[dict[str, Any]] = []
+    ambiguous_groups = 0
+    for identity in sorted(grouped):
+        entries = sorted(
+            grouped[identity], key=lambda item: (item["claim_id"], _canonical_json(item["claim"]))
+        )
+        all_ids = {item["claim_id"] for item in entries}
+        explicitly_superseded = {
+            target_id
+            for item in entries
+            for target_id in _superseded_ids(item["claim"])
+            if target_id in all_ids and target_id != item["claim_id"]
+        }
+        candidates = [item for item in entries if item["claim_id"] not in explicitly_superseded]
+
+        if len(entries) == 1:
+            winner = entries[0]
+            groups.append({
+                "identity": list(identity), "operative_claim_id": winner["claim_id"],
+                "superseded_claim_ids": [], "rule_applied": "SOLE_CLAIM",
+                "explanation": f"Claim {winner['claim_id']} is the only resolvable claim for this metric identity.",
+            })
+            continue
+
+        explicit_decides = bool(explicitly_superseded and len(candidates) == 1)
+        if explicitly_superseded and candidates:
+            winner_pool = candidates
+            rule = "EXPLICIT_SUPERSEDES" if explicit_decides else ""
+        elif not candidates:
+            ambiguous_groups += 1
+            groups.append({
+                "identity": list(identity), "operative_claim_id": None,
+                "superseded_claim_ids": [], "rule_applied": "AMBIGUOUS",
+                "explanation": "The claims form an explicit supersession cycle, so no operative claim can be selected.",
+            })
+            continue
+        else:
+            winner_pool = candidates
+            rule = ""
+
+        highest_tier = max(
+            _EPISTEMIC_TIER.get(str(item["claim"].get("epistemic") or item["claim"].get("epistemic_class") or "asserted").lower(), 0)
+            for item in winner_pool
+        )
+        tier_winners = [
+            item for item in winner_pool
+            if _EPISTEMIC_TIER.get(str(item["claim"].get("epistemic") or item["claim"].get("epistemic_class") or "asserted").lower(), 0) == highest_tier
+        ]
+        if not rule and len(tier_winners) < len(winner_pool):
+            rule = "EPISTEMIC_TIER"
+
+        known_values = [item["known_at"] for item in tier_winners]
+        latest = max(known_values) if known_values and all(value is not None for value in known_values) else None
+        recency_winners = [item for item in tier_winners if item["known_at"] == latest] if latest else tier_winners
+        if not rule and len(recency_winners) < len(tier_winners):
+            rule = "RECENCY"
+
+        if len(recency_winners) != 1:
+            ambiguous_groups += 1
+            tied_ids = ", ".join(item["claim_id"] for item in recency_winners)
+            groups.append({
+                "identity": list(identity), "operative_claim_id": None,
+                "superseded_claim_ids": [], "rule_applied": "AMBIGUOUS",
+                "explanation": f"Claims {tied_ids} cannot be distinguished by epistemic standing or known_at time, so no operative claim can be selected.",
+            })
+            continue
+
+        winner = recency_winners[0]
+        losers = sorted(all_ids - {winner["claim_id"]})
+        if rule == "EXPLICIT_SUPERSEDES":
+            directly_superseded = sorted(_superseded_ids(winner["claim"]) & all_ids)
+            explanation = f"Claim {winner['claim_id']} explicitly supersedes claim {', '.join(directly_superseded)}."
+        elif rule == "EPISTEMIC_TIER":
+            tier_winner_ids = {item["claim_id"] for item in tier_winners}
+            tier_losers = sorted(
+                item["claim_id"] for item in winner_pool if item["claim_id"] not in tier_winner_ids
+            )
+            # Name both tiers. A professional auditing this needs to see that an
+            # attestation beat an assertion; "higher epistemic standing" alone
+            # asks them to take the ranking on trust, which is the opposite of
+            # what an explainable supersession is for.
+            winner_tier = str(winner["claim"].get("epistemic_class")
+                              or winner["claim"].get("epistemic") or "unknown")
+            loser_tiers = sorted({
+                str(item["claim"].get("epistemic_class")
+                    or item["claim"].get("epistemic") or "unknown")
+                for item in winner_pool if item["claim_id"] in set(tier_losers)
+            })
+            explanation = (
+                f"Claim {winner['claim_id']} ({winner_tier}) prevails over "
+                f"{', '.join(tier_losers)} ({', '.join(loser_tiers)}): "
+                f"{winner_tier} outranks {', '.join(loser_tiers)}."
+            )
+        else:
+            recency_winner_ids = {item["claim_id"] for item in recency_winners}
+            recency_losers = sorted(
+                item["claim_id"] for item in tier_winners if item["claim_id"] not in recency_winner_ids
+            )
+            explanation = f"Claim {winner['claim_id']} prevails over claim {', '.join(recency_losers)}: later known_at among claims of equal epistemic standing."
+        groups.append({
+            "identity": list(identity), "operative_claim_id": winner["claim_id"],
+            "superseded_claim_ids": losers, "rule_applied": rule,
+            "explanation": explanation,
+        })
+
+    return {
+        "groups": groups,
+        "unresolvable": sorted(unresolvable),
+        "stats": {
+            "total_claims": len(claims), "eligible_claims": sum(len(items) for items in grouped.values()),
+            "unresolvable_claims": len(unresolvable), "excluded_as_of_claims": excluded_as_of,
+            "groups": len(groups), "ambiguous_groups": ambiguous_groups,
+        },
+    }
 
 
 def _decimal_or_original(value: Any) -> Any:

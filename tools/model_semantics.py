@@ -61,10 +61,12 @@ The signals
 What this module refuses to do
 ------------------------------
 It proposes; it never decides. Every proposal carries the signals that produced it
-and a confidence derived from how many of them agreed — not from a model's own
-sense of certainty. A cell whose meaning cannot be recovered gets no proposal at
-all rather than a guess, because a wrong binding propagates silently through the
-dependency graph while a missing one is visible as a coverage limit.
+and separate extraction, identity, binding and relation confidence — not a single
+score that lets certainty at one stage leak into another. This module has no
+binding target or relation evidence, so those dimensions remain zero. A cell whose
+meaning cannot be recovered gets no proposal at all rather than a guess, because a
+wrong binding propagates silently through the dependency graph while a missing one
+is visible as a coverage limit.
 
 Ambiguity between proposals is L3's problem: only a solver looking at the whole
 deal at once can know that two cells cannot both be "Firm EBITDA FY2025 base
@@ -81,6 +83,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import math
 import re
 import sys
 from collections import defaultdict
@@ -149,6 +152,34 @@ _PERIOD_HEADER = re.compile(
 )
 
 
+@dataclass(frozen=True)
+class ProposalConfidence:
+    """Confidence by semantic stage, per the v0.2 extraction contract.
+
+    These values are deliberately not collapsed into an ``overall`` score:
+    confidence that L1 content was extracted cannot establish an economic
+    identity, a binding to another object, or a semantic/runtime relation.
+    """
+
+    extraction: float = 0.0
+    identity: float = 0.0
+    binding: float = 0.0
+    relation: float = 0.0
+
+    def __post_init__(self) -> None:
+        for dimension in ("extraction", "identity", "binding", "relation"):
+            value = getattr(self, dimension)
+            if (
+                isinstance(value, bool)
+                or not isinstance(value, (int, float))
+                or not math.isfinite(value)
+                or not 0.0 <= value <= 1.0
+            ):
+                raise ValueError(
+                    f"confidence.{dimension} must be a finite number between 0 and 1"
+                )
+
+
 @dataclass
 class ConceptProposal:
     """One proposed economic meaning for one cell or one row-range of cells."""
@@ -161,7 +192,14 @@ class ConceptProposal:
     unit: str
     values: Any
     signals: dict[str, Any] = field(default_factory=dict)
-    confidence: float = 0.0
+    confidence: ProposalConfidence = field(default_factory=ProposalConfidence)
+
+    def __post_init__(self) -> None:
+        if not isinstance(self.confidence, ProposalConfidence):
+            raise TypeError(
+                "confidence must be ProposalConfidence with separate extraction, "
+                "identity, binding and relation values"
+            )
 
     @property
     def name(self) -> str:
@@ -448,14 +486,27 @@ class SemanticProposer:
         last = self._header_for(sheet, run[-1]["col"], row)
         header = first if (len(run) == 1 or first == last or not last) else f"{first}–{last}"
 
-        # Confidence is the share of signals that actually resolved — not a
-        # subjective score. Both coordinates, a unit, and a decided topology.
-        resolved = sum([
-            bool(label),
-            bool(header),
-            bool(unit),
-            topo["topology"] != "intermediate",
-        ])
+        # Confidence is stage-specific. L1 source coordinates and values are
+        # deterministically preserved for every emitted proposal, while the
+        # economic identity depends on four independent signals. This L2 pass
+        # proposes no binding target and no relation, so assigning either of
+        # those a positive score would invent evidence that is not available.
+        identity_signals = {
+            "label": bool(label),
+            "header": bool(header),
+            "unit": bool(unit),
+            "decided_topology": topo["topology"] != "intermediate",
+        }
+        extraction_signals = {
+            "source_cells_grounded": all(bool(c.get("ref")) for c in run),
+            "source_values_preserved": all("value" in c for c in run),
+        }
+        extraction_confidence = round(
+            sum(extraction_signals.values()) / len(extraction_signals), 2
+        )
+        identity_confidence = round(
+            sum(identity_signals.values()) / len(identity_signals), 2
+        )
         return ConceptProposal(
             sheet=sheet,
             cells=run[0]["ref"] if len(run) == 1 else f"{run[0]['ref']}:{run[-1]['ref']}",
@@ -469,9 +520,20 @@ class SemanticProposer:
                 "unit_source": unit_source,
                 "sheet": sheet,
                 "header_is_period": bool(header) and bool(_PERIOD_HEADER.match(header)),
+                "confidence_basis": {
+                    "extraction": extraction_signals,
+                    "identity": identity_signals,
+                    "binding": {"candidate_binding_evidence": False},
+                    "relation": {"relation_evidence": False},
+                },
                 **topo,
             },
-            confidence=round(resolved / 4.0, 2),
+            confidence=ProposalConfidence(
+                extraction=extraction_confidence,
+                identity=identity_confidence,
+                binding=0.0,
+                relation=0.0,
+            ),
         )
 
 
@@ -486,8 +548,14 @@ def _report(proposals: list[ConceptProposal]) -> None:
     from collections import Counter
     print(f"proposte: {len(proposals)}")
     print(f"per kind: {dict(Counter(p.kind for p in proposals))}")
-    conf = Counter(p.confidence for p in proposals)
-    print(f"confidenza: {dict(sorted(conf.items(), reverse=True))}")
+    for dimension in ("extraction", "identity", "binding", "relation"):
+        distribution = Counter(
+            getattr(proposal.confidence, dimension) for proposal in proposals
+        )
+        print(
+            f"confidenza {dimension}: "
+            f"{dict(sorted(distribution.items(), reverse=True))}"
+        )
     print(f"con unità: {sum(1 for p in proposals if p.unit)}")
 
 

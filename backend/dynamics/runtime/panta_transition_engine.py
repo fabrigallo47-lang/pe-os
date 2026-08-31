@@ -922,7 +922,7 @@ def _immediate_propagation_tolerance(
 
 def _condition_matches_decimal(condition: str, value: Decimal) -> tuple[bool, str | None]:
     match = re.search(
-        r"(<=|>=|==|<|>)\s*(-?(?:\d+(?:\.\d*)?|\.\d+))\s*$", condition.strip()
+        r"(<=|>=|==|!=|<|>)\s*(-?(?:\d+(?:\.\d*)?|\.\d+))\s*$", condition.strip()
     )
     if not match:
         return False, None
@@ -932,6 +932,7 @@ def _condition_matches_decimal(condition: str, value: Decimal) -> tuple[bool, st
         "<=": value <= threshold,
         ">=": value >= threshold,
         "==": value == threshold,
+        "!=": value != threshold,
         "<": value < threshold,
         ">": value > threshold,
     }[operator]
@@ -941,6 +942,7 @@ def _condition_matches_decimal(condition: str, value: Decimal) -> tuple[bool, st
 def _evaluate_rule_switches(
     admitted_mutations: Sequence[Mapping[str, Any]],
     execution_mapping: Mapping[str, Any],
+    registry: Mapping[str, Any] | None = None,
 ) -> dict[str, Any]:
     mutations_by_id = {
         str(mutation["object_id"]): mutation
@@ -1003,8 +1005,56 @@ def _evaluate_rule_switches(
                     )
             return None, None, None
 
-        old_branch, old_condition, old_threshold = active_branch(old_value)
-        new_branch, new_condition, new_threshold = active_branch(new_value)
+        if rule_switch.get("condition_evaluation_type") == "GENERAL_EXPRESSION":
+            operand_bindings = rule_switch.get("operand_bindings", {})
+
+            def expression_branch(
+                use_new_values: bool,
+            ) -> tuple[str | None, str | None, str | None]:
+                if not registry or not isinstance(operand_bindings, Mapping):
+                    raise ValueError("general rule switch has no runtime registry")
+                variables: dict[str, Decimal] = {}
+                for variable, raw_object_id in operand_bindings.items():
+                    object_id = str(raw_object_id)
+                    mutation = mutations_by_id.get(object_id)
+                    if mutation is not None:
+                        raw_value = mutation["to" if use_new_values else "from"]
+                    else:
+                        entry = registry.get(object_id)
+                        if entry is None:
+                            raise ValueError(f"missing rule-switch operand {object_id}")
+                        raw_value = entry["object"].get("value")
+                    variables[str(variable)] = Decimal(str(raw_value))
+                for branch in rule_switch.get("branches", []):
+                    condition = str(branch.get("condition", ""))
+                    if bool(_safe_decimal_expression(condition, variables)):
+                        return (
+                            str(branch.get("branch_id", branch.get("rule_id"))),
+                            condition,
+                            None,
+                        )
+                return None, None, None
+
+            try:
+                old_branch, old_condition, old_threshold = expression_branch(False)
+                new_branch, new_condition, new_threshold = expression_branch(True)
+            except (ArithmeticError, InvalidOperation, KeyError, TypeError, ValueError) as exc:
+                coverage_limits.append(
+                    {
+                        "limit_id": f"RULE-EXPRESSION-{rule_switch_id}",
+                        "reason_code": "RULE_SWITCH_EXPRESSION_EVALUATION_FAILED",
+                        "scope_ids": changed_selectors + dependent_ids,
+                        "effect": (
+                            "The complete IF selector expression could not be evaluated: "
+                            f"{exc}"
+                        ),
+                    }
+                )
+                blocked_ids.update(dependent_ids)
+                continue
+        else:
+            old_branch, old_condition, old_threshold = active_branch(old_value)
+            new_branch, new_condition, new_threshold = active_branch(new_value)
         if old_branch is None or new_branch is None:
             coverage_limits.append(
                 {
@@ -3057,7 +3107,7 @@ def apply_state_transition(
         for mutation in admitted_mutations
     ] + copy.deepcopy(epistemic_candidate_deltas)
     rule_switch_evaluation = _evaluate_rule_switches(
-        admitted_mutations, execution_mapping
+        admitted_mutations, execution_mapping, registry
     )
     preliminary_materiality = _classify_materiality(
         preliminary_deltas,

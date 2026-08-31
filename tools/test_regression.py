@@ -319,7 +319,7 @@ def test_excel() -> None:
 
 def test_resolver() -> None:
     print("\n7. Resolver dei binding: vincoli globali, stop su sovra-vincolo")
-    from tools.binding_resolver import Concept, Binding, resolve, granularity_of, norm_unit
+    from tools.model_resolver import Concept, Binding, resolve, granularity_of, norm_unit
 
     check("granularita: fine trimestre riconosciuta",
           granularity_of("2026-06-30") == "quarter")
@@ -714,7 +714,7 @@ def main() -> int:
         (test_grounding_gate, None),
         (test_minigraph, None),
         (test_excel, None),
-        (test_resolver, ROOT / "tools" / "binding_resolver.py"),
+        (test_resolver, ROOT / "tools" / "model_resolver.py"),
         (test_classifier, None),
         (test_live, None),
         (test_gate_sources, None),

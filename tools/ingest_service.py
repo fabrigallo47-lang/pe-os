@@ -6,7 +6,7 @@ Two sources, two pipelines, and they populate different halves of a deal:
 
   document (.md/.txt/.pdf)  extract_v2  -> claims, with locators and periods
   workbook (.xlsx)          extract_v3  -> a computable cell graph, then
-                                           sheet_semantics and binding_resolver
+                                           sheet_semantics and model_resolver
 
 The distinction matters for what appears on screen. A document produces the
 claim side — evidence, support routes, the change-arrival screens. A workbook
@@ -63,7 +63,7 @@ def _compute_values(path: Path, digest: str) -> dict[str, float]:
     return values
 
 
-def _candidates(reports, concepts, binding_resolver):
+def _candidates(reports, concepts, resolver):
     """
     L2 proposals that name a declared concept, as binding candidates.
 
@@ -96,7 +96,7 @@ def _candidates(reports, concepts, binding_resolver):
                 period, scenario = p.col_header, r.sheet
             if not cid:
                 continue
-            cands.append(binding_resolver.Binding(
+            cands.append(resolver.Binding(
                 concept_id=cid, locator=p.cell, period=period,
                 scenario=scenario, section=p.section, unit=p.unit,
                 confidence=p.confidence, evidence=p.evidence))
@@ -150,10 +150,12 @@ def _records(bindings: list[dict], concepts_doc: dict) -> list[dict]:
 
 def ingest_workbook(path: Path, deal: str = "keystone",
                     concepts_path: Path | None = None,
-                    compute: bool = True) -> dict:
+                    compute: bool = True,
+                    claims: list[dict] | None = None) -> dict:
     """L1 -> L2 -> L3 over a workbook. No model call: sheet judgments come from
     the cache if one exists, and are simply absent if it does not."""
-    from tools import source_graph, sheet_semantics, binding_resolver
+    from tools import source_graph, sheet_semantics
+    from tools import model_resolver as binding_resolver
 
     t0 = time.time()
     graph = source_graph.capture(path)
@@ -169,34 +171,72 @@ def ingest_workbook(path: Path, deal: str = "keystone",
         concepts_path = default_concepts(deal)
 
     values: dict[str, float] = {}
-    resolution: dict[str, Any] = {"admitted": 0, "violations": 0, "status": "NOT_RUN"}
+    resolution: dict[str, Any] = {
+        "admitted": 0,
+        "violations": 0,
+        "status": "NOT_RUN",
+        "coverage_limits": [],
+    }
     bindings_out: list[dict] = []
     records: list[dict] = []
     if concepts_path.exists():
         concepts_doc = json.loads(concepts_path.read_text(encoding="utf-8"))
         concepts = binding_resolver.load_concepts(concepts_path)
         cands = _candidates(reports, concepts, binding_resolver)
-        res = binding_resolver.resolve(cands, concepts, graph.to_json())
+        res = binding_resolver.resolve(
+            cands,
+            concepts,
+            graph.to_json(),
+            claims=claims or [],
+        )
         if compute:
             values = _compute_values(path, graph.digest)
+        resolved_payload = res.as_payload()
+        resolved_by_key = {
+            (item["concept_id"], item["locator"]): item
+            for item in resolved_payload["bindings"]
+        }
         bindings_out = [{"concept_id": b.concept_id, "locator": b.locator,
                          "period": b.period, "scenario": b.scenario,
                          "section": b.section, "unit": b.unit,
                          "confidence": b.confidence,
+                         "model_node_id": resolved_by_key[
+                             (b.concept_id, b.locator)
+                         ]["model_node_id"],
+                         "reason_codes": list(b.reason_codes),
+                         "explanation": b.explanation,
                          "value": values.get(b.locator)} for b in res.admitted]
         records = _records(bindings_out, concepts_doc)
         # Structure only: reachability needs the precedent graph, not the
         # formula compiler, so this costs nothing next to L1 itself.
-        from tools.cell_engine import CellEngine
-        engine = CellEngine(path, graph.to_json()["cells"], None, path.name.lower())
-        _annotate_reach(records, engine)
-        eng_report = engine.report()
+        try:
+            from tools.cell_engine import CellEngine
+        except ModuleNotFoundError as exc:
+            if exc.name not in {"tools.cell_engine", "cell_engine"}:
+                raise
+            # ``cell_engine`` is an optional private module in the public
+            # repository.  Its absence must not suppress the public R6 binding
+            # result; reachability is simply declared unavailable.
+            eng_report = {
+                "inputs": 0,
+                "isolated_numbers": 0,
+                "edges_through_ranges": 0,
+            }
+            reachability_status = "NOT_AVAILABLE"
+        else:
+            engine = CellEngine(path, graph.to_json()["cells"], None, path.name.lower())
+            _annotate_reach(records, engine)
+            eng_report = engine.report()
+            reachability_status = "COMPUTED"
         resolution = {"admitted": len(res.admitted),
                       "violations": len(res.violations),
                       "status": res.status,
+                      "input_digest": res.input_digest,
+                      "coverage_limits": res.coverage_limits,
                       "candidates": len(cands),
                       "concepts_declared": len(concepts),
                       "values_computed": bool(values),
+                      "reachability_status": reachability_status,
                       "inputs": eng_report["inputs"],
                       "isolated_numbers": eng_report["isolated_numbers"],
                       "edges_through_ranges": eng_report["edges_through_ranges"]}

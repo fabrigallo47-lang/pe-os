@@ -196,6 +196,32 @@ class Pan77RagIndexTests(unittest.TestCase):
         self.assertEqual(result["proposals"], [])
         self.assertEqual(result["statistics"]["eligible_claims"], 2)
 
+    def test_unit_and_currency_are_hard_identity_boundaries(self) -> None:
+        gap = copy.deepcopy(self.open_gap)
+        gap["expected_identity"] = {
+            "entity": "Keystone",
+            "metric": "Revenue",
+            "period": "FY2025",
+            "unit": "$mm",
+            "currency": "USD",
+        }
+        eur_claim = _claim(
+            "CLAIM-EUR-REVENUE",
+            "Revenue evidence addresses the declared revenue gap.",
+            metric="Revenue",
+        )
+        eur_claim.update({"unit": "€mm", "currency": "EUR"})
+
+        result = propose_gap_candidates(
+            self.index,
+            {"claims": [eur_claim]},
+            [gap],
+            min_score=0.0,
+        )
+
+        self.assertEqual(result["proposals"], [])
+        self.assertEqual(result["statistics"]["eligible_claims"], 1)
+
     def test_unresolvable_claim_is_visible_but_never_matched(self) -> None:
         no_period = _claim(
             "CLAIM-NO-PERIOD",

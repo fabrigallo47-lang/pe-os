@@ -62,7 +62,8 @@ _CLOSED_GAP_STATES = frozenset(
     {"ADMITTED", "CLOSED", "FILLED", "RESOLVED", "RETIRED", "SUPERSEDED"}
 )
 _IDENTITY_FIELDS = (
-    "entity", "metric", "period", "scope", "basis", "measurement", "scenario"
+    "entity", "metric", "period", "scope", "basis", "measurement", "scenario",
+    "unit", "currency",
 )
 
 

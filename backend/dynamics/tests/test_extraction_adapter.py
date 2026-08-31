@@ -1,5 +1,6 @@
 import copy
 import json
+import tempfile
 import unittest
 from pathlib import Path
 
@@ -9,6 +10,7 @@ from runtime import (
     apply_extraction_transition,
     compile_extraction_to_runtime_inputs,
 )
+from runtime import ledger_store
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -147,6 +149,13 @@ class ExtractionAdapterTests(unittest.TestCase):
         self.graph = extraction_graph()
         self.materiality = load_json("benchmark/keystone_materiality_policy_v0.json")
         self.authority = load_json("benchmark/keystone_authority_matrix_v0.json")
+        self.temporary = tempfile.TemporaryDirectory()
+        self.previous_pipeline_out = ledger_store.PIPELINE_OUT
+        ledger_store.PIPELINE_OUT = Path(self.temporary.name) / "pipeline_out"
+
+    def tearDown(self):
+        ledger_store.PIPELINE_OUT = self.previous_pipeline_out
+        self.temporary.cleanup()
 
     def test_analysis_distinguishes_partial_transition_from_full_recomputation(self):
         report = analyze_extraction_graph(self.graph)
@@ -215,6 +224,9 @@ class ExtractionAdapterTests(unittest.TestCase):
         self.assertEqual(affected, {"claim:a", "route:a", "position:a", "model:a"})
         self.assertEqual(first_output["candidate_current_approved_delta"]["approved"], [])
         self.assertEqual(first["adapter_report"]["admitted_claim_count"], 1)
+        admission_events = ledger_store.read_ledger(manifest()["case_id"])
+        self.assertEqual(len(admission_events), 1)
+        self.assertEqual(admission_events[0]["event"], "CLAIM_ADMISSION")
 
 
 if __name__ == "__main__":

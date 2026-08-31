@@ -424,4 +424,64 @@ def settle_candidate_state(
         raise DynamicsBundleError(
             "settlement commit was interrupted; retry the same idempotent request"
         ) from exc
+
+    _append_settlement_to_ledger(graph, settled, history_append)
     return settled
+
+
+def _append_settlement_to_ledger(
+    graph: Mapping[str, Any],
+    settled: Mapping[str, Any],
+    history_append: Sequence[Mapping[str, Any]],
+) -> None:
+    """Record the settlement as one durable, append-only row.
+
+    Deliberately after the commit, not before. The ledger answers "what happened",
+    so a row written ahead of a commit that then failed would assert a settlement
+    that never occurred — worse than no row at all.
+
+    current_graph.json is a materialized view that the next settlement overwrites;
+    this is the only place the fact of the settlement survives. The settlement
+    journal above is crash recovery, not history: it is deleted on success.
+    """
+    from .runtime import ledger_store
+
+    case_id = str(graph.get("case_id") or settled.get("case_id") or "")
+    if not case_id:
+        raise DynamicsBundleError(
+            "Current is settled but has no case_id, so the audit row cannot be written"
+        )
+
+    from datetime import datetime, timezone
+
+    state_id = str(settled.get("state_id") or "")
+    graph_hash = _canonical_hash(graph)
+    event = {
+        # Derived from what was settled, so re-appending the same settlement is a
+        # no-op and a retried request cannot double-count it. Hashed here rather
+        # than through ledger_store.compute_event_id, whose parameters name an
+        # extraction — passing a settlement through them would make the field
+        # names lie about what produced the id.
+        "event_id": _canonical_hash(
+            {"kind": "CASE_SETTLED", "case_id": case_id,
+             "state_id": state_id, "graph_hash": graph_hash}
+        ),
+        "event": "CASE_SETTLED",
+        "effective_date": str(graph.get("canonical_as_of") or "")[:10] or "1970-01-01",
+        "known_at": datetime.now(timezone.utc).isoformat(),
+        "source_ids": [],
+        "trigger_claim_ids": [],
+        "mutations": [],
+        "state_id": state_id,
+        "graph_hash": graph_hash,
+        "history_append": copy.deepcopy(list(history_append)),
+    }
+    try:
+        ledger_store.append_event(case_id, event)
+    except Exception as exc:                       # noqa: BLE001 — surfaced verbatim below
+        # Current is already settled and correct. Say exactly that, so nobody reads
+        # this as a settlement failure and re-runs one that already happened.
+        raise DynamicsBundleError(
+            f"Current is settled ({state_id}) but its ledger row failed to append: {exc}. "
+            "Do not re-settle; re-appending is idempotent."
+        ) from exc

@@ -19,6 +19,7 @@ import json
 from collections import Counter, defaultdict
 from typing import Any, Mapping, Sequence
 
+from . import ledger_store
 from .panta_transition_engine import apply_state_transition as _run_transition
 
 
@@ -270,6 +271,66 @@ def _validate_manifest(
     return case_id, admitted_ids
 
 
+def _append_admission_event(
+    manifest: Mapping[str, Any],
+    case_id: str,
+    admitted_ids: set[str],
+    node_by_id: Mapping[str, Mapping[str, Any]],
+    source_graph_hash: str,
+) -> None:
+    """Persist the institutional boundary once its manifest is valid.
+
+    The manifest hash is the complete admission decision, including its claim
+    set and cutoff. It is therefore the idempotency input, rather than a
+    request-scoped or wall-clock identifier.
+    """
+
+    known_at = str(manifest["as_of_known_at"])
+    manifest_hash = _hash(manifest)
+    source_ids = sorted(
+        {
+            _text(
+                node_by_id[claim_id].get(
+                    "source_id", node_by_id[claim_id].get("source_doc")
+                ),
+                "UNSPECIFIED_SOURCE",
+            )
+            for claim_id in admitted_ids
+        }
+    )
+    event: dict[str, Any] = {
+        "event_id": ledger_store.compute_event_id(
+            manifest.get("source_version_id", manifest.get("source_graph_hash")),
+            manifest.get("extractor_version", manifest.get("manifest_version")),
+            manifest_hash,
+        ),
+        "event": "CLAIM_ADMISSION",
+        "effective_date": known_at[:10],
+        "known_at": known_at,
+        "source_ids": source_ids,
+        "trigger_claim_ids": sorted(admitted_ids),
+        "mutations": [
+            {
+                "operation": "ADD",
+                "object_type": "CLAIM",
+                "object_id": claim_id,
+                "field": "admission_status",
+                "to": "ADMITTED",
+            }
+            for claim_id in sorted(admitted_ids)
+        ],
+        "admission_manifest_hash": manifest_hash,
+        "source_graph_hash": manifest.get("source_graph_hash", source_graph_hash),
+    }
+    actor = manifest.get("actor_id", manifest.get("actor"))
+    if actor not in (None, ""):
+        event["actor_id"] = actor
+
+    # append_event raises on I/O failure; allowing that failure through keeps
+    # runtime execution from claiming an admission that has no durable record.
+    ledger_store.append_event(case_id, event)
+
+
 def _coverage_limit(
     reason_code: str,
     scope_ids: Sequence[str],
@@ -303,6 +364,13 @@ def compile_extraction_to_runtime_inputs(
     edges = indexes["edges"]
     case_id, admitted_ids = _validate_manifest(
         admission_manifest, indexes, report["source_graph_hash"]
+    )
+    _append_admission_event(
+        admission_manifest,
+        case_id,
+        admitted_ids,
+        node_by_id,
+        report["source_graph_hash"],
     )
 
     claims = []

@@ -19,7 +19,12 @@ from pathlib import Path
 from typing import Any, Mapping
 
 
-PIPELINE_OUT = Path("pipeline_out")
+# Anchored to the repository, not the working directory. A relative path here
+# silently forks the ledger: the API serving from the repo root and a script run
+# from backend/dynamics would each append to their own file, and an append-only
+# audit record that quietly splits in two is worse than one that fails loudly.
+# Tests override this attribute to redirect into a temp tree.
+PIPELINE_OUT = Path(__file__).resolve().parents[3] / "pipeline_out"
 
 
 def _canonical_json(value: Any) -> str:

@@ -107,8 +107,19 @@ def append_event(case_id: str, event: Mapping[str, Any]) -> dict[str, Any]:
     if any(existing.get("event_id") == event_id for existing in _read_all(case_id)):
         return {"appended": False, "event_id": event_id, "reason": "event_id already present"}
 
+    # The kernel's third temporal field. effective_at is when the fact held,
+    # known_at when the institution learned it, recorded_at when the ledger
+    # actually took it. They diverge: a claim known on Monday and appended on
+    # Friday reads as Monday's knowledge, which is right for replay — but only
+    # recorded_at can answer "was this backdated, and by how long".
+    #
+    # Stamped here rather than accepted from the caller: a caller-supplied
+    # recorded_at could claim a write happened at a time it did not.
+    stored = dict(event)
+    stored["recorded_at"] = datetime.now(timezone.utc).isoformat()
+
     # Serialize before opening the file: a failure to encode never changes the ledger.
-    line = (_canonical_json(dict(event)) + "\n").encode("utf-8")
+    line = (_canonical_json(stored) + "\n").encode("utf-8")
     ledger_path = _case_path(case_id)
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
     descriptor = os.open(ledger_path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)

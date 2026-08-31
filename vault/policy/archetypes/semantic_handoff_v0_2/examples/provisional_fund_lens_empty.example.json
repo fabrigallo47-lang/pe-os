@@ -1,0 +1,110 @@
+{
+  "schema_version": "0.1.0-provisional",
+  "schema_status": "PROVISIONAL_SHAPE_ONLY",
+  "no_silent_inference": true,
+  "lens_id": "LENS-EXAMPLE",
+  "version": "0.1-draft",
+  "lifecycle_status": "DRAFT_UNVALIDATED",
+  "effective_from": "2026-08-31T00:00:00Z",
+  "known_at": "2026-08-31T00:00:00Z",
+  "scope": {
+    "organization_scope_id": "ORGANIZATION-EXAMPLE",
+    "fund_vehicle_ids": [],
+    "strategy_ids": [
+      "BUYOUT"
+    ],
+    "jurisdiction_scope": [],
+    "applies_to_new_cases_from": null
+  },
+  "provenance": {
+    "source_refs": [],
+    "formation_method": "MANUAL",
+    "created_by": "CONFIGURATION_OWNER",
+    "reviewed_by": null,
+    "approved_by": null,
+    "validation_notes": "Example contains no institutional policy values.",
+    "confidence_note": null
+  },
+  "policies": {
+    "mandate": {
+      "status": "UNCONFIGURED",
+      "rules": []
+    },
+    "definitions": {
+      "status": "UNCONFIGURED",
+      "rules": []
+    },
+    "materiality": {
+      "status": "UNCONFIGURED",
+      "dimensions": [],
+      "threshold_rules": [],
+      "aggregation_policy": null,
+      "decision_root_override": null
+    },
+    "evidence": {
+      "status": "UNCONFIGURED",
+      "phase_standards": [],
+      "source_independence_rules": [],
+      "challenge_rules": []
+    },
+    "admission": {
+      "status": "PROVISIONAL",
+      "default_mode": "AUTO_POLICY",
+      "auto_record_claims": true,
+      "review_reason_codes": [
+        "MATERIAL_IDENTITY_AMBIGUITY",
+        "NEW_MATERIAL_STRUCTURE",
+        "SPEAKER_ATTRIBUTION_UNCERTAIN",
+        "DEFINITION_CONFLICT",
+        "CAUSAL_JUDGMENT_REQUIRED",
+        "MATERIAL_RELATION_AMBIGUITY",
+        "AUTHORITY_VALIDATION_REQUIRED",
+        "PERMISSION_BLOCKED"
+      ],
+      "confidence_thresholds": {
+        "identity": null,
+        "binding": null,
+        "relation": null
+      },
+      "relation_policies": []
+    },
+    "operative_value": {
+      "status": "PROVISIONAL",
+      "default_selection": "NONE",
+      "selection_rules": [],
+      "tie_behavior": "NO_OPERATIVE_VALUE"
+    },
+    "economics": {
+      "status": "UNCONFIGURED",
+      "return_measures": [],
+      "hurdle_rules": [],
+      "scenario_rules": [],
+      "valuation_rules": []
+    },
+    "authority": {
+      "status": "UNCONFIGURED",
+      "action_rules": []
+    },
+    "workflow": {
+      "status": "UNCONFIGURED",
+      "recurring_questions": [],
+      "negative_underwriting_rules": [],
+      "required_functions": [],
+      "cadence_rules": []
+    },
+    "toolkit": {
+      "status": "UNCONFIGURED",
+      "instrument_rules": []
+    },
+    "artifacts": {
+      "status": "UNCONFIGURED",
+      "conventions": []
+    }
+  },
+  "change_control": {
+    "supersedes_version": null,
+    "change_summary": "Initial provisional shape-only example.",
+    "approval_required": true,
+    "effective_status": "DRAFT_ONLY"
+  }
+}

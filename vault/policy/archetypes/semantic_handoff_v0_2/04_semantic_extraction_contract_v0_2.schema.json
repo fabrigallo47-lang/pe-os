@@ -1,0 +1,881 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/schemas/semantic_extraction_contract_v0_2.schema.json",
+  "title": "PANTA Semantic Extraction Proposal Contract v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "contract_version",
+    "compiler_run",
+    "source",
+    "formation_context",
+    "proposals",
+    "coverage_limits"
+  ],
+  "properties": {
+    "contract_version": {
+      "const": "0.2.0"
+    },
+    "compiler_run": {
+      "$ref": "#/$defs/compilerRun"
+    },
+    "source": {
+      "$ref": "#/$defs/sourceContext"
+    },
+    "formation_context": {
+      "$ref": "#/$defs/formationContext"
+    },
+    "proposals": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/proposal"
+      }
+    },
+    "coverage_limits": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/coverageLimit"
+      }
+    },
+    "run_summary": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "claims_extracted": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "objects_proposed": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "auto_recordable_claims": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "auto_bindable_proposals": {
+          "type": "integer",
+          "minimum": 0
+        },
+        "review_required": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "compilerRun": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "run_id",
+        "case_id",
+        "compiler_name",
+        "compiler_version",
+        "policy_hash",
+        "started_at",
+        "completed_at"
+      ],
+      "properties": {
+        "run_id": {
+          "type": "string"
+        },
+        "case_id": {
+          "type": "string"
+        },
+        "compiler_name": {
+          "type": "string"
+        },
+        "compiler_version": {
+          "type": "string"
+        },
+        "model_id": {
+          "type": "string"
+        },
+        "policy_hash": {
+          "type": "string",
+          "minLength": 8
+        },
+        "retrieval_trace_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "started_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "completed_at": {
+          "$ref": "#/$defs/timestamp"
+        }
+      }
+    },
+    "sourceContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_id",
+        "source_version_id",
+        "source_type",
+        "content_hash",
+        "known_at",
+        "access_scope"
+      ],
+      "properties": {
+        "source_id": {
+          "type": "string"
+        },
+        "source_version_id": {
+          "type": "string"
+        },
+        "source_type": {
+          "enum": [
+            "document",
+            "spreadsheet",
+            "email",
+            "call",
+            "meeting",
+            "message",
+            "database_extract",
+            "market_data",
+            "user_action",
+            "other"
+          ]
+        },
+        "title": {
+          "type": "string"
+        },
+        "content_hash": {
+          "type": "string",
+          "minLength": 8
+        },
+        "effective_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "known_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "access_scope": {
+          "type": "string"
+        }
+      }
+    },
+    "formationContext": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernel_version",
+        "archetype_pack_versions",
+        "active_transaction_flags",
+        "fund_lens_status",
+        "deal_frame_version",
+        "case_snapshot_id",
+        "context_hash"
+      ],
+      "properties": {
+        "kernel_version": {
+          "type": "string"
+        },
+        "archetype_pack_versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "fund_lens_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deal_frame_version": {
+          "type": "string"
+        },
+        "case_snapshot_id": {
+          "type": "string"
+        },
+        "context_hash": {
+          "type": "string",
+          "minLength": 8
+        },
+        "active_question_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "active_definition_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "active_transaction_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fund_lens_status": {
+          "enum": [
+            "ABSENT",
+            "PROVISIONAL_UNVALIDATED",
+            "VALIDATED"
+          ]
+        },
+        "fund_lens_policy_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_version_id",
+        "locator",
+        "exact_text",
+        "observed_speech_act"
+      ],
+      "properties": {
+        "source_version_id": {
+          "type": "string"
+        },
+        "locator": {
+          "type": "string"
+        },
+        "exact_text": {
+          "type": "string"
+        },
+        "interaction_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "utterance_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "stated_by_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reported_speaker_entity_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "observed_speech_act": {
+          "enum": [
+            "assertion",
+            "reported_assertion",
+            "observation",
+            "estimate",
+            "forecast",
+            "opinion",
+            "question",
+            "hypothesis",
+            "commitment",
+            "decision",
+            "instruction",
+            "condition",
+            "denial",
+            "uncertainty",
+            "citation",
+            "other"
+          ]
+        },
+        "asserted_content": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "temporal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "known_at"
+      ],
+      "properties": {
+        "effective_at": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        },
+        "known_at": {
+          "$ref": "#/$defs/timestamp"
+        },
+        "period_label": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "period_start": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "period_end": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        },
+        "as_of_date": {
+          "type": [
+            "string",
+            "null"
+          ],
+          "format": "date"
+        }
+      }
+    },
+    "identity": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "identity_type",
+        "dimensions",
+        "resolution_status"
+      ],
+      "properties": {
+        "identity_type": {
+          "enum": [
+            "CLAIM",
+            "METRIC",
+            "QUALITATIVE_TOPIC",
+            "QUESTION",
+            "STATED_POSITION",
+            "READING",
+            "ASSUMPTION",
+            "CONDITION",
+            "DECISION",
+            "WORK",
+            "DEFINITION",
+            "ENTITY"
+          ]
+        },
+        "dimensions": {
+          "type": "object",
+          "additionalProperties": true
+        },
+        "resolution_status": {
+          "enum": [
+            "RESOLVED",
+            "RESOLVED_WITH_ALTERNATIVES",
+            "UNRESOLVED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "candidate_existing_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resolution_rationale": {
+          "type": "string"
+        }
+      }
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": true,
+      "required": [
+        "statement"
+      ],
+      "properties": {
+        "statement": {
+          "type": "string"
+        },
+        "normalized_proposition": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "claim_kind": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "value": {},
+        "unit": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "currency": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "polarity": {
+          "enum": [
+            "POSITIVE",
+            "NEGATIVE",
+            "NEUTRAL",
+            "MIXED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "modality": {
+          "enum": [
+            "OBSERVED",
+            "ASSERTED",
+            "REPORTED",
+            "ESTIMATED",
+            "FORECAST",
+            "HYPOTHETICAL",
+            "CONDITIONAL",
+            "DECIDED",
+            "COMMITTED"
+          ]
+        },
+        "direction": {
+          "enum": [
+            "SUPPORTIVE",
+            "ADVERSE",
+            "MIXED",
+            "NEUTRAL",
+            "UNRESOLVED",
+            "NOT_APPLICABLE"
+          ]
+        }
+      }
+    },
+    "candidateBinding": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "binding_type",
+        "target_type",
+        "target_id",
+        "confidence",
+        "rationale"
+      ],
+      "properties": {
+        "binding_type": {
+          "enum": [
+            "BEARS_ON",
+            "ANSWERS",
+            "REFRAMES",
+            "BINDS_TO_MODEL",
+            "DESCRIBES",
+            "TARGETS_READING",
+            "TARGETS_ASSUMPTION",
+            "TARGETS_MODEL_NODE"
+          ]
+        },
+        "target_type": {
+          "enum": [
+            "Question",
+            "CaseReading",
+            "Assumption",
+            "ModelNode",
+            "Definition",
+            "Condition",
+            "StatedPosition"
+          ]
+        },
+        "target_id": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "similarity_trace": {
+          "type": [
+            "object",
+            "null"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "method": {
+              "type": "string"
+            },
+            "score": {
+              "type": "number"
+            },
+            "index_version": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "relationProposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "relation_type",
+        "relation_class",
+        "source_ref",
+        "target_ref",
+        "confidence",
+        "producer",
+        "rationale",
+        "runtime_mapping_status"
+      ],
+      "properties": {
+        "relation_type": {
+          "enum": [
+            "SUPPORTS",
+            "CONTRADICTS",
+            "DERIVES_FROM",
+            "DRIVES",
+            "CONDITIONS",
+            "BEARS_ON",
+            "ANSWERS",
+            "REFRAMES",
+            "BINDS_TO_MODEL",
+            "DESCRIBES",
+            "CHALLENGES",
+            "FROM_SOURCE",
+            "ATTRIBUTED_TO",
+            "ABOUT_ENTITY",
+            "USES_DEFINITION",
+            "LOCATED_IN",
+            "OCCURRED_IN_INTERACTION"
+          ]
+        },
+        "source_ref": {
+          "type": "string"
+        },
+        "target_ref": {
+          "type": "string"
+        },
+        "confidence": {
+          "$ref": "#/$defs/confidence"
+        },
+        "producer": {
+          "enum": [
+            "DETERMINISTIC_RULE",
+            "AI_SEMANTIC_PROPOSAL",
+            "WORKBOOK_FORMULA",
+            "HUMAN_INPUT",
+            "POLICY"
+          ]
+        },
+        "deterministic_precondition": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "relation_class": {
+          "enum": [
+            "PROVENANCE",
+            "SEMANTIC",
+            "RUNTIME_CANDIDATE"
+          ]
+        },
+        "runtime_mapping_status": {
+          "enum": [
+            "NOT_APPLICABLE",
+            "READY",
+            "PENDING_ADAPTER",
+            "REVIEW_REQUIRED"
+          ]
+        },
+        "semantic_direction": {
+          "enum": [
+            "SUPPORTIVE",
+            "ADVERSE",
+            "MIXED",
+            "NEUTRAL",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "runtime_adapter_ref": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "disposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "record_source_object",
+        "binding_disposition",
+        "relation_disposition",
+        "review_reason_codes"
+      ],
+      "properties": {
+        "record_source_object": {
+          "enum": [
+            "APPEND_IMMEDIATELY",
+            "APPEND_AS_UNRESOLVED",
+            "DO_NOT_RECORD"
+          ]
+        },
+        "binding_disposition": {
+          "enum": [
+            "AUTO_CANONICALIZE",
+            "CANDIDATE_ONLY",
+            "REVIEW_REQUIRED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "relation_disposition": {
+          "enum": [
+            "AUTO_CANONICALIZE",
+            "CANDIDATE_ONLY",
+            "REVIEW_REQUIRED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "review_reason_codes": {
+          "type": "array",
+          "items": {
+            "enum": [
+              "MATERIAL_IDENTITY_AMBIGUITY",
+              "NEW_MATERIAL_STRUCTURE",
+              "SPEAKER_ATTRIBUTION_UNCERTAIN",
+              "DEFINITION_CONFLICT",
+              "CAUSAL_JUDGMENT_REQUIRED",
+              "MATERIAL_RELATION_AMBIGUITY",
+              "AUTHORITY_VALIDATION_REQUIRED",
+              "PERMISSION_BLOCKED"
+            ]
+          }
+        }
+      }
+    },
+    "proposal": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "proposal_id",
+        "object_type",
+        "provenance",
+        "temporal",
+        "identity",
+        "content",
+        "candidate_bindings",
+        "relation_proposals",
+        "confidence",
+        "ambiguities",
+        "coverage_limits",
+        "disposition"
+      ],
+      "properties": {
+        "proposal_id": {
+          "type": "string"
+        },
+        "object_type": {
+          "enum": [
+            "Claim",
+            "MetricObservation",
+            "StatedPosition",
+            "Question",
+            "CaseReadingCandidate",
+            "AssumptionCandidate",
+            "Unknown",
+            "Risk",
+            "Condition",
+            "DecisionObservation",
+            "WorkCandidate",
+            "ModelBindingCandidate",
+            "DefinitionCandidate",
+            "EntityCandidate"
+          ]
+        },
+        "provenance": {
+          "$ref": "#/$defs/provenance"
+        },
+        "temporal": {
+          "$ref": "#/$defs/temporal"
+        },
+        "identity": {
+          "$ref": "#/$defs/identity"
+        },
+        "content": {
+          "$ref": "#/$defs/content"
+        },
+        "candidate_bindings": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/candidateBinding"
+          }
+        },
+        "relation_proposals": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/relationProposal"
+          }
+        },
+        "confidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "extraction",
+            "identity",
+            "binding",
+            "relation"
+          ],
+          "properties": {
+            "extraction": {
+              "$ref": "#/$defs/confidence"
+            },
+            "identity": {
+              "$ref": "#/$defs/confidence"
+            },
+            "binding": {
+              "$ref": "#/$defs/confidence"
+            },
+            "relation": {
+              "$ref": "#/$defs/confidence"
+            }
+          }
+        },
+        "materiality_hint": {
+          "enum": [
+            "UNKNOWN",
+            "LOW",
+            "MEDIUM",
+            "HIGH",
+            "CRITICAL"
+          ]
+        },
+        "ambiguities": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "coverage_limits": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "disposition": {
+          "$ref": "#/$defs/disposition"
+        },
+        "fund_lens_effect": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "policy_ids_applied": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "policy_status": {
+              "enum": [
+                "NONE",
+                "PROVISIONAL",
+                "VALIDATED"
+              ]
+            },
+            "note": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        }
+      }
+    },
+    "coverageLimit": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "coverage_limit_id",
+        "limit_type",
+        "scope",
+        "reason",
+        "resolution_path"
+      ],
+      "properties": {
+        "coverage_limit_id": {
+          "type": "string"
+        },
+        "limit_type": {
+          "enum": [
+            "MISSING_SOURCE",
+            "UNREADABLE_SOURCE",
+            "IDENTITY_UNRESOLVED",
+            "BINDING_AMBIGUOUS",
+            "RELATION_AMBIGUOUS",
+            "MODEL_UNBOUND",
+            "FORMULA_UNSUPPORTED",
+            "DEPENDENCY_UNKNOWN",
+            "PERMISSION_BLOCKED",
+            "TEMPORAL_AMBIGUITY",
+            "OTHER"
+          ]
+        },
+        "scope": {
+          "type": "string"
+        },
+        "reason": {
+          "type": "string"
+        },
+        "affected_proposal_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "resolution_path": {
+          "type": "string"
+        }
+      }
+    }
+  }
+}

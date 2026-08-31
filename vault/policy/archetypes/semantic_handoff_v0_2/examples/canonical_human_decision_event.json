@@ -1,0 +1,82 @@
+{
+  "event_id": "EVT-DECISION-001",
+  "contract_version": "0.2.0",
+  "case_id": "CASE-EXAMPLE",
+  "event_type": "DECISION_RECORDED",
+  "effective_at": "2026-09-03T15:00:00Z",
+  "known_at": "2026-09-03T15:00:00Z",
+  "recorded_at": "2026-09-03T15:01:00Z",
+  "actor": {
+    "actor_type": "BODY",
+    "actor_id": "IC-BODY-01"
+  },
+  "admission_mode": "AUTHORITY_RECORDED",
+  "idempotency_key": "sha256:decision-event-example",
+  "source_version_ids": [
+    "SRCV-IC-TRANSCRIPT-V1",
+    "SRCV-IC-RECORD-V1"
+  ],
+  "configuration_refs": {
+    "kernel_version": "0.2.0",
+    "archetype_versions": [
+      "BUYOUT-0.2.0"
+    ],
+    "fund_lens_version": "LENS-3",
+    "deal_frame_version": "DF-1",
+    "policy_hash": "sha256:authority-policy-example",
+    "active_transaction_flags": [
+      "LEVERAGED_ACQUISITION"
+    ],
+    "fund_lens_status": "PROVISIONAL_UNVALIDATED",
+    "fund_lens_policy_hash": "sha256:provisional-policy-example"
+  },
+  "object_assertions": [
+    {
+      "object_id": "DECISION-001",
+      "object_type": "Decision",
+      "payload": {
+        "decision_type": "INVESTMENT",
+        "decision": "APPROVE_WITH_CONDITIONS",
+        "actor_or_body_id": "IC-BODY-01",
+        "authority_basis": "AUTH-RULE-INVEST-01",
+        "scope": "Acquire Target subject to listed conditions.",
+        "conditions": [
+          "COND-CRO-HIRE",
+          "COND-FINANCING"
+        ],
+        "rationale": "Recorded in the authorized IC record."
+      }
+    }
+  ],
+  "relation_assertions": [
+    {
+      "relation_id": "REL-DECISION-Q-001",
+      "relation_type": "DESCRIBES",
+      "source_id": "DECISION-001",
+      "target_id": "DECISION-INVEST",
+      "producer": "HUMAN",
+      "reason": "Authority event answers the investment decision root.",
+      "relation_class": "SEMANTIC",
+      "runtime_mapping_status": "NOT_APPLICABLE",
+      "runtime_traversal": false,
+      "semantic_direction": "NEUTRAL",
+      "runtime_adapter_ref": null
+    }
+  ],
+  "retractions": [],
+  "materiality": "CRITICAL",
+  "pre_state_hash": "sha256:pre-state-decision",
+  "compiler_trace": {
+    "compiler_run_id": "RUN-DECISION-OBS-001",
+    "proposal_ids": [
+      "PROP-DECISION-OBS-001"
+    ],
+    "review_record_id": "AUTH-VALIDATION-001"
+  },
+  "dynamic_assertion_refs": [
+    "DECISION-001"
+  ],
+  "semantic_only_relation_ids": [
+    "REL-DECISION-Q-001"
+  ]
+}

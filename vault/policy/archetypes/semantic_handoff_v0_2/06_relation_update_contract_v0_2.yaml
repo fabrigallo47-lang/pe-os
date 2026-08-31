@@ -1,0 +1,371 @@
+metadata:
+  name: PANTA Relation and Update Contract
+  version: 0.2.0
+  status: PROPOSED_UPSTREAM_BRIDGE_TO_FROZEN_DYNAMIC
+  date: '2026-08-31'
+  purpose: Defines how semantic relations are produced and what deterministic consequence each may have.
+  does_not_replace: The frozen Transition Engine contract or its conformance suite.
+  source_basis:
+  - file: process_kernel_implementation_specification.pdf
+    used_for:
+    - one common kernel
+    - continuous underwriting plus discrete authority gates
+    - event history
+    - workstream functions
+    - configuration instead of separate workflows
+  - file: PE_BUYOUT_DOMAIN_SPEC.md
+    used_for:
+    - universal core versus conditional extensions
+    - question/evidence/assumption/model/decision chain
+    - immutability, lineage, staleness and authority
+    - buyout domain knowledge
+  - file: epistemic_schemas_final.json
+    used_for:
+    - governing questions
+    - subquestions
+    - evidence types
+    - reasoning operators
+    - failure modes
+    - human-judgment boundaries
+    - automatable components
+  - file: workstream_dependency_graph_final.json
+    used_for:
+    - workstream inputs and outputs
+    - blocking and reopening
+    - downstream consumers
+  - file: live-investment-case-model.html
+    used_for:
+    - top-down/bottom-up formation
+    - semantic binding point
+    - ledger source of truth
+    - graph as derived projection
+  - file: panta-ristrutturazione.html
+    used_for:
+    - structured claim identity
+    - Excel L1/L2/L3
+    - DRIVES/CONDITIONS gaps
+    - append-only ledger plan
+  - file: PANTA_V_ALPHA_ENGINEERING_SOURCE_OF_TRUTH_v0_5.md
+    used_for:
+    - runtime boundary
+    - compiler/Dynamic responsibility split
+    - Candidate/Current/Approved
+  open_schema_decision: CHALLENGES remains semantic-only until a versioned adapter maps it into the frozen support-route
+    model.
+trigger_contract:
+  definition: The Dynamic is triggered only by an appended canonical case event containing runtime-ready assertions,
+    never by raw text, a similarity score or a semantic-only relation.
+  sequence:
+  - Compiler records source-level objects and semantic proposals.
+  - Identity, binding and relation proposals are validated under policy.
+  - A canonical event is appended to the ledger.
+  - The adapter selects assertions marked READY and excludes semantic-only relations.
+  - The Dynamic receives runtime-ready assertions plus execution mapping.
+  - The Dynamic computes affected set, recomputation, survivors, blocks and Human Stops.
+  admission:
+    default: AUTO_POLICY
+    human_review_only_when:
+    - material identity ambiguity
+    - new material structure
+    - uncertain attribution
+    - material causal judgment
+    - authority validation
+  similarity_rule: Similarity may retrieve candidate targets. It is trace metadata only and has no runtime semantics.
+relation_classes:
+  NON_TRAVERSAL_PROVENANCE:
+  - FROM_SOURCE
+  - ATTRIBUTED_TO
+  - ABOUT_ENTITY
+  - USES_DEFINITION
+  - LOCATED_IN
+  - OCCURRED_IN_INTERACTION
+  SEMANTIC_ONLY:
+  - BEARS_ON
+  - ANSWERS
+  - REFRAMES
+  - BINDS_TO_MODEL
+  - DESCRIBES
+  - CHALLENGES
+  FROZEN_RUNTIME:
+  - SUPPORTS
+  - CONTRADICTS
+  - DERIVES_FROM
+  - DRIVES
+  - CONDITIONS
+relations:
+  BEARS_ON:
+    class: SEMANTIC_ONLY
+    meaning: The source is relevant to a Question without asserting whether it supports or challenges an answer.
+    allowed_sources:
+    - Claim
+    - MetricObservation
+    - StatedPosition
+    - Condition
+    - Unknown
+    allowed_targets:
+    - Question
+    producers:
+    - AI_SEMANTIC_PROPOSAL
+    - DETERMINISTIC_BINDING_RULE
+    - HUMAN
+    preconditions:
+    - Question identity is resolved or the target remains Candidate.
+    dynamic_effect: NONE
+    update_behavior: Adds context to the Question projection; does not itself change a CaseReading.
+  SUPPORTS:
+    class: FROZEN_RUNTIME
+    meaning: The source increases support for the target proposition, Reading, Assumption or Condition.
+    allowed_sources:
+    - Claim
+    - MetricObservation
+    - StatedPosition
+    - Outcome
+    allowed_targets:
+    - CaseReading
+    - Assumption
+    - Condition
+    producers:
+    - AI_CANONICALIZED
+    - DETERMINISTIC_RULE
+    - HUMAN
+    preconditions:
+    - The target proposition is explicit.
+    - Source provenance is valid and permitted.
+    - Support is not inferred merely from category or similarity.
+    traversal:
+      direction: source_to_target_then_target_downstream
+      affected:
+      - target
+      - target dependents
+    update_behavior:
+    - Add or strengthen an independent support route.
+    - Recompute target epistemic status and freshness.
+    - Never rewrite a StatedPosition.
+    - Never change decision status.
+    human_stop: Only when adopting a new material judgment is required beyond the declared support rule.
+  CHALLENGES:
+    class: SEMANTIC_COMPILER_ONLY
+    meaning: The source materially weakens a target proposition without proving its logical negation.
+    allowed_sources:
+    - Claim
+    - MetricObservation
+    - StatedPosition
+    - Outcome
+    allowed_targets:
+    - CaseReading
+    - Assumption
+    - Condition
+    producers:
+    - AI_SEMANTIC_PROPOSAL
+    - HUMAN_INPUT
+    - DETERMINISTIC_THRESHOLD_PROPOSAL
+    preconditions:
+    - The source bears directly on the target.
+    - The adverse direction is explicit or semantically resolved.
+    - Use CONTRADICTS when propositions are mutually incompatible or same-identity values diverge.
+    canonical_storage:
+      relation_class: SEMANTIC
+      runtime_mapping_status: PENDING_ADAPTER
+      runtime_traversal: false
+    semantic_projection_effect:
+    - Expose the adverse evidence on the affected Question and Reading.
+    - Mark that the Reading requires semantic review where policy says the challenge is material.
+    - Do not change frozen Dynamic state or propagate downstream.
+    dynamic_effect: NONE_UNTIL_VERSIONED_ADAPTER
+    adapter_options_for_decision:
+    - Map into the existing support-route challenge mechanism.
+    - Introduce CHALLENGES as a new runtime relation in a future versioned contract.
+    - Translate selected challenge patterns into an explicit stale/review event.
+    owner: DYNAMIC_OWNER
+    deadline: BEFORE_QUALITATIVE_RUNTIME_INTEGRATION
+  CONTRADICTS:
+    class: FROZEN_RUNTIME
+    meaning: Two propositions cannot both be true under the same identity, or one explicitly negates the other.
+    allowed_sources:
+    - Claim
+    - MetricObservation
+    - StatedPosition
+    allowed_targets:
+    - Claim
+    - MetricObservation
+    - StatedPosition
+    - CaseReading
+    - Assumption
+    producers:
+    - DETERMINISTIC_IDENTITY_VALUE_RULE
+    - AI_CANONICALIZED
+    - HUMAN
+    preconditions:
+    - 'Quantitative: same semantic metric identity after unit normalization and value divergence beyond tolerance.'
+    - 'Qualitative: explicit mutually exclusive propositions or direct negation.'
+    - Different periods, perimeters, bases or scenarios are different identities, not contradictions.
+    traversal:
+      direction: contradiction_pair_to_shared_targets_then_downstream
+      affected:
+      - both propositions
+      - shared targets
+      - dependents
+    update_behavior:
+    - Keep both source rows alive.
+    - Mark the relevant Reading or metric identity CONTESTED.
+    - Invoke a versioned operative-selection policy if a model requires one value.
+    - If policy cannot resolve it, emit NO_OPERATIVE_VALUE or Human Stop.
+    human_stop: When the model or decision requires an operative value and policy cannot resolve the conflict.
+  DERIVES_FROM:
+    class: FROZEN_RUNTIME
+    meaning: The target is deterministically computed or transformed from the source inputs.
+    allowed_sources:
+    - MetricObservation
+    - ModelNode
+    - Definition
+    - Assumption
+    allowed_targets:
+    - MetricObservation
+    - ModelNode
+    - CaseReading
+    producers:
+    - WORKBOOK_FORMULA
+    - DETERMINISTIC_RULE
+    - APPROVED_FUNCTION_REF
+    preconditions:
+    - Formula/function and input identities are versioned.
+    - Units and periods are coherent.
+    - Unsupported formulas become CoverageLimits, not guessed outputs.
+    traversal:
+      direction: upstream_to_downstream
+      affected:
+      - target
+      - all deterministic dependents
+    update_behavior:
+    - Recompute exact output.
+    - Persist formula/function version and result hash.
+    - Cycles follow the frozen Dynamic's SCC/cycle contract.
+    human_stop: Only for unsupported formula, unresolved mapping or policy-controlled override.
+  DRIVES:
+    class: FROZEN_RUNTIME
+    meaning: A change in the source causally or operationally affects the target under a declared dependency.
+    allowed_sources:
+    - MetricObservation
+    - Assumption
+    - ModelNode
+    - CaseReading
+    - Condition
+    - Outcome
+    allowed_targets:
+    - ModelNode
+    - CaseReading
+    - Risk
+    - WorkItem
+    - ArtifactVersion
+    producers:
+    - WORKBOOK_DEPENDENCY_PROMOTION
+    - AI_CANONICALIZED_CAUSAL_PROPOSAL
+    - HUMAN
+    - POLICY
+    preconditions:
+    - The causal/dependency mechanism is stated.
+    - If an executable function exists, reference it.
+    - If no executable rule exists, traversal may mark STALE but cannot invent a value.
+    traversal:
+      direction: upstream_to_downstream
+      affected:
+      - target
+      - bounded downstream region
+    update_behavior:
+    - 'Executable target: recompute.'
+    - 'Non-executable target: mark STALE and create work/review candidate.'
+    - Record reached_via path and why unchanged objects survived.
+    human_stop: When resolving the effect requires professional judgment rather than a declared rule.
+  CONDITIONS:
+    class: FROZEN_RUNTIME
+    meaning: The target's applicability, validity, authority or execution depends on the source Condition.
+    allowed_sources:
+    - Condition
+    - Unknown
+    - Question
+    - Decision
+    allowed_targets:
+    - CaseReading
+    - Assumption
+    - ModelNode
+    - Decision
+    - WorkItem
+    - ArtifactVersion
+    producers:
+    - CONDITION_EXTRACTION
+    - POLICY
+    - HUMAN
+    - DETERMINISTIC_GAP_RULE
+    preconditions:
+    - Condition has an explicit test and state.
+    - Condition type and waiver authority are known where applicable.
+    traversal:
+      direction: condition_to_target
+      semantics_by_state:
+        SATISFIED: unblock or recompute if all other conditions hold
+        UNSATISFIED: block, invalidate applicability or mark target stale
+        UNASSESSED: keep target conditional/pending and expose the gap
+        WAIVED: unblock only with valid authority event; preserve residual risk
+        EXPIRED: invalidate prior reliance and reopen if material
+    update_behavior:
+    - Do not use generic BFS semantics identical to SUPPORTS.
+    - Condition state controls target applicability or readiness.
+    - Waiver is an immutable human authority event.
+    human_stop: Always for material waiver/risk acceptance; not for automatic test evaluation.
+quantitative_update_contract:
+  steps:
+  - Normalize unit/currency only under explicit conversion basis.
+  - Resolve the full metric identity.
+  - Append the new Claim or MetricObservation.
+  - Compare only with rows sharing that identity.
+  - Create CONTRADICTS when normalized values diverge beyond tolerance.
+  - Compute operative status using a versioned selection policy.
+  - If operative value changes, emit a canonical event touching bound ModelNodes.
+  - Dynamic recomputes DERIVES_FROM/DRIVES region and marks non-executable dependents STALE.
+  default_selection_policy: NONE. Without a validated Fund Lens or explicit decision-specific selection policy, contested
+    values remain contested.
+  supersession:
+  - Explicit correction may supersede an earlier version from the same source.
+  - An authority-backed accepted basis may select a value for a specific decision snapshot.
+  - Neither case deletes or rewrites prior rows.
+qualitative_update_contract:
+  steps:
+  - Append the source Claim or StatedPosition with exact attribution.
+  - Bind it to one or more Questions using BEARS_ON.
+  - Use SUPPORTS or CONTRADICTS only when their frozen semantics are satisfied.
+  - Store adverse-but-not-contradictory evidence as semantic CHALLENGES.
+  - Exclude CHALLENGES from Dynamic input until the versioned adapter is approved.
+  - Recompute CaseReading state through frozen runtime relations and explicit support routes only.
+  - Never rewrite or negate a StatedPosition.
+  - When a new material substantive Reading is required, create a Candidate and a policy-governed Human Stop.
+  reading_status_rules:
+    UNEXAMINED: No admitted evidence or StatedPosition bears on the Question.
+    OPEN: Relevant material exists but does not support a stable Reading.
+    SUPPORTED: A sufficient current support route exists and no decisive contradiction invalidates it.
+    CONTESTED: Material support and contradiction coexist or operative identity remains unresolved.
+    INVALIDATED: No valid support route remains or a decisive Condition/falsifier has failed.
+    STALE: A material upstream change occurred and required recomputation or review has not completed.
+    SEMANTIC_REVIEW_REQUIRED: A material CHALLENGES relation exists but no runtime adapter has translated it.
+  decision_rule: CaseReading.decision_status changes only through a Decision event.
+affected_set_rules:
+- Affected does not mean changed.
+- Every touched object appears as changed, unchanged-with-reason, blocked or Human Stop.
+- Propagation is bounded to frozen runtime relations and execution mapping.
+- Semantic-only and provenance relations never expand the affected set.
+- A non-executable causal dependency creates staleness/work, not a fabricated value.
+- Incremental recomputation must equal global replay under the same event stream and configuration.
+producer_priority:
+- Workbook/formula topology for DERIVES_FROM and deterministic model DRIVES.
+- Exact identity/value rules for quantitative CONTRADICTS.
+- Explicit policy and Condition objects for CONDITIONS.
+- AI semantic proposals for BEARS_ON and CHALLENGES.
+- AI proposals for runtime relations only when frozen semantic preconditions are satisfied.
+- Human correction/adoption where policy requires.
+implementation_order:
+- Separate provenance, semantic-only and frozen-runtime relation registries.
+- Filter canonical events so only READY assertions reach the Dynamic.
+- Resolve the CHALLENGES adapter dependency.
+- Implement relation-specific CONDITIONS traversal before connecting producers.
+- Implement qualitative CaseReading recomputation.
+- Implement the Fund Lens operative-value policy interface.
+- Add conformance cases for quantitative contradiction, semantic challenge isolation, CONDITIONS and no-op survivors.

@@ -1,0 +1,94 @@
+metadata:
+  name: PANTA Blind Compiler and Dynamic Benchmark Specification
+  version: 0.1.0
+  status: PROTOCOL_READY_GOLD_NOT_INCLUDED
+  purpose: Measure semantic correctness and end-to-end consequence before archetype expansion.
+blindness:
+  compiler_must_not_receive:
+  - gold object IDs
+  - gold bindings
+  - gold relations
+  - gold answer text
+  - reviewer rationale
+  gold_created_by: Independent professional annotation using the same source corpus but a separate workspace.
+  case_identity: Anonymized generic case IDs only.
+minimum_case_set:
+- case_id: BLIND_BUYOUT_QUANTITATIVE_A
+  purpose: Metrics, definitions, period/perimeter, workbook binding, contradictions and formula propagation.
+- case_id: BLIND_BUYOUT_QUALITATIVE_B
+  purpose: Calls, StatedPositions, Questions, adverse evidence, Conditions and judgment boundary.
+- case_id: BLIND_BUYOUT_OPEN_WORLD_C
+  purpose: A material issue not fully anticipated by the Archetype, testing new-structure proposals and coverage limits.
+gold_annotation_objects:
+- SourceVersion
+- Claim
+- MetricObservation
+- Question
+- StatedPosition
+- CaseReading
+- Assumption
+- Unknown
+- Condition
+- ModelNode
+- Decision
+- runtime relation
+- semantic relation
+- CoverageLimit
+metrics:
+  extraction:
+  - claim precision
+  - claim recall
+  - atomicity
+  - locator accuracy
+  - attribution accuracy
+  identity:
+  - entity accuracy
+  - concept accuracy
+  - period accuracy
+  - perimeter accuracy
+  - basis/scenario/unit accuracy
+  binding:
+  - Question precision/recall
+  - model binding accuracy
+  - new-structure precision
+  relations:
+  - runtime relation precision/recall
+  - semantic challenge precision
+  - false runtime mapping rate
+  case_formation:
+  - Question precision/recall
+  - StatedPosition accuracy
+  - CaseReading accuracy
+  - Unknown coverage
+  runtime:
+  - affected-set precision
+  - changed-versus-unchanged accuracy
+  - incremental/global equivalence
+  - replay hash
+  human_cost:
+  - correction time
+  - number of material corrections
+  - number of unnecessary review stops
+  product_value:
+  - material surprise
+  - consequence on work/model/decision
+  - request to process next source
+hard_zero_tolerance_failures:
+- invented StatedPosition
+- automatic decision-status change without Decision event
+- semantic-only CHALLENGES passed into Dynamic input
+- silent unresolved material identity
+- material output without provenance or derivation
+- historical row overwritten or deleted
+- unread or unmapped area presented as resolved
+empirical_thresholds:
+  status: SET_AFTER_FIRST_BLIND_BASELINE
+  rule: No aggregate score may hide a material failure category.
+report_required:
+- per-object confusion tables
+- per-relation confusion tables
+- coverage limits
+- false canonicalizations
+- review reasons
+- correction-time distribution
+- changed/unchanged/blocked/Human Stop audit

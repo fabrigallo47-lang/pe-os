@@ -1,0 +1,181 @@
+{
+  "contract_version": "0.2.0",
+  "compiler_run": {
+    "run_id": "RUN-QUANT-001",
+    "case_id": "CASE-EXAMPLE",
+    "compiler_name": "panta-semantic-compiler",
+    "compiler_version": "0.2.0",
+    "model_id": "frontier-model",
+    "policy_hash": "sha256:policy-example",
+    "retrieval_trace_ids": [
+      "RET-201"
+    ],
+    "started_at": "2026-08-31T12:10:00Z",
+    "completed_at": "2026-08-31T12:10:02Z"
+  },
+  "source": {
+    "source_id": "SRC-QOE-01",
+    "source_version_id": "SRCV-QOE-01-V1",
+    "source_type": "document",
+    "title": "Quality of Earnings report",
+    "content_hash": "sha256:qoe-example",
+    "effective_at": "2026-08-20T00:00:00Z",
+    "known_at": "2026-08-31T12:09:00Z",
+    "access_scope": "DEAL_TEAM"
+  },
+  "formation_context": {
+    "kernel_version": "0.2.0",
+    "archetype_pack_versions": [
+      "BUYOUT-0.2.0"
+    ],
+    "fund_lens_version": "LENS-3",
+    "deal_frame_version": "DF-1",
+    "case_snapshot_id": "SNAP-18",
+    "context_hash": "sha256:context-example-2",
+    "active_question_ids": [
+      "Q-NORMALIZED-EBITDA"
+    ],
+    "active_definition_ids": [
+      "DEF-NORM-EBITDA-V2"
+    ],
+    "active_transaction_flags": [
+      "LEVERAGED_ACQUISITION"
+    ],
+    "fund_lens_status": "PROVISIONAL_UNVALIDATED",
+    "fund_lens_policy_hash": "sha256:provisional-policy-example"
+  },
+  "proposals": [
+    {
+      "proposal_id": "PROP-QUANT-01",
+      "object_type": "MetricObservation",
+      "provenance": {
+        "source_version_id": "SRCV-QOE-01-V1",
+        "locator": "page:17/table:3/row:accepted-normalized-ebitda",
+        "exact_text": "Accepted normalized FY2025 EBITDA: EUR 12.0m",
+        "interaction_id": null,
+        "utterance_id": null,
+        "stated_by_entity_id": "ORG-QOE-ADVISER",
+        "reported_speaker_entity_id": null,
+        "observed_speech_act": "assertion",
+        "asserted_content": "Accepted normalized FY2025 EBITDA is EUR 12.0m."
+      },
+      "temporal": {
+        "effective_at": "2025-12-31T23:59:59Z",
+        "known_at": "2026-08-31T12:09:00Z",
+        "period_label": "FY2025",
+        "period_start": "2025-01-01",
+        "period_end": "2025-12-31",
+        "as_of_date": null
+      },
+      "identity": {
+        "identity_type": "METRIC",
+        "dimensions": {
+          "entity_id": "COMPANY-TARGET",
+          "concept_id": "EBITDA_NORMALIZED_ACCEPTED",
+          "metric_id": "EBITDA_NORMALIZED_ACCEPTED",
+          "period": "FY2025",
+          "perimeter": "consolidated continuing operations",
+          "basis": "accepted QoE normalization / Fund Lens DEF-NORM-EBITDA-V2",
+          "measurement": "amount",
+          "scenario": "current",
+          "unit": "million",
+          "currency": "EUR",
+          "decision_root_id": "DECISION-INVEST",
+          "question_family_id": "BF-FIN-02"
+        },
+        "resolution_status": "RESOLVED",
+        "candidate_existing_ids": [
+          "METRIC-ID-NORM-EBITDA-FY25"
+        ],
+        "resolution_rationale": "All identity dimensions match the existing normalized EBITDA identity."
+      },
+      "content": {
+        "statement": "Accepted normalized FY2025 EBITDA is EUR 12.0m.",
+        "normalized_proposition": "EBITDA_NORMALIZED_ACCEPTED[COMPANY-TARGET,FY2025]=12.0 EURm",
+        "claim_kind": "quantitative",
+        "value": 12.0,
+        "unit": "million",
+        "currency": "EUR",
+        "polarity": "NEUTRAL",
+        "modality": "ASSERTED",
+        "direction": "NOT_APPLICABLE"
+      },
+      "candidate_bindings": [
+        {
+          "binding_type": "BEARS_ON",
+          "target_type": "Question",
+          "target_id": "Q-NORMALIZED-EBITDA",
+          "confidence": 1.0,
+          "rationale": "Exact metric/question binding.",
+          "similarity_trace": null
+        },
+        {
+          "binding_type": "TARGETS_MODEL_NODE",
+          "target_type": "ModelNode",
+          "target_id": "MODEL-NODE-NORM-EBITDA-FY25",
+          "confidence": 0.99,
+          "rationale": "Execution mapping uses the same semantic identity.",
+          "similarity_trace": null
+        }
+      ],
+      "relation_proposals": [
+        {
+          "relation_type": "BEARS_ON",
+          "source_ref": "PROP-QUANT-01",
+          "target_ref": "Q-NORMALIZED-EBITDA",
+          "confidence": 1.0,
+          "producer": "DETERMINISTIC_RULE",
+          "deterministic_precondition": "metric_identity.question_binding contains Q-NORMALIZED-EBITDA",
+          "rationale": "Exact identity binding.",
+          "relation_class": "SEMANTIC",
+          "runtime_mapping_status": "NOT_APPLICABLE",
+          "semantic_direction": "NEUTRAL",
+          "runtime_adapter_ref": null
+        },
+        {
+          "relation_type": "CONTRADICTS",
+          "source_ref": "PROP-QUANT-01",
+          "target_ref": "CLAIM-CIM-NORM-EBITDA-15",
+          "confidence": 1.0,
+          "producer": "DETERMINISTIC_RULE",
+          "deterministic_precondition": "same metric identity and value differs beyond tolerance",
+          "rationale": "QoE states EUR12.0m while CIM states EUR15.0m for the same identity.",
+          "relation_class": "RUNTIME_CANDIDATE",
+          "runtime_mapping_status": "READY",
+          "semantic_direction": "NOT_APPLICABLE",
+          "runtime_adapter_ref": "ADAPTER-CONTRADICTS-V1"
+        }
+      ],
+      "confidence": {
+        "extraction": 1.0,
+        "identity": 1.0,
+        "binding": 0.99,
+        "relation": 1.0
+      },
+      "materiality_hint": "CRITICAL",
+      "ambiguities": [],
+      "coverage_limits": [],
+      "disposition": {
+        "record_source_object": "APPEND_IMMEDIATELY",
+        "binding_disposition": "AUTO_CANONICALIZE",
+        "relation_disposition": "AUTO_CANONICALIZE",
+        "review_reason_codes": []
+      },
+      "fund_lens_effect": {
+        "policy_ids_applied": [
+          "DEF-NORM-EBITDA-V2"
+        ],
+        "policy_status": "PROVISIONAL",
+        "note": "Example only; not a validated institutional policy."
+      }
+    }
+  ],
+  "coverage_limits": [],
+  "run_summary": {
+    "claims_extracted": 1,
+    "objects_proposed": 1,
+    "auto_recordable_claims": 1,
+    "auto_bindable_proposals": 1,
+    "review_required": 0
+  }
+}

@@ -1,0 +1,84 @@
+metadata:
+  name: PANTA Buyout Archetype versus Fund Lens Audit
+  version: 0.2.0
+  date: '2026-08-31'
+  status: PASS_WITH_PROVISIONAL_ARCHETYPE_STATUS
+  scope: Universal Kernel v0.2, Buyout Archetype Pack v0.2 and Provisional Fund Lens schema.
+verdict:
+  summary: The underlying domain material is strong and captures real buyout mechanics, but the original corpus mixed
+    universal state logic, buyout economics, process design and institution-specific policy. v0.2 separates those
+    layers. The Buyout Pack is a credible archetype candidate, not yet a proven universal archetype.
+  why_the_domain_material_is_good:
+  - Questions and decision-relevant uncertainty are first-class.
+  - Evidence existence, reliability, sufficiency and independence are separated.
+  - Assumptions, models, decisions and approved bases are versioned rather than overwritten.
+  - Financial modelling and valuation are distinct functions.
+  - Material findings have explicit downstream consequences.
+  - Authority, permission, risk acceptance and execution are separated.
+  - Negative paths, reopening, monitoring and outcomes are first-class.
+  - Commercial, financial, operating, management, legal, tax, financing and model functions reflect real buyout work.
+  main_weaknesses_in_original_material:
+  - The ontology was too large to serve as a thin universal kernel.
+  - A process state machine and a semantic case model were mixed together.
+  - Some transaction modules and ownership practices were presented too close to universal status.
+  - Thresholds, evidence bars, authority, cadence and artifacts were not always cleanly separated from domain logic.
+  - Frequency in a historical source corpus could be mistaken for economic universality.
+classification_rule:
+  UniversalKernel: Invariant state, provenance, time, authority and transition semantics across strategies.
+  BuyoutArchetype: Question, concept, model and failure-mode grammar caused by buyout economics or rights.
+  ConditionalBuyoutModule: Activated by transaction facts such as leverage, carve-out, control or intermediation.
+  FundLens: Institution-specific thresholds, definitions, weights, evidence bars, process, authority and artifacts.
+  DealState: Facts, values, people, terms, sources, dates and decisions for one case.
+v0_2_moves:
+  moved_to_kernel:
+  - Deal Frame
+  - Question Engine
+  - Evidence Provenance
+  - Decision-Critical Work
+  - StatedPosition / CaseReading semantics
+  - append-only temporal state
+  retained_in_buyout_archetype:
+  - commercial durability and market questions
+  - financial verification and normalized cash basis
+  - operating executability and technology dependencies
+  - management, sponsor and governance questions
+  - legal, regulatory, tax and structuring functions
+  - financing and liquidity when leverage is material
+  - model, valuation and return grammar
+  - value-creation and ownership readiness when control or thesis requires it
+  - transaction flags and typical failure modes
+  moved_or_excluded_to_fund_lens:
+  - materiality thresholds and weights
+  - evidence sufficiency thresholds
+  - return hurdles and supported-price policy
+  - authority bodies, delegation, spend and approval thresholds
+  - mandatory artifacts, templates, cadence and role composition
+  - tool cost/duration and provider preferences
+  - house definitions and adjustment conventions
+  - automatic-admission confidence thresholds
+  - operative-value selection policy
+  kept_as_deal_state:
+  - specific company facts, values, sources, people, terms, deadlines and decisions
+borderline_modules:
+  sponsor_reliance_and_co_invest:
+    archetype_component: The existence of intermediation, sponsor reliance and separate authority is transaction-structural.
+    lens_component: How much independent challenge is required and how sponsor evidence is weighted.
+  value_creation_and_ownership:
+    archetype_component: Control ownership may require an executable value-creation and monitoring model.
+    lens_component: How much upside enters base case, required maturity and ownership cadence.
+  financing:
+    archetype_component: Leverage creates debt service, liquidity and covenant mechanics.
+    lens_component: Leverage appetite, minimum liquidity, covenant tolerance and financing strategy.
+  formal_diligence_reports:
+    archetype_component: The verification function is real.
+    lens_component: Whether a named report or external provider is mandatory.
+residual_risk:
+  statement: The v0.2 Buyout Pack may still reflect emphasis from its source material. It must remain provisional
+    until blind testing and comparison against independent buyout practices show that omissions and weights are not
+    source-specific.
+  mitigation:
+  - Use the archetype inclusion test for every addition.
+  - Keep typical evidence as examples rather than mandatory requirements.
+  - Measure unbound material residue on blind cases.
+  - Compare question families, not memo headings or workflow labels.
+  - Reject additions that are only thresholds, preferences or house process.

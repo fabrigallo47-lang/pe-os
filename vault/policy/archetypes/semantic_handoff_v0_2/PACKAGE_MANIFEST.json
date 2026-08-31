@@ -1,0 +1,145 @@
+{
+  "package_name": "PANTA_SEMANTIC_HANDOFF_V0_2",
+  "version": "0.2.0",
+  "created_at": "2026-08-31",
+  "status": "PROPOSED_FOR_TEAM_REVIEW",
+  "validated": true,
+  "core_deliverables": [
+    "01_universal_investment_kernel_v0_2.yaml",
+    "02_buyout_archetype_pack_v0_2.yaml",
+    "03_provisional_fund_lens_schema_v0_1.schema.json",
+    "04_semantic_extraction_contract_v0_2.schema.json",
+    "05_canonical_case_event_v0_2.schema.json",
+    "06_relation_update_contract_v0_2.yaml",
+    "07_archetype_lens_boundary_audit_v0_2.yaml",
+    "09_blind_benchmark_spec_v0_1.yaml"
+  ],
+  "release_boundary": [
+    "Does not replace frozen Dynamic contracts or conformance tests.",
+    "Fund Lens schema is provisional shape only.",
+    "Buyout Pack is a provisional archetype pending independent validation.",
+    "CHALLENGES is semantic-only pending a versioned Dynamic adapter."
+  ],
+  "files": [
+    {
+      "path": "00_COVER_MESSAGE.txt",
+      "bytes": 758,
+      "sha256": "895b4fed23ab0795c337cba63790caf3fe3878a471778dc56f9fe925fb80bd9f"
+    },
+    {
+      "path": "00_RELEASE_NOTES.md",
+      "bytes": 1374,
+      "sha256": "922f1ece935bb7b15aadc2d2d3056a9659cd7ca6a0dfcb9ef18ff3eb635197b0"
+    },
+    {
+      "path": "01_universal_investment_kernel_v0_2.yaml",
+      "bytes": 26567,
+      "sha256": "43c09e0f5957d784679ed8f3f640290b4e141e8f914094d0550a66f95803eec0"
+    },
+    {
+      "path": "02_buyout_archetype_pack_v0_2.yaml",
+      "bytes": 42354,
+      "sha256": "f7d9315d6bc87b71e4ab435b3db564bb0a4bce9b9e447e29510022d6e8e32efc"
+    },
+    {
+      "path": "03_provisional_fund_lens_schema_v0_1.md",
+      "bytes": 881,
+      "sha256": "2ca2a5dbd9379a447f803fa2a9e3f70928f0ec36e260d265dd2454eadefd1f7e"
+    },
+    {
+      "path": "03_provisional_fund_lens_schema_v0_1.schema.json",
+      "bytes": 15589,
+      "sha256": "d44b8e21218bf69f115c04b435a5bc8e1de6c4ebbafcb5c7c6925a5ff1e1a6a6"
+    },
+    {
+      "path": "04_semantic_extraction_contract_v0_2.md",
+      "bytes": 2166,
+      "sha256": "fa44f15e8098df53951ada14808bdb6060aa291ccbc93757cce42f9e84707c87"
+    },
+    {
+      "path": "04_semantic_extraction_contract_v0_2.schema.json",
+      "bytes": 19602,
+      "sha256": "0c6275b8bc14efe22e1cf249e83cd05175387fabfa64ed2a449213f22f198ebd"
+    },
+    {
+      "path": "05_canonical_case_event_v0_2.schema.json",
+      "bytes": 7842,
+      "sha256": "0e9c9cc91edb3cae2f50e844de2835b8080bfedfceee50933179dda3b1d5b517"
+    },
+    {
+      "path": "06_relation_update_contract_v0_2.yaml",
+      "bytes": 14739,
+      "sha256": "f7f7f46b342b34b16d886773bf3beaebf2c6f1c244538601bb5327e4d9339605"
+    },
+    {
+      "path": "07_archetype_lens_boundary_audit_v0_2.yaml",
+      "bytes": 5049,
+      "sha256": "3d2440cd3100412f652c485051bb482d78593ed8dd7d6f664f320ba7c8186f10"
+    },
+    {
+      "path": "08_ui_projection_map_v0_2.json",
+      "bytes": 1278,
+      "sha256": "a353875b7c2c72c5f5497de06bcbf68e935a7600a91c3488021b369284ceb0f8"
+    },
+    {
+      "path": "09_blind_benchmark_spec_v0_1.yaml",
+      "bytes": 2834,
+      "sha256": "af9524006d8307c33385f23b60e09ebd96d109c2fdb4b88c60831f10bd0e0ca2"
+    },
+    {
+      "path": "10_legacy_to_v0_2_mapping.yaml",
+      "bytes": 2483,
+      "sha256": "9d66aa45cd2f9474633385f07bff0af1a8eb40aa627df78deeba27f49ebe87b0"
+    },
+    {
+      "path": "CONTENT_AUDIT.txt",
+      "bytes": 369,
+      "sha256": "fcccee33fdbe5671b1d559de191c6f538d4f041f17d0e70d45a223d4ac87caa3"
+    },
+    {
+      "path": "README_START_HERE.md",
+      "bytes": 2411,
+      "sha256": "efb79b752323fee1517367a3edbda3288f3f7b7a2df7bd869216bca3978434cf"
+    },
+    {
+      "path": "VALIDATION_RESULTS.txt",
+      "bytes": 376,
+      "sha256": "aca50ee09b40d6bfc894d95c03bc22181ed91f42ebff78f07ed0c69bb25c3336"
+    },
+    {
+      "path": "examples/canonical_human_decision_event.json",
+      "bytes": 2351,
+      "sha256": "76733b086cfe9997cbd35345667681298d48a176ee7a97401adaf22421702f01"
+    },
+    {
+      "path": "examples/canonical_qualitative_event.json",
+      "bytes": 2532,
+      "sha256": "64975836bf880d4662a21befe0de1362a7e90fc8f9c370a2c0b711174887268a"
+    },
+    {
+      "path": "examples/canonical_quantitative_event.json",
+      "bytes": 2853,
+      "sha256": "28058f5abbb37182003339aa470c5f88da9f5976769407054b62c4553f61cbcc"
+    },
+    {
+      "path": "examples/provisional_fund_lens_empty.example.json",
+      "bytes": 2871,
+      "sha256": "f7e3580b77f98ff2db0244ee8590b62c8605064c952bb30280cb4fc354c27f66"
+    },
+    {
+      "path": "examples/qualitative_call_extraction.json",
+      "bytes": 5739,
+      "sha256": "43071b65d82bef5f29d28d9d5f1e43909fe5a44692b31ef1a4dbc4a80f1ede21"
+    },
+    {
+      "path": "examples/quantitative_qoe_extraction.json",
+      "bytes": 6161,
+      "sha256": "a831e022c85c4acefc40ed66d6293803863d640f9faff71df5786d4391bff038"
+    },
+    {
+      "path": "validate_package.py",
+      "bytes": 7116,
+      "sha256": "c9ec7467100aa7afa0da0b576eb15c136c27a17888959352724431728b908ee8"
+    }
+  ]
+}

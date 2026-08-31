@@ -1,0 +1,87 @@
+{
+  "event_id": "EVT-QUAL-001",
+  "contract_version": "0.2.0",
+  "case_id": "CASE-EXAMPLE",
+  "event_type": "RELATIONS_RECORDED",
+  "effective_at": "2026-08-31T11:30:00Z",
+  "known_at": "2026-08-31T11:30:00Z",
+  "recorded_at": "2026-08-31T12:00:04Z",
+  "actor": {
+    "actor_type": "SERVICE",
+    "actor_id": "canonicalization-service"
+  },
+  "admission_mode": "AUTO_POLICY",
+  "idempotency_key": "sha256:qualitative-event-example",
+  "source_version_ids": [
+    "SRCV-CALL-01-V1"
+  ],
+  "configuration_refs": {
+    "kernel_version": "0.2.0",
+    "archetype_versions": [
+      "BUYOUT-0.2.0"
+    ],
+    "fund_lens_version": null,
+    "deal_frame_version": "DF-1",
+    "policy_hash": "sha256:policy-example",
+    "active_transaction_flags": [
+      "FOUNDER_OR_MANAGEMENT_DEPENDENT"
+    ],
+    "fund_lens_status": "ABSENT",
+    "fund_lens_policy_hash": null
+  },
+  "object_assertions": [
+    {
+      "object_id": "CLAIM-MGT-STAFFING-001",
+      "object_type": "Claim",
+      "payload": {
+        "statement": "Two senior salespeople left and the CRO remains unfilled.",
+        "source_version_id": "SRCV-CALL-01-V1",
+        "locator": "utterance:118",
+        "known_at": "2026-08-31T11:30:00Z"
+      }
+    }
+  ],
+  "relation_assertions": [
+    {
+      "relation_id": "REL-BEAR-001",
+      "relation_type": "BEARS_ON",
+      "source_id": "CLAIM-MGT-STAFFING-001",
+      "target_id": "Q-MGT-EXECUTION",
+      "producer": "AI_CANONICALIZED",
+      "reason": "Unambiguous question binding.",
+      "relation_class": "SEMANTIC",
+      "runtime_mapping_status": "NOT_APPLICABLE",
+      "runtime_traversal": false,
+      "semantic_direction": "NEUTRAL",
+      "runtime_adapter_ref": null
+    },
+    {
+      "relation_id": "REL-CHALLENGE-001",
+      "relation_type": "CHALLENGES",
+      "source_id": "CLAIM-MGT-STAFFING-001",
+      "target_id": "READING-MGT-EXECUTION",
+      "producer": "AI_CANONICALIZED",
+      "reason": "Current leadership loss weakens execution support.",
+      "relation_class": "SEMANTIC",
+      "runtime_mapping_status": "PENDING_ADAPTER",
+      "runtime_traversal": false,
+      "semantic_direction": "ADVERSE",
+      "runtime_adapter_ref": null
+    }
+  ],
+  "retractions": [],
+  "materiality": "HIGH",
+  "pre_state_hash": "sha256:pre-state-example",
+  "compiler_trace": {
+    "compiler_run_id": "RUN-QUAL-001",
+    "proposal_ids": [
+      "PROP-QUAL-01"
+    ],
+    "review_record_id": null
+  },
+  "dynamic_assertion_refs": [],
+  "semantic_only_relation_ids": [
+    "REL-BEAR-001",
+    "REL-CHALLENGE-001"
+  ]
+}

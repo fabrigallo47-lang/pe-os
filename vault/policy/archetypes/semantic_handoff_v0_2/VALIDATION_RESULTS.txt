@@ -1,0 +1,11 @@
+PASS
+- three JSON Schemas are valid
+- six examples validate
+- five-layer hierarchy is exact
+- StatedPosition / CaseReading vocabulary is present
+- CHALLENGES is semantic-only and excluded from Dynamic input
+- provisional Fund Lens shape validates
+- Buyout Archetype / Fund Lens boundary checks pass
+- 22 kernel object types
+- 9 Buyout workstreams
+- 40 canonical concept seeds

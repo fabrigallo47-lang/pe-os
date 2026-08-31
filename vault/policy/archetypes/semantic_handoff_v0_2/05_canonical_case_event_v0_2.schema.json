@@ -1,0 +1,356 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/schemas/canonical_case_event_v0_2.schema.json",
+  "title": "PANTA Canonical Case Event v0.2",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "event_id",
+    "contract_version",
+    "case_id",
+    "event_type",
+    "effective_at",
+    "known_at",
+    "recorded_at",
+    "actor",
+    "admission_mode",
+    "idempotency_key",
+    "configuration_refs",
+    "object_assertions",
+    "relation_assertions",
+    "retractions",
+    "compiler_trace",
+    "dynamic_assertion_refs",
+    "semantic_only_relation_ids"
+  ],
+  "properties": {
+    "event_id": {
+      "type": "string"
+    },
+    "contract_version": {
+      "const": "0.2.0"
+    },
+    "case_id": {
+      "type": "string"
+    },
+    "event_type": {
+      "enum": [
+        "SOURCE_INGESTED",
+        "CLAIMS_RECORDED",
+        "POSITION_RECORDED",
+        "BINDINGS_RECORDED",
+        "RELATIONS_RECORDED",
+        "METRIC_VALUES_RECORDED",
+        "CONDITION_RECORDED",
+        "DECISION_RECORDED",
+        "WORK_RESULT_RECORDED",
+        "SOURCE_SUPERSEDED",
+        "OBJECT_RETRACTED",
+        "RELATION_RETRACTED",
+        "POLICY_CHANGED",
+        "MODEL_MAPPING_CHANGED"
+      ]
+    },
+    "effective_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "known_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "recorded_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "actor": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "actor_type",
+        "actor_id"
+      ],
+      "properties": {
+        "actor_type": {
+          "enum": [
+            "SYSTEM",
+            "PERSON",
+            "BODY",
+            "AGENT",
+            "SERVICE"
+          ]
+        },
+        "actor_id": {
+          "type": "string"
+        }
+      }
+    },
+    "admission_mode": {
+      "enum": [
+        "AUTO_POLICY",
+        "HUMAN_CONFIRMED",
+        "AUTHORITY_RECORDED"
+      ]
+    },
+    "idempotency_key": {
+      "type": "string",
+      "minLength": 8
+    },
+    "source_version_ids": {
+      "type": "array",
+      "items": {
+        "type": "string"
+      }
+    },
+    "configuration_refs": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "kernel_version",
+        "archetype_versions",
+        "active_transaction_flags",
+        "fund_lens_status",
+        "policy_hash"
+      ],
+      "properties": {
+        "kernel_version": {
+          "type": "string"
+        },
+        "archetype_versions": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fund_lens_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "deal_frame_version": {
+          "type": "string"
+        },
+        "policy_hash": {
+          "type": "string"
+        },
+        "active_transaction_flags": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "fund_lens_status": {
+          "enum": [
+            "ABSENT",
+            "PROVISIONAL_UNVALIDATED",
+            "VALIDATED"
+          ]
+        },
+        "fund_lens_policy_hash": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "object_assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "object_id",
+          "object_type",
+          "payload"
+        ],
+        "properties": {
+          "object_id": {
+            "type": "string"
+          },
+          "object_type": {
+            "type": "string"
+          },
+          "payload": {
+            "type": "object"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "relation_assertions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "relation_id",
+          "relation_type",
+          "relation_class",
+          "source_id",
+          "target_id",
+          "producer",
+          "runtime_mapping_status",
+          "runtime_traversal"
+        ],
+        "properties": {
+          "relation_id": {
+            "type": "string"
+          },
+          "relation_type": {
+            "enum": [
+              "SUPPORTS",
+              "CONTRADICTS",
+              "DERIVES_FROM",
+              "DRIVES",
+              "CONDITIONS",
+              "BEARS_ON",
+              "ANSWERS",
+              "REFRAMES",
+              "BINDS_TO_MODEL",
+              "DESCRIBES",
+              "CHALLENGES",
+              "FROM_SOURCE",
+              "ATTRIBUTED_TO",
+              "ABOUT_ENTITY",
+              "USES_DEFINITION",
+              "LOCATED_IN",
+              "OCCURRED_IN_INTERACTION"
+            ]
+          },
+          "source_id": {
+            "type": "string"
+          },
+          "target_id": {
+            "type": "string"
+          },
+          "producer": {
+            "enum": [
+              "DETERMINISTIC_RULE",
+              "AI_CANONICALIZED",
+              "WORKBOOK_FORMULA",
+              "HUMAN",
+              "POLICY"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          },
+          "relation_class": {
+            "enum": [
+              "PROVENANCE",
+              "SEMANTIC",
+              "RUNTIME"
+            ]
+          },
+          "runtime_mapping_status": {
+            "enum": [
+              "NOT_APPLICABLE",
+              "READY",
+              "PENDING_ADAPTER",
+              "REVIEW_REQUIRED"
+            ]
+          },
+          "runtime_traversal": {
+            "type": "boolean"
+          },
+          "semantic_direction": {
+            "enum": [
+              "SUPPORTIVE",
+              "ADVERSE",
+              "MIXED",
+              "NEUTRAL",
+              "NOT_APPLICABLE"
+            ]
+          },
+          "runtime_adapter_ref": {
+            "type": [
+              "string",
+              "null"
+            ]
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "retractions": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": [
+          "target_id",
+          "target_type",
+          "reason"
+        ],
+        "properties": {
+          "target_id": {
+            "type": "string"
+          },
+          "target_type": {
+            "enum": [
+              "OBJECT",
+              "RELATION"
+            ]
+          },
+          "reason": {
+            "type": "string"
+          }
+        },
+        "additionalProperties": false
+      }
+    },
+    "materiality": {
+      "enum": [
+        "UNKNOWN",
+        "LOW",
+        "MEDIUM",
+        "HIGH",
+        "CRITICAL"
+      ]
+    },
+    "pre_state_hash": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "compiler_trace": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "compiler_run_id",
+        "proposal_ids"
+      ],
+      "properties": {
+        "compiler_run_id": {
+          "type": "string"
+        },
+        "proposal_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "review_record_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "dynamic_assertion_refs": {
+      "type": "array",
+      "description": "Object or relation assertion IDs that may enter the frozen Dynamic adapter.",
+      "items": {
+        "type": "string"
+      }
+    },
+    "semantic_only_relation_ids": {
+      "type": "array",
+      "description": "Canonical semantic relations deliberately excluded from Dynamic traversal.",
+      "items": {
+        "type": "string"
+      }
+    }
+  }
+}

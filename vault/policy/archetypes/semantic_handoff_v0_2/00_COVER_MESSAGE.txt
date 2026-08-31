@@ -1,0 +1,19 @@
+I have consolidated the top-down structure and the Compiler-to-Dynamic contract in v0.2.
+
+The package now contains:
+- the thin Universal Investment Kernel;
+- the provisional Buyout Archetype Pack;
+- a provisional Fund Lens schema;
+- the semantic extraction contract;
+- the canonical event contract;
+- relation-specific update rules;
+- the archetype-versus-lens audit;
+- the blind benchmark specification.
+
+Please start from `README_START_HERE.md`.
+
+The important implementation boundary is:
+
+Source → Compiler proposal → validation/admission → canonical ledger event → runtime-ready assertions → Dynamic.
+
+`CHALLENGES` is intentionally semantic-only until the Dynamic adapter is resolved. The package does not replace the frozen Dynamic contracts.

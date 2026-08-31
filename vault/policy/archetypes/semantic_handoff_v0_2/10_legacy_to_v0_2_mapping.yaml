@@ -1,0 +1,71 @@
+metadata:
+  name: Legacy PANTA Model to v0.2 Mapping
+  version: 0.2.0
+  status: NON_BINDING_MIGRATION_AID
+mappings:
+- legacy_symbol: ENT_DEAL
+  target: Case
+  treatment: KEEP_AND_ADAPT
+- legacy_symbol: ENT_COMPANY / ENT_ORGANIZATION / ENT_ACTOR
+  target: Entity
+  treatment: GENERALIZE_WITH_ENTITY_KIND
+- legacy_symbol: ENT_DOCUMENT_ARTIFACT
+  target: Source
+  treatment: KEEP_LOGICAL_IDENTITY
+- legacy_symbol: ENT_DOCUMENT_VERSION
+  target: SourceVersion
+  treatment: KEEP_IMMUTABLE_VERSION
+- legacy_symbol: ENT_EVIDENCE_ITEM
+  target: Claim or MetricObservation
+  treatment: SPLIT_BY_CONTENT_TYPE
+- legacy_symbol: ENT_QUESTION
+  target: Question
+  treatment: KEEP_AND_ALIGN_STATUS
+- legacy_symbol: ENT_ASSUMPTION
+  target: Assumption
+  treatment: KEEP_FIRST_CLASS
+- legacy_symbol: ENT_RISK
+  target: Risk
+  treatment: KEEP_BUT_REQUIRE_CAUSAL_MECHANISM
+- legacy_symbol: ENT_DILIGENCE_FINDING
+  target: CaseReadingCandidate / AssumptionCandidate / Risk / WorkItem
+  treatment: DECOMPOSE
+- legacy_symbol: ENT_INVESTMENT_THESIS
+  target: Question + CaseReading + Assumption subgraph
+  treatment: PROJECTED_VIEW
+- legacy_symbol: legacy computed position object
+  target: CaseReading
+  treatment: RENAME_SYSTEM_SYNTHESIS
+- legacy_symbol: legacy attributed position proposal
+  target: StatedPosition
+  treatment: RENAME_ATTRIBUTED_VIEW
+- legacy_symbol: ENT_POSITION_RECORD
+  target: ExposurePosition
+  treatment: KEEP_SEPARATE_FROM_STATED_POSITION
+- legacy_symbol: ENT_METRIC_DEFINITION
+  target: Definition
+  treatment: KEEP_VERSIONED
+- legacy_symbol: ENT_METRIC_OBSERVATION
+  target: MetricObservation
+  treatment: KEEP_WITH_FULL_IDENTITY
+- legacy_symbol: ENT_ANALYTICAL_MODEL / ENT_MODEL_CASE
+  target: Model identity + ModelNode + snapshot
+  treatment: DECOMPOSE
+- legacy_symbol: ENT_DECISION_RECORD
+  target: Decision
+  treatment: KEEP_HUMAN_ONLY_IMMUTABLE
+- legacy_symbol: ENT_CONDITION_RECORD
+  target: Condition
+  treatment: KEEP_WITH_TEST_AND_WAIVER_AUTHORITY
+- legacy_symbol: ENT_WORKFLOW_EVENT
+  target: Canonical ledger event
+  treatment: KEEP_AND_EXPAND_TEMPORALITY
+- legacy_symbol: ENT_WORKSTREAM_RUN
+  target: WorkItem / orchestration object
+  treatment: KEEP_OUTSIDE_MINIMAL_CASE_KERNEL
+- legacy_symbol: ENT_VALUE_CREATION_PLAN
+  target: Conditional Buyout module
+  treatment: MOVE_OUT_OF_UNIVERSAL_KERNEL
+- legacy_symbol: ENT_SOURCES_USES / ENT_CAPITAL_STRUCTURE / ENT_COVENANT
+  target: Buyout/Credit model or Condition objects
+  treatment: MOVE_OUT_OF_UNIVERSAL_KERNEL

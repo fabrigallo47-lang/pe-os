@@ -1,0 +1,862 @@
+metadata:
+  name: PANTA Universal Investment Kernel
+  version: 0.2.0
+  status: PROPOSED_FOR_TEAM_REVIEW
+  date: '2026-08-31'
+  purpose: Minimal cross-strategy semantic and state contract for the Live Investment Case.
+  does_not_supersede:
+  - Frozen Transition Engine machine contracts
+  - 22-case conformance suite
+  - Existing runtime schemas until explicit migration
+  source_basis:
+  - file: process_kernel_implementation_specification.pdf
+    used_for:
+    - one common kernel
+    - continuous underwriting plus discrete authority gates
+    - event history
+    - workstream functions
+    - configuration instead of separate workflows
+  - file: PE_BUYOUT_DOMAIN_SPEC.md
+    used_for:
+    - universal core versus conditional extensions
+    - question/evidence/assumption/model/decision chain
+    - immutability, lineage, staleness and authority
+    - buyout domain knowledge
+  - file: epistemic_schemas_final.json
+    used_for:
+    - governing questions
+    - subquestions
+    - evidence types
+    - reasoning operators
+    - failure modes
+    - human-judgment boundaries
+    - automatable components
+  - file: workstream_dependency_graph_final.json
+    used_for:
+    - workstream inputs and outputs
+    - blocking and reopening
+    - downstream consumers
+  - file: live-investment-case-model.html
+    used_for:
+    - top-down/bottom-up formation
+    - semantic binding point
+    - ledger source of truth
+    - graph as derived projection
+  - file: panta-ristrutturazione.html
+    used_for:
+    - structured claim identity
+    - Excel L1/L2/L3
+    - DRIVES/CONDITIONS gaps
+    - append-only ledger plan
+  - file: PANTA_V_ALPHA_ENGINEERING_SOURCE_OF_TRUTH_v0_5.md
+    used_for:
+    - runtime boundary
+    - compiler/Dynamic responsibility split
+    - Candidate/Current/Approved
+  frozen_project_decisions:
+  - One universal investment kernel; strategy differences use versioned archetype packs and overlays.
+  - The event ledger is the source of truth; materialized state and graphs are replayable projections.
+  - Category routes extraction but never establishes semantic identity.
+  - Claims are atomic source statements and are never merged or overwritten.
+  - Epistemic status may be computed; decision status may only come from a recorded human decision.
+  - The AI Compiler interprets language and proposes bindings; the Dynamic never interprets raw text.
+  - Only a canonical admitted event triggers the Dynamic; admission is normally automatic under policy.
+  - Similarity is retrieval/proposal metadata only and cannot directly trigger propagation.
+  - Metric identity uses entity, concept, period, perimeter, basis, measurement, scenario and unit/currency.
+  - Backend vocabulary is StatedPosition and CaseReading; UI labels are Position and Reading.
+  proposed_decisions:
+  - id: PD-001
+    decision: Assumption and Unknown remain first-class production objects.
+    reason: They are cross-strategy and necessary to represent provisionality and closure work.
+  - id: PD-002
+    decision: CHALLENGES remains a semantic Compiler relation in v0.2 and is not a frozen Dynamic relation.
+    reason: The Dynamic adapter must choose how adverse-but-not-contradictory evidence enters support-route semantics.
+  - id: PD-003
+    decision: The Fund Lens schema is provisional and defines shape only.
+    reason: No institution-specific values may be inferred, validated or treated as policy without governed adoption.
+  release_notes:
+  - Uses StatedPosition and CaseReading consistently in backend contracts; UI labels remain Position and Reading.
+  - Removes empty conceptual layers from the implementation hierarchy.
+  - Adds a provisional Fund Lens interface as a separate configuration layer.
+  - Keeps CHALLENGES in Compiler semantics pending an explicit Dynamic adapter decision.
+architecture:
+  hierarchy:
+  - Universal Investment Kernel
+  - Strategy Archetype Pack with transaction flags
+  - Provisional Fund Lens
+  - Deal Frame
+  - Live Case State and Execution Mapping
+  precedence:
+  - Deal-specific explicit additions
+  - Validated Fund Lens and active policy
+  - Archetype defaults and transaction flags
+  - Kernel invariant
+  hard_floor:
+  - No layer may change identity history, provenance, attribution, bitemporality or human authority.
+  - Configuration may change thresholds, methods, labels, cadence and routing, but never source facts.
+  - An unvalidated Fund Lens is configuration input, not institutional policy.
+  responsibility_split:
+    context_layer: Retrieves candidate context; never determines canonical state.
+    ai_compiler: Interprets sources and proposes objects, identities, bindings, relations and structure.
+    canonicalization_admission: Validates proposals under policy; normally automatic.
+    ledger: Persists admitted events and all prior evidence.
+    graph_projection: Materializes semantic, causal, financial and workflow dependencies.
+    dynamic: Computes affected set and deterministic consequences.
+    agents: Perform work and write results back.
+    human: Exercises judgment, risk acceptance and authority.
+  product_vocabulary:
+    backend:
+      StatedPosition: An attributed human view actually expressed by a person or decision body.
+      CaseReading: The system synthesis for a Question.
+      ExposurePosition: An economic or portfolio position, kept separate from StatedPosition.
+    ui:
+      StatedPosition: Position
+      CaseReading: Reading
+      ExposurePosition: Exposure
+formation_context:
+  formula: Case0 = Form(Sources; ArchetypePack, ProvisionalOrValidatedFundLens, DealFrame)
+  archetype_role: Supplies reusable strategy questions, concepts, model grammar, failure modes and transaction flags.
+  fund_lens_role: Supplies institution-specific definitions, materiality, evidence standards, authority and process
+    policy.
+  deal_frame_role: Defines what is being evaluated, in which role, for which decision and by when.
+  open_world_rule: The Compiler may propose new questions, concepts and relations when configured structure misses
+    material content.
+  fund_lens_fallback: When no validated Fund Lens exists, use conservative provisional defaults and expose the absence
+    explicitly.
+state_model:
+  layers:
+    CANDIDATE: AI/system proposal not yet operative.
+    CURRENT: Admitted institutional current state; admission may be automatic.
+    APPROVED: Human-authorized snapshot or state.
+  temporal_fields:
+    effective_at: When the fact/view/condition/decision applied in the world.
+    known_at: When the institution first knew it.
+    recorded_at: When the ledger append occurred.
+  admission_modes:
+    AUTO_POLICY: Deterministic policy admitted without human review.
+    HUMAN_CONFIRMED: Professional reviewed and admitted.
+    AUTHORITY_RECORDED: Authorized human/body created or validated an authority event.
+object_types:
+  Case:
+    definition: Persistent identity and institutional record of one investment opportunity or live exposure.
+    storage: ledger_root_plus_materialized_projection
+    identity_key:
+    - case_id
+    required_fields:
+    - case_id
+    - canonical_name
+    - strategy_archetype_id
+    - status
+    mutability: Current changes only through ledger events; historical snapshots are immutable.
+    human_boundary: Decision scope and authority changes require governed events.
+  Entity:
+    definition: Persistent real-world subject referred to by the case.
+    storage: ledger_entity
+    identity_key:
+    - entity_id
+    required_fields:
+    - entity_id
+    - entity_kind
+    - canonical_name
+    - aliases
+    entity_kinds:
+    - company
+    - asset
+    - person
+    - organization
+    - fund
+    - vehicle
+    - security
+    - contract
+    - customer
+    - supplier
+    - lender
+    - adviser
+    - jurisdiction
+    - product
+    - site
+    - business_unit
+    - other
+    mutability: Identity is stable; names and attributes append successor facts.
+    human_boundary: Material entity ambiguity requires review; routine aliasing may be automatic.
+  Source:
+    definition: Logical source artifact or interaction independent of its versions.
+    storage: ledger_entity
+    identity_key:
+    - source_id
+    required_fields:
+    - source_id
+    - source_type
+    - title
+    - access_scope
+    source_types:
+    - document
+    - spreadsheet
+    - email
+    - call
+    - meeting
+    - message
+    - database_extract
+    - market_data
+    - user_action
+    - other
+    mutability: Content change creates a SourceVersion.
+  SourceVersion:
+    definition: Immutable content version with content hash and permitted-use lineage.
+    storage: append_only_ledger
+    identity_key:
+    - source_id
+    - version_id
+    - content_hash
+    required_fields:
+    - version_id
+    - source_id
+    - content_hash
+    - created_at
+    - known_at
+    - access_scope
+    mutability: Immutable. Correction creates a new version.
+  Interaction:
+    definition: Time-bounded call, meeting or message thread.
+    storage: append_only_ledger
+    identity_key:
+    - interaction_id
+    required_fields:
+    - interaction_id
+    - source_version_id
+    - participants
+    - started_at
+    - ended_at
+    mutability: Immutable event record.
+  Utterance:
+    definition: Ordered speech or written segment preserving speech act separately from asserted content.
+    storage: append_only_ledger
+    identity_key:
+    - interaction_id
+    - sequence_number
+    - locator
+    required_fields:
+    - utterance_id
+    - interaction_id
+    - speaker_entity_id
+    - sequence_number
+    - exact_text
+    - observed_speech_act
+    - known_at
+    speech_acts:
+    - assertion
+    - reported_assertion
+    - observation
+    - estimate
+    - forecast
+    - opinion
+    - question
+    - hypothesis
+    - commitment
+    - decision
+    - instruction
+    - condition
+    - denial
+    - uncertainty
+    - citation
+    - other
+    mutability: Immutable; transcript correction creates successor SourceVersion/Utterances.
+    human_boundary: Attribution uncertainty must remain explicit.
+  Claim:
+    definition: One atomic proposition asserted by one source, preserved even when other sources agree or conflict.
+    storage: append_only_ledger
+    identity_key:
+    - source_version_id
+    - locator
+    - atomic_index
+    - normalized_statement_hash
+    required_fields:
+    - object_id
+    - case_id
+    - object_type
+    - created_by_event_id
+    - effective_at
+    - known_at
+    - state_layer
+    - provenance
+    - source_version_id
+    - locator
+    - exact_text
+    - normalized_proposition
+    - claim_kind
+    - epistemic_qualifier
+    claim_kinds:
+    - qualitative
+    - quantitative
+    - definition
+    - forecast
+    - estimate
+    - commitment
+    - condition
+    - decision_observation
+    - other
+    mutability: Immutable; withdrawal/correction/supersession are separate events.
+    human_boundary: Extraction may be automatic; uncertain identity or binding remains Candidate.
+  Definition:
+    definition: Explicit meaning, scope and calculation basis of a concept or metric.
+    storage: versioned_ledger_entity
+    identity_key:
+    - definition_id
+    - version
+    required_fields:
+    - object_id
+    - case_id
+    - object_type
+    - created_by_event_id
+    - effective_at
+    - known_at
+    - state_layer
+    - provenance
+    - concept_id
+    - label
+    - definition_text
+    - scope_rules
+    - calculation_basis
+    mutability: Versioned; approved decisions keep the exact version used.
+    human_boundary: AI may propose; Fund Lens or authorized user establishes firm definitions.
+  MetricObservation:
+    definition: Typed numeric or categorical observation for a fully specified metric identity.
+    storage: append_only_ledger
+    identity_key:
+    - entity_id
+    - metric_id
+    - period
+    - perimeter
+    - basis
+    - measurement
+    - scenario
+    - unit
+    - currency
+    - source_version_id
+    - locator
+    required_fields:
+    - object_id
+    - case_id
+    - object_type
+    - created_by_event_id
+    - effective_at
+    - known_at
+    - state_layer
+    - provenance
+    - entity_id
+    - metric_id
+    - period
+    - perimeter
+    - basis
+    - measurement
+    - scenario
+    - value
+    - unit
+    mutability: Immutable; another source creates another row.
+    human_boundary: Ambiguous basis/perimeter remains Candidate.
+  Question:
+    definition: Decision-relevant uncertainty framed so evidence can answer, reframe or leave it unresolved.
+    storage: versioned_case_object
+    identity_key:
+    - decision_root_id
+    - canonical_question_hash
+    - scope
+    - scenario
+    required_fields:
+    - object_id
+    - case_id
+    - object_type
+    - created_by_event_id
+    - effective_at
+    - known_at
+    - state_layer
+    - provenance
+    - question_id
+    - question_text
+    - question_family_id
+    - decision_root_id
+    - criticality
+    - evidence_needed
+    - reopen_rule
+    mutability: Reframing creates a successor version/event.
+    human_boundary: AI may propose; material spine additions follow review policy.
+  StatedPosition:
+    definition: A view actually expressed by an identified person or body, with exact source and locator.
+    storage: append_only_ledger
+    identity_key:
+    - stated_by_entity_id
+    - source_version_id
+    - locator
+    - statement_hash
+    required_fields:
+    - object_id
+    - case_id
+    - object_type
+    - created_by_event_id
+    - effective_at
+    - known_at
+    - state_layer
+    - provenance
+    - position_id
+    - stated_by_entity_id
+    - statement
+    - source_version_id
+    - locator
+    - direction
+    - question_ids
+    mutability: Immutable. A changed view is a new StatedPosition.
+    human_boundary: PANTA may find and attribute; it must never invent or rewrite.
+  CaseReading:
+    definition: System synthesis for one Question, computed from admitted evidence, positions and dependencies.
+    storage: materialized_projection_with_versioned_snapshots
+    identity_key:
+    - question_id
+    - scope
+    - scenario
+    required_fields:
+    - reading_id
+    - case_id
+    - question_id
+    - reading_statement
+    - epistemic_status
+    - freshness_status
+    - decision_status
+    - support_route_ids
+    - challenge_relation_ids
+    - derivation_hash
+    epistemic_statuses:
+    - UNEXAMINED
+    - OPEN
+    - SUPPORTED
+    - CONTESTED
+    - INVALIDATED
+    freshness_statuses:
+    - CURRENT
+    - STALE
+    decision_statuses:
+    - PENDING
+    - ACCEPTED
+    - ACCEPTED_WITH_CONDITIONS
+    - REJECTED
+    mutability: Recomputed projection; prior states remain replayable.
+    human_boundary: System-attributed only. Decision status changes exclusively from Decision events.
+  Assumption:
+    definition: Qualitative or quantitative premise used by a Reading, ModelNode, scenario or decision.
+    storage: versioned_case_object
+    identity_key:
+    - subject_id
+    - proposition_hash
+    - scope
+    - period
+    - scenario
+    required_fields:
+    - object_id
+    - case_id
+    - object_type
+    - created_by_event_id
+    - effective_at
+    - known_at
+    - state_layer
+    - provenance
+    - assumption_id
+    - statement
+    - assumption_kind
+    - scope
+    - scenario
+    - status
+    - source_or_rationale
+    statuses:
+    - PROPOSED
+    - CURRENT
+    - CHALLENGED
+    - BROKEN
+    - SUPERSEDED
+    - RETIRED
+    mutability: Successor versions; never overwrite a decision-used assumption.
+    human_boundary: AI may propose; adoption depends on materiality and judgment.
+  Unknown:
+    definition: Declared absence, unresolved ambiguity or unmeasured quantity relevant to a Question or decision.
+    storage: versioned_case_object
+    identity_key:
+    - question_id
+    - unknown_type
+    - scope
+    - required_evidence_hash
+    required_fields:
+    - object_id
+    - case_id
+    - object_type
+    - created_by_event_id
+    - effective_at
+    - known_at
+    - state_layer
+    - provenance
+    - unknown_id
+    - question_id
+    - description
+    - unknown_type
+    - materiality
+    - resolution_path
+    - owner
+    statuses:
+    - OPEN
+    - PARTIALLY_RESOLVED
+    - RESOLVED
+    - ACCEPTED_RESIDUAL
+    - OBSOLETE
+    mutability: State transitions are evented.
+    human_boundary: AI may declare gaps; accepting material residual uncertainty is human/authority controlled.
+  Risk:
+    definition: Specific adverse state or causal mechanism that may damage value, cash, control, timing or executability.
+    storage: versioned_case_object
+    identity_key:
+    - risk_mechanism_hash
+    - scope
+    - scenario
+    - affected_object_ids
+    required_fields:
+    - object_id
+    - case_id
+    - object_type
+    - created_by_event_id
+    - effective_at
+    - known_at
+    - state_layer
+    - provenance
+    - risk_id
+    - mechanism
+    - trigger
+    - affected_objects
+    - severity_basis
+    - mitigation_or_response
+    mutability: Successor assessments; historical acceptance is immutable.
+    human_boundary: AI may identify; acceptance and materiality override are human.
+  Condition:
+    definition: Prerequisite or constraint controlling applicability, validity, authority or execution.
+    storage: versioned_case_object
+    identity_key:
+    - condition_type
+    - subject_id
+    - target_id
+    - test_hash
+    - effective_window
+    required_fields:
+    - object_id
+    - case_id
+    - object_type
+    - created_by_event_id
+    - effective_at
+    - known_at
+    - state_layer
+    - provenance
+    - condition_id
+    - condition_type
+    - statement
+    - test
+    - status
+    - target_ids
+    - waiver_authority
+    condition_types:
+    - evidence
+    - operational
+    - financial
+    - legal
+    - regulatory
+    - authority
+    - timing
+    - contractual
+    - model
+    - other
+    statuses:
+    - UNASSESSED
+    - SATISFIED
+    - UNSATISFIED
+    - WAIVED
+    - EXPIRED
+    mutability: State transitions are evented.
+    human_boundary: Only authorized humans/bodies may waive material conditions.
+  ModelNode:
+    definition: Semantic variable, formula output or scenario value in an executable economic model.
+    storage: versioned_execution_mapping_plus_values
+    identity_key:
+    - entity_id
+    - concept_id
+    - period
+    - perimeter
+    - basis
+    - measurement
+    - scenario
+    - unit
+    - model_id
+    required_fields:
+    - model_node_id
+    - model_id
+    - concept_id
+    - identity
+    - node_kind
+    - formula_or_input_ref
+    - unit
+    node_kinds:
+    - INPUT
+    - FORMULA
+    - OUTPUT
+    - SWITCH
+    - CONSTRAINT
+    mutability: Mapping/formula changes are versioned; values are recomputed.
+    human_boundary: AI proposes semantic mapping; global resolver/admission establishes it.
+  Decision:
+    definition: Human institutional act authorizing, rejecting, deferring or conditioning a bounded action.
+    storage: append_only_ledger
+    identity_key:
+    - decision_id
+    required_fields:
+    - decision_id
+    - case_id
+    - decision_type
+    - decision
+    - authority_basis
+    - actor_or_body_id
+    - scope
+    - conditions
+    - rationale
+    - effective_at
+    - known_at
+    mutability: Immutable. A change is a successor Decision.
+    human_boundary: HUMAN_ONLY. AI may extract an observed decision; authority validation is mandatory.
+  WorkItem:
+    definition: Bounded human or agent work tied to a decision-relevant uncertainty and expected write-back.
+    storage: versioned_operational_object
+    identity_key:
+    - trigger_event_id
+    - intended_case_change_hash
+    - owner_id
+    required_fields:
+    - work_id
+    - trigger_event_id
+    - question_or_unknown_ids
+    - objective
+    - owner
+    - worker_type
+    - expected_evidence_or_artifact
+    - write_back_target
+    statuses:
+    - PROPOSED
+    - PLANNED
+    - IN_PROGRESS
+    - BLOCKED
+    - COMPLETE
+    - CANCELLED
+    mutability: Status changes are evented.
+    human_boundary: External effect/spend follows authority policy; analysis may be automatic.
+  ArtifactVersion:
+    definition: Versioned memo, model, report, term sheet, presentation or other deliverable generated from the case.
+    storage: versioned_artifact_store
+    identity_key:
+    - artifact_id
+    - version_id
+    - content_hash
+    required_fields:
+    - artifact_id
+    - version_id
+    - artifact_type
+    - content_hash
+    - case_snapshot_id
+    - source_object_ids
+    - generated_by
+    mutability: Never overwrite a decision-used artifact version.
+    human_boundary: AI may draft/update; release or external delivery follows policy.
+  Outcome:
+    definition: Realized or observed result testing an earlier assumption, Reading, Decision or WorkItem.
+    storage: append_only_ledger
+    identity_key:
+    - outcome_id
+    required_fields:
+    - outcome_id
+    - case_id
+    - outcome_type
+    - observed_at
+    - linked_decision_ids
+    - linked_assumption_ids
+    - evidence_ids
+    mutability: Immutable; revised interpretation is a new event/Reading.
+    human_boundary: Observation may be automatic; causal attribution may require judgment.
+  CoverageLimit:
+    definition: Explicit statement of what the Compiler, source set, model or Dynamic could not read, bind or compute.
+    storage: append_only_ledger_plus_projection
+    identity_key:
+    - component_id
+    - limit_type
+    - scope_hash
+    - compiler_or_mapping_version
+    required_fields:
+    - coverage_limit_id
+    - limit_type
+    - scope
+    - reason
+    - affected_questions_or_objects
+    - resolution_path
+    limit_types:
+    - MISSING_SOURCE
+    - UNREADABLE_SOURCE
+    - IDENTITY_UNRESOLVED
+    - BINDING_AMBIGUOUS
+    - RELATION_AMBIGUOUS
+    - MODEL_UNBOUND
+    - FORMULA_UNSUPPORTED
+    - DEPENDENCY_UNKNOWN
+    - PERMISSION_BLOCKED
+    - TEMPORAL_AMBIGUITY
+    - OTHER
+    mutability: Resolution appends a successor event; history remains.
+    human_boundary: Gaps are never silently colored as resolved.
+identity:
+  principle: Category routes extraction. Identity establishes comparison.
+  metric_identity_dimensions:
+  - entity_id
+  - metric_or_concept_id
+  - period
+  - perimeter
+  - basis
+  - measurement
+  - scenario
+  - unit
+  - currency
+  claim_identity_dimensions:
+  - source_version_id
+  - locator
+  - atomic_index
+  - normalized_statement_hash
+  qualitative_topic_dimensions:
+  - subject_entity_id
+  - question_or_concept_family_id
+  - proposition_type
+  - temporal_scope
+  - operating_scope
+  - scenario
+  rules:
+  - Same category never establishes sameness.
+  - Same metric identity plus divergent normalized values may produce CONTRADICTS.
+  - Two sources saying the same thing remain two Claims.
+  - A new SourceVersion never overwrites prior Claims.
+  - Unresolved identity becomes CoverageLimit, not arbitrary assignment.
+relation_families:
+  provenance_and_attribution:
+  - FROM_SOURCE
+  - ATTRIBUTED_TO
+  - ABOUT_ENTITY
+  - USES_DEFINITION
+  - LOCATED_IN
+  - OCCURRED_IN_INTERACTION
+  semantic_binding_non_traversal:
+  - BEARS_ON
+  - ANSWERS
+  - REFRAMES
+  - BINDS_TO_MODEL
+  - DESCRIBES
+  - CHALLENGES
+  runtime_relations:
+  - SUPPORTS
+  - CONTRADICTS
+  - DERIVES_FROM
+  - DRIVES
+  - CONDITIONS
+  operational_relations:
+  - ASSIGNED_TO
+  - PRODUCES
+  - REQUIRED_FOR
+  - SUPERSEDES_EXPLICITLY
+  rule: Only frozen runtime relations with a READY adapter may affect the Dynamic. CHALLENGES is stored as semantic
+    evidence-bearing in v0.2.
+ledger_event_model:
+  source_of_truth: append-only event ledger
+  projection_outputs:
+  - current_case_snapshot
+  - derived_dependency_graph
+  - reading_projection
+  - operative_value_projection
+  - work_queue
+  - artifact_projection
+  event_minimum_fields:
+  - event_id
+  - event_type
+  - case_id
+  - effective_at
+  - known_at
+  - recorded_at
+  - actor
+  - admission_mode
+  - idempotency_key
+  - object_assertions
+  - relation_assertions
+  - configuration_refs
+  retraction_rule: Retraction/withdrawal append new events; never delete historical rows.
+  replay_rule: Same canonical event stream plus same configuration must reproduce the same state/hash.
+human_boundary:
+  automatic_by_default:
+  - source registration
+  - claim extraction
+  - obvious aliases
+  - unit normalization
+  - exact metric identity matching
+  - unambiguous question binding
+  - deterministic formula recomputation
+  - staleness marking
+  - work proposal generation
+  review_when_needed:
+  - material identity ambiguity
+  - new material question/concept
+  - uncertain speaker attribution
+  - judgmental causal conclusion
+  - conflicting definition/perimeter
+  - material relation ambiguity
+  human_or_authority_only:
+  - decision
+  - risk acceptance
+  - condition waiver
+  - capital commitment
+  - policy changes to authority/hard limits
+invariants:
+- Ledger rows are append-only.
+- Every material Claim and StatedPosition has exact source/version/locator.
+- StatedPosition is attributed; CaseReading is system-attributed.
+- Decision status changes only through Decision events.
+- Similarity scores never enter Dynamic input.
+- Dynamic never consumes raw prose.
+- Graph node values are computed, never source truth.
+- Same event stream/configuration yields same replay result.
+- Candidate, Current and Approved remain distinct.
+- Coverage gaps stay visible until resolved/accepted by event.
+- No operative metric value without explicit selection policy.
+- No artifact substitutes for underlying case state.
+- CHALLENGES is not passed to the Dynamic until a versioned adapter maps it.
+non_goals:
+- Encode all investment knowledge as deterministic rules.
+- Require an LBO model for every strategy.
+- Create a backend per strategy.
+- Use a vector database as institutional truth.
+- Let AI invent human positions or decisions.
+- Freeze the old buyout ontology as the universal kernel.
+case_formation_functions:
+  DealFrame:
+    purpose: Define the bounded investment problem before domain extraction.
+    fields:
+    - subject
+    - our_role
+    - transaction_shape
+    - price_and_terms_talk
+    - process_and_deadlines
+    - originating_anchor
+    - mandate_fit
+    - decision_sought
+  QuestionEngine:
+    purpose: Turn decision-relevant uncertainty into testable Questions and owned closure work.
+    required_behaviors:
+    - propose Questions from Archetype, Fund Lens, Deal Frame and source triggers
+    - distinguish thesis, kill, definition, model, execution and authority questions
+    - declare evidence needed and reopen rules
+    - allow deal-specific Questions when the pack is insufficient
+  EvidenceProvenance:
+    purpose: Preserve source, version, locator, attribution, effective time, known time and permission lineage.
+  DecisionCriticalWork:
+    purpose: Rank work by explicit decision linkage, economic sensitivity, support fragility and closure value.
+    constraint: No opaque attention score is part of the kernel.

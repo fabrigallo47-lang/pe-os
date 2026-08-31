@@ -54,6 +54,7 @@ from tools.llm_provider import (  # noqa: E402
     missing_key_message,
     openrouter_extra_body,
 )
+from tools.archetype_pack import load_pack, workstream_ids  # noqa: E402
 from tools.source_envelope import extractor_source_record  # noqa: E402
 
 VAULT_INBOX = ROOT / "vault" / "inbox"
@@ -308,11 +309,28 @@ PERIOD_MAP: dict[str, str] = {
 
 EPISTEMIC_CLASS_ENUM = ["asserted", "observed", "derived", "attested"]
 DIRECTION_ENUM = ["supports", "contradicts", "context"]
-TOPIC_ENUM = [
-    "Financial Performance", "Earnings Quality", "Customer Risk",
-    "Team & Management", "Market Position", "Capital Structure",
-    "Valuation & Returns", "Operational", "Legal & Compliance", "Other",
-]
+ARCHETYPE_PACK = load_pack()
+# "Use workstream/concept families to select schemas. Category never creates identity or contradiction."
+# Topic is extraction routing metadata only; identity and conflict logic deliberately ignore it.
+TOPIC_ENUM = workstream_ids(ARCHETYPE_PACK) + ["OTHER"]
+
+
+def _topic_description(pack: dict[str, Any]) -> str:
+    """Give the model the pack's governing questions beside each route ID."""
+    workstreams = pack["workstreams"]
+    routes = "\n".join(
+        f"- {workstream_id}: {workstreams[workstream_id]['governing_question']}"
+        for workstream_id in workstream_ids(pack)
+    )
+    return (
+        "Choose the workstream whose governing question best routes this claim; "
+        "do not infer identity or contradiction from topic. Use OTHER only when no "
+        "workstream applies.\nCanonical workstreams:\n"
+        f"{routes}"
+    )
+
+
+TOPIC_DESCRIPTION = _topic_description(ARCHETYPE_PACK)
 
 # ── Identity dimensions (bounded) ─────────────────────────────────────────────
 # `perimeter` stays prose because a human reads it. These carry the machine
@@ -486,6 +504,7 @@ CLAIM_TOOL = {
                         "topic": {
                             "type": "string",
                             "enum": TOPIC_ENUM,
+                            "description": TOPIC_DESCRIPTION,
                         },
                         "definition_id": {
                             "type": ["string", "null"],
@@ -980,7 +999,7 @@ def annotate_chunk(
                     perimeter=perimeter,
                     epistemic_class=c.get("epistemic_class", "asserted"),
                     direction=c.get("direction", "context"),
-                    topic=c.get("topic", "Other"),
+                    topic=c.get("topic", "OTHER"),
                     definition_id=c.get("definition_id"),
                     statement=c.get("statement", ""),
                     locator=locator,

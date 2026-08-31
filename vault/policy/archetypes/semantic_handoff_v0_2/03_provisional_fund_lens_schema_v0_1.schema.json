@@ -1,0 +1,659 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/schemas/provisional_fund_lens_v0_1.schema.json",
+  "title": "PANTA Provisional Fund Lens Schema v0.1",
+  "$comment": "PROVISIONAL SHAPE ONLY. This schema defines where institution-specific policy may live. It contains no validated policy values and must not be treated as institutional truth until governed adoption.",
+  "type": "object",
+  "additionalProperties": false,
+  "required": [
+    "schema_version",
+    "schema_status",
+    "no_silent_inference",
+    "lens_id",
+    "version",
+    "lifecycle_status",
+    "effective_from",
+    "known_at",
+    "scope",
+    "provenance",
+    "policies",
+    "change_control"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "0.1.0-provisional"
+    },
+    "schema_status": {
+      "const": "PROVISIONAL_SHAPE_ONLY"
+    },
+    "no_silent_inference": {
+      "const": true
+    },
+    "lens_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "lifecycle_status": {
+      "enum": [
+        "DRAFT_UNVALIDATED",
+        "VALIDATED",
+        "RETIRED"
+      ]
+    },
+    "effective_from": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "known_at": {
+      "$ref": "#/$defs/timestamp"
+    },
+    "scope": {
+      "$ref": "#/$defs/scope"
+    },
+    "provenance": {
+      "$ref": "#/$defs/provenance"
+    },
+    "policies": {
+      "$ref": "#/$defs/policies"
+    },
+    "change_control": {
+      "$ref": "#/$defs/changeControl"
+    }
+  },
+  "$defs": {
+    "timestamp": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "status": {
+      "enum": [
+        "UNCONFIGURED",
+        "PROVISIONAL",
+        "VALIDATED"
+      ]
+    },
+    "scope": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "organization_scope_id",
+        "strategy_ids"
+      ],
+      "properties": {
+        "organization_scope_id": {
+          "type": "string"
+        },
+        "fund_vehicle_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "strategy_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "jurisdiction_scope": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "applies_to_new_cases_from": {
+          "anyOf": [
+            {
+              "$ref": "#/$defs/timestamp"
+            },
+            {
+              "type": "null"
+            }
+          ]
+        }
+      }
+    },
+    "provenance": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "source_refs",
+        "formation_method",
+        "created_by",
+        "validation_notes"
+      ],
+      "properties": {
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "formation_method": {
+          "enum": [
+            "MANUAL",
+            "AI_ASSISTED",
+            "MIXED"
+          ]
+        },
+        "created_by": {
+          "type": "string"
+        },
+        "reviewed_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "approved_by": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "validation_notes": {
+          "type": "string"
+        },
+        "confidence_note": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "rule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "rule_id",
+        "status",
+        "condition",
+        "effect",
+        "rationale",
+        "source_refs"
+      ],
+      "properties": {
+        "rule_id": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "condition": {
+          "type": "string"
+        },
+        "effect": {
+          "type": "string"
+        },
+        "rationale": {
+          "type": "string"
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "override_authority": {
+          "type": [
+            "string",
+            "null"
+          ]
+        }
+      }
+    },
+    "definitionRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "concept_id",
+        "version",
+        "status",
+        "definition_text",
+        "calculation_basis"
+      ],
+      "properties": {
+        "concept_id": {
+          "type": "string"
+        },
+        "version": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/$defs/status"
+        },
+        "definition_text": {
+          "type": "string"
+        },
+        "calculation_basis": {
+          "type": "string"
+        },
+        "scope_rules": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "source_refs": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "policies": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "mandate",
+        "definitions",
+        "materiality",
+        "evidence",
+        "admission",
+        "operative_value",
+        "economics",
+        "authority",
+        "workflow",
+        "toolkit",
+        "artifacts"
+      ],
+      "properties": {
+        "mandate": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "rules"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            }
+          }
+        },
+        "definitions": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "rules"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/definitionRule"
+              }
+            }
+          }
+        },
+        "materiality": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "dimensions",
+            "threshold_rules",
+            "aggregation_policy"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "dimensions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "threshold_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            },
+            "aggregation_policy": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "decision_root_override": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          }
+        },
+        "evidence": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "phase_standards",
+            "source_independence_rules",
+            "challenge_rules"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "phase_standards": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            },
+            "source_independence_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            },
+            "challenge_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            }
+          }
+        },
+        "admission": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "default_mode",
+            "auto_record_claims",
+            "review_reason_codes",
+            "confidence_thresholds",
+            "relation_policies"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "default_mode": {
+              "enum": [
+                "AUTO_POLICY",
+                "REVIEW_BY_DEFAULT"
+              ]
+            },
+            "auto_record_claims": {
+              "type": "boolean"
+            },
+            "review_reason_codes": {
+              "type": "array",
+              "items": {
+                "enum": [
+                  "MATERIAL_IDENTITY_AMBIGUITY",
+                  "NEW_MATERIAL_STRUCTURE",
+                  "SPEAKER_ATTRIBUTION_UNCERTAIN",
+                  "DEFINITION_CONFLICT",
+                  "CAUSAL_JUDGMENT_REQUIRED",
+                  "MATERIAL_RELATION_AMBIGUITY",
+                  "AUTHORITY_VALIDATION_REQUIRED",
+                  "PERMISSION_BLOCKED"
+                ]
+              }
+            },
+            "confidence_thresholds": {
+              "type": "object",
+              "additionalProperties": false,
+              "required": [
+                "identity",
+                "binding",
+                "relation"
+              ],
+              "properties": {
+                "identity": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "binding": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 1
+                },
+                "relation": {
+                  "type": [
+                    "number",
+                    "null"
+                  ],
+                  "minimum": 0,
+                  "maximum": 1
+                }
+              }
+            },
+            "relation_policies": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            }
+          }
+        },
+        "operative_value": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "default_selection",
+            "selection_rules",
+            "tie_behavior"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "default_selection": {
+              "const": "NONE"
+            },
+            "selection_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            },
+            "tie_behavior": {
+              "enum": [
+                "NO_OPERATIVE_VALUE",
+                "REVIEW_REQUIRED"
+              ]
+            }
+          }
+        },
+        "economics": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "return_measures",
+            "hurdle_rules",
+            "scenario_rules",
+            "valuation_rules"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "return_measures": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "hurdle_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            },
+            "scenario_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            },
+            "valuation_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            }
+          }
+        },
+        "authority": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "action_rules"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "action_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            }
+          }
+        },
+        "workflow": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "recurring_questions",
+            "negative_underwriting_rules",
+            "required_functions",
+            "cadence_rules"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "recurring_questions": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              }
+            },
+            "negative_underwriting_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            },
+            "required_functions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            },
+            "cadence_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            }
+          }
+        },
+        "toolkit": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "instrument_rules"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "instrument_rules": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            }
+          }
+        },
+        "artifacts": {
+          "type": "object",
+          "additionalProperties": false,
+          "required": [
+            "status",
+            "conventions"
+          ],
+          "properties": {
+            "status": {
+              "$ref": "#/$defs/status"
+            },
+            "conventions": {
+              "type": "array",
+              "items": {
+                "$ref": "#/$defs/rule"
+              }
+            }
+          }
+        }
+      }
+    },
+    "changeControl": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "supersedes_version",
+        "change_summary",
+        "approval_required",
+        "effective_status"
+      ],
+      "properties": {
+        "supersedes_version": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "change_summary": {
+          "type": "string"
+        },
+        "approval_required": {
+          "type": "boolean"
+        },
+        "effective_status": {
+          "enum": [
+            "DRAFT_ONLY",
+            "EFFECTIVE",
+            "RETIRED"
+          ]
+        }
+      }
+    }
+  }
+}

@@ -1,0 +1,12 @@
+CONTENT AUDIT — PASS
+
+The package contains:
+- no named investment organization;
+- no fund name;
+- no real deal or portfolio-company name;
+- no internal-person name;
+- no proprietary project codename;
+- no firm-specific policy values;
+- only generic examples and identifiers.
+
+The provisional Fund Lens example contains an empty, unvalidated configuration shape only.

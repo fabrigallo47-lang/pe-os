@@ -1,0 +1,1587 @@
+metadata:
+  name: PANTA Buyout Archetype Pack
+  version: 0.2.0
+  status: PROVISIONAL_DOMAIN_ARCHETYPE
+  date: '2026-08-31'
+  extends_kernel: PANTA Universal Investment Kernel 0.2.0
+  purpose: Reusable buyout domain grammar for case formation and semantic extraction.
+  source_basis:
+  - file: process_kernel_implementation_specification.pdf
+    used_for:
+    - one common kernel
+    - continuous underwriting plus discrete authority gates
+    - event history
+    - workstream functions
+    - configuration instead of separate workflows
+  - file: PE_BUYOUT_DOMAIN_SPEC.md
+    used_for:
+    - universal core versus conditional extensions
+    - question/evidence/assumption/model/decision chain
+    - immutability, lineage, staleness and authority
+    - buyout domain knowledge
+  - file: epistemic_schemas_final.json
+    used_for:
+    - governing questions
+    - subquestions
+    - evidence types
+    - reasoning operators
+    - failure modes
+    - human-judgment boundaries
+    - automatable components
+  - file: workstream_dependency_graph_final.json
+    used_for:
+    - workstream inputs and outputs
+    - blocking and reopening
+    - downstream consumers
+  - file: live-investment-case-model.html
+    used_for:
+    - top-down/bottom-up formation
+    - semantic binding point
+    - ledger source of truth
+    - graph as derived projection
+  - file: panta-ristrutturazione.html
+    used_for:
+    - structured claim identity
+    - Excel L1/L2/L3
+    - DRIVES/CONDITIONS gaps
+    - append-only ledger plan
+  - file: PANTA_V_ALPHA_ENGINEERING_SOURCE_OF_TRUTH_v0_5.md
+    used_for:
+    - runtime boundary
+    - compiler/Dynamic responsibility split
+    - Candidate/Current/Approved
+  not_a_checklist: true
+  open_world: true
+  universality_status: NOT_YET_CROSS_FIRM_VALIDATED
+  validation_requirement: Treat as an archetype candidate until blind testing and comparison against independent buyout
+    practices.
+strategy_definition:
+  strategy: BUYOUT
+  core_economic_problem: Underwrite durable cash generation, transaction structure, financing and executable value
+    creation.
+  dominant_loss_orientation:
+  - earnings or cash basis is overstated
+  - commercial durability is weaker than assumed
+  - leverage or liquidity amplifies error
+  - management or operating plan is not executable
+  - rights, structure or conditions fail
+  - exit value or timing is less favorable
+  default_decision_moments:
+  - screen/pursuit
+  - offer or terms
+  - investment
+  - signing
+  - closing/funding
+  - ownership/reunderwriting
+  - exit/realization
+workstreams:
+  COMMERCIAL_AND_MARKET:
+    governing_question: Can the company generate durable revenue and defend its economic position through the underwriting
+      horizon?
+    source_status: Condensed from EPS_COMMERCIAL and PE Buyout Domain Spec.
+    question_families:
+    - id: BF-COM-01
+      question: What activity, customer set, geography and value-chain layer define the real market?
+      concept_families:
+      - market_definition
+      - addressable_market
+      typical_evidence:
+      - market study
+      - customer data
+      - company segmentation
+      expected_case_outputs:
+      - Definition
+      - Question
+      - CaseReading
+    - id: BF-COM-02
+      question: Which causal drivers support market growth and what would weaken them?
+      concept_families:
+      - market_growth
+      - cyclicality
+      - regulation
+      typical_evidence:
+      - industry data
+      - expert calls
+      - historical cycles
+      expected_case_outputs:
+      - Assumption
+      - Risk
+      - CaseReading
+    - id: BF-COM-03
+      question: Why does the company win, lose, retain or displace business?
+      concept_families:
+      - competitive_position
+      - switching
+      - differentiation
+      typical_evidence:
+      - customer calls
+      - win/loss data
+      - competitor evidence
+      expected_case_outputs:
+      - CaseReading
+      - Risk
+      - Unknown
+    - id: BF-COM-04
+      question: Are pricing power and realized price distinct from inflation, mix and shortage effects?
+      concept_families:
+      - pricing
+      - mix
+      - inflation
+      typical_evidence:
+      - invoice history
+      - price waterfall
+      - customer evidence
+      expected_case_outputs:
+      - MetricObservation
+      - Assumption
+      - CaseReading
+    - id: BF-COM-05
+      question: What do retention, churn, expansion and cohort behavior imply about revenue durability?
+      concept_families:
+      - retention
+      - churn
+      - cohort
+      - revenue_durability
+      typical_evidence:
+      - cohort data
+      - customer-level revenue
+      - contracts
+      expected_case_outputs:
+      - MetricObservation
+      - CaseReading
+      - ModelNode
+    - id: BF-COM-06
+      question: How concentrated and correlated are customers, channels, products and geographies?
+      concept_families:
+      - concentration
+      - correlation
+      typical_evidence:
+      - customer-level data
+      - channel data
+      - product mix
+      expected_case_outputs:
+      - MetricObservation
+      - Risk
+      - Condition
+    - id: BF-COM-07
+      question: How credible are pipeline and forecast conversion assumptions?
+      concept_families:
+      - pipeline
+      - conversion
+      - forecast_reliability
+      typical_evidence:
+      - CRM export
+      - backlog
+      - historical conversion
+      expected_case_outputs:
+      - MetricObservation
+      - Assumption
+      - ModelNode
+    - id: BF-COM-08
+      question: How do demand, price and mix behave in a realistic downside?
+      concept_families:
+      - commercial_downside
+      - scenario
+      typical_evidence:
+      - historical downturn
+      - customer evidence
+      - scenario analysis
+      expected_case_outputs:
+      - Assumption
+      - ModelNode
+      - CaseReading
+    reasoning_operators:
+    - TRIANGULATE
+    - COHORT
+    - UNIT_ECONOMICS
+    - BENCHMARK
+    - FALSIFY
+    - CONCENTRATION
+    - RETENTION
+    - PRICING
+    - SCENARIO
+    failure_modes:
+    - market defined too broadly
+    - management claims treated as independent evidence
+    - price and mix conflated
+    - cyclical peak extrapolated
+    - common-source corroboration
+    universality_class: CORE_BUYOUT_FUNCTION
+    lens_contamination_risk: LOW
+    lens_controls:
+    - depth
+    - materiality
+    - evidence bar
+    - provider choice
+  FINANCIAL_QOE:
+    governing_question: What historical earnings, cash flow, working-capital and debt-like basis is reliable enough
+      to underwrite?
+    source_status: Condensed from EPS_FIN_QOE and Process Kernel.
+    question_families:
+    - id: BF-FIN-01
+      question: Do statutory, management and transaction-period figures reconcile?
+      concept_families:
+      - financial_reconciliation
+      typical_evidence:
+      - audited accounts
+      - management accounts
+      - trial balance
+      - ledger
+      expected_case_outputs:
+      - MetricObservation
+      - Unknown
+      - CaseReading
+    - id: BF-FIN-02
+      question: Which earnings are recurring, operational and inherited by the buyer?
+      concept_families:
+      - reported_ebitda
+      - normalized_ebitda
+      - recurrence
+      - buyer_inheritance
+      typical_evidence:
+      - QoE
+      - general ledger
+      - management explanations
+      expected_case_outputs:
+      - MetricObservation
+      - Assumption
+      - CaseReading
+    - id: BF-FIN-03
+      question: Is each adjustment evidenced, non-duplicative and economically appropriate?
+      concept_families:
+      - adjustment
+      - double_count
+      - run_rate
+      typical_evidence:
+      - adjustment schedule
+      - source accounts
+      - contracts
+      expected_case_outputs:
+      - Claim
+      - Assumption
+      - Risk
+    - id: BF-FIN-04
+      question: How reliably do earnings convert to operating cash and free cash flow?
+      concept_families:
+      - cash_conversion
+      - free_cash_flow
+      typical_evidence:
+      - cash-flow statements
+      - bank data
+      - working-capital detail
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - CaseReading
+    - id: BF-FIN-05
+      question: What normalized working-capital investment is required through the cycle and at closing?
+      concept_families:
+      - working_capital
+      - seasonality
+      - peg
+      typical_evidence:
+      - monthly balance sheets
+      - AR/AP/inventory detail
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - Condition
+    - id: BF-FIN-06
+      question: What capex is maintenance, compliance, integration, growth or discretionary?
+      concept_families:
+      - capex
+      - maintenance_capex
+      - growth_capex
+      typical_evidence:
+      - fixed-asset register
+      - capex plan
+      - site evidence
+      expected_case_outputs:
+      - MetricObservation
+      - Assumption
+      - ModelNode
+    - id: BF-FIN-07
+      question: Which obligations are debt-like, quasi-debt or purchase-price deductions?
+      concept_families:
+      - net_debt
+      - debt_like
+      - off_balance_sheet
+      typical_evidence:
+      - debt statements
+      - leases
+      - tax/pension/legal schedules
+      expected_case_outputs:
+      - MetricObservation
+      - Condition
+      - ModelNode
+    - id: BF-FIN-08
+      question: How credible is the forecast relative to history, current trading and operating drivers?
+      concept_families:
+      - forecast_accuracy
+      - current_trading
+      typical_evidence:
+      - budget vs actuals
+      - monthly reporting
+      - pipeline
+      expected_case_outputs:
+      - CaseReading
+      - Assumption
+      - Risk
+    reasoning_operators:
+    - NORMALIZE
+    - RECONCILE
+    - VARIANCE
+    - SOURCE_WEIGHT
+    - HISTORICAL_VS_FORECAST
+    - WORKING_CAPITAL
+    - CASH_CONVERSION
+    - CAPEX
+    - DEBT_LIKE
+    - CONSISTENCY
+    failure_modes:
+    - reported and normalized values overwritten
+    - adjustment double count
+    - cash and accrual periods mismatched
+    - sell-side QoE accepted without challenge
+    - perimeter or basis omitted
+    universality_class: CORE_BUYOUT_FUNCTION
+    lens_contamination_risk: MEDIUM
+    lens_controls:
+    - accepted definitions
+    - adjustment policy
+    - formal report requirement
+    - materiality
+  OPERATIONS_TECHNOLOGY_AND_EXECUTION:
+    governing_question: Can the operating plan, capacity, systems, capex and integration requirements be executed?
+    source_status: Condensed from operational and technology modules.
+    question_families:
+    - id: BF-OPS-01
+      question: Which operating KPIs causally drive revenue, margin, cash and service quality?
+      concept_families:
+      - operating_driver_map
+      typical_evidence:
+      - KPI history
+      - operating reports
+      - site visits
+      expected_case_outputs:
+      - Definition
+      - ModelNode
+      - CaseReading
+    - id: BF-OPS-02
+      question: What is current capacity, bottleneck, utilization and feasible expansion path?
+      concept_families:
+      - capacity
+      - utilization
+      - bottleneck
+      typical_evidence:
+      - plant data
+      - site visit
+      - production records
+      expected_case_outputs:
+      - MetricObservation
+      - Risk
+      - ModelNode
+    - id: BF-OPS-03
+      question: What productivity or procurement gains are evidenced and what do they cost?
+      concept_families:
+      - productivity
+      - procurement
+      - cost_to_achieve
+      typical_evidence:
+      - labor data
+      - spend cube
+      - benchmarks
+      expected_case_outputs:
+      - Assumption
+      - WorkItem
+      - ModelNode
+    - id: BF-OPS-04
+      question: Can systems, data, cyber and reporting support ownership and growth?
+      concept_families:
+      - technology_dependency
+      - data_quality
+      - cyber
+      - reporting
+      typical_evidence:
+      - systems map
+      - IT interviews
+      - cyber assessment
+      expected_case_outputs:
+      - Risk
+      - Condition
+      - WorkItem
+    - id: BF-OPS-05
+      question: Can carve-out, separation, integration or acquisition dependencies be delivered on time and cost?
+      concept_families:
+      - integration
+      - separation
+      - tsa
+      - synergy
+      typical_evidence:
+      - integration plan
+      - TSA
+      - project plan
+      - management interviews
+      expected_case_outputs:
+      - Condition
+      - Assumption
+      - WorkItem
+    - id: BF-OPS-06
+      question: How do operating constraints behave in downside scenarios?
+      concept_families:
+      - operating_downside
+      - resilience
+      typical_evidence:
+      - stress tests
+      - historical disruption
+      - supplier/customer evidence
+      expected_case_outputs:
+      - ModelNode
+      - Risk
+      - CaseReading
+    reasoning_operators:
+    - VARIANCE
+    - UNIT_ECONOMICS
+    - BENCHMARK
+    - CAUSAL
+    - CAPEX
+    - SYNERGY
+    - SCENARIO
+    - FALSIFY
+    failure_modes:
+    - initiative list without mechanism
+    - capacity inferred from revenue plan
+    - synergy double count
+    - systems dependency omitted
+    - owner or timing absent
+    universality_class: CONDITIONAL_DEPTH_FUNCTION
+    lens_contamination_risk: MEDIUM
+    lens_controls:
+    - depth
+    - specialist use
+    - sector emphasis
+    - evidence bar
+  MANAGEMENT_SPONSOR_AND_GOVERNANCE:
+    governing_question: Do management, sponsor and governance have the capability, incentives and bandwidth to execute
+      the case?
+    source_status: Condensed from EPS_MGMT_SPONSOR and talent module.
+    question_families:
+    - id: BF-MGT-01
+      question: Can the current leadership team execute the underwritten plan?
+      concept_families:
+      - management_capability
+      - execution_credibility
+      typical_evidence:
+      - track record
+      - interviews
+      - forecast accuracy
+      - references
+      expected_case_outputs:
+      - StatedPosition
+      - CaseReading
+      - Risk
+    - id: BF-MGT-02
+      question: Where is the company dependent on founders, key people or informal knowledge?
+      concept_families:
+      - key_person
+      - founder_dependence
+      typical_evidence:
+      - org chart
+      - interviews
+      - customer/supplier references
+      expected_case_outputs:
+      - Risk
+      - Condition
+      - WorkItem
+    - id: BF-MGT-03
+      question: Are finance, reporting and controls strong enough for institutional ownership?
+      concept_families:
+      - finance_function
+      - reporting_quality
+      - controls
+      typical_evidence:
+      - monthly reporting
+      - audit findings
+      - management interviews
+      expected_case_outputs:
+      - CaseReading
+      - Condition
+      - WorkItem
+    - id: BF-MGT-04
+      question: Are rollover, incentives, governance and reserved matters aligned with the plan?
+      concept_families:
+      - incentives
+      - rollover
+      - governance_rights
+      typical_evidence:
+      - term sheet
+      - management equity plan
+      - SHA
+      expected_case_outputs:
+      - Condition
+      - Risk
+      - Decision
+    - id: BF-MGT-05
+      question: What sponsor capability and deal-specific evidence support reliance on the sponsor?
+      concept_families:
+      - sponsor_capability
+      - sponsor_reliance
+      typical_evidence:
+      - realized track record
+      - deal-team evidence
+      - references
+      expected_case_outputs:
+      - CaseReading
+      - Risk
+      - StatedPosition
+    reasoning_operators:
+    - TRIANGULATE
+    - SOURCE_WEIGHT
+    - FALSIFY
+    - GOVERNANCE_ALIGNMENT
+    - BENCHMARK
+    - CAUSAL
+    failure_modes:
+    - prestige substituted for evidence
+    - firm track record conflated with deal team
+    - formal incentives assumed aligned
+    - governance rights not tested under stress
+    universality_class: CORE_WITH_CONDITIONAL_MODULES
+    lens_contamination_risk: MEDIUM
+    lens_controls:
+    - weighting
+    - reference standard
+    - governance preference
+    - risk appetite
+  LEGAL_REGULATORY:
+    governing_question: Can the transaction be completed and can rights, liabilities and regulatory risks be bounded
+      acceptably?
+    source_status: Condensed from EPS_LEGAL and Process Kernel.
+    question_families:
+    - id: BF-LEG-01
+      question: Do parties have title and authority, and is the legal perimeter the one being underwritten?
+      concept_families:
+      - title
+      - authority
+      - legal_perimeter
+      typical_evidence:
+      - corporate records
+      - legal DD
+      - structure chart
+      expected_case_outputs:
+      - Definition
+      - Condition
+      - Risk
+    - id: BF-LEG-02
+      question: Which contracts are material, assignable, terminable or consent-dependent?
+      concept_families:
+      - material_contract
+      - change_of_control
+      - consent
+      typical_evidence:
+      - contracts
+      - legal DD
+      - counterparty notices
+      expected_case_outputs:
+      - Condition
+      - Risk
+      - WorkItem
+    - id: BF-LEG-03
+      question: Which liabilities, litigation or investigations can transfer or crystallize?
+      concept_families:
+      - liability
+      - litigation
+      - investigation
+      typical_evidence:
+      - claims register
+      - counsel analysis
+      - regulatory correspondence
+      expected_case_outputs:
+      - Risk
+      - Condition
+      - CaseReading
+    - id: BF-LEG-04
+      question: Which licenses, approvals or regulatory conditions affect operation or closing?
+      concept_families:
+      - license
+      - regulatory_approval
+      - notification
+      typical_evidence:
+      - licenses
+      - regulatory analysis
+      - consents
+      expected_case_outputs:
+      - Condition
+      - Decision
+      - WorkItem
+    - id: BF-LEG-05
+      question: What protections allocate risk and what residual risk remains?
+      concept_families:
+      - indemnity
+      - escrow
+      - insurance
+      - covenant
+      - residual_risk
+      typical_evidence:
+      - SPA drafts
+      - W&I terms
+      - legal advice
+      expected_case_outputs:
+      - Condition
+      - Risk
+      - Decision
+    reasoning_operators:
+    - PERIMETER_RECONCILIATION
+    - OBLIGATION_EXTRACTION
+    - CONDITION_MAPPING
+    - RESIDUAL_RISK
+    failure_modes:
+    - document receipt treated as issue resolution
+    - contractual mitigation treated as risk elimination
+    - legal perimeter disconnected from model
+    - waiver without authority
+    universality_class: CORE_TRANSACTION_FUNCTION
+    lens_contamination_risk: LOW
+    lens_controls:
+    - materiality
+    - risk acceptance
+    - counsel process
+  TAX_AND_STRUCTURING:
+    governing_question: How should ownership, financing and cash flows be structured, and what tax leakage or constraints
+      change economics?
+    source_status: Condensed from EPS_TAX/EPS_STRUCTURING and Process Kernel.
+    question_families:
+    - id: BF-TAX-01
+      question: Is the acquisition an asset, share or other structure, and what perimeter transfers?
+      concept_families:
+      - transaction_structure
+      - tax_perimeter
+      typical_evidence:
+      - tax memo
+      - legal structure
+      - term sheet
+      expected_case_outputs:
+      - Definition
+      - Condition
+      - ModelNode
+    - id: BF-TAX-02
+      question: Which vehicles, jurisdictions and ownership steps are required?
+      concept_families:
+      - legal_entity_structure
+      - jurisdiction
+      typical_evidence:
+      - structure chart
+      - tax/legal advice
+      expected_case_outputs:
+      - Entity
+      - Condition
+      - ArtifactVersion
+    - id: BF-TAX-03
+      question: How is debt introduced, serviced and limited for tax purposes?
+      concept_families:
+      - debt_pushdown
+      - interest_deductibility
+      typical_evidence:
+      - tax model
+      - financing terms
+      - legal structure
+      expected_case_outputs:
+      - ModelNode
+      - Condition
+      - Risk
+    - id: BF-TAX-04
+      question: What cash taxes, withholding, transfer taxes and exit leakage affect returns?
+      concept_families:
+      - cash_tax
+      - withholding
+      - tax_leakage
+      typical_evidence:
+      - tax DD
+      - tax model
+      - jurisdiction analysis
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - Risk
+    - id: BF-TAX-05
+      question: How are management rollover and incentives structured economically and legally?
+      concept_families:
+      - management_economics
+      - rollover
+      - incentive_tax
+      typical_evidence:
+      - management terms
+      - tax advice
+      - cap table
+      expected_case_outputs:
+      - Condition
+      - ModelNode
+      - Decision
+    reasoning_operators:
+    - STRUCTURE_MAP
+    - CASH_TAX
+    - FUNDS_FLOW
+    - LEGAL_MODEL_RECONCILIATION
+    failure_modes:
+    - tax treated as standalone report
+    - structure change not propagated to model
+    - funds flow version mismatch
+    universality_class: CORE_TRANSACTION_FUNCTION
+    lens_contamination_risk: MEDIUM
+    lens_controls:
+    - preferred structures
+    - tax risk appetite
+    - specialist process
+  FINANCING_AND_LIQUIDITY:
+    governing_question: What financing, liquidity and covenant package is feasible under base and downside conditions?
+    source_status: Condensed from EPS_FINANCING and financing module.
+    question_families:
+    - id: BF-DBT-01
+      question: How much debt can the business service under base and downside cases?
+      concept_families:
+      - debt_capacity
+      - coverage
+      - cash_flow
+      typical_evidence:
+      - lender cases
+      - model
+      - historical cash flow
+      expected_case_outputs:
+      - ModelNode
+      - CaseReading
+      - Condition
+    - id: BF-DBT-02
+      question: What pricing, fees, amortization, maturity and cash-sweep terms apply?
+      concept_families:
+      - debt_terms
+      - fees
+      - amortization
+      - maturity
+      typical_evidence:
+      - term sheets
+      - lender correspondence
+      expected_case_outputs:
+      - Claim
+      - ModelNode
+      - Condition
+    - id: BF-DBT-03
+      question: What covenant definitions, test dates, headroom and cure rights exist?
+      concept_families:
+      - covenant
+      - headroom
+      - cure
+      typical_evidence:
+      - credit agreement
+      - covenant model
+      expected_case_outputs:
+      - Definition
+      - ModelNode
+      - Condition
+    - id: BF-DBT-04
+      question: What minimum liquidity is needed for seasonality, capex, working capital and shocks?
+      concept_families:
+      - liquidity
+      - minimum_cash
+      - revolver
+      typical_evidence:
+      - cash model
+      - working-capital data
+      - capex plan
+      expected_case_outputs:
+      - ModelNode
+      - Risk
+      - Condition
+    - id: BF-DBT-05
+      question: What conditions could prevent funding or reduce strategic flexibility?
+      concept_families:
+      - funds_certainty
+      - funding_condition
+      - flexibility
+      typical_evidence:
+      - commitment papers
+      - conditions precedent
+      expected_case_outputs:
+      - Condition
+      - Decision
+      - Risk
+    reasoning_operators:
+    - DEBT_CAPACITY
+    - LIQUIDITY
+    - COVENANT
+    - DOWNSIDE
+    - FUNDS_CERTAINTY
+    failure_modes:
+    - closing leverage only, no acquisition headroom
+    - covenant definition mismatch
+    - liquidity omitted
+    - terms not linked to model
+    universality_class: CONDITIONAL_ON_LEVERAGE
+    lens_contamination_risk: HIGH
+    lens_controls:
+    - leverage appetite
+    - liquidity minimums
+    - covenant policy
+    - financing strategy
+  MODEL_VALUATION_AND_RETURNS:
+    governing_question: How do accepted facts, assumptions, structure and scenarios translate into coherent economics
+      and outcomes?
+    source_status: Condensed from EPS_FIN_MODEL, EPS_VAL_RET and current execution-mapping work.
+    question_families:
+    - id: BF-MOD-01
+      question: Does the model reconcile to the accepted historical and transaction basis?
+      concept_families:
+      - model_reconciliation
+      typical_evidence:
+      - workbook
+      - accepted financial basis
+      - sources and uses
+      expected_case_outputs:
+      - ModelNode
+      - CoverageLimit
+      - CaseReading
+    - id: BF-MOD-02
+      question: Which operating drivers produce revenue, margin, working capital, capex and cash?
+      concept_families:
+      - operating_model
+      - driver_tree
+      typical_evidence:
+      - workbook
+      - operating plan
+      - workstream findings
+      expected_case_outputs:
+      - ModelNode
+      - DRIVES
+    - id: BF-MOD-03
+      question: Are base, downside, upside and management cases coherent and distinguishable?
+      concept_families:
+      - scenario
+      - scenario_delta
+      typical_evidence:
+      - workbook
+      - scenario assumptions
+      expected_case_outputs:
+      - ModelNode
+      - Assumption
+      - CoverageLimit
+    - id: BF-MOD-04
+      question: How do sources, uses, debt and ownership reconcile at entry?
+      concept_families:
+      - sources_uses
+      - capital_structure
+      - ownership
+      typical_evidence:
+      - workbook
+      - term sheet
+      - funds flow
+      expected_case_outputs:
+      - ModelNode
+      - Definition
+      - Condition
+    - id: BF-MOD-05
+      question: Which valuation methods and metrics fit the asset and evidence quality?
+      concept_families:
+      - valuation_method
+      - valuation_metric
+      typical_evidence:
+      - comps
+      - precedents
+      - DCF or NAV where relevant
+      expected_case_outputs:
+      - CaseReading
+      - Assumption
+      - ModelNode
+    - id: BF-MOD-06
+      question: How does enterprise value bridge to equity and security-specific value?
+      concept_families:
+      - enterprise_value
+      - equity_value
+      - waterfall
+      typical_evidence:
+      - capital structure
+      - debt-like schedule
+      - security terms
+      expected_case_outputs:
+      - ModelNode
+      - DERIVES_FROM
+    - id: BF-MOD-07
+      question: How much return comes from operations, leverage, multiple, timing and dilution?
+      concept_families:
+      - value_bridge
+      - moic
+      - irr
+      typical_evidence:
+      - model outputs
+      - bridge analysis
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - CaseReading
+    - id: BF-MOD-08
+      question: Which assumptions carry the greatest return, covenant and liquidity sensitivity?
+      concept_families:
+      - sensitivity
+      - fragility
+      - load_bearingness
+      typical_evidence:
+      - scenario model
+      - sensitivity analysis
+      expected_case_outputs:
+      - Risk
+      - WorkItem
+      - CaseReading
+    reasoning_operators:
+    - RECONCILE
+    - BRIDGE
+    - SCENARIO
+    - DOWNSIDE
+    - SENSITIVITY
+    - CASH_CONVERSION
+    - COVENANT
+    - LIQUIDITY
+    - WATERFALL
+    - LINEAGE
+    failure_modes:
+    - hard-coded values without lineage
+    - duplicate unique metric binding
+    - unit inconsistency
+    - historical/forecast definition mismatch
+    - unbound formulas presented as calculated
+    - price optimization presented as institutional decision
+    explicit_non_goal: No canonical Supported Price object or automatic investment recommendation.
+    universality_class: CORE_BUYOUT_FUNCTION
+    lens_contamination_risk: MEDIUM
+    lens_controls:
+    - hurdles
+    - valuation conventions
+    - scenario policy
+    - supported-price policy
+  VALUE_CREATION_AND_OWNERSHIP_READINESS:
+    governing_question: Which value-creation mechanisms are validated, costed, timed and executable under ownership?
+    source_status: Condensed from VCP modules.
+    question_families:
+    - id: BF-VCP-01
+      question: What is the causal mechanism, baseline and target for each lever?
+      concept_families:
+      - vcp_mechanism
+      - baseline
+      - target
+      typical_evidence:
+      - operating evidence
+      - commercial/financial findings
+      expected_case_outputs:
+      - Assumption
+      - MetricObservation
+      - CaseReading
+    - id: BF-VCP-02
+      question: What cost, timing, resources and dependencies are required?
+      concept_families:
+      - cost_to_achieve
+      - timing
+      - dependency
+      typical_evidence:
+      - implementation plan
+      - management interviews
+      expected_case_outputs:
+      - WorkItem
+      - ModelNode
+      - Condition
+    - id: BF-VCP-03
+      question: Which levers belong in downside, base, upside or outside the model?
+      concept_families:
+      - scenario_assignment
+      - double_count
+      typical_evidence:
+      - model
+      - VCP plan
+      expected_case_outputs:
+      - Assumption
+      - ModelNode
+      - Risk
+    - id: BF-VCP-04
+      question: Who owns delivery and what milestones prove progress?
+      concept_families:
+      - owner
+      - milestone
+      - kpi
+      typical_evidence:
+      - ownership plan
+      - board plan
+      expected_case_outputs:
+      - WorkItem
+      - Outcome
+      - Condition
+    reasoning_operators:
+    - CAUSAL
+    - BASELINE_TARGET
+    - COST_TIMING
+    - DOUBLE_COUNT
+    - MILESTONE
+    failure_modes:
+    - label without mechanism
+    - benefit without cost
+    - base/upside double count
+    - no owner
+    - no reopening rule
+    universality_class: CONDITIONAL_ON_CONTROL_AND_THESIS
+    lens_contamination_risk: HIGH
+    lens_controls:
+    - base/upside policy
+    - ownership model
+    - initiative evidence bar
+    - cadence
+canonical_concepts:
+- id: REV_REPORTED
+  label: Reported revenue
+  family: financial_baseline
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - basis
+  - scenario
+  - currency
+- id: MARKET_SIZE
+  label: Market size
+  family: commercial
+  kind: metric
+  required_identity:
+  - market_definition
+  - period
+  - geography
+  - basis
+  - currency
+- id: MARKET_GROWTH
+  label: Market growth
+  family: commercial
+  kind: metric
+  required_identity:
+  - market_definition
+  - period
+  - geography
+  - basis
+- id: RETENTION_GROSS
+  label: Gross retention
+  family: commercial
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - cohort_perimeter
+  - basis
+- id: RETENTION_NET
+  label: Net retention
+  family: commercial
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - cohort_perimeter
+  - basis
+- id: CHURN
+  label: Churn
+  family: commercial
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - population
+  - basis
+- id: CUSTOMER_CONCENTRATION
+  label: Customer concentration
+  family: commercial
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - basis
+  - measure
+- id: PRICE_REALIZATION
+  label: Price realization
+  family: commercial
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - product_customer_perimeter
+  - basis
+  - currency
+- id: PIPELINE_CONVERSION
+  label: Pipeline conversion
+  family: commercial
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - pipeline_stage_definition
+  - basis
+- id: EBITDA_REPORTED
+  label: Reported EBITDA
+  family: financial_qoe
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - accounting_basis
+  - currency
+- id: EBITDA_ADJUSTED_PROPOSED
+  label: Proposed adjusted EBITDA
+  family: financial_qoe
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - adjustment_basis
+  - scenario
+  - currency
+- id: EBITDA_NORMALIZED_ACCEPTED
+  label: Accepted normalized EBITDA
+  family: financial_qoe
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - accepted_basis
+  - scenario
+  - currency
+- id: FREE_CASH_FLOW
+  label: Free cash flow
+  family: financial_qoe
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - calculation_basis
+  - scenario
+  - currency
+- id: CASH_CONVERSION
+  label: Cash conversion
+  family: financial_qoe
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - numerator_definition
+  - denominator_definition
+- id: WORKING_CAPITAL
+  label: Operating working capital
+  family: financial_qoe
+  kind: metric
+  required_identity:
+  - entity
+  - as_of_or_period
+  - perimeter
+  - component_definition
+  - currency
+- id: WORKING_CAPITAL_PEG
+  label: Working-capital peg
+  family: transaction
+  kind: metric
+  required_identity:
+  - entity
+  - closing_reference_period
+  - perimeter
+  - method
+  - currency
+- id: CAPEX_MAINTENANCE
+  label: Maintenance capex
+  family: financial_qoe
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - classification_basis
+  - scenario
+  - currency
+- id: CAPEX_GROWTH
+  label: Growth capex
+  family: operations
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - initiative
+  - scenario
+  - currency
+- id: NET_DEBT
+  label: Net debt
+  family: transaction
+  kind: metric
+  required_identity:
+  - entity
+  - as_of
+  - perimeter
+  - debt_cash_definition
+  - currency
+- id: DEBT_LIKE
+  label: Debt-like items
+  family: transaction
+  kind: metric
+  required_identity:
+  - entity
+  - as_of
+  - perimeter
+  - category
+  - currency
+- id: CAPACITY
+  label: Capacity
+  family: operations
+  kind: metric
+  required_identity:
+  - entity_or_site
+  - period
+  - process_perimeter
+  - unit
+  - basis
+- id: UTILIZATION
+  label: Utilization
+  family: operations
+  kind: metric
+  required_identity:
+  - entity_or_site
+  - period
+  - capacity_definition
+  - basis
+- id: PRODUCTIVITY
+  label: Productivity
+  family: operations
+  kind: metric
+  required_identity:
+  - entity_or_site
+  - period
+  - output_definition
+  - input_definition
+- id: DEBT_CAPACITY
+  label: Debt capacity
+  family: financing
+  kind: reading_or_model_output
+  required_identity:
+  - entity
+  - scenario
+  - cash_flow_basis
+  - covenant_basis
+  - currency
+- id: LEVERAGE
+  label: Leverage
+  family: financing
+  kind: metric
+  required_identity:
+  - entity
+  - as_of
+  - debt_definition
+  - earnings_definition
+  - scenario
+- id: LIQUIDITY
+  label: Liquidity
+  family: financing
+  kind: metric
+  required_identity:
+  - entity
+  - as_of_or_period
+  - cash_revolver_definition
+  - scenario
+  - currency
+- id: COVENANT_HEADROOM
+  label: Covenant headroom
+  family: financing
+  kind: metric
+  required_identity:
+  - entity
+  - test_date
+  - covenant_definition
+  - scenario
+  - unit
+- id: ENTERPRISE_VALUE
+  label: Enterprise value
+  family: valuation
+  kind: metric
+  required_identity:
+  - target
+  - valuation_date
+  - method
+  - scenario
+  - currency
+- id: EQUITY_VALUE
+  label: Equity value
+  family: valuation
+  kind: metric
+  required_identity:
+  - target_or_security
+  - valuation_date
+  - capital_structure
+  - scenario
+  - currency
+- id: ENTRY_PRICE
+  label: Entry price
+  family: transaction
+  kind: metric
+  required_identity:
+  - target_or_security
+  - price_date
+  - scope
+  - basis
+  - currency
+- id: EQUITY_PROCEEDS
+  label: Equity proceeds
+  family: returns
+  kind: metric
+  required_identity:
+  - security_or_vehicle
+  - exit_date
+  - waterfall_basis
+  - scenario
+  - currency
+- id: MOIC
+  label: MOIC
+  family: returns
+  kind: metric
+  required_identity:
+  - security_or_vehicle
+  - entry_date
+  - exit_date
+  - cash_flow_basis
+  - scenario
+- id: IRR
+  label: IRR
+  family: returns
+  kind: metric
+  required_identity:
+  - security_or_vehicle
+  - cash_flow_dates
+  - cash_flow_basis
+  - scenario
+- id: EXIT_MULTIPLE
+  label: Exit multiple
+  family: returns
+  kind: assumption
+  required_identity:
+  - target
+  - exit_date
+  - valuation_metric_definition
+  - scenario
+- id: EXIT_TIMING
+  label: Exit timing
+  family: returns
+  kind: assumption
+  required_identity:
+  - target_or_security
+  - scenario
+- id: MANAGEMENT_EXECUTION
+  label: Management execution capability
+  family: management
+  kind: qualitative_topic
+  required_identity:
+  - subject_entities
+  - plan_scope
+  - time_horizon
+- id: SPONSOR_RELIANCE
+  label: Sponsor reliance
+  family: management
+  kind: qualitative_topic
+  required_identity:
+  - sponsor_entity
+  - responsibility_scope
+  - time_horizon
+- id: COMPETITIVE_POSITION
+  label: Competitive position
+  family: commercial
+  kind: qualitative_topic
+  required_identity:
+  - company
+  - market_definition
+  - time_horizon
+- id: FORECAST_RELIABILITY
+  label: Forecast reliability
+  family: financial_qoe
+  kind: qualitative_topic
+  required_identity:
+  - company
+  - forecast_period
+  - forecast_scope
+- id: INTEGRATION_EXECUTABILITY
+  label: Integration executability
+  family: operations
+  kind: qualitative_topic
+  required_identity:
+  - entities
+  - integration_scope
+  - time_horizon
+sub_archetype_flags:
+  LEVERAGED_ACQUISITION:
+    activation: Debt is material to price, returns, liquidity or closing certainty.
+    adds_or_intensifies:
+    - financing
+    - covenant model
+    - funds certainty
+    - downside cash
+  CORPORATE_CARVE_OUT:
+    activation: The acquired business depends on parent entities, systems or shared services.
+    adds_or_intensifies:
+    - perimeter
+    - TSA
+    - standalone costs
+    - separation milestones
+  FOUNDER_OR_MANAGEMENT_DEPENDENT:
+    activation: Continuity, succession, key people or alignment is central.
+    adds_or_intensifies:
+    - key-person questions
+    - rollover
+    - governance
+    - succession conditions
+  BUY_AND_BUILD:
+    activation: The case relies on add-ons or integration of acquisitions.
+    adds_or_intensifies:
+    - incremental economics
+    - integration capacity
+    - acquisition headroom
+    - synergy controls
+  ACCESS_CONSTRAINED_AUCTION:
+    activation: Material access follows offer acceptance or exclusivity.
+    adds_or_intensifies:
+    - explicit unknowns
+    - conditional early offer
+    - confirmatory diligence
+  INTERMEDIATED_OR_SPONSOR_LED_COINVEST:
+    activation: Information and authority are mediated by a lead sponsor or vehicle.
+    adds_or_intensifies:
+    - information lineage
+    - sponsor reliance
+    - allocation
+    - separate authority
+  TAKE_PRIVATE_OR_PUBLIC_MARKET:
+    activation: The target or process has public-market features.
+    adds_or_intensifies:
+    - market-window evidence
+    - shareholder approvals
+    - unaffected price
+    - funds certainty
+  LEAD_CONTROL_INVESTOR:
+    activation: The fund controls governance and ownership execution.
+    adds_or_intensifies:
+    - ownership readiness
+    - board design
+    - VCP monitoring
+    - exit authority
+toolkit:
+  QOE:
+    closes_question_classes:
+    - financial reconciliation
+    - earnings normalization
+    - working capital
+    - debt-like
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+  COMMERCIAL_DD:
+    closes_question_classes:
+    - market definition
+    - customer durability
+    - pricing
+    - competition
+    - downside demand
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+  CUSTOMER_CALLS:
+    closes_question_classes:
+    - win/loss
+    - retention drivers
+    - pricing
+    - product value
+    - switching
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+  EXPERT_CALLS:
+    closes_question_classes:
+    - market structure
+    - technology
+    - regulation
+    - competitive response
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+  SITE_VISIT:
+    closes_question_classes:
+    - capacity
+    - process reality
+    - maintenance
+    - quality
+    - systems and people dependency
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+  TECHNICAL_TEST:
+    closes_question_classes:
+    - performance envelope
+    - failure mode
+    - implementation feasibility
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+  LEGAL_TAX_REVIEW:
+    closes_question_classes:
+    - rights
+    - liabilities
+    - consents
+    - structure
+    - conditions
+    - tax leakage
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+  MODEL_REBUILD_OR_AUDIT:
+    closes_question_classes:
+    - formula mapping
+    - scenario coherence
+    - sources and uses
+    - debt/returns
+    - sensitivity
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+compiler_use:
+  routing_rule: Use workstream/concept families to select schemas. Category never creates identity or contradiction.
+  binding_rule: Every material Claim should identify candidate Questions and, where justified, Readings, Assumptions
+    or ModelNodes.
+  new_structure_rule: If material content cannot bind, propose a new Question/Concept with evidence and rationale.
+  day_zero_rule: Questions may exist without StatedPositions or CaseReadings; show that no one has expressed a view.
+non_goals:
+- Make every workstream compulsory at equal depth.
+- Require a named third-party report when the underlying function can be satisfied another way.
+- Put debt schedules or LBO formulas in the Universal Kernel.
+- Treat UI sections, house process or historical frequency as the Archetype.
+- Prevent AI discovery of deal-specific Questions.
+archetype_boundary:
+  definition: A reusable description of buyout economics and underwriting functions, not the preferences of one institution.
+  inclusion_test:
+  - The item remains relevant if the same deal is underwritten by another competent buyout investor.
+  - The item follows from asset economics, ownership rights, transaction structure or loss mechanics.
+  - The item survives changes in committee names, templates, providers, thresholds and cadence.
+  - The item can be expressed without a house-specific hurdle, score, authority body or mandatory artifact.
+  excluded_to_fund_lens:
+  - materiality thresholds and scoring weights
+  - evidence sufficiency bars by phase
+  - return hurdles and supported-price policy
+  - authority bodies, quorum, delegation and spend thresholds
+  - mandatory artifacts, templates, naming and review cadence
+  - tool cost/duration bands and preferred providers
+  - house definitions and adjustment conventions
+  - automatic-admission thresholds and operative-value selection policy
+  excluded_to_deal_state:
+  - specific facts, people, values, sources, process dates, terms and decisions
+  evidence_examples_rule: Typical evidence lists are routing examples, not mandatory evidence requirements.
+cross_strategy_functions_reference:
+- DealFrame
+- QuestionEngine
+- EvidenceProvenance
+- DecisionCriticalWork
+transaction_flags_location: This Archetype Pack; they are not a separate overlay store in v0.2.

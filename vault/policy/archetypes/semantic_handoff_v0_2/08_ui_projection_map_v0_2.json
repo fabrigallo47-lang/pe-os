@@ -1,0 +1,42 @@
+{
+  "metadata": {
+    "name": "PANTA UI Projection Map",
+    "version": "0.2.0",
+    "status": "SUPPORTING_NOT_BLOCKING_COMPILER"
+  },
+  "vocabulary": {
+    "backend_to_ui": {
+      "StatedPosition": "Position",
+      "CaseReading": "Reading",
+      "ExposurePosition": "Exposure"
+    }
+  },
+  "visible_at_rest": [
+    "Deal Frame",
+    "next decision and date",
+    "decision-critical Questions",
+    "CaseReadings with epistemic and freshness state",
+    "material Unknowns and Conditions",
+    "key economics and model outputs",
+    "next work, owner and waiting condition",
+    "material change since prior snapshot"
+  ],
+  "visible_on_drill_down": [
+    "Claims and StatedPositions",
+    "source, version and locator",
+    "definitions and metric identity",
+    "support, contradiction and semantic challenge bearings",
+    "formula and execution mapping",
+    "coverage limits",
+    "replay history and decision basis"
+  ],
+  "normally_hidden_technical": [
+    "embedding scores",
+    "raw vector-neighbor lists",
+    "compiler prompt traces",
+    "internal hashes and machine IDs",
+    "full graph topology",
+    "candidate alternatives unless review is required"
+  ],
+  "rule": "The UI is a projection of the case contract. It is not the ontology or source of truth."
+}

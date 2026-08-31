@@ -1,0 +1,176 @@
+{
+  "contract_version": "0.2.0",
+  "compiler_run": {
+    "run_id": "RUN-QUAL-001",
+    "case_id": "CASE-EXAMPLE",
+    "compiler_name": "panta-semantic-compiler",
+    "compiler_version": "0.2.0",
+    "model_id": "frontier-model",
+    "policy_hash": "sha256:policy-example",
+    "retrieval_trace_ids": [
+      "RET-101"
+    ],
+    "started_at": "2026-08-31T12:00:00Z",
+    "completed_at": "2026-08-31T12:00:03Z"
+  },
+  "source": {
+    "source_id": "SRC-CALL-01",
+    "source_version_id": "SRCV-CALL-01-V1",
+    "source_type": "call",
+    "title": "Management call",
+    "content_hash": "sha256:source-example",
+    "effective_at": "2026-08-31T11:30:00Z",
+    "known_at": "2026-08-31T11:30:00Z",
+    "access_scope": "DEAL_TEAM"
+  },
+  "formation_context": {
+    "kernel_version": "0.2.0",
+    "archetype_pack_versions": [
+      "BUYOUT-0.2.0"
+    ],
+    "fund_lens_version": null,
+    "deal_frame_version": "DF-1",
+    "case_snapshot_id": "SNAP-17",
+    "context_hash": "sha256:context-example",
+    "active_question_ids": [
+      "Q-MGT-EXECUTION"
+    ],
+    "active_definition_ids": [],
+    "active_transaction_flags": [
+      "FOUNDER_OR_MANAGEMENT_DEPENDENT"
+    ],
+    "fund_lens_status": "ABSENT",
+    "fund_lens_policy_hash": null
+  },
+  "proposals": [
+    {
+      "proposal_id": "PROP-QUAL-01",
+      "object_type": "Claim",
+      "provenance": {
+        "source_version_id": "SRCV-CALL-01-V1",
+        "locator": "utterance:118",
+        "exact_text": "We lost two senior salespeople and the CRO has not yet been replaced.",
+        "interaction_id": "INT-01",
+        "utterance_id": "UTT-118",
+        "stated_by_entity_id": "PERSON-CEO",
+        "reported_speaker_entity_id": null,
+        "observed_speech_act": "assertion",
+        "asserted_content": "Two senior salespeople left and the CRO remains unfilled."
+      },
+      "temporal": {
+        "effective_at": "2026-08-31T11:30:00Z",
+        "known_at": "2026-08-31T11:30:00Z",
+        "period_label": "current",
+        "period_start": null,
+        "period_end": null,
+        "as_of_date": "2026-08-31"
+      },
+      "identity": {
+        "identity_type": "QUALITATIVE_TOPIC",
+        "dimensions": {
+          "entity_id": "COMPANY-TARGET",
+          "concept_id": "MANAGEMENT_EXECUTION",
+          "period": "current",
+          "perimeter": "commercial leadership",
+          "scenario": "current",
+          "decision_root_id": "DECISION-INVEST",
+          "question_family_id": "BF-MGT-01"
+        },
+        "resolution_status": "RESOLVED",
+        "candidate_existing_ids": [
+          "TOPIC-MGT-EXECUTION"
+        ],
+        "resolution_rationale": "The statement concerns current commercial leadership capacity."
+      },
+      "content": {
+        "statement": "Two senior salespeople left and the CRO remains unfilled.",
+        "normalized_proposition": "Commercial leadership capacity is below the plan requirement.",
+        "claim_kind": "qualitative",
+        "value": null,
+        "unit": null,
+        "currency": null,
+        "polarity": "NEGATIVE",
+        "modality": "ASSERTED",
+        "direction": "ADVERSE"
+      },
+      "candidate_bindings": [
+        {
+          "binding_type": "BEARS_ON",
+          "target_type": "Question",
+          "target_id": "Q-MGT-EXECUTION",
+          "confidence": 0.97,
+          "rationale": "The question asks whether management can execute the growth plan.",
+          "similarity_trace": {
+            "method": "hybrid_semantic_retrieval",
+            "score": 0.86,
+            "index_version": "IDX-12"
+          }
+        },
+        {
+          "binding_type": "TARGETS_READING",
+          "target_type": "CaseReading",
+          "target_id": "READING-MGT-EXECUTION",
+          "confidence": 0.92,
+          "rationale": "The staffing loss weakens the execution-capability reading.",
+          "similarity_trace": null
+        }
+      ],
+      "relation_proposals": [
+        {
+          "relation_type": "BEARS_ON",
+          "source_ref": "PROP-QUAL-01",
+          "target_ref": "Q-MGT-EXECUTION",
+          "confidence": 0.97,
+          "producer": "AI_SEMANTIC_PROPOSAL",
+          "deterministic_precondition": null,
+          "rationale": "Directly addresses management execution capacity.",
+          "relation_class": "SEMANTIC",
+          "runtime_mapping_status": "NOT_APPLICABLE",
+          "semantic_direction": "NEUTRAL",
+          "runtime_adapter_ref": null
+        },
+        {
+          "relation_type": "CHALLENGES",
+          "source_ref": "PROP-QUAL-01",
+          "target_ref": "READING-MGT-EXECUTION",
+          "confidence": 0.92,
+          "producer": "AI_SEMANTIC_PROPOSAL",
+          "deterministic_precondition": null,
+          "rationale": "It weakens but does not logically negate the reading.",
+          "relation_class": "SEMANTIC",
+          "runtime_mapping_status": "PENDING_ADAPTER",
+          "semantic_direction": "ADVERSE",
+          "runtime_adapter_ref": null
+        }
+      ],
+      "confidence": {
+        "extraction": 0.99,
+        "identity": 0.94,
+        "binding": 0.95,
+        "relation": 0.92
+      },
+      "materiality_hint": "HIGH",
+      "ambiguities": [],
+      "coverage_limits": [],
+      "disposition": {
+        "record_source_object": "APPEND_IMMEDIATELY",
+        "binding_disposition": "AUTO_CANONICALIZE",
+        "relation_disposition": "AUTO_CANONICALIZE",
+        "review_reason_codes": []
+      },
+      "fund_lens_effect": {
+        "policy_ids_applied": [],
+        "policy_status": "NONE",
+        "note": null
+      }
+    }
+  ],
+  "coverage_limits": [],
+  "run_summary": {
+    "claims_extracted": 1,
+    "objects_proposed": 1,
+    "auto_recordable_claims": 1,
+    "auto_bindable_proposals": 1,
+    "review_required": 0
+  }
+}

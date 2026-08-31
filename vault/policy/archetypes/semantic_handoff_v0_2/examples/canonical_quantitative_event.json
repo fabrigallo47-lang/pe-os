@@ -1,0 +1,94 @@
+{
+  "event_id": "EVT-QUANT-001",
+  "contract_version": "0.2.0",
+  "case_id": "CASE-EXAMPLE",
+  "event_type": "METRIC_VALUES_RECORDED",
+  "effective_at": "2025-12-31T23:59:59Z",
+  "known_at": "2026-08-31T12:09:00Z",
+  "recorded_at": "2026-08-31T12:10:03Z",
+  "actor": {
+    "actor_type": "SERVICE",
+    "actor_id": "canonicalization-service"
+  },
+  "admission_mode": "AUTO_POLICY",
+  "idempotency_key": "sha256:quantitative-event-example",
+  "source_version_ids": [
+    "SRCV-QOE-01-V1"
+  ],
+  "configuration_refs": {
+    "kernel_version": "0.2.0",
+    "archetype_versions": [
+      "BUYOUT-0.2.0"
+    ],
+    "active_transaction_flags": [
+      "LEVERAGED_ACQUISITION"
+    ],
+    "fund_lens_version": "LENS-EXAMPLE-0.1",
+    "fund_lens_status": "PROVISIONAL_UNVALIDATED",
+    "fund_lens_policy_hash": "sha256:provisional-policy-example",
+    "deal_frame_version": "DF-1",
+    "policy_hash": "sha256:policy-example"
+  },
+  "object_assertions": [
+    {
+      "object_id": "METRIC-QOE-NORM-EBITDA-FY25",
+      "object_type": "MetricObservation",
+      "payload": {
+        "metric_id": "EBITDA_NORMALIZED_ACCEPTED",
+        "entity_id": "COMPANY-TARGET",
+        "period": "FY2025",
+        "perimeter": "consolidated continuing operations",
+        "basis": "accepted normalization",
+        "scenario": "current",
+        "value": 12.0,
+        "unit": "million",
+        "currency": "EUR",
+        "source_version_id": "SRCV-QOE-01-V1"
+      }
+    }
+  ],
+  "relation_assertions": [
+    {
+      "relation_id": "REL-BEAR-QUANT-001",
+      "relation_type": "BEARS_ON",
+      "relation_class": "SEMANTIC",
+      "source_id": "METRIC-QOE-NORM-EBITDA-FY25",
+      "target_id": "Q-NORMALIZED-EBITDA",
+      "producer": "DETERMINISTIC_RULE",
+      "runtime_mapping_status": "NOT_APPLICABLE",
+      "runtime_traversal": false,
+      "semantic_direction": "NEUTRAL",
+      "runtime_adapter_ref": null,
+      "reason": "Exact metric-to-question binding."
+    },
+    {
+      "relation_id": "REL-CONTRADICT-QUANT-001",
+      "relation_type": "CONTRADICTS",
+      "relation_class": "RUNTIME",
+      "source_id": "METRIC-QOE-NORM-EBITDA-FY25",
+      "target_id": "CLAIM-CIM-NORM-EBITDA-15",
+      "producer": "DETERMINISTIC_RULE",
+      "runtime_mapping_status": "READY",
+      "runtime_traversal": true,
+      "semantic_direction": "NOT_APPLICABLE",
+      "runtime_adapter_ref": "ADAPTER-CONTRADICTS-V1",
+      "reason": "Same metric identity and divergent normalized value."
+    }
+  ],
+  "retractions": [],
+  "materiality": "CRITICAL",
+  "pre_state_hash": "sha256:pre-state-quantitative",
+  "compiler_trace": {
+    "compiler_run_id": "RUN-QUANT-001",
+    "proposal_ids": [
+      "PROP-QUANT-01"
+    ],
+    "review_record_id": null
+  },
+  "dynamic_assertion_refs": [
+    "REL-CONTRADICT-QUANT-001"
+  ],
+  "semantic_only_relation_ids": [
+    "REL-BEAR-QUANT-001"
+  ]
+}

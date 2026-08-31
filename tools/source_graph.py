@@ -221,6 +221,7 @@ class SourceGraph:
     sheets: list[SheetRecord] = field(default_factory=list)
     cells: dict[str, CellRecord] = field(default_factory=dict)
     defined_names: dict[str, str] = field(default_factory=dict)
+    evaluation_warnings: list[dict[str, str]] = field(default_factory=list)
 
     def stats(self) -> dict:
         kinds: dict[str, int] = {}
@@ -238,6 +239,7 @@ class SourceGraph:
             "defined_names": len(self.defined_names),
             "formula_statuses": formula_statuses,
             "human_stops": sum(c.evaluation_status == "HUMAN_STOP" for c in self.cells.values()),
+            "evaluation_warnings": len(self.evaluation_warnings),
         }
 
     def to_json(self) -> dict:
@@ -249,6 +251,7 @@ class SourceGraph:
             "captured_at": self.captured_at,
             "sheets": [asdict(s) for s in self.sheets],
             "defined_names": self.defined_names,
+            "evaluation_warnings": self.evaluation_warnings,
             "cells": {k: asdict(v) for k, v in self.cells.items()},
             "stats": self.stats(),
         }
@@ -395,6 +398,35 @@ def _evaluate_acyclic_formulas(path: Path, graph: SourceGraph) -> None:
     try:
         from tools.extract_v3 import compile_workbook
         compiled = compile_workbook(path)
+    except SystemExit as exc:
+        # extract_v3 uses SystemExit only to report its optional `formulas`
+        # evaluator is absent.  Formula text, cached values and dependency
+        # edges above are already captured losslessly and must remain usable.
+        # Do not catch arbitrary SystemExit reasons: those could signal a
+        # corrupt or unsafe evaluator state.
+        if "serve la libreria `formulas`" not in str(exc):
+            raise
+        # The V20 compiler already ships a smaller token-whitelisted evaluator
+        # that needs no extra package.  Reuse it as a bounded fallback so the
+        # deterministic values previously supported by PAN-36 remain
+        # available.  Unsupported/external formulas stay Human Stops.
+        from tools.excel_formula_graph import _evaluate_formulas as bounded_evaluate
+        evaluated, errors = bounded_evaluate(graph)
+        for cell in formula_cells:
+            if cell.locator in evaluated:
+                cell.evaluated_value = evaluated[cell.locator]
+                cell.evaluation_status = "CALCULATED_ACYCLIC"
+            elif cell.locator in errors and cell.evaluation_status != "HUMAN_STOP":
+                cell.evaluation_status = "UNAVAILABLE:BOUNDED_EVALUATOR"
+                cell.human_stop_reason = errors[cell.locator]
+        graph.evaluation_warnings.append({
+            "code": "OPTIONAL_FORMULA_EVALUATOR_UNAVAILABLE",
+            "effect": (
+                "Deterministic source capture is complete; a token-whitelisted local fallback "
+                "evaluated only supported acyclic formulas and invented no value."
+            ),
+        })
+        return
     except Exception as exc:
         for cell in formula_cells:
             cell.evaluation_status = f"UNAVAILABLE:{type(exc).__name__}"

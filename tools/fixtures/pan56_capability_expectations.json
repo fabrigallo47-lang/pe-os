@@ -1,0 +1,26 @@
+{
+  "schema": "panta.source-capabilities/1.0",
+  "required_capabilities": [
+    "native_pdf",
+    "scanned_pdf_ocr",
+    "docx",
+    "pptx",
+    "openxml_workbook",
+    "csv",
+    "markup_or_text",
+    "transcript_export",
+    "email_export"
+  ],
+  "safe_failure_codes": [
+    "OCR_REQUIRED",
+    "LEGACY_EXCEL_UNSUPPORTED",
+    "OUTLOOK_MSG_UNSUPPORTED",
+    "UNSUPPORTED_SOURCE",
+    "NO_EXTRACTABLE_TEXT"
+  ],
+  "formula_fixture": {
+    "path": "tools/fixtures/pan51_formula_model.xlsx",
+    "formula_count": 8,
+    "required_relation": "DIRECTED_MODEL_DEPENDENCY"
+  }
+}

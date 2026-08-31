@@ -10,6 +10,8 @@ import hashlib
 from pathlib import Path
 from typing import Any
 
+from tools.source_capabilities import CAPABILITY_SCHEMA, resolve_source_capability
+
 
 SCHEMA = "panta.source-envelope/1.0"
 
@@ -40,6 +42,7 @@ def build_source_envelope(
     version_id = sha256_file(path)
     digest = version_id.removeprefix("sha256:")
     media_type = _clean(declared.get("media_type")) or path.suffix.lower().removeprefix(".") or "unknown"
+    capability = resolve_source_capability(path, declared)
     return {
         "schema": SCHEMA,
         "source_id": _clean(declared.get("source_id")) or f"SRC-{digest[:16].upper()}",
@@ -56,6 +59,10 @@ def build_source_envelope(
         "uploaded_at": uploaded_at,
         "provenance": _clean(declared.get("provenance")) or "user_upload",
         "parser_route": _clean(declared.get("parser_route")) or "extract_v2",
+        "parser_capability": capability["capability_id"],
+        "capability_contract": CAPABILITY_SCHEMA,
+        "locator_semantics": capability["locator_semantics"],
+        "period_semantics": capability["period_semantics"],
         "declared_metadata": {
             key: value for key, value in declared.items()
             if key not in {"source_id", "media_type", "document_type", "issuer", "author", "effective_date", "known_at", "provenance", "parser_route"}

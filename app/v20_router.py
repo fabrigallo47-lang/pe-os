@@ -4301,7 +4301,11 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                             e3,
                         )
                         excel_formula_graph = None
-                        if manifest_label == "SINGLE_V2" and source_path is not None:
+                        if (
+                            manifest_label == "SINGLE_V2"
+                            and source_path is not None
+                            and source_path.suffix.lower() in {".xlsx", ".xlsm"}
+                        ):
                             try:
                                 from tools.excel_formula_graph import compile_workbook
                                 excel_formula_graph = compile_workbook(source_path)

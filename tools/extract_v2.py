@@ -32,17 +32,25 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import csv
 import hashlib
 import json
+import mailbox
 import os
 import re
 import sys
 import textwrap
 import time
+import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from email import policy as email_policy
+from email.parser import BytesParser
+from email.utils import parsedate_to_datetime
+from html.parser import HTMLParser
 from pathlib import Path
 from typing import Any
+from xml.etree import ElementTree
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
@@ -56,6 +64,11 @@ from tools.llm_provider import (  # noqa: E402
 )
 from tools.archetype_pack import load_pack, workstream_ids  # noqa: E402
 from tools.source_envelope import extractor_source_record  # noqa: E402
+from tools.source_capabilities import (  # noqa: E402
+    CAPABILITY_SCHEMA,
+    capability_failure,
+    resolve_source_capability,
+)
 
 VAULT_INBOX = ROOT / "vault" / "inbox"
 MODEL = configured_model("claude-haiku-4-5-20251001")
@@ -631,10 +644,24 @@ class Chunk:
     word_count: int
     section_heading: str | None = None
     page_or_slide_number: int | None = None
+    provenance: dict[str, Any] = field(default_factory=dict)
+    period_context: dict[str, Any] = field(default_factory=dict)
 
 
 class UnsupportedSourceError(ValueError):
-    """Raised when V2 cannot safely parse an input format."""
+    """Raised with a machine-readable response when V2 cannot parse safely."""
+
+    def __init__(self, message: str, response: dict[str, Any] | None = None):
+        super().__init__(message)
+        self.response = response or {
+            "schema": CAPABILITY_SCHEMA,
+            "status": "REJECTED",
+            "code": "UNSUPPORTED_SOURCE",
+            "detail": message,
+        }
+
+    def to_dict(self) -> dict[str, Any]:
+        return dict(self.response)
 
 
 def _chunk_hash(body: str) -> str:
@@ -661,6 +688,127 @@ def _split_words(text: str, max_words: int, locator_prefix: str,
             section_heading=section_heading,
             page_or_slide_number=page_or_slide_number,
         ))
+    return chunks
+
+
+def _reject_source(
+    path: Path,
+    code: str,
+    detail: str,
+    *,
+    capability_id: str | None = None,
+    action: str | None = None,
+) -> UnsupportedSourceError:
+    response = capability_failure(
+        path,
+        code,
+        capability_id=capability_id,
+        action=action,
+        detail=detail,
+    )
+    message = detail
+    if response.get("action"):
+        message += f" Action: {response['action']}"
+    return UnsupportedSourceError(message, response)
+
+
+def _decorate_chunks(
+    chunks: list[Chunk],
+    path: Path,
+    source_record: dict[str, Any],
+    capability_id: str,
+) -> list[Chunk]:
+    """Attach source identity and honest period semantics to every fragment."""
+    envelope = source_record.get("source_envelope") or {}
+    for chunk in chunks:
+        chunk.provenance = {
+            **chunk.provenance,
+            "source_id": source_record.get("source_id"),
+            "source_version_id": envelope.get("source_version_id"),
+            "case_id": envelope.get("case_id"),
+            "original_filename": envelope.get("original_filename") or path.name,
+            "locator": chunk.locator,
+            "parser_capability": capability_id,
+            "capability_contract": CAPABILITY_SCHEMA,
+        }
+        specific = dict(chunk.period_context)
+        specific.update({
+            "effective_date": envelope.get("effective_date") or source_record.get("effective_date") or None,
+            "known_at": envelope.get("known_at") or source_record.get("known_at") or None,
+            "semantics": "DECLARED_ONLY",
+            "content_period_policy": "preserve source label; never infer at L1",
+        })
+        chunk.period_context = specific
+    return chunks
+
+
+class _VisibleHTML(HTMLParser):
+    """Small deterministic HTML-to-text reader; scripts/styles are excluded."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self._hidden_depth = 0
+        self.parts: list[str] = []
+
+    def handle_starttag(self, tag: str, attrs: list[tuple[str, str | None]]) -> None:
+        if tag.lower() in {"script", "style", "noscript"}:
+            self._hidden_depth += 1
+        elif not self._hidden_depth and tag.lower() in {"p", "div", "br", "li", "tr", "h1", "h2", "h3"}:
+            self.parts.append("\n")
+
+    def handle_endtag(self, tag: str) -> None:
+        if tag.lower() in {"script", "style", "noscript"} and self._hidden_depth:
+            self._hidden_depth -= 1
+        elif not self._hidden_depth and tag.lower() in {"p", "div", "li", "tr", "h1", "h2", "h3"}:
+            self.parts.append("\n")
+
+    def handle_data(self, data: str) -> None:
+        if not self._hidden_depth:
+            self.parts.append(data)
+
+    def text(self) -> str:
+        return "\n".join(line.strip() for line in "".join(self.parts).splitlines() if line.strip())
+
+
+def _chunks_from_numbered_lines(
+    lines: list[str],
+    path: Path,
+    max_words: int,
+    source_type: str,
+    source_record: dict[str, Any],
+    locator_label: str = "lines",
+) -> list[Chunk]:
+    chunks: list[Chunk] = []
+    pending: list[str] = []
+    start = end = 0
+
+    def flush() -> None:
+        nonlocal pending, start, end
+        if not pending:
+            return
+        body = "\n".join(pending)
+        chunks.append(Chunk(
+            chunk_id=_chunk_hash(body),
+            locator=f"{path.name}::{locator_label}:{start}-{end}",
+            body=body,
+            source_path=str(path),
+            source_type=source_type,
+            source_record=source_record,
+            word_count=len(body.split()),
+        ))
+        pending, start, end = [], 0, 0
+
+    for line_number, line in enumerate(lines, 1):
+        if not line.strip():
+            continue
+        projected = len((" ".join(pending + [line])).split())
+        if pending and projected > max_words:
+            flush()
+        if not pending:
+            start = line_number
+        end = line_number
+        pending.append(line.strip())
+    flush()
     return chunks
 
 
@@ -696,37 +844,298 @@ def parse_markdown(path: Path, max_words: int = CHUNK_WORDS,
     return chunks
 
 
+def parse_plain_text(path: Path, max_words: int = CHUNK_WORDS,
+                     source_record: dict | None = None,
+                     source_type: str = "text") -> list[Chunk]:
+    src = source_record or _source_record(path)
+    try:
+        text = path.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise _reject_source(
+            path,
+            "TEXT_ENCODING_UNSUPPORTED",
+            f"{path.name} is not valid UTF-8 text ({exc}).",
+            action="Export the artifact as UTF-8 without replacing source characters.",
+        ) from exc
+    return _chunks_from_numbered_lines(text.splitlines(), path, max_words, source_type, src)
+
+
+def parse_html(path: Path, max_words: int = CHUNK_WORDS,
+               source_record: dict | None = None) -> list[Chunk]:
+    src = source_record or _source_record(path)
+    try:
+        markup = path.read_text(encoding="utf-8-sig")
+    except UnicodeDecodeError as exc:
+        raise _reject_source(
+            path,
+            "TEXT_ENCODING_UNSUPPORTED",
+            f"{path.name} is not valid UTF-8 HTML ({exc}).",
+            action="Export the page as UTF-8 HTML or plain text.",
+        ) from exc
+    reader = _VisibleHTML()
+    reader.feed(markup)
+    return _chunks_from_numbered_lines(
+        reader.text().splitlines(), path, max_words, "html", src, "visible-lines"
+    )
+
+
+def parse_csv(path: Path, max_words: int = CHUNK_WORDS,
+              source_record: dict | None = None) -> list[Chunk]:
+    src = source_record or _source_record(path)
+    try:
+        with path.open("r", encoding="utf-8-sig", newline="") as handle:
+            rows = list(csv.reader(handle))
+    except (UnicodeDecodeError, csv.Error) as exc:
+        raise _reject_source(
+            path,
+            "CSV_INVALID",
+            f"Cannot parse {path.name} as UTF-8 CSV: {exc}.",
+            action="Export a UTF-8 CSV with a single consistent delimiter and header row.",
+        ) from exc
+    lines = [" | ".join(f"c{column}={value}" for column, value in enumerate(row, 1)) for row in rows]
+    return _chunks_from_numbered_lines(lines, path, max_words, "csv", src, "rows")
+
+
+def _read_openxml_root(path: Path, member: str, capability_id: str) -> ElementTree.Element:
+    try:
+        with zipfile.ZipFile(path) as archive:
+            payload = archive.read(member)
+        return ElementTree.fromstring(payload)
+    except (OSError, KeyError, zipfile.BadZipFile, ElementTree.ParseError) as exc:
+        raise _reject_source(
+            path,
+            "OPENXML_INVALID",
+            f"{path.name} is not a valid {capability_id.upper()} package: {exc}.",
+            capability_id=capability_id,
+            action=f"Open the artifact in its authoring application and save a valid {path.suffix.upper()} copy.",
+        ) from exc
+
+
+def parse_docx(path: Path, max_words: int = CHUNK_WORDS,
+               source_record: dict | None = None) -> list[Chunk]:
+    """Extract addressable DOCX paragraphs using only the Open XML package."""
+    src = source_record or _source_record(path)
+    root = _read_openxml_root(path, "word/document.xml", "docx")
+    namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
+    paragraphs: list[str] = []
+    for paragraph in root.iter(namespace + "p"):
+        text = "".join(node.text or "" for node in paragraph.iter(namespace + "t")).strip()
+        if text:
+            paragraphs.append(text)
+    return _chunks_from_numbered_lines(paragraphs, path, max_words, "docx", src, "paragraphs")
+
+
+def parse_pptx(path: Path, max_words: int = CHUNK_WORDS,
+               source_record: dict | None = None) -> list[Chunk]:
+    """Extract text per slide; speaker notes and embedded objects are not invented."""
+    src = source_record or _source_record(path)
+    try:
+        with zipfile.ZipFile(path) as archive:
+            slide_members = sorted(
+                (
+                    name for name in archive.namelist()
+                    if re.fullmatch(r"ppt/slides/slide\d+\.xml", name)
+                ),
+                key=lambda name: int(re.search(r"slide(\d+)\.xml$", name).group(1)),  # type: ignore[union-attr]
+            )
+            payloads = [(name, archive.read(name)) for name in slide_members]
+    except (OSError, zipfile.BadZipFile) as exc:
+        raise _reject_source(
+            path,
+            "OPENXML_INVALID",
+            f"{path.name} is not a valid PPTX package: {exc}.",
+            capability_id="pptx",
+            action="Open the deck in PowerPoint and save a valid .pptx copy.",
+        ) from exc
+    chunks: list[Chunk] = []
+    drawing_text = "{http://schemas.openxmlformats.org/drawingml/2006/main}t"
+    for member, payload in payloads:
+        slide_number = int(re.search(r"slide(\d+)\.xml$", member).group(1))  # type: ignore[union-attr]
+        try:
+            root = ElementTree.fromstring(payload)
+        except ElementTree.ParseError as exc:
+            raise _reject_source(
+                path, "OPENXML_INVALID", f"Slide {slide_number} XML is malformed: {exc}.",
+                capability_id="pptx",
+                action="Open the deck in PowerPoint and save a repaired .pptx copy.",
+            ) from exc
+        body = "\n".join(node.text.strip() for node in root.iter(drawing_text) if node.text and node.text.strip())
+        if not body:
+            continue
+        chunks.extend(_split_words(
+            body, max_words, f"{path.name}::slide:{slide_number}", str(path), "pptx", src,
+            page_or_slide_number=slide_number,
+        ))
+    return chunks
+
+
+def parse_transcript(path: Path, max_words: int = CHUNK_WORDS,
+                     source_record: dict | None = None) -> list[Chunk]:
+    src = source_record or _source_record(path)
+    if path.suffix.lower() == ".txt":
+        return parse_plain_text(path, max_words, src, "transcript")
+    try:
+        text = path.read_text(encoding="utf-8-sig").replace("\r\n", "\n")
+    except UnicodeDecodeError as exc:
+        raise _reject_source(
+            path, "TEXT_ENCODING_UNSUPPORTED", f"Transcript is not valid UTF-8: {exc}.",
+            capability_id="transcript_export",
+            action="Export the transcript as UTF-8 WebVTT, SRT, or plain text.",
+        ) from exc
+    blocks = [block.strip() for block in re.split(r"\n\s*\n", text) if block.strip()]
+    chunks: list[Chunk] = []
+    cue_number = 0
+    for block in blocks:
+        lines = [line.strip() for line in block.splitlines() if line.strip()]
+        if not lines or lines[0].upper() == "WEBVTT":
+            continue
+        timing_index = next((i for i, line in enumerate(lines) if "-->" in line), None)
+        if timing_index is None:
+            continue
+        cue_number += 1
+        timecode = lines[timing_index]
+        body = "\n".join(lines[timing_index + 1:]).strip()
+        if not body:
+            continue
+        locator = f"{path.name}::cue:{cue_number}:{timecode.replace(' ', '')}"
+        chunks.extend(_split_words(body, max_words, locator, str(path), "transcript", src))
+    return chunks
+
+
+def _email_body(message: Any) -> str:
+    plain: list[str] = []
+    html_parts: list[str] = []
+    parts = message.walk() if message.is_multipart() else [message]
+    for part in parts:
+        if part.is_multipart() or part.get_content_disposition() == "attachment":
+            continue
+        content_type = part.get_content_type()
+        if content_type not in {"text/plain", "text/html"}:
+            continue
+        try:
+            content = part.get_content()
+        except (LookupError, UnicodeDecodeError):
+            payload = part.get_payload(decode=True) or b""
+            content = payload.decode("utf-8", errors="replace")
+        if content_type == "text/plain":
+            plain.append(str(content))
+        else:
+            reader = _VisibleHTML()
+            reader.feed(str(content))
+            html_parts.append(reader.text())
+    return "\n".join(plain or html_parts).strip()
+
+
+def _email_date(message: Any) -> str | None:
+    raw = message.get("Date")
+    if not raw:
+        return None
+    try:
+        return parsedate_to_datetime(raw).isoformat()
+    except (TypeError, ValueError, OverflowError):
+        return None
+
+
+def parse_email(path: Path, max_words: int = CHUNK_WORDS,
+                source_record: dict | None = None) -> list[Chunk]:
+    src = source_record or _source_record(path)
+    if path.suffix.lower() == ".eml":
+        try:
+            messages = [BytesParser(policy=email_policy.default).parsebytes(path.read_bytes())]
+        except (OSError, ValueError) as exc:
+            raise _reject_source(
+                path, "EMAIL_INVALID", f"Cannot parse RFC 822 email: {exc}.",
+                capability_id="email_export",
+                action="Export the message as RFC 822 .eml with complete headers.",
+            ) from exc
+    else:
+        box = mailbox.mbox(path, create=False)
+        try:
+            messages = [message for message in box]
+        finally:
+            box.close()
+    chunks: list[Chunk] = []
+    for message_number, message in enumerate(messages, 1):
+        body = _email_body(message)
+        if not body:
+            continue
+        attachment_count = sum(
+            1 for part in message.walk()
+            if part.get_content_disposition() == "attachment"
+        )
+        message_chunks = _split_words(
+            body, max_words, f"{path.name}::message:{message_number}:body",
+            str(path), "email", src,
+            section_heading=str(message.get("Subject") or "(no subject)"),
+        )
+        document_date = _email_date(message)
+        for chunk in message_chunks:
+            chunk.provenance = {
+                "excluded_attachments": attachment_count,
+                "attachment_policy": "SEPARATE_SOURCE_ENVELOPE_REQUIRED",
+            }
+            chunk.period_context = {
+                "document_date": document_date,
+                "document_date_source": "email-header:Date" if document_date else None,
+            }
+        chunks.extend(message_chunks)
+    return chunks
+
+
 def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
               source_record: dict | None = None) -> list[Chunk]:
     try:
         import pdfplumber
-    except ImportError:
-        sys.exit("pdfplumber required: pip install pdfplumber")
+    except ImportError as exc:
+        raise _reject_source(
+            path,
+            "READER_UNAVAILABLE",
+            "Native PDF parsing is unavailable because the approved local reader is not installed.",
+            capability_id="native_pdf",
+        ) from exc
     src = source_record or _source_record(path)
     chunks: list[Chunk] = []
-    with pdfplumber.open(path) as pdf:
-        for page_num, page in enumerate(pdf.pages, 1):
-            text = page.extract_text() or ""
-            if not text.strip():
-                continue
-            words = text.split()
-            if len(words) <= max_words:
-                body = text.strip()
-                chunks.append(Chunk(
-                    chunk_id=_chunk_hash(body),
-                    locator=f"p{page_num}",
-                    body=body,
-                    source_path=str(path),
-                    source_type="pdf",
-                    source_record=src,
-                    word_count=len(words),
-                    page_or_slide_number=page_num,
-                ))
-            else:
-                sub = _split_words(text, max_words, f"p{page_num}",
-                                   str(path), "pdf", src,
-                                   page_or_slide_number=page_num)
-                chunks.extend(sub)
+    try:
+        with pdfplumber.open(path) as pdf:
+            for page_num, page in enumerate(pdf.pages, 1):
+                text = page.extract_text() or ""
+                if not text.strip():
+                    continue
+                words = text.split()
+                if len(words) <= max_words:
+                    body = text.strip()
+                    chunks.append(Chunk(
+                        chunk_id=_chunk_hash(body),
+                        locator=f"p{page_num}",
+                        body=body,
+                        source_path=str(path),
+                        source_type="pdf",
+                        source_record=src,
+                        word_count=len(words),
+                        page_or_slide_number=page_num,
+                    ))
+                else:
+                    sub = _split_words(text, max_words, f"p{page_num}",
+                                       str(path), "pdf", src,
+                                       page_or_slide_number=page_num)
+                    chunks.extend(sub)
+    except UnsupportedSourceError:
+        raise
+    except Exception as exc:
+        raise _reject_source(
+            path,
+            "PDF_INVALID",
+            f"The native PDF reader could not open {path.name}: {exc}.",
+            capability_id="native_pdf",
+            action="Repair the PDF or export it as searchable PDF or UTF-8 text.",
+        ) from exc
+    if not chunks:
+        raise _reject_source(
+            path,
+            "OCR_REQUIRED",
+            f"{path.name} contains no extractable text; PANTA will not pretend that image pixels were parsed.",
+            capability_id="scanned_pdf_ocr",
+        )
     return chunks
 
 
@@ -740,13 +1149,24 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
     """
     try:
         import openpyxl
-    except ImportError:
-        sys.exit("openpyxl required for Excel extraction: .venv/bin/pip install openpyxl")
+    except ImportError as exc:
+        raise _reject_source(
+            path,
+            "READER_UNAVAILABLE",
+            "Open XML workbook parsing is unavailable because openpyxl is not installed.",
+            capability_id="openxml_workbook",
+        ) from exc
     try:
         formulas = openpyxl.load_workbook(path, data_only=False, read_only=True)
         values = openpyxl.load_workbook(path, data_only=True, read_only=True)
     except Exception as exc:
-        sys.exit(f"Cannot read workbook {path.name}: {exc}")
+        raise _reject_source(
+            path,
+            "WORKBOOK_INVALID",
+            f"Cannot read workbook {path.name}: {exc}.",
+            capability_id="openxml_workbook",
+            action="Open the workbook in Excel and save a valid .xlsx/.xlsm copy without flattening formulas.",
+        ) from exc
     src = source_record or _source_record(path)
     chunks: list[Chunk] = []
     workbook_has_formulas = any(
@@ -812,21 +1232,65 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
 
 def parse_source(path: Path, max_words: int = CHUNK_WORDS,
                  source_record: dict | None = None) -> list[Chunk]:
+    src = source_record or _source_record(path)
+    envelope = src.get("source_envelope") or {}
+    capability = resolve_source_capability(path, {
+        "document_type": envelope.get("document_type") or src.get("doc_type"),
+        "parser_route": envelope.get("parser_route"),
+    })
+    capability_id = str(capability["capability_id"])
     suffix = path.suffix.lower()
     if suffix == ".pdf":
-        return parse_pdf(path, max_words, source_record)
-    elif suffix in (".md", ".txt", ".html"):
-        return parse_markdown(path, max_words, source_record)
+        chunks = parse_pdf(path, max_words, src)
+    elif suffix in (".md", ".markdown"):
+        chunks = parse_markdown(path, max_words, src)
+    elif suffix == ".txt" and capability_id == "transcript_export":
+        chunks = parse_transcript(path, max_words, src)
+    elif suffix == ".txt":
+        chunks = parse_plain_text(path, max_words, src)
+    elif suffix in (".html", ".htm"):
+        chunks = parse_html(path, max_words, src)
+    elif suffix == ".csv":
+        chunks = parse_csv(path, max_words, src)
+    elif suffix == ".docx":
+        chunks = parse_docx(path, max_words, src)
+    elif suffix == ".pptx":
+        chunks = parse_pptx(path, max_words, src)
+    elif suffix in (".srt", ".vtt"):
+        chunks = parse_transcript(path, max_words, src)
+    elif suffix in (".eml", ".mbox"):
+        chunks = parse_email(path, max_words, src)
     elif suffix in (".xlsx", ".xlsm"):
-        return parse_xlsx(path, max_words, source_record)
+        chunks = parse_xlsx(path, max_words, src)
     elif suffix == ".xls":
-        raise UnsupportedSourceError(
-            "Legacy .xls is not supported; convert the workbook to .xlsx before extraction."
+        raise _reject_source(
+            path,
+            "LEGACY_EXCEL_UNSUPPORTED",
+            "Legacy .xls is not supported; convert the workbook to .xlsx before extraction.",
+            capability_id="legacy_excel",
+        )
+    elif suffix == ".msg":
+        raise _reject_source(
+            path,
+            "OUTLOOK_MSG_UNSUPPORTED",
+            "Binary Outlook .msg is not parsed because doing so would require an unapproved decoder.",
+            capability_id="outlook_msg",
         )
     else:
-        raise UnsupportedSourceError(
-            f"Unsupported source type: {suffix}. Use .pdf, .md, .txt, .xlsx, or .xlsm"
+        raise _reject_source(
+            path,
+            "UNSUPPORTED_SOURCE",
+            f"Unsupported source type: {suffix or '<no extension>'}.",
         )
+    if not chunks:
+        raise _reject_source(
+            path,
+            "NO_EXTRACTABLE_TEXT",
+            f"{path.name} contains no safely extractable text.",
+            capability_id=capability_id,
+            action="Verify the export contains visible text and upload it again; attachments require their own SourceEnvelope.",
+        )
+    return _decorate_chunks(chunks, path, src, capability_id)
 
 
 def load_manifest(
@@ -839,7 +1303,10 @@ def load_manifest(
     paths = []
     for key in keys:
         # Try stem match in vault/inbox
-        for ext in (".md", ".txt", ".pdf", ".xlsx", ".xlsm"):
+        for ext in (
+            ".md", ".markdown", ".txt", ".html", ".htm", ".csv", ".pdf",
+            ".docx", ".pptx", ".xlsx", ".xlsm", ".srt", ".vtt", ".eml", ".mbox",
+        ):
             candidate = source_dir / f"{key}{ext}"
             if candidate.exists():
                 paths.append(candidate)
@@ -1363,7 +1830,13 @@ def main() -> int:
     src_group = ap.add_mutually_exclusive_group(required=True)
     src_group.add_argument("--manifest", choices=["K-PRE", "K-IC", "K-LIVE", "ALL"],
                            help="Run over all sources in manifest (no temporal leakage)")
-    src_group.add_argument("--source", help="Single source file (.pdf, .md, .txt, .xlsx, .xlsm)")
+    src_group.add_argument(
+        "--source",
+        help=(
+            "Single source file (.pdf, .docx, .pptx, .xlsx/.xlsm, .csv, "
+            ".md/.txt/.html, .srt/.vtt, .eml/.mbox)"
+        ),
+    )
     ap.add_argument(
         "--input-dir",
         type=Path,
@@ -1460,7 +1933,7 @@ def main() -> int:
         try:
             chunks = parse_source(sp, args.chunk_words, source_records.get(sp))
         except UnsupportedSourceError as exc:
-            print(f"ERROR: {exc}", file=sys.stderr)
+            print(f"ERROR: {json.dumps(exc.to_dict(), sort_keys=True)}", file=sys.stderr)
             return 2
         print(f"  {sp.name:<50} {len(chunks):3d} chunks")
         all_chunks.extend(chunks)
@@ -1484,6 +1957,8 @@ def main() -> int:
     chunks_debug = [
         {"chunk_id": c.chunk_id, "locator": c.locator,
          "source_id": c.source_record["source_id"],
+         "provenance": c.provenance,
+         "period_context": c.period_context,
          "section_heading": c.section_heading,
          "page_or_slide_number": c.page_or_slide_number,
          "word_count": c.word_count, "preview": c.body[:100].replace("\n", " ") + "..."}

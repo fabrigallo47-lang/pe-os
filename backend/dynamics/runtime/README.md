@@ -33,6 +33,10 @@ result = apply_extraction_transition(
 )
 ```
 
+The admission manifest must declare exactly one `admission_mode`:
+`AUTO_POLICY`, `HUMAN_CONFIRMED`, or `AUTHORITY_RECORDED`. There is no implicit
+default and the adapter never infers a human mode from an actor field.
+
 For the compiled Financial Gold mapping, use the Gold boundary adapter:
 
 ```python

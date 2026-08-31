@@ -241,7 +241,7 @@ def _validate_manifest(
     manifest: Mapping[str, Any],
     indexes: Mapping[str, Any],
     source_graph_hash: str,
-) -> tuple[str, set[str]]:
+) -> tuple[str, set[str], str]:
     if not isinstance(manifest, Mapping):
         raise AdmissionInputError(
             "an explicit admission_manifest is required before runtime execution"
@@ -255,6 +255,14 @@ def _validate_manifest(
         raise AdmissionInputError("admission_manifest.as_of_known_at is required")
     if not isinstance(admitted, list):
         raise AdmissionInputError("admission_manifest.admitted_claim_ids must be an array")
+    if "admission_mode" not in manifest:
+        raise AdmissionInputError("admission_manifest.admission_mode is required")
+    try:
+        admission_mode = ledger_store.validate_admission_mode(
+            manifest.get("admission_mode")
+        )
+    except ValueError as exc:
+        raise AdmissionInputError(f"admission_manifest.{exc}") from exc
     declared_hash = manifest.get("source_graph_hash")
     if declared_hash is not None and declared_hash != source_graph_hash:
         raise AdmissionInputError("admission_manifest.source_graph_hash does not match input")
@@ -268,13 +276,14 @@ def _validate_manifest(
     )
     if unknown:
         raise AdmissionInputError("unknown admitted claim ids: " + ", ".join(unknown))
-    return case_id, admitted_ids
+    return case_id, admitted_ids, admission_mode
 
 
 def _append_admission_event(
     manifest: Mapping[str, Any],
     case_id: str,
     admitted_ids: set[str],
+    admission_mode: str,
     node_by_id: Mapping[str, Mapping[str, Any]],
     source_graph_hash: str,
 ) -> None:
@@ -305,6 +314,7 @@ def _append_admission_event(
             manifest_hash,
         ),
         "event": "CLAIM_ADMISSION",
+        "admission_mode": admission_mode,
         "effective_date": known_at[:10],
         "known_at": known_at,
         "source_ids": source_ids,
@@ -362,13 +372,14 @@ def compile_extraction_to_runtime_inputs(
     report = analyze_extraction_graph(graph)
     node_by_id = indexes["node_by_id"]
     edges = indexes["edges"]
-    case_id, admitted_ids = _validate_manifest(
+    case_id, admitted_ids, admission_mode = _validate_manifest(
         admission_manifest, indexes, report["source_graph_hash"]
     )
     _append_admission_event(
         admission_manifest,
         case_id,
         admitted_ids,
+        admission_mode,
         node_by_id,
         report["source_graph_hash"],
     )
@@ -732,6 +743,7 @@ def compile_extraction_to_runtime_inputs(
     adapter_report.update(
         {
             "case_id": case_id,
+            "admission_mode": admission_mode,
             "admitted_claim_count": len(admitted_ids),
             "validation_only_claim_count": len(claims_set - admitted_ids),
             "compiled_support_route_count": len(support_routes),

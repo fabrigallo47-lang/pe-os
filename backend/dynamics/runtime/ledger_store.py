@@ -27,6 +27,11 @@ from typing import Any, Mapping
 PIPELINE_OUT = Path(__file__).resolve().parents[3] / "pipeline_out"
 
 
+ADMISSION_MODES = frozenset(
+    {"AUTO_POLICY", "HUMAN_CONFIRMED", "AUTHORITY_RECORDED"}
+)
+
+
 def _canonical_json(value: Any) -> str:
     """Match the transition engine's canonical representation for stable hashes."""
 
@@ -95,6 +100,20 @@ def compute_event_id(source_version_id: Any, extractor_version: Any, manifest_ha
     )
 
 
+def validate_admission_mode(value: Any) -> str:
+    """Validate and return one canonical institutional admission mode.
+
+    There is intentionally no fallback here.  Inferring ``AUTO_POLICY`` from a
+    missing field, or a human mode merely from the presence of an actor, would
+    make the ledger assert an admission path that it cannot prove.
+    """
+
+    if not isinstance(value, str) or value not in ADMISSION_MODES:
+        allowed = ", ".join(sorted(ADMISSION_MODES))
+        raise ValueError(f"admission_mode must be one of: {allowed}")
+    return value
+
+
 def append_event(case_id: str, event: Mapping[str, Any]) -> dict[str, Any]:
     """Append one event unless its event id is already present in this case ledger."""
 
@@ -103,6 +122,12 @@ def append_event(case_id: str, event: Mapping[str, Any]) -> dict[str, Any]:
     event_id = event.get("event_id")
     if not isinstance(event_id, str) or not event_id:
         raise ValueError("event.event_id must be a non-empty string")
+
+    admission_mode = event.get("admission_mode")
+    if event.get("event") == "CLAIM_ADMISSION" and admission_mode is None:
+        raise ValueError("CLAIM_ADMISSION event.admission_mode is required")
+    if admission_mode is not None:
+        validate_admission_mode(admission_mode)
 
     if any(existing.get("event_id") == event_id for existing in _read_all(case_id)):
         return {"appended": False, "event_id": event_id, "reason": "event_id already present"}

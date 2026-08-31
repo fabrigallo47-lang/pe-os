@@ -117,6 +117,7 @@ def manifest():
         "case_id": "ADAPTER-TEST",
         "as_of_known_at": "2026-08-21T12:00:00+02:00",
         "admitted_claim_ids": ["claim:a"],
+        "admission_mode": "AUTO_POLICY",
     }
 
 

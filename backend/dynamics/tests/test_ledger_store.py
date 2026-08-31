@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import json
 import sys
 import tempfile
 import unittest
@@ -95,6 +96,35 @@ class LedgerStoreTests(unittest.TestCase):
 
     def test_fresh_case_reads_as_empty(self) -> None:
         self.assertEqual(ledger_store.read_ledger("fresh-case"), [])
+
+    def test_new_claim_admission_requires_a_canonical_mode(self) -> None:
+        admission = event("admission-1", "source-1", "2026-04-01T09:00:00Z")
+        admission["event"] = "CLAIM_ADMISSION"
+
+        with self.assertRaisesRegex(ValueError, "admission_mode is required"):
+            ledger_store.append_event(self.case_id, admission)
+
+        admission["admission_mode"] = "INFERRED_FROM_ACTOR"
+        with self.assertRaisesRegex(ValueError, "admission_mode must be one of"):
+            ledger_store.append_event(self.case_id, admission)
+
+        self.assertEqual(ledger_store.read_ledger(self.case_id), [])
+
+    def test_legacy_event_without_admission_mode_remains_distinguishable(self) -> None:
+        legacy = event("legacy-admission", "source-1", "2026-04-01T09:00:00Z")
+        legacy["event"] = "CLAIM_ADMISSION"
+        path = ledger_store.PIPELINE_OUT / "cases" / self.case_id / "ledger.jsonl"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps(legacy) + "\n", encoding="utf-8")
+
+        stored = ledger_store.read_ledger(self.case_id)
+        replayed = ledger_store.replay(self.case_id)
+
+        self.assertNotIn("admission_mode", stored[0])
+        self.assertEqual(replayed["event_count"], 1)
+        self.assertEqual(
+            replayed["objects"]["CLAIM"]["claim-1"]["value"], "10"
+        )
 
 
 if __name__ == "__main__":

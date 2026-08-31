@@ -400,7 +400,7 @@ CLAIM_TOOL = {
                     "type": "object",
                     "required": [
                         "metric", "value", "unit", "period", "perimeter",
-                        "entity", "period_canonical", "scope", "basis", "scenario",
+                        "entity", "period_canonical", "scope", "measurement", "basis", "scenario",
                         "epistemic_class", "direction", "topic",
                         "statement", "locator_hint",
                     ],
@@ -475,6 +475,23 @@ CLAIM_TOOL = {
                             "description": (
                                 "Economic boundary: consolidated=whole group; standalone=one "
                                 "entity; customer=one customer/account; segment=a division."
+                            ),
+                        },
+                        "measurement": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": (
+                                "WHICH SLICE of the quantity this figure covers, in the source's "
+                                "own words — a service line, department, customer account, "
+                                "product, region, or cost category. Write exactly 'total' when "
+                                "the figure is the whole, undivided quantity.\n"
+                                "This is what separates a breakdown from a disagreement. Three "
+                                "service lines reporting 30.3, 20.0 and 14.1 are components of "
+                                "one revenue, not three conflicting claims about it — but only "
+                                "if each names its slice. Leaving this blank on a component "
+                                "makes it collide with the total and with its siblings.\n"
+                                "Examples: 'total', 'EHS compliance service line', "
+                                "'field inspection', 'Riverton account', 'engineering headcount'."
                             ),
                         },
                         "basis": {
@@ -1341,6 +1358,9 @@ class RawClaim:
     entity: str = "unspecified"
     period_canonical: str = "none"
     scope: str = "unspecified"
+    # Which slice of the quantity. "total" means the whole; blank collides a
+    # component with its own total, which reads as a contradiction.
+    measurement: str = "total"
     basis: str = "unspecified"
     scenario: str = "unspecified"
 
@@ -1478,6 +1498,7 @@ def annotate_chunk(
                     entity=c.get("entity") or "unspecified",
                     period_canonical=c.get("period_canonical") or "none",
                     scope=c.get("scope") or "unspecified",
+                    measurement=c.get("measurement") or "total",
                     basis=c.get("basis") or "unspecified",
                     scenario=c.get("scenario") or "unspecified",
                 ))
@@ -1550,6 +1571,7 @@ class CanonicalClaim:
     entity: str = "unspecified"
     period_canonical: str = "none"
     scope: str = "unspecified"
+    measurement: str = "total"
     basis: str = "unspecified"
     scenario: str = "unspecified"
     validation_errors: list[str] = field(default_factory=list)
@@ -1596,6 +1618,7 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         entity=raw.entity or "unspecified",
         period_canonical=raw.period_canonical or "none",
         scope=raw.scope or "unspecified",
+        measurement=raw.measurement or "total",
         basis=raw.basis or "unspecified",
         scenario=raw.scenario or "unspecified",
         validation_errors=errors,
@@ -1708,6 +1731,7 @@ def _to_e3_manifest(graph: SubGraph, deal: str, manifest: str,
                     "entity": c.entity,
                     "period_canonical": c.period_canonical,
                     "scope": c.scope,
+                    "measurement": c.measurement,
                     "basis": c.basis,
                     "scenario": c.scenario,
                 }

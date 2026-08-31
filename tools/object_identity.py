@@ -279,6 +279,34 @@ _CURRENCY_SIGNS: tuple[tuple[str, str], ...] = (
 )
 
 
+def normalize_measurement(raw: Any) -> str:
+    """Which slice of a quantity a figure covers. "total" means the whole.
+
+    The distinction this preserves is between a breakdown and a disagreement.
+    Three service lines reporting 30.3, 20.0 and 14.1 are components of one
+    revenue; with this dimension empty on all three they share an identity and
+    read as three claims contradicting each other — which is what the Keystone
+    corpus actually produced, 374 conflicts of which most were breakdowns.
+
+    An unstated slice normalizes to "" and NOT to "total": a claim that never
+    said whether it was the whole is not the same as one that said it was. The
+    first is a coverage limit; treating it as the second would silently merge a
+    component into the total it belongs to.
+    """
+    text = _clean(raw).lower()
+    if not text or text in ("unspecified", "unknown", "none", "n/a"):
+        return ""
+    if text in ("total", "whole", "aggregate", "consolidated total", "all"):
+        return "total"
+    known = _find_alias(text, MEASUREMENT_ALIASES)
+    if known:
+        return known
+    # Otherwise keep the source's own words, normalized only for whitespace and
+    # case. A named slice is worth more as itself than mapped into a small
+    # controlled list that could not anticipate this deal's segments.
+    return re.sub(r"\s+", " ", text)
+
+
 def normalize_unit(raw: Any) -> str:
     """Magnitude only — millions, percent, multiple — never the currency."""
     s = _clean(raw).lower()
@@ -379,7 +407,7 @@ def metric_identity(claim: dict) -> tuple[str, ...]:
         period,
         _field("scope") or perim.get("scope", ""),
         _field("basis") or perim.get("basis", ""),
-        _field("measurement") or perim.get("measurement", ""),
+        normalize_measurement(_field("measurement") or perim.get("measurement", "")),
         normalize_scenario(_field("scenario")),
         normalize_unit(_field("unit")),
         normalize_currency(_field("currency") or _field("unit")),

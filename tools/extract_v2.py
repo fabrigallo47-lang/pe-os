@@ -1376,6 +1376,17 @@ def main() -> int:
             "existing claims as complete and retrying the rest"
         ),
     )
+    ap.add_argument(
+        "--via-cli",
+        action="store_true",
+        help=(
+            "Call the model through the Claude Code CLI instead of the API "
+            "(subscription-backed). The schema is instructed, not enforced — do "
+            "not compare a score from this path against one from the API path"
+        ),
+    )
+    ap.add_argument("--cli-model", default="haiku",
+                    help="Model alias for --via-cli (default: haiku)")
     args = ap.parse_args()
 
     # ── Collect source paths ──────────────────────────────────────────────
@@ -1544,17 +1555,27 @@ def main() -> int:
         if modern_cache and not pending_chunks and status.get("complete"):
             pass
         else:
-            api_key = configured_api_key()
-            if not api_key:
-                print(f"ERROR: {missing_key_message()}.", file=sys.stderr)
-                print("  Or use --dry-run to inspect chunks.")
-                return 1
-            try:
-                import anthropic
-                client = anthropic.Anthropic(**anthropic_client_kwargs(api_key))
-            except ImportError:
-                print("ERROR: pip install anthropic", file=sys.stderr)
-                return 1
+            if args.via_cli:
+                # Subscription-backed path for re-runs. The schema is instructed
+                # rather than enforced here (the CLI has no tool_choice), so a
+                # number produced this way must not be compared against one
+                # produced via the API — see tools/llm_cli_provider.py.
+                from tools.llm_cli_provider import CliClient
+                client = CliClient(model=args.cli_model)
+                print(f"\n[L2] via Claude CLI (model={args.cli_model}) — "
+                      f"schema instructed, not enforced")
+            else:
+                api_key = configured_api_key()
+                if not api_key:
+                    print(f"ERROR: {missing_key_message()}.", file=sys.stderr)
+                    print("  Or use --dry-run to inspect chunks.")
+                    return 1
+                try:
+                    import anthropic
+                    client = anthropic.Anthropic(**anthropic_client_kwargs(api_key))
+                except ImportError:
+                    print("ERROR: pip install anthropic", file=sys.stderr)
+                    return 1
             print(f"\n[L2] Annotating {len(pending_chunks)} chunk(s) "
                   f"(workers={args.workers}, model={MODEL})...")
             all_raw = list(cached_raw)

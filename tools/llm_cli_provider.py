@@ -150,7 +150,20 @@ class _Messages:
             timeout=self._client.timeout,
         )
         if proc.returncode != 0:
-            raise CliError(f"claude exited {proc.returncode}: {proc.stderr[:200]}")
+            detail = (proc.stderr or proc.stdout or "").strip()[:200]
+            if not detail:
+                # Observed on a 261-chunk run: 144 chunks failed with exit 1 and
+                # an empty stderr, after the first ~46 succeeded. Neither
+                # concurrency (6 parallel calls pass) nor prompt size (17KB
+                # passes) reproduces it, which leaves a subscription usage limit
+                # reached mid-run. Say so rather than reporting a bare exit code,
+                # because the silent form of this costs an hour to diagnose twice.
+                detail = (
+                    "no stderr. If this began part-way through a long run, the "
+                    "likeliest cause is a subscription usage limit — check with a "
+                    "single `claude -p` call before assuming the code is at fault"
+                )
+            raise CliError(f"claude exited {proc.returncode}: {detail}")
 
         try:
             envelope = json.loads(proc.stdout)

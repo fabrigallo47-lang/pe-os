@@ -1,22 +1,126 @@
 {
   "SUPPORTS": {
+    "family": "runtime_relations",
+    "relation_class": "RUNTIME",
+    "runtime_mapping_status": "READY",
     "meaning": "Source object increases evidentiary support for the target.",
     "traversal": "support maintenance; removal may reduce target support but does not automatically recalculate values."
   },
   "CONTRADICTS": {
+    "family": "runtime_relations",
+    "relation_class": "RUNTIME",
+    "runtime_mapping_status": "READY",
     "meaning": "Source object is materially incompatible with the target or an existing support route.",
     "traversal": "opens contradiction or reduces target support; requires resolution rule or human adjudication."
   },
   "DERIVES_FROM": {
+    "family": "runtime_relations",
+    "relation_class": "RUNTIME",
+    "runtime_mapping_status": "READY",
     "meaning": "Target semantics or value are defined or derived from the source object.",
     "traversal": "source supersession stales the target and may require recomputation."
   },
   "DRIVES": {
+    "family": "runtime_relations",
+    "relation_class": "RUNTIME",
+    "runtime_mapping_status": "READY",
     "meaning": "Source causally affects the target state, assumption, formula selection or quantitative output.",
     "traversal": "propagate downstream subject to materiality, formula and human-position boundaries."
   },
   "CONDITIONS": {
+    "family": "runtime_relations",
+    "relation_class": "RUNTIME",
+    "runtime_mapping_status": "READY",
     "meaning": "Target may be accepted, committed or remain current only while the source condition or governance requirement holds.",
     "traversal": "unsatisfied condition blocks gate or stales the target institutional state."
+  },
+  "FROM_SOURCE": {
+    "family": "provenance_and_attribution",
+    "relation_class": "PROVENANCE",
+    "runtime_mapping_status": "NOT_APPLICABLE"
+  },
+  "ATTRIBUTED_TO": {
+    "family": "provenance_and_attribution",
+    "relation_class": "PROVENANCE",
+    "runtime_mapping_status": "NOT_APPLICABLE"
+  },
+  "ABOUT_ENTITY": {
+    "family": "provenance_and_attribution",
+    "relation_class": "PROVENANCE",
+    "runtime_mapping_status": "NOT_APPLICABLE"
+  },
+  "USES_DEFINITION": {
+    "family": "provenance_and_attribution",
+    "relation_class": "PROVENANCE",
+    "runtime_mapping_status": "NOT_APPLICABLE"
+  },
+  "LOCATED_IN": {
+    "family": "provenance_and_attribution",
+    "relation_class": "PROVENANCE",
+    "runtime_mapping_status": "NOT_APPLICABLE"
+  },
+  "OCCURRED_IN_INTERACTION": {
+    "family": "provenance_and_attribution",
+    "relation_class": "PROVENANCE",
+    "runtime_mapping_status": "NOT_APPLICABLE"
+  },
+  "BEARS_ON": {
+    "family": "semantic_binding_non_traversal",
+    "relation_class": "SEMANTIC",
+    "runtime_mapping_status": "PENDING_ADAPTER"
+  },
+  "ANSWERS": {
+    "family": "semantic_binding_non_traversal",
+    "relation_class": "SEMANTIC",
+    "runtime_mapping_status": "PENDING_ADAPTER"
+  },
+  "REFRAMES": {
+    "family": "semantic_binding_non_traversal",
+    "relation_class": "SEMANTIC",
+    "runtime_mapping_status": "PENDING_ADAPTER"
+  },
+  "BINDS_TO_MODEL": {
+    "family": "semantic_binding_non_traversal",
+    "relation_class": "SEMANTIC",
+    "runtime_mapping_status": "PENDING_ADAPTER"
+  },
+  "DESCRIBES": {
+    "family": "semantic_binding_non_traversal",
+    "relation_class": "SEMANTIC",
+    "runtime_mapping_status": "PENDING_ADAPTER"
+  },
+  "CHALLENGES": {
+    "family": "semantic_binding_non_traversal",
+    "relation_class": "SEMANTIC",
+    "runtime_mapping_status": "PENDING_ADAPTER",
+    "meaning": "Source object is adverse evidence that weakens a proposition without logically negating it."
+  },
+  "ASSIGNED_TO": {
+    "family": "operational_relations",
+    "relation_class": "OPERATIONAL",
+    "runtime_mapping_status": "NOT_APPLICABLE",
+    "meaning": "Work or responsibility is allocated to a person or role.",
+    "traversal": "none; operational relations never affect computed case state"
+  },
+  "PRODUCES": {
+    "family": "operational_relations",
+    "relation_class": "OPERATIONAL",
+    "runtime_mapping_status": "NOT_APPLICABLE",
+    "meaning": "Work or process yields an object as its output.",
+    "traversal": "none; operational relations never affect computed case state"
+  },
+  "REQUIRED_FOR": {
+    "family": "operational_relations",
+    "relation_class": "OPERATIONAL",
+    "runtime_mapping_status": "NOT_APPLICABLE",
+    "meaning": "The source object is a precondition for the target.",
+    "traversal": "none; operational relations never affect computed case state"
+  },
+  "SUPERSEDES_EXPLICITLY": {
+    "family": "operational_relations",
+    "relation_class": "OPERATIONAL",
+    "runtime_mapping_status": "NOT_APPLICABLE",
+    "meaning": "A stated supersession recorded by a human or a SUPERSEDE mutation.",
+    "traversal": "none; operational relations never affect computed case state"
   }
 }

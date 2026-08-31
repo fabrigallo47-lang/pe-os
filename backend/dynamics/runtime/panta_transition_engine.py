@@ -50,9 +50,24 @@ ENGINE_VERSION = "0.4.0-conformance"
 OUTPUT_SCHEMA_VERSION = "transition-output-1.0"
 RUNTIME_STATE_VERSION = "runtime-state-1.0"
 
-CANONICAL_RELATIONS = frozenset(
-    {"SUPPORTS", "CONTRADICTS", "DERIVES_FROM", "DRIVES", "CONDITIONS"}
-)
+_RELATION_VOCABULARY_PATH = Path(__file__).resolve().parents[1] / "schemas" / "relation_vocabulary.json"
+with _RELATION_VOCABULARY_PATH.open(encoding="utf-8") as _relation_vocabulary_file:
+    RELATION_VOCABULARY: dict[str, dict[str, Any]] = json.load(_relation_vocabulary_file)
+
+
+def is_runtime_relation(relation: Any) -> bool:
+    """Return whether a relation has an approved Dynamic traversal mapping.
+
+    Family alone is deliberately insufficient: a relation reaches the Dynamic
+    only once its vocabulary declaration is both runtime-classed and READY.
+    """
+    definition = RELATION_VOCABULARY.get(str(relation))
+    return bool(
+        definition
+        and definition.get("family") == "runtime_relations"
+        and definition.get("relation_class") == "RUNTIME"
+        and definition.get("runtime_mapping_status") == "READY"
+    )
 MUTATION_OPERATIONS = frozenset(
     {"ADD", "OBSERVE", "CORRECT", "SUPERSEDE", "RETRACT"}
 )
@@ -590,8 +605,38 @@ def _add_adjacency_edge(
         adjacency[str(source)].append((str(target), relation, edge_id))
 
 
+def _record_untraversed_relation(
+    coverage_limits: list[dict[str, Any]], edge: Mapping[str, Any], relation: Any
+) -> None:
+    """Expose semantic edges withheld at the compiler/Dynamic boundary."""
+    relation_name = str(relation)
+    definition = RELATION_VOCABULARY.get(relation_name, {})
+    status = str(definition.get("runtime_mapping_status", "UNDECLARED"))
+    edge_id = str(edge.get("edge_id", "POSITION_DEPENDENCY"))
+    coverage_limits.append(
+        {
+            "limit_id": f"RELATION-{status}:{edge_id}",
+            "reason_code": status,
+            "relation": relation_name,
+            "scope_ids": sorted(
+                {
+                    str(edge[field])
+                    for field in ("from_position_id", "to_position_id")
+                    if edge.get(field) is not None
+                }
+            ),
+            "effect": (
+                f"Relation {relation_name} was not traversed because its runtime "
+                f"mapping status is {status}."
+            ),
+        }
+    )
+
+
 def _build_execution_adjacency(
-    graph: MutableMapping[str, Any], execution_mapping: Mapping[str, Any]
+    graph: MutableMapping[str, Any],
+    execution_mapping: Mapping[str, Any],
+    coverage_limits: list[dict[str, Any]] | None = None,
 ) -> dict[str, list[tuple[str, str, str]]]:
     registry = _object_registry(graph)
     adjacency: dict[str, list[tuple[str, str, str]]] = defaultdict(list)
@@ -610,7 +655,7 @@ def _build_execution_adjacency(
 
     for edge in graph.get("position_dependencies", []):
         relation = edge.get("relation_type")
-        if relation in CANONICAL_RELATIONS:
+        if is_runtime_relation(relation):
             _add_adjacency_edge(
                 adjacency,
                 registry,
@@ -619,6 +664,8 @@ def _build_execution_adjacency(
                 str(relation),
                 str(edge.get("edge_id", "POSITION_DEPENDENCY")),
             )
+        elif coverage_limits is not None:
+            _record_untraversed_relation(coverage_limits, edge, relation)
 
     for route in graph.get("support_routes", []):
         route_id = route.get("route_id")
@@ -756,7 +803,8 @@ def compute_affected_set(
     _validate_case_graph(graph)
     registry = _object_registry(graph)
     mapping = execution_mapping or {}
-    adjacency = _build_execution_adjacency(graph, mapping)
+    relation_coverage_limits: list[dict[str, Any]] = []
+    adjacency = _build_execution_adjacency(graph, mapping, relation_coverage_limits)
     seeds = sorted(set(str(item) for item in trigger_ids))
     missing = [object_id for object_id in seeds if object_id not in registry]
     if missing:
@@ -791,6 +839,7 @@ def compute_affected_set(
         "visited_ids": sorted(visited),
         "adjacency": adjacency,
         "registry": registry,
+        "coverage_limits": relation_coverage_limits,
     }
 
 
@@ -3331,11 +3380,15 @@ def apply_state_transition(
     if impact_seed_ids:
         impact = compute_affected_set(candidate_graph, impact_seed_ids, execution_mapping)
     else:
+        relation_coverage_limits: list[dict[str, Any]] = []
         impact = {
             "affected_set": [],
             "visited_ids": [],
-            "adjacency": _build_execution_adjacency(candidate_graph, execution_mapping),
+            "adjacency": _build_execution_adjacency(
+                candidate_graph, execution_mapping, relation_coverage_limits
+            ),
             "registry": registry,
+            "coverage_limits": relation_coverage_limits,
         }
     affected_ids = set(impact["visited_ids"])
 
@@ -3736,6 +3789,7 @@ def apply_state_transition(
     blocked_components.sort(key=lambda item: item["component_id"])
 
     coverage_limits = _normalize_mapping_coverage_limits(execution_mapping)
+    coverage_limits.extend(impact["coverage_limits"])
     coverage_limits.extend(evaluation["coverage_limits"])
     coverage_limits.extend(rule_switch_evaluation["coverage_limits"])
     pending_scope = sorted(affected_ids - settled_ids - blocked_ids)

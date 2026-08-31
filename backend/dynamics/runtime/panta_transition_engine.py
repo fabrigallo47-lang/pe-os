@@ -465,12 +465,13 @@ def _build_execution_adjacency(
             )
 
     for edge in execution_mapping.get("directed_model_edges", []):
+        relation = str(edge.get("relation_type") or "MODEL_DEPENDENCY")
         _add_adjacency_edge(
             adjacency,
             registry,
             edge.get("from_model_node_id"),
             edge.get("to_model_node_id"),
-            "MODEL_DEPENDENCY",
+            relation,
             str(edge.get("edge_id", "MODEL_DEPENDENCY")),
         )
 

@@ -29,7 +29,12 @@ from .panta_transition_engine import (
 )
 
 
-GOLD_ADAPTER_VERSION = "0.2.0"
+GOLD_ADAPTER_VERSION = "0.3.0"
+
+_RESOLVED_TOPOLOGY_LIMITS = {
+    "MISSING_MODEL_DEPENDENCY",
+    "MISSING_EXECUTABLE_DIRECTION",
+}
 
 
 class GoldMappingInputError(ValueError):
@@ -377,6 +382,82 @@ def _is_acyclic(node_ids: set[str], edges: Sequence[Mapping[str, Any]]) -> bool:
     return visited == len(indegree)
 
 
+def _compile_drives_edges(
+    raw_edges: Sequence[Mapping[str, Any]],
+) -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
+    """Type Gold model dependencies and expose them to the canonical graph."""
+
+    typed_edges: list[dict[str, Any]] = []
+    position_dependencies: list[dict[str, Any]] = []
+    seen_edge_ids: set[str] = set()
+    for index, raw_edge in enumerate(raw_edges):
+        edge_id = str(raw_edge.get("edge_id", "")).strip()
+        if not edge_id:
+            raise GoldMappingInputError(
+                f"directed_model_edges[{index}] has no edge_id"
+            )
+        if edge_id in seen_edge_ids:
+            raise GoldMappingInputError(f"duplicate Gold edge: {edge_id}")
+        seen_edge_ids.add(edge_id)
+
+        declared_relation = str(raw_edge.get("relation_type") or "DRIVES")
+        if declared_relation != "DRIVES":
+            raise GoldMappingInputError(
+                f"Gold edge {edge_id} has incompatible relation_type "
+                f"{declared_relation!r}"
+            )
+
+        source = str(raw_edge["from_model_node_id"])
+        target = str(raw_edge["to_model_node_id"])
+        typed_edge = copy.deepcopy(dict(raw_edge))
+        typed_edge["relation_type"] = "DRIVES"
+        typed_edges.append(typed_edge)
+        position_dependencies.append(
+            {
+                "edge_id": edge_id,
+                # The canonical dependency contract predates model-node edges;
+                # the endpoint names are retained for schema compatibility.
+                "from_position_id": source,
+                "to_position_id": target,
+                "relation_type": "DRIVES",
+                "semantic_role": "drives_model_calculation",
+                "traversal_rule": (
+                    "propagate downstream through the executable model graph"
+                ),
+            }
+        )
+    return typed_edges, position_dependencies
+
+
+def _close_resolved_topology_limits(
+    raw_limits: Sequence[Mapping[str, Any]],
+    *,
+    typed_edges: Sequence[Mapping[str, Any]],
+    compiled_formulas: Sequence[Mapping[str, Any]],
+) -> tuple[list[dict[str, Any]], list[str]]:
+    """Drop only coverage limits proven obsolete by the compiled topology."""
+
+    resolved_reason_codes: set[str] = set()
+    if typed_edges:
+        resolved_reason_codes.add("MISSING_MODEL_DEPENDENCY")
+    if typed_edges and compiled_formulas:
+        resolved_reason_codes.add("MISSING_EXECUTABLE_DIRECTION")
+
+    remaining: list[dict[str, Any]] = []
+    closed: set[str] = set()
+    for limit in raw_limits:
+        copied = copy.deepcopy(dict(limit))
+        reason_code = str(copied.get("reason_code", ""))
+        if (
+            reason_code in _RESOLVED_TOPOLOGY_LIMITS
+            and reason_code in resolved_reason_codes
+        ):
+            closed.add(reason_code)
+            continue
+        remaining.append(copied)
+    return remaining, sorted(closed)
+
+
 def compile_gold_to_runtime_inputs(
     gold_mapping: Mapping[str, Any],
     semantic_graph: Mapping[str, Any] | None = None,
@@ -388,9 +469,16 @@ def compile_gold_to_runtime_inputs(
     raw_nodes = gold_mapping.get("model_nodes")
     raw_edges = gold_mapping.get("directed_model_edges")
     raw_formulas = gold_mapping.get("formulas")
-    if not isinstance(raw_nodes, list) or not isinstance(raw_edges, list) or not isinstance(raw_formulas, list):
+    raw_limits = gold_mapping.get("coverage_limits", [])
+    if (
+        not isinstance(raw_nodes, list)
+        or not isinstance(raw_edges, list)
+        or not isinstance(raw_formulas, list)
+        or not isinstance(raw_limits, list)
+    ):
         raise GoldMappingInputError(
-            "gold mapping must contain model_nodes[], directed_model_edges[] and formulas[]"
+            "gold mapping must contain model_nodes[], directed_model_edges[], "
+            "formulas[] and optional coverage_limits[]"
         )
 
     node_by_id: dict[str, Mapping[str, Any]] = {}
@@ -410,6 +498,14 @@ def compile_gold_to_runtime_inputs(
         target = str(edge.get("to_model_node_id", ""))
         if source not in node_ids or target not in node_ids:
             raise GoldMappingInputError(f"Gold edge {index} has a dangling endpoint")
+
+    typed_edges, position_dependencies = _compile_drives_edges(raw_edges)
+
+    for index, limit in enumerate(raw_limits):
+        if not isinstance(limit, Mapping):
+            raise GoldMappingInputError(
+                f"coverage_limits[{index}] must be an object"
+            )
 
     compiled_formulas: list[dict[str, Any]] = []
     skipped_formulas: list[dict[str, Any]] = []
@@ -444,6 +540,14 @@ def compile_gold_to_runtime_inputs(
             )
         else:
             compiled_formulas.append(compiled)
+
+    coverage_limits, closed_coverage_limit_reason_codes = (
+        _close_resolved_topology_limits(
+            raw_limits,
+            typed_edges=typed_edges,
+            compiled_formulas=compiled_formulas,
+        )
+    )
 
     runtime_nodes = [
         {
@@ -500,10 +604,10 @@ def compile_gold_to_runtime_inputs(
         "model_nodes": runtime_nodes,
         "support_routes": [],
         "claim_position_edges": [],
-        "position_dependencies": [],
+        "position_dependencies": position_dependencies,
         "position_model_bindings": [],
         "decision_snapshot": {},
-        "coverage_gaps": copy.deepcopy(gold_mapping.get("coverage_limits", [])),
+        "coverage_gaps": copy.deepcopy(coverage_limits),
     }
 
     adapter_limits = [
@@ -533,7 +637,7 @@ def compile_gold_to_runtime_inputs(
             }
             for node in runtime_nodes
         ],
-        "directed_model_edges": copy.deepcopy(raw_edges),
+        "directed_model_edges": typed_edges,
         "position_model_directions": [],
         "formulas": sorted(
             compiled_formulas, key=lambda item: str(item.get("formula_id", ""))
@@ -546,8 +650,7 @@ def compile_gold_to_runtime_inputs(
             gold_mapping.get("inverse_solver_configs", [])
         ),
         "model_controls": copy.deepcopy(gold_mapping.get("model_controls", [])),
-        "coverage_limits": copy.deepcopy(gold_mapping.get("coverage_limits", []))
-        + adapter_limits,
+        "coverage_limits": copy.deepcopy(coverage_limits) + adapter_limits,
         "source_gold_mapping_hash": _hash(gold_mapping),
         "source_semantic_graph_hash": _hash(semantic_graph) if semantic_graph else None,
     }
@@ -557,6 +660,8 @@ def compile_gold_to_runtime_inputs(
         "case_id": case_id,
         "model_node_count": len(runtime_nodes),
         "directed_model_edge_count": len(raw_edges),
+        "position_dependency_count": len(position_dependencies),
+        "drives_edge_count": len(typed_edges),
         "gold_formula_count": len(raw_formulas),
         "compiled_formula_count": len(compiled_formulas),
         "compiled_scalar_formula_count": sum(
@@ -576,6 +681,9 @@ def compile_gold_to_runtime_inputs(
         "normalized_formula_output_ids": sorted(normalized_formula_output_ids),
         "hydration_error_count": len(hydration_errors),
         "hydration_errors": hydration_errors,
+        "closed_coverage_limit_reason_codes": (
+            closed_coverage_limit_reason_codes
+        ),
         "directed_graph_acyclic": _is_acyclic(node_ids, raw_edges),
         "current_graph_hash": _hash(current_graph),
         "runtime_mapping_hash": _hash(execution_mapping),

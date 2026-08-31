@@ -7,6 +7,7 @@ from runtime import (
     apply_state_transition,
     compare_incremental_global,
     compile_gold_to_runtime_inputs,
+    compute_affected_set,
 )
 
 
@@ -82,6 +83,8 @@ class FinancialGoldIntegrationTests(unittest.TestCase):
         report = self.compiled["adapter_report"]
         self.assertEqual(report["model_node_count"], 14318)
         self.assertEqual(report["directed_model_edge_count"], 30996)
+        self.assertEqual(report["position_dependency_count"], 30996)
+        self.assertEqual(report["drives_edge_count"], 30996)
         self.assertEqual(report["gold_formula_count"], 11381)
         self.assertEqual(report["compiled_formula_count"], 11381)
         self.assertEqual(report["compiled_scalar_formula_count"], 11371)
@@ -90,6 +93,24 @@ class FinancialGoldIntegrationTests(unittest.TestCase):
         self.assertEqual(report["skipped_formulas"], [])
         self.assertEqual(report["hydration_error_count"], 0)
         self.assertTrue(report["directed_graph_acyclic"])
+        self.assertTrue(
+            all(
+                edge["relation_type"] == "DRIVES"
+                for edge in self.compiled["execution_mapping"][
+                    "directed_model_edges"
+                ]
+            )
+        )
+        self.assertEqual(
+            len(self.compiled["current_graph"]["position_dependencies"]),
+            30996,
+        )
+        coverage_reasons = {
+            item["reason_code"]
+            for item in self.compiled["execution_mapping"]["coverage_limits"]
+        }
+        self.assertNotIn("MISSING_MODEL_DEPENDENCY", coverage_reasons)
+        self.assertNotIn("MISSING_EXECUTABLE_DIRECTION", coverage_reasons)
 
         current_values = self.values(self.compiled["current_graph"])
         cash_flows = current_values[
@@ -111,6 +132,22 @@ class FinancialGoldIntegrationTests(unittest.TestCase):
         self.assertGreater(
             Decimal(str(current_values["CELL:Ownership_Returns!L4"])),
             Decimal("0"),
+        )
+
+    def test_gold_affected_set_explains_real_drives_path(self):
+        affected = compute_affected_set(
+            self.compiled["current_graph"],
+            ["CELL:Inputs!C42"],
+            self.compiled["execution_mapping"],
+        )
+        first_output = next(
+            item
+            for item in affected["affected_set"]
+            if item["object_id"] == "CELL:Scenario_Drivers!C7"
+        )
+        self.assertTrue(
+            any(path.endswith(":DRIVES") for path in first_output["reached_via"]),
+            first_output["reached_via"],
         )
 
     def test_gold_margin_shock_propagates_to_debt_and_moic(self):

@@ -42,7 +42,12 @@ from tools.llm_provider import (
 )
 
 API_KEY = configured_api_key()
-MODEL = configured_model("claude-sonnet-5")
+# Haiku by default so a test run costs little. This path is the expensive one:
+# unlike extract_v2, it sends whole documents and has no forced tool schema, so
+# it is the least suited of the two to a smaller model — expect lower recall here
+# than the E3 pipeline gets, and do not read a drop as a regression in the code.
+# Override with PEOS_MODEL=claude-sonnet-5 for a run whose numbers will be quoted.
+MODEL = configured_model("claude-haiku-4-5-20251001")
 
 EPISTEMIC = {"asserted", "derived", "observed", "attested"}
 

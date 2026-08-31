@@ -12,6 +12,7 @@
     "description",
     "archetype",
     "binding_profile",
+    "binding_config",
     "effective_date",
     "questions"
   ],
@@ -26,11 +27,28 @@
     "binding_config": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["schema_version"],
+      "required": [
+        "schema_version",
+        "permitted_question_ids",
+        "metric_rules",
+        "keyword_rules"
+      ],
       "properties": {
         "schema_version": {"const": "binding-config/1.0"},
-        "metric_rules": {"type": "array"},
-        "keyword_rules": {"type": "array"}
+        "permitted_question_ids": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"$ref": "#/$defs/questionId"}
+        },
+        "metric_rules": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/metricRule"}
+        },
+        "keyword_rules": {
+          "type": "array",
+          "items": {"$ref": "#/$defs/keywordRule"}
+        }
       }
     },
     "effective_date": {"type": "string", "format": "date"},
@@ -42,11 +60,59 @@
         "additionalProperties": false,
         "required": ["id", "version", "workstream", "title"],
         "properties": {
-          "id": {"type": "string", "pattern": "^[A-Za-z0-9._:-]+$"},
+          "id": {"$ref": "#/$defs/questionId"},
           "version": {"type": "integer", "minimum": 1},
           "workstream": {"type": "string", "minLength": 1},
           "title": {"type": "string", "minLength": 1}
         }
+      }
+    }
+  },
+  "$defs": {
+    "questionId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9._:-]+$"
+    },
+    "ruleQuestionIds": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {"$ref": "#/$defs/questionId"}
+    },
+    "confidence": {
+      "type": "number",
+      "minimum": 0,
+      "maximum": 1
+    },
+    "rank": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "metricRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["aliases", "question_ids", "confidence", "rank"],
+      "properties": {
+        "aliases": {
+          "type": "array",
+          "minItems": 1,
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
+        "question_ids": {"$ref": "#/$defs/ruleQuestionIds"},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "rank": {"$ref": "#/$defs/rank"}
+      }
+    },
+    "keywordRule": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["pattern", "question_ids", "confidence", "rank"],
+      "properties": {
+        "pattern": {"type": "string", "minLength": 1},
+        "question_ids": {"$ref": "#/$defs/ruleQuestionIds"},
+        "confidence": {"$ref": "#/$defs/confidence"},
+        "rank": {"$ref": "#/$defs/rank"}
       }
     }
   }

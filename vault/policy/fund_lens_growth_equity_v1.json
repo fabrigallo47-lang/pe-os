@@ -1,0 +1,74 @@
+{
+  "schema_version": "fund-lens/1.0",
+  "lens_id": "FL-GROWTH-EQUITY-V1",
+  "version": "1.0.0",
+  "label": "Growth Equity Underwriting",
+  "description": "Versioned question and binding policy for minority growth-equity underwriting.",
+  "archetype": "growth-equity",
+  "binding_profile": "growth-equity-v1",
+  "binding_config": {
+    "schema_version": "binding-config/1.0",
+    "permitted_question_ids": ["GE-Q-01", "GE-Q-02", "GE-Q-03", "GE-Q-04"],
+    "metric_rules": [
+      {
+        "aliases": ["Revenue", "Revenue Growth"],
+        "question_ids": ["GE-Q-02"],
+        "confidence": 0.96,
+        "rank": 10
+      },
+      {
+        "aliases": ["ARR", "Recurring Revenue"],
+        "question_ids": ["GE-Q-01"],
+        "confidence": 0.94,
+        "rank": 20
+      },
+      {
+        "aliases": ["Gross Margin", "Burn Multiple"],
+        "question_ids": ["GE-Q-03"],
+        "confidence": 0.9,
+        "rank": 30
+      }
+    ],
+    "keyword_rules": [
+      {
+        "pattern": "(retention|expansion|churn)",
+        "question_ids": ["GE-Q-01"],
+        "confidence": 0.82,
+        "rank": 100
+      },
+      {
+        "pattern": "(runway|cash burn|funding need)",
+        "question_ids": ["GE-Q-04"],
+        "confidence": 0.85,
+        "rank": 90
+      }
+    ]
+  },
+  "effective_date": "2026-08-31",
+  "questions": [
+    {
+      "id": "GE-Q-01",
+      "version": 1,
+      "workstream": "commercial",
+      "title": "How durable are recurring revenue, retention and customer expansion?"
+    },
+    {
+      "id": "GE-Q-02",
+      "version": 1,
+      "workstream": "commercial",
+      "title": "Is revenue growth repeatable and supported by efficient acquisition?"
+    },
+    {
+      "id": "GE-Q-03",
+      "version": 1,
+      "workstream": "financial",
+      "title": "How do gross margin and burn efficiency evolve at the planned growth rate?"
+    },
+    {
+      "id": "GE-Q-04",
+      "version": 1,
+      "workstream": "financial",
+      "title": "What runway and future funding requirement follow from the operating plan?"
+    }
+  ]
+}

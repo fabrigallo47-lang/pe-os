@@ -1,8 +1,8 @@
 #!/usr/bin/env python3
 """
-bind_questions_e3.py — bind E3 claims to the 20 Keystone diligence questions.
+bind_questions_e3.py — bind E3 claims through the active versioned Fund Lens.
 
-Uses two rule layers (no LLM):
+Uses two configured rule layers (no LLM and no archetype branching):
   R1  metric → question IDs   (primary, deterministic)
   R2  keyword scan of statement text → question IDs (secondary)
 
@@ -34,6 +34,41 @@ FUND_LENS_SCHEMA_PATH = ROOT / "vault" / "policy" / "fund_lens.schema.json"
 _SEMVER = re.compile(r"^[0-9]+\.[0-9]+\.[0-9]+$")
 _LENS_ID = re.compile(r"^[A-Za-z0-9._-]+$")
 _QUESTION_ID = re.compile(r"^[A-Za-z0-9._:-]+$")
+
+
+class BindingProfileReviewBlocker(ValueError):
+    """A machine-readable stop when evidence cannot be bound safely.
+
+    Binding policy is governed input, so a missing or malformed profile must
+    stop automated binding without discarding the evidence that reached the
+    boundary.  Callers can persist :meth:`as_dict` in a review proposal.
+    """
+
+    def __init__(
+        self,
+        reason_code: str,
+        detail: str,
+        *,
+        profile_id: str | None = None,
+        profile_path: str | None = None,
+    ) -> None:
+        self.reason_code = reason_code
+        self.detail = detail
+        self.profile_id = profile_id
+        self.profile_path = profile_path
+        super().__init__(f"{reason_code}: {detail}")
+
+    def as_dict(self) -> dict:
+        blocker = {
+            "status": "REVIEW_BLOCKED",
+            "reason_code": self.reason_code,
+            "profile_id": self.profile_id,
+            "detail": self.detail,
+            "required_action": "CONFIGURE_VALID_FUND_LENS_BINDING_PROFILE",
+        }
+        if self.profile_path:
+            blocker["profile_path"] = self.profile_path
+        return blocker
 
 
 def validate_fund_lens(value: Mapping[str, Any]) -> dict:
@@ -118,11 +153,9 @@ def validate_fund_lens(value: Mapping[str, Any]) -> dict:
         ids.append(qid)
     if len(ids) != len(set(ids)):
         raise ValueError("Fund Lens question IDs must be unique")
-    config = lens.get("binding_config")
-    if config is not None:
-        lens["binding_config"] = validate_binding_config(config, set(ids))
-    elif lens["binding_profile"] != "keystone-e3-v1":
-        raise ValueError("A non-Keystone binding_profile requires binding_config")
+    if "binding_config" not in lens:
+        raise ValueError("Fund Lens requires a versioned binding_config")
+    lens["binding_config"] = validate_binding_config(lens["binding_config"], set(ids))
     return lens
 
 
@@ -136,47 +169,134 @@ def validate_binding_config(value: Any, allowed_question_ids: set[str]) -> dict:
     if not isinstance(value, Mapping):
         raise ValueError("binding_config must be an object")
     config = copy.deepcopy(dict(value))
-    if set(config) - {"schema_version", "metric_rules", "keyword_rules"}:
+    allowed_fields = {
+        "schema_version",
+        "permitted_question_ids",
+        "metric_rules",
+        "keyword_rules",
+    }
+    if set(config) - allowed_fields:
         raise ValueError("binding_config has unsupported fields")
     if config.get("schema_version") != "binding-config/1.0":
         raise ValueError("binding_config must use schema_version binding-config/1.0")
+    missing = sorted(allowed_fields - set(config))
+    if missing:
+        raise ValueError("binding_config missing required fields: " + ", ".join(missing))
+    permitted_question_ids = config.get("permitted_question_ids")
+    if (
+        not isinstance(permitted_question_ids, list)
+        or not permitted_question_ids
+        or any(
+            not isinstance(qid, str)
+            or not _QUESTION_ID.fullmatch(qid)
+            or qid not in allowed_question_ids
+            for qid in permitted_question_ids
+        )
+        or len(permitted_question_ids) != len(set(permitted_question_ids))
+    ):
+        raise ValueError(
+            "binding_config permitted_question_ids must be unique questions declared by the lens"
+        )
+    permitted_qids = set(permitted_question_ids)
     for group in ("metric_rules", "keyword_rules"):
-        rules = config.get(group, [])
+        rules = config[group]
         if not isinstance(rules, list):
             raise ValueError(f"binding_config {group} must be a list")
         for index, rule in enumerate(rules):
             if not isinstance(rule, Mapping):
                 raise ValueError(f"binding_config {group}[{index}] must be an object")
-            permitted = {"question_ids", "confidence", "rank", "aliases"} if group == "metric_rules" else {"question_ids", "confidence", "rank", "pattern"}
-            if set(rule) - permitted:
+            allowed_rule_fields = (
+                {"question_ids", "confidence", "rank", "aliases"}
+                if group == "metric_rules"
+                else {"question_ids", "confidence", "rank", "pattern"}
+            )
+            if set(rule) - allowed_rule_fields:
                 raise ValueError(f"binding_config {group}[{index}] has unsupported fields")
-            qids = rule.get("question_ids")
-            if not isinstance(qids, list) or not qids or any(str(q) not in allowed_question_ids for q in qids):
-                raise ValueError(f"binding_config {group}[{index}] references an undeclared question")
-            confidence = rule.get("confidence", 0.8)
-            if isinstance(confidence, bool) or not isinstance(confidence, (int, float)) or not 0 <= confidence <= 1:
-                raise ValueError(f"binding_config {group}[{index}] confidence must be between 0 and 1")
-            rank = rule.get("rank", 100)
+            missing_rule_fields = sorted(allowed_rule_fields - set(rule))
+            if missing_rule_fields:
+                raise ValueError(
+                    f"binding_config {group}[{index}] missing required fields: "
+                    + ", ".join(missing_rule_fields)
+                )
+            qids = rule["question_ids"]
+            if (
+                not isinstance(qids, list)
+                or not qids
+                or any(not isinstance(qid, str) or qid not in permitted_qids for qid in qids)
+                or len(qids) != len(set(qids))
+            ):
+                raise ValueError(
+                    f"binding_config {group}[{index}] references a question "
+                    "not permitted by the profile"
+                )
+            confidence = rule["confidence"]
+            if (
+                isinstance(confidence, bool)
+                or not isinstance(confidence, (int, float))
+                or not 0 <= confidence <= 1
+            ):
+                raise ValueError(
+                    f"binding_config {group}[{index}] confidence must be between 0 and 1"
+                )
+            rank = rule["rank"]
             if isinstance(rank, bool) or not isinstance(rank, int) or rank < 0:
-                raise ValueError(f"binding_config {group}[{index}] rank must be a non-negative integer")
+                raise ValueError(
+                    f"binding_config {group}[{index}] rank must be a non-negative integer"
+                )
             if group == "metric_rules":
-                aliases = rule.get("aliases")
-                if not isinstance(aliases, list) or not aliases or any(not str(a).strip() for a in aliases):
+                aliases = rule["aliases"]
+                if (
+                    not isinstance(aliases, list)
+                    or not aliases
+                    or any(not isinstance(alias, str) or not alias.strip() for alias in aliases)
+                    or len({alias.casefold() for alias in aliases}) != len(aliases)
+                ):
                     raise ValueError(f"binding_config metric_rules[{index}] needs aliases")
             else:
-                pattern = rule.get("pattern")
+                pattern = rule["pattern"]
                 if not isinstance(pattern, str) or not pattern:
                     raise ValueError(f"binding_config keyword_rules[{index}] needs pattern")
                 try:
                     re.compile(pattern, re.I)
                 except re.error as exc:
-                    raise ValueError(f"binding_config keyword_rules[{index}] has invalid pattern: {exc}") from exc
+                    raise ValueError(
+                        f"binding_config keyword_rules[{index}] has invalid pattern: {exc}"
+                    ) from exc
     return config
 
 
 def load_fund_lens(path: Path | str = DEFAULT_FUND_LENS_PATH) -> dict:
-    """Load and validate the durable question/binding policy used by the binder."""
-    return validate_fund_lens(json.loads(Path(path).read_text(encoding="utf-8")))
+    """Load a durable binding policy or raise an explicit review blocker."""
+    candidate = Path(path)
+    try:
+        payload = json.loads(candidate.read_text(encoding="utf-8"))
+    except FileNotFoundError as exc:
+        raise BindingProfileReviewBlocker(
+            "BINDING_PROFILE_MISSING",
+            "The active Fund Lens file does not exist; evidence must remain unbound.",
+            profile_path=str(candidate),
+        ) from exc
+    except (OSError, json.JSONDecodeError) as exc:
+        raise BindingProfileReviewBlocker(
+            "BINDING_PROFILE_INVALID",
+            f"The active Fund Lens cannot be read as valid JSON: {exc}",
+            profile_path=str(candidate),
+        ) from exc
+    try:
+        return validate_fund_lens(payload)
+    except (TypeError, ValueError) as exc:
+        profile_id = payload.get("binding_profile") if isinstance(payload, Mapping) else None
+        reason_code = (
+            "BINDING_PROFILE_MISSING"
+            if not isinstance(payload, Mapping) or "binding_config" not in payload
+            else "BINDING_PROFILE_INVALID"
+        )
+        raise BindingProfileReviewBlocker(
+            reason_code,
+            str(exc),
+            profile_id=str(profile_id) if profile_id else None,
+            profile_path=str(candidate),
+        ) from exc
 
 # ── 20 Keystone diligence questions ──────────────────────────────────────────
 QUESTIONS: dict[str, str] = {
@@ -226,128 +346,44 @@ VAULT_TO_Q: dict[str, list[str]] = {
     "kq-12-governance":            ["Q-19", "Q-20"],
 }
 
-# ── R1: metric → question IDs ─────────────────────────────────────────────────
+# Legacy public views are derived from the active default configuration.  They
+# remain import-compatible, but no binding policy is authored in Python.
 METRIC_TO_Q: dict[str, list[str]] = {
-    # Concentration / revenue
-    "Customer Concentration":      ["Q-01", "Q-02"],
-    "Active Billing Accounts":     ["Q-01"],
-    "Customer Count":              ["Q-01"],
-    "Customer Retention":          ["Q-02"],
-    "Revenue":                     ["Q-04"],
-    "Revenue Growth":              ["Q-04"],
-    "Recurring Revenue":           ["Q-04"],
-    "Revenue Quality":             ["Q-04"],
-    "Gross Profit":                ["Q-04", "Q-06"],
-    "Gross Margin":                ["Q-06"],
-    # Contract terms
-    "Customer Contract Terms":     ["Q-03", "Q-05"],
-    "Contract Terms":              ["Q-03", "Q-05"],
-    # EBITDA / adjustments
-    "EBITDA":                      ["Q-06"],
-    "EBITDA Adjustment":           ["Q-06"],
-    "EBITDA Add-back":             ["Q-06", "Q-07"],
-    "EBITDA Margin":               ["Q-06"],
-    "Adjustment Supportability":   ["Q-06"],
-    "Earnings Quality Risk":       ["Q-06"],
-    "Net Income":                  ["Q-06"],
-    # Working capital
-    "Working Capital":             ["Q-08"],
-    "Net Working Capital":         ["Q-08"],
-    "Net Working Capital Target":  ["Q-08"],
-    "Net Working Capital Adjustment": ["Q-08"],
-    "DSO":                         ["Q-08"],
-    "DPO":                         ["Q-08"],
-    "Operating Cash Flow":         ["Q-08"],
-    # WIP
-    "Revenue Quality":             ["Q-09"],
-    # Debt / structure
-    "Gross Debt":                  ["Q-10"],
-    "Net Debt":                    ["Q-10"],
-    "First-Lien Debt":             ["Q-10"],
-    "Seller Rollover":             ["Q-10"],
-    "Sponsor Equity":              ["Q-10"],
-    "Leverage":                    ["Q-10"],
-    "Equity Value":                ["Q-10"],
-    "Gross Profit":                ["Q-10"],
-    # Integration / systems
-    "Systems Integration Risk":    ["Q-11", "Q-12"],
-    "Integration Risk":            ["Q-11", "Q-12"],
-    "Headcount":                   ["Q-13", "Q-19"],
-    "Acquisition Count":           ["Q-12", "Q-13"],
-    # Operational KPIs
-    "Capex":                       ["Q-14"],
-    # Debt structure / covenant
-    "Covenant Threshold":          ["Q-17", "Q-18"],
-    "Covenant EBITDA":             ["Q-17"],
-    "Revolver Capacity":           ["Q-18"],
-    "DDTL Availability":           ["Q-18"],
-    # Returns / enterprise value (bear on EBITDA basis)
-    "Enterprise Value":            ["Q-06"],
-    "Entry Multiple":              ["Q-06"],
-    "Exit Multiple":               ["Q-06"],
-    "Exit EV":                     ["Q-06"],
-    "Exit Horizon":                ["Q-06"],
-    "MOIC":                        ["Q-06"],
-    "IRR":                         ["Q-06"],
-    # IC
-    "IC Conditions":               ["Q-17", "Q-18"],
-    "IC Vote":                     ["Q-17"],
-    # Debt service / covenant
-    "Interest Coverage":           ["Q-17"],
-    # Governance / retention
-    "Key Person Risk":             ["Q-19"],
-    "Team Tenure":                 ["Q-19"],
+    str(alias): list(rule["question_ids"])
+    for rule in DEFAULT_FUND_LENS["binding_config"]["metric_rules"]
+    for alias in rule["aliases"]
 }
-
-# ── R2: keyword patterns → question IDs ──────────────────────────────────────
 KEYWORD_TO_Q: list[tuple[re.Pattern, list[str]]] = [
-    # Concentration / revenue
-    (re.compile(r"parent.{0,20}(customer|account|concentration)", re.I), ["Q-01", "Q-02"]),
-    (re.compile(r"billing account", re.I), ["Q-01"]),
-    (re.compile(r"concentration.{0,30}(revenue|account|customer)", re.I), ["Q-01", "Q-02"]),
-    (re.compile(r"riverton|apex.{0,10}manufactur|cityworks|clinica|harbor.{0,10}util|medcore|metro.{0,10}util|precision.{0,10}compon|state.{0,10}infra", re.I), ["Q-01"]),
-    (re.compile(r"minimum.{0,20}(volume|commit)", re.I), ["Q-03"]),
-    (re.compile(r"terminat.{0,20}(notice|right|short)", re.I), ["Q-03"]),
-    (re.compile(r"scheduled.{0,30}(revenue|work|project)", re.I), ["Q-04"]),
-    (re.compile(r"programmat.{0,20}(revenue|work)", re.I), ["Q-04"]),
-    (re.compile(r"repeat.{0,20}project", re.I), ["Q-04"]),
-    (re.compile(r"non-standard.{0,20}(pricing|margin|sla|service.level)", re.I), ["Q-05"]),
-    # EBITDA
-    (re.compile(r"(add.back|addback).{0,30}(pricing|utilization|initiative)", re.I), ["Q-07"]),
-    (re.compile(r"pricing.{0,30}utilization.{0,30}(add.back|initiative)", re.I), ["Q-07"]),
-    (re.compile(r"non.recurring.{0,20}adjust", re.I), ["Q-06"]),
-    # WIP
-    (re.compile(r"(unbilled|wip).{0,30}(aged|aging|disputed|dispute|approv)", re.I), ["Q-09"]),
-    (re.compile(r"work.in.progress.{0,30}(aged|aging|disputed)", re.I), ["Q-09"]),
-    # Debt like
-    (re.compile(r"debt.like", re.I), ["Q-10"]),
-    (re.compile(r"deferred.tax", re.I), ["Q-10"]),
-    (re.compile(r"headquarter.{0,20}lease", re.I), ["Q-16"]),
-    (re.compile(r"founder.{0,20}lease", re.I), ["Q-16"]),
-    # Systems / integration
-    (re.compile(r"(time.entry|erp|customer.master|billing.system)", re.I), ["Q-11"]),
-    (re.compile(r"(cutover|migration|integration).{0,30}(fail|delay|histor)", re.I), ["Q-12"]),
-    (re.compile(r"integration.{0,20}(program|budget|cash|own)", re.I), ["Q-13"]),
-    (re.compile(r"(utilization|rework|project.profitability).{0,30}(defin|measur)", re.I), ["Q-14"]),
-    # Change of control
-    (re.compile(r"change.of.control", re.I), ["Q-15"]),
-    (re.compile(r"(consent|notice).{0,30}(contract|customer|agreement)", re.I), ["Q-15"]),
-    # Covenant
-    (re.compile(r"covenant.{0,20}(ebitda|basis|defin)", re.I), ["Q-17"]),
-    (re.compile(r"lender.{0,30}(covenant|ebitda)", re.I), ["Q-17"]),
-    (re.compile(r"(add.back|acquisition.capacity|minimum.liquidity|cash.netting).{0,30}limit", re.I), ["Q-18"]),
-    # Retention / governance
-    (re.compile(r"retention.{0,20}(execut|branch|leader|arrang)", re.I), ["Q-19"]),
-    (re.compile(r"(execut|branch.leader).{0,20}retent", re.I), ["Q-19"]),
-    (re.compile(r"board.{0,20}approv.{0,30}(acquis|system|cutover)", re.I), ["Q-20"]),
-    (re.compile(r"governance.{0,20}(acquis|cutover|major)", re.I), ["Q-20"]),
+    (re.compile(str(rule["pattern"]), re.I), list(rule["question_ids"]))
+    for rule in DEFAULT_FUND_LENS["binding_config"]["keyword_rules"]
 ]
 
 
-def ranked_bindings(claim: dict, compiler_meta: dict,
-                    fund_lens: dict | None = None) -> list[dict]:
+def ranked_bindings(
+    claim: dict,
+    compiler_meta: dict,
+    fund_lens: dict | None = None,
+) -> list[dict]:
     """Return deterministic binding evidence, ordered by policy rank/confidence."""
-    lens = fund_lens or DEFAULT_FUND_LENS
+    source_lens = DEFAULT_FUND_LENS if fund_lens is None else fund_lens
+    try:
+        lens = validate_fund_lens(source_lens)
+    except (TypeError, ValueError) as exc:
+        profile_id = (
+            source_lens.get("binding_profile")
+            if isinstance(source_lens, Mapping)
+            else None
+        )
+        reason_code = (
+            "BINDING_PROFILE_MISSING"
+            if not isinstance(source_lens, Mapping) or "binding_config" not in source_lens
+            else "BINDING_PROFILE_INVALID"
+        )
+        raise BindingProfileReviewBlocker(
+            reason_code,
+            str(exc),
+            profile_id=str(profile_id) if profile_id else None,
+        ) from exc
     allowed = {str(item["id"]) for item in lens["questions"]}
     matches: dict[str, dict] = {}
 
@@ -355,32 +391,44 @@ def ranked_bindings(claim: dict, compiler_meta: dict,
         for qid in qids:
             if qid not in allowed:
                 continue
-            candidate = {"question_id": qid, "rule": rule, "confidence": confidence, "rank": rank}
+            candidate = {
+                "question_id": qid,
+                "rule": rule,
+                "confidence": confidence,
+                "rank": rank,
+            }
             current = matches.get(qid)
-            if current is None or (rank, -confidence, rule) < (current["rank"], -current["confidence"], current["rule"]):
+            if current is None or (rank, -confidence, rule) < (
+                current["rank"],
+                -current["confidence"],
+                current["rule"],
+            ):
                 matches[qid] = candidate
 
     metric = str(compiler_meta.get("metric", ""))
     stmt = str(claim.get("statement", ""))
-    config = lens.get("binding_config")
-    if config:
-        for rule in config.get("metric_rules", []):
-            aliases = {str(alias).casefold() for alias in rule["aliases"]}
-            if metric.casefold() in aliases:
-                add(rule["question_ids"], "metric", float(rule.get("confidence", 0.8)), int(rule.get("rank", 100)))
-        for rule in config.get("keyword_rules", []):
-            if re.search(rule["pattern"], stmt, re.I):
-                add(rule["question_ids"], "keyword", float(rule.get("confidence", 0.7)), int(rule.get("rank", 200)))
-    elif lens.get("binding_profile") == "keystone-e3-v1":
-        # Compatibility preset. New cases must carry binding_config in the lens.
-        if metric in METRIC_TO_Q:
-            add(METRIC_TO_Q[metric], "metric", 0.9, 100)
-        for pat, qids in KEYWORD_TO_Q:
-            if pat.search(stmt):
-                add(qids, "keyword", 0.7, 200)
-    else:
-        raise ValueError(f"Unsupported Fund Lens binding profile: {lens.get('binding_profile')}")
-    return sorted(matches.values(), key=lambda item: (item["rank"], -item["confidence"], item["question_id"]))
+    config = lens["binding_config"]
+    for rule in config["metric_rules"]:
+        aliases = {str(alias).casefold() for alias in rule["aliases"]}
+        if metric.casefold() in aliases:
+            add(
+                rule["question_ids"],
+                "metric",
+                float(rule["confidence"]),
+                int(rule["rank"]),
+            )
+    for rule in config["keyword_rules"]:
+        if re.search(rule["pattern"], stmt, re.I):
+            add(
+                rule["question_ids"],
+                "keyword",
+                float(rule["confidence"]),
+                int(rule["rank"]),
+            )
+    return sorted(
+        matches.values(),
+        key=lambda item: (item["rank"], -item["confidence"], item["question_id"]),
+    )
 
 
 def bind_claim(claim: dict, compiler_meta: dict, fund_lens: dict | None = None) -> list[str]:
@@ -388,11 +436,43 @@ def bind_claim(claim: dict, compiler_meta: dict, fund_lens: dict | None = None) 
     return [item["question_id"] for item in ranked_bindings(claim, compiler_meta, fund_lens)]
 
 
-def main() -> None:
+def review_blocked_result(e3: Mapping[str, Any], blocker: BindingProfileReviewBlocker) -> dict:
+    """Preserve extracted evidence when binding policy requires human review."""
+    claims = copy.deepcopy(e3.get("claims", []))
+    return {
+        "status": "REVIEW_BLOCKED",
+        "manifest_id": e3.get("manifest_id"),
+        "deal": e3.get("deal"),
+        "review_blocker": blocker.as_dict(),
+        "total_claims": len(claims),
+        "bound_claims": 0,
+        "unbound_claims": len(claims),
+        "bindings": [
+            {
+                "claim_id": claim.get("claim_id"),
+                "question_ids": [],
+                "rule": "review_blocked",
+            }
+            for claim in claims
+        ],
+        "unbound_evidence": claims,
+        "deal_emergent_question_policy": {
+            "status": "PENDING_REVIEW",
+            "automatic_question_creation": False,
+            "required_action": "PROPOSE_DEAL_EMERGENT_QUESTION",
+        },
+    }
+
+
+def main() -> int:
     ap = argparse.ArgumentParser()
     ap.add_argument("--e3", required=True, help="e3_claims.json path")
     ap.add_argument("--out", required=True, help="output directory")
-    ap.add_argument("--fund-lens", default=str(DEFAULT_FUND_LENS_PATH), help="versioned Fund Lens JSON")
+    ap.add_argument(
+        "--fund-lens",
+        default=str(DEFAULT_FUND_LENS_PATH),
+        help="versioned Fund Lens JSON",
+    )
     args = ap.parse_args()
 
     e3_path = Path(args.e3)
@@ -401,7 +481,25 @@ def main() -> None:
 
     with open(e3_path) as f:
         e3 = json.load(f)
-    fund_lens = load_fund_lens(args.fund_lens)
+    try:
+        fund_lens = load_fund_lens(args.fund_lens)
+    except BindingProfileReviewBlocker as blocker:
+        blocked = review_blocked_result(e3, blocker)
+        (out_dir / "bindings.json").write_text(
+            json.dumps(blocked, indent=2) + "\n",
+            encoding="utf-8",
+        )
+        report = (
+            "E3 Question Binding Report\n"
+            + "=" * 50
+            + f"\n  Status      : REVIEW_BLOCKED"
+            + f"\n  Reason      : {blocker.reason_code}"
+            + f"\n  Total claims: {blocked['total_claims']}"
+            + "\n  Evidence was preserved unbound; no question was created automatically."
+        )
+        (out_dir / "binding_report.txt").write_text(report + "\n", encoding="utf-8")
+        print(report, file=sys.stderr)
+        return 2
     questions = {str(item["id"]): str(item["title"]) for item in fund_lens["questions"]}
 
     claims = e3["claims"]
@@ -436,6 +534,8 @@ def main() -> None:
     # ── Stats ─────────────────────────────────────────────────────────────────
     total = len(claims)
     bound_count = total - len(unbound)
+    bound_ratio = bound_count / total if total else 0.0
+    unbound_ratio = len(unbound) / total if total else 0.0
     covered_qs = [q for q in questions if q_to_claims[q]]
     uncovered_qs = [q for q in questions if not q_to_claims[q]]
     coverage = len(covered_qs) / len(questions)
@@ -467,8 +567,8 @@ def main() -> None:
         f"  Manifest    : {e3.get('manifest_id')}",
         f"  Deal        : {e3.get('deal')}",
         f"  Total claims: {total}",
-        f"  Bound claims: {bound_count} ({100*bound_count/total:.1f}%)",
-        f"  Unbound     : {len(unbound)} ({100*len(unbound)/total:.1f}%)",
+        f"  Bound claims: {bound_count} ({100*bound_ratio:.1f}%)",
+        f"  Unbound     : {len(unbound)} ({100*unbound_ratio:.1f}%)",
         f"  Questions covered: {len(covered_qs)} / {len(questions)}",
         f"  Coverage recall : {coverage:.1%}",
         "",
@@ -498,7 +598,8 @@ def main() -> None:
     report_text = "\n".join(lines)
     (out_dir / "binding_report.txt").write_text(report_text)
     print(report_text)
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())

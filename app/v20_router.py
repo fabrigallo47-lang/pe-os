@@ -763,12 +763,25 @@ def _question_registry_records(case_id: str, fund_lens: dict | None = None) -> l
     return [records[qid] for qid in order]
 
 
-def _ensure_question_registry(case_id: str, fund_lens: dict | None = None) -> None:
+_FUND_LENS_UNSET = object()
+
+
+def _ensure_question_registry(
+    case_id: str,
+    fund_lens: dict | None | object = _FUND_LENS_UNSET,
+) -> None:
     """Materialize archetype questions, then optional Lens refinements/extensions."""
-    lens = fund_lens if fund_lens is not None else _registry_fund_lens(case_id)
+    lens = (
+        _registry_fund_lens(case_id)
+        if fund_lens is _FUND_LENS_UNSET
+        else fund_lens
+    )
     q_dir = VAULT / "deals" / case_id / "questions"
     q_dir.mkdir(parents=True, exist_ok=True)
-    for question in _question_registry_records(case_id, lens):
+    for question in _question_registry_records(
+        case_id,
+        lens if isinstance(lens, dict) else None,
+    ):
         qid = str(question["id"])
         title = str(question["title"])
         path = q_dir / f"{qid.lower()}.md"
@@ -867,6 +880,7 @@ def _write_evidence_proposal(
     excel_formula_graph: dict | None = None,
     workbook_formula_graphs: dict | None = None,
     source_envelope: dict | None = None,
+    review_blockers: list[dict] | None = None,
 ) -> Path:
     """Store extraction output as reviewable evidence, before it can affect Current."""
     # Backwards-compatible positional callers supplied workbook sidecars as
@@ -890,12 +904,19 @@ def _write_evidence_proposal(
         for item in formula_graphs.get("workbooks", [])
         if isinstance(item, dict)
     ]
+    blockers = [
+        copy.deepcopy(item)
+        for item in (review_blockers or [])
+        if isinstance(item, dict)
+    ]
     payload = {
         "proposal_id": f"evidence-{job_id}", "job_id": job_id, "case_id": case_id,
         "source_id": (source_envelope or {}).get("source_id") or filename,
         "source_path": f"vault/inbox/{filename}",
         "source_envelope": source_envelope,
-        "status": "PENDING_REVIEW", "created_at": _now_iso(), "claims": claims,
+        "status": "REVIEW_BLOCKED" if blockers else "PENDING_REVIEW",
+        "created_at": _now_iso(), "claims": claims,
+        "review_blockers": blockers,
         "question_proposals": question_proposals or [],
         "excel_formula_graph": excel_formula_graph,
         "workbook_formula_graph": {
@@ -961,6 +982,54 @@ def _derive_bears_on(claims: list[dict], e3: dict, fund_lens: dict | None = None
             c.update({k: v for k, v in metadata[c["claim_id"]].items() if k not in c or not c.get(k)})
         out.append(c)
     return out
+
+
+def _claims_without_binding(claims: list[dict], e3: dict) -> list[dict]:
+    """Preserve extracted evidence while a governed binding profile is unavailable."""
+    metadata = {
+        item.get("claim_id"): item
+        for item in e3.get("extraction_metadata", {}).get("compiler_fields_per_claim", [])
+        if isinstance(item, dict)
+    }
+    unbound = []
+    for claim in claims:
+        detached = copy.deepcopy(claim)
+        detached["bears_on"] = []
+        detached["binding_evidence"] = []
+        compiler_fields = metadata.get(detached.get("claim_id"))
+        if compiler_fields:
+            detached.update({
+                key: value
+                for key, value in compiler_fields.items()
+                if key not in detached or not detached.get(key)
+            })
+        unbound.append(detached)
+    return unbound
+
+
+def _bind_extracted_claims(
+    case_id: str,
+    claims: list[dict],
+    e3: dict,
+) -> tuple[list[dict], dict | None, list[dict]]:
+    """Bind with the case Lens or return intact evidence plus a review stop."""
+    from bind_questions_e3 import BindingProfileReviewBlocker
+
+    try:
+        fund_lens = _registry_fund_lens(case_id)
+        if fund_lens is None:
+            raise BindingProfileReviewBlocker(
+                "BINDING_PROFILE_MISSING",
+                f"Case {case_id!r} has no validated Fund Lens binding profile; "
+                "evidence must remain unbound.",
+            )
+        _ensure_question_registry(case_id, fund_lens)
+        return _derive_bears_on(claims, e3, fund_lens), fund_lens, []
+    except BindingProfileReviewBlocker as blocker:
+        # The canonical pack is still safe to materialize.  The missing or
+        # malformed Lens must not silently fall back to another deal's rules.
+        _ensure_question_registry(case_id, None)
+        return _claims_without_binding(claims, e3), None, [blocker.as_dict()]
 
 
 def _derive_question_proposals(claims: list[dict], case_id: str) -> list[dict]:
@@ -4226,13 +4295,10 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                             e3 = {}
                             raw = json.loads(v1_out.read_text())
                             workbook_formula_graphs = {}
-                        # The repository default may still provide provisional
-                        # binding rules, but only a case-qualified Lens may
-                        # extend this deal's canonical question registry.
-                        fund_lens = _active_fund_lens(case_id)
-                        _ensure_question_registry(case_id, _registry_fund_lens(case_id))
-                        new_claims = _derive_bears_on(
-                            _normalise_v1_claims(raw, filename), e3, fund_lens
+                        new_claims, fund_lens, review_blockers = _bind_extracted_claims(
+                            case_id,
+                            _normalise_v1_claims(raw, filename),
+                            e3,
                         )
                         excel_formula_graph = None
                         if manifest_label == "SINGLE_V2" and source_path is not None:
@@ -4268,7 +4334,11 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                                     job_id,
                                     formula_exc,
                                 )
-                        question_proposals = _derive_question_proposals(new_claims, case_id)
+                        question_proposals = (
+                            []
+                            if review_blockers
+                            else _derive_question_proposals(new_claims, case_id)
+                        )
                         proposal = _write_evidence_proposal(
                             job_id,
                             case_id,
@@ -4279,21 +4349,33 @@ async def ingest(case_id: str, request: Request, background_tasks: BackgroundTas
                             excel_formula_graph,
                             workbook_formula_graphs,
                             source_envelope,
+                            review_blockers,
                         )
                         proposal_display_path = (
                             str(proposal.relative_to(ROOT))
                             if proposal.is_relative_to(ROOT)
                             else str(proposal)
                         )
+                        admission_status = (
+                            "REVIEW_BLOCKED" if review_blockers else "PENDING_REVIEW"
+                        )
                         _store_job(job_id, proposal_id=proposal.stem,
                                    proposal_path=proposal_display_path,
                                    proposed_claim_count=len(new_claims),
                                    formula_node_count=len((excel_formula_graph or {}).get("formulas", [])),
-                                   admission_status="PENDING_REVIEW")
+                                   admission_status=admission_status,
+                                   review_blockers=review_blockers)
                         _update_inbox_record(job_id, proposal_id=proposal.stem,
                                              proposal_path=proposal_display_path,
                                              proposed_claim_count=len(new_claims),
-                                             admission_status="PENDING_REVIEW")
+                                             admission_status=admission_status,
+                                             review_blockers=review_blockers)
+                        if review_blockers:
+                            logger.warning(
+                                "JOB %s binding review blocked: %s",
+                                job_id,
+                                review_blockers,
+                            )
                         logger.info(
                             "JOB %s produced %d claim proposals and %d formula nodes",
                             job_id,

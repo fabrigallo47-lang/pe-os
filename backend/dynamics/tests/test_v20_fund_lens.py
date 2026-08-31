@@ -37,6 +37,13 @@ class V20FundLensTests(unittest.TestCase):
             "lens_id": "FL-SCOUT-MANUAL",
             "version": version,
             "label": "Scout Manual Buyout Lens",
+            "binding_profile": "scout-commercial-v1",
+            "binding_config": {
+                "schema_version": "binding-config/1.0",
+                "permitted_question_ids": ["SQ-01", "SQ-02"],
+                "metric_rules": [],
+                "keyword_rules": [],
+            },
             "effective_date": "2026-08-29",
             "questions": [
                 {
@@ -84,8 +91,13 @@ class V20FundLensTests(unittest.TestCase):
             (router.VAULT / "deals/scout/fund_lenses/FL-SCOUT-MANUAL__1.0.0.json").exists()
         )
         questions = router._load_questions("scout")
-        self.assertEqual([item["id"] for item in questions], ["SQ-01", "SQ-02"])
-        self.assertTrue(all(item["fund_lens_version"] == "1.0.0" for item in questions))
+        ids = [item["id"] for item in questions]
+        self.assertEqual(len(ids), 56)
+        self.assertEqual(ids[-2:], ["SQ-01", "SQ-02"])
+        self.assertTrue(all(
+            item["fund_lens_version"] == "1.0.0"
+            for item in questions if item["origin"] == "fund_lens"
+        ))
         context = router._make_context("scout", "STATE-SCOUT-CURRENT", "2026-08-29")
         self.assertEqual(context["active_lens_id"], "FL-SCOUT-MANUAL")
         with self.assertRaises(HTTPException) as inactive:
@@ -111,12 +123,14 @@ class V20FundLensTests(unittest.TestCase):
             "workstream": "financial",
             "title": "What is defensible normalized EBITDA?",
         }]
+        second["binding_config"]["permitted_question_ids"] = ["SQ-02"]
         router.configure_fund_lens("scout", second)
 
         questions = router._load_questions("scout")
-        self.assertEqual([item["id"] for item in questions], ["SQ-02"])
-        self.assertEqual(questions[0]["question_version"], 2)
-        self.assertEqual(questions[0]["title"], "What is defensible normalized EBITDA?")
+        self.assertEqual(len(questions), 55)
+        self.assertEqual(questions[-1]["id"], "SQ-02")
+        self.assertEqual(questions[-1]["question_version"], 2)
+        self.assertEqual(questions[-1]["title"], "What is defensible normalized EBITDA?")
         self.assertTrue((router.VAULT / "deals/scout/questions/sq-01.md").exists())
         self.assertEqual(len(router.get_fund_lens("scout")["versions"]), 2)
 
@@ -142,6 +156,7 @@ class V20FundLensTests(unittest.TestCase):
         lens["binding_profile"] = "scout-commercial-v1"
         lens["binding_config"] = {
             "schema_version": "binding-config/1.0",
+            "permitted_question_ids": ["SQ-01", "SQ-02"],
             "metric_rules": [{
                 "aliases": ["Contracted Revenue", "ARR"],
                 "question_ids": ["SQ-01"], "confidence": 0.95, "rank": 10,

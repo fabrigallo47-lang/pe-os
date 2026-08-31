@@ -262,6 +262,45 @@ def normalize_period(raw: Any) -> str:
     return ""                                       # prose — not a period
 
 
+_UNIT_CANONICAL: dict[str, str] = {
+    "$m": "mm", "$mm": "mm", "£m": "mm", "€m": "mm", "mm": "mm", "m": "mm",
+    "$bn": "bn", "bn": "bn", "b": "bn",
+    "%": "pct", "pct": "pct", "percent": "pct",
+    "x": "x", "days": "days", "d": "days", "bps": "bps",
+}
+
+# The magnitude and the currency are separate dimensions: 11.4 $mm and 11.4 €mm
+# share a magnitude and are not the same quantity. Splitting them keeps a
+# currency change from reading as agreement.
+_CURRENCY_SIGNS: tuple[tuple[str, str], ...] = (
+    ("$", "USD"), ("usd", "USD"),
+    ("£", "GBP"), ("gbp", "GBP"),
+    ("€", "EUR"), ("eur", "EUR"),
+)
+
+
+def normalize_unit(raw: Any) -> str:
+    """Magnitude only — millions, percent, multiple — never the currency."""
+    s = _clean(raw).lower()
+    if not s:
+        return ""
+    for sign, _ in _CURRENCY_SIGNS:
+        s = s.replace(sign, "")
+    s = s.strip()
+    return _UNIT_CANONICAL.get(s, s)
+
+
+def normalize_currency(raw: Any) -> str:
+    """Currency only, read from an explicit field or from a unit like ``$mm``."""
+    s = _clean(raw).lower()
+    if not s:
+        return ""
+    for sign, code in _CURRENCY_SIGNS:
+        if sign in s:
+            return code
+    return s.upper() if len(s) == 3 and s.isalpha() else ""
+
+
 def normalize_scenario(raw: Any) -> str:
     s = _clean(raw).lower()
     if s in SCENARIO_ALIASES:
@@ -306,6 +345,16 @@ def metric_identity(claim: dict) -> tuple[str, ...]:
     Two claims sharing this tuple are about the same quantity — they may
     corroborate or contradict.  Two claims differing in it are simply different
     facts, however similar their wording.
+
+    Ordered to match ``metric_identity_dimensions`` in the Universal Investment
+    Kernel v0.2 (vault/policy/archetypes/semantic_handoff_v0_2/). The kernel names
+    the economic boundary ``perimeter``; this module calls the same dimension
+    ``scope``, because the extractor field it comes from is named that and the
+    prose column it is recovered from is a different, compound ``perimeter``.
+
+    ``unit`` and ``currency`` close the tuple. Without them 11.4 in $mm and 11.4
+    in €mm are one quantity with one value, and a currency change reads as
+    agreement rather than as two different facts.
     """
     # Structured fields win when the extractor supplied them; prose decomposition
     # is the fallback for claims extracted before those fields existed.
@@ -332,6 +381,8 @@ def metric_identity(claim: dict) -> tuple[str, ...]:
         _field("basis") or perim.get("basis", ""),
         _field("measurement") or perim.get("measurement", ""),
         normalize_scenario(_field("scenario")),
+        normalize_unit(_field("unit")),
+        normalize_currency(_field("currency") or _field("unit")),
     )
 
 

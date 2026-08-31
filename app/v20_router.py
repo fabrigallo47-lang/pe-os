@@ -49,6 +49,7 @@ from backend.dynamics import (
     settle_candidate_state,
 )
 from tools.source_envelope import build_source_envelope
+from tools.archetype_pack import UNASSIGNED_WORKSTREAM, normalize_workstream
 
 ROOT = Path(__file__).resolve().parent.parent
 INDEX_DB = Path(os.environ["PEOS_DB"]) if os.environ.get("PEOS_DB") else ROOT / ".index" / "vault.db"
@@ -675,7 +676,7 @@ def _ensure_question_registry(case_id: str, fund_lens: dict | None = None) -> No
             "state": existing.get("state", "open"),
             "status": existing.get("status", "open"),
             "critical": existing.get("critical", False),
-            "workstream": question.get("workstream", "underwriting"),
+            "workstream": normalize_workstream(question.get("workstream")),
             "opened": existing.get("opened", _today()),
             "written-by": "fund-lens-registry",
             "origin": "fund_lens", "question_version": question.get("version", 1),
@@ -893,7 +894,7 @@ def _derive_question_proposals(claims: list[dict], case_id: str) -> list[dict]:
             "proposed_question": {
                 "id": question_id,
                 "title": f"What must we establish about {topic_label}?",
-                "workstream": "deal-emergent",
+                "workstream": UNASSIGNED_WORKSTREAM,
                 "origin": "deal_emergent",
                 "question_version": 1,
             },
@@ -2508,7 +2509,7 @@ def _load_questions(case_id: str) -> list[dict]:
                     fm.update({
                         "title": active["title"],
                         "question": active["title"],
-                        "workstream": active.get("workstream", "underwriting"),
+                        "workstream": normalize_workstream(active.get("workstream")),
                         "origin": "fund_lens",
                         "question_version": active.get("version", 1),
                         "fund_lens_id": lens["lens_id"],
@@ -2523,7 +2524,7 @@ def _load_questions(case_id: str) -> list[dict]:
             "type": "question", "id": question["id"], "deal": case_id,
             "title": question["title"], "question": question["title"],
             "state": "open", "status": "open", "critical": False,
-            "workstream": question.get("workstream", "underwriting"),
+            "workstream": normalize_workstream(question.get("workstream")),
             "origin": "fund_lens", "question_version": question.get("version", 1),
             "fund_lens_id": lens["lens_id"], "fund_lens_version": lens["version"],
         })
@@ -2759,7 +2760,7 @@ def _build_question_spine(questions: list[dict], claims: list[dict]) -> list[dic
             "status": q.get("status", "open"),
             "claim_count": count,
             "coverage": "gap" if count == 0 else ("full" if count >= 3 else "partial"),
-            "workstream": q.get("workstream", ""),
+            "workstream": normalize_workstream(q.get("workstream")),
             "critical": bool(q.get("critical", False)),
             "owner": q.get("owner", "Unassigned"),
             "origin": q.get("origin", "deal_emergent"),
@@ -3694,7 +3695,7 @@ def _accept_spine_change(case_id: str, proposal: dict) -> dict:
         metadata = {
             "type": "question", "id": question_id, "deal": case_id,
             "title": title, "question": title, "state": "open", "status": "open",
-            "critical": False, "workstream": question.get("workstream", "deal-emergent"),
+            "critical": False, "workstream": normalize_workstream(question.get("workstream")),
             "opened": _today(), "written-by": "professional-spine-review",
             "origin": "deal_emergent", "question_version": question.get("question_version", 1),
             "source_proposal_id": proposal.get("proposal_id"),

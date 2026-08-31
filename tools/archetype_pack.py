@@ -52,3 +52,78 @@ def question_families(pack: dict[str, Any], workstream_id: str) -> list[dict[str
     if not isinstance(families, list):
         raise ValueError(f"Workstream {workstream_id} has no question_families list")
     return families
+
+
+# ── Reconciling the vocabularies that already exist ───────────────────────────
+# Three names for the same field were in use before the pack arrived:
+#
+#   archetype pack   FINANCIAL_QOE, LEGAL_REGULATORY, ...        (9, canonical)
+#   Fund Lens        commercial, financial, operations, ...      (7, lowercase)
+#   V20 router       underwriting, deal-emergent                 (2, placeholders)
+#
+# So a claim tagged FINANCIAL_QOE and a question tagged "financial" did not join,
+# and a question with no workstream defaulted to "underwriting", which matches
+# nothing at all. Normalizing on read rather than rewriting the Fund Lens keeps
+# configuration owned by whoever wrote it while giving the system one vocabulary
+# to reason in.
+UNASSIGNED_WORKSTREAM = "OTHER"
+
+_WORKSTREAM_ALIASES: dict[str, str] = {
+    "commercial": "COMMERCIAL_AND_MARKET",
+    "market": "COMMERCIAL_AND_MARKET",
+    "financial": "FINANCIAL_QOE",
+    "finance": "FINANCIAL_QOE",
+    "qoe": "FINANCIAL_QOE",
+    "operations": "OPERATIONS_TECHNOLOGY_AND_EXECUTION",
+    "operational": "OPERATIONS_TECHNOLOGY_AND_EXECUTION",
+    "technology": "OPERATIONS_TECHNOLOGY_AND_EXECUTION",
+    # The Fund Lens splits people from governance; the pack does not. Both fold
+    # into one canonical workstream — a real narrowing, recorded here rather than
+    # hidden, because it means two lens questions can no longer be told apart by
+    # workstream alone.
+    "people": "MANAGEMENT_SPONSOR_AND_GOVERNANCE",
+    "management": "MANAGEMENT_SPONSOR_AND_GOVERNANCE",
+    "governance": "MANAGEMENT_SPONSOR_AND_GOVERNANCE",
+    "sponsor": "MANAGEMENT_SPONSOR_AND_GOVERNANCE",
+    "legal": "LEGAL_REGULATORY",
+    "regulatory": "LEGAL_REGULATORY",
+    "tax": "TAX_AND_STRUCTURING",
+    "structuring": "TAX_AND_STRUCTURING",
+    "financing": "FINANCING_AND_LIQUIDITY",
+    "liquidity": "FINANCING_AND_LIQUIDITY",
+    "debt": "FINANCING_AND_LIQUIDITY",
+    "model": "MODEL_VALUATION_AND_RETURNS",
+    "valuation": "MODEL_VALUATION_AND_RETURNS",
+    "returns": "MODEL_VALUATION_AND_RETURNS",
+    "value_creation": "VALUE_CREATION_AND_OWNERSHIP_READINESS",
+    "ownership": "VALUE_CREATION_AND_OWNERSHIP_READINESS",
+    # Router placeholders. These never named a workstream — they meant "nobody
+    # assigned one" — so they resolve to OTHER rather than to a guessed area.
+    "underwriting": UNASSIGNED_WORKSTREAM,
+    "deal-emergent": UNASSIGNED_WORKSTREAM,
+    "deal_emergent": UNASSIGNED_WORKSTREAM,
+}
+
+
+def normalize_workstream(value: Any, pack: dict[str, Any] | None = None) -> str:
+    """Map any surface form to a canonical workstream id, or OTHER.
+
+    Returns OTHER rather than raising: an unrecognised workstream is a claim or
+    question that still exists and must stay visible. Silently dropping it, or
+    guessing an area for it, both lose more than an honest "unplaced" does.
+    """
+    text = str(value or "").strip()
+    if not text:
+        return UNASSIGNED_WORKSTREAM
+
+    canonical = set(workstream_ids(pack or load_pack()))
+    if text in canonical:
+        return text
+    upper = text.upper().replace(" ", "_").replace("-", "_")
+    if upper in canonical:
+        return upper
+
+    alias = _WORKSTREAM_ALIASES.get(text.lower())
+    if alias and (alias in canonical or alias == UNASSIGNED_WORKSTREAM):
+        return alias
+    return UNASSIGNED_WORKSTREAM

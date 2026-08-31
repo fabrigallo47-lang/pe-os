@@ -1,0 +1,332 @@
+{
+  "schema_version": "kernel-object-coverage/1.0",
+  "status": "ENGINEERING_AUDIT_NON_BINDING",
+  "kernel": {
+    "name": "PANTA Universal Investment Kernel",
+    "version": "0.2.0",
+    "source": "vault/policy/archetypes/semantic_handoff_v0_2/01_universal_investment_kernel_v0_2.yaml",
+    "source_sha256": "43c09e0f5957d784679ed8f3f640290b4e141e8f914094d0550a66f95803eec0",
+    "object_type_count": 22
+  },
+  "frozen_contracts": {
+    "canonical_case_schema": "backend/dynamics/schemas/canonical_investment_case.schema.json",
+    "canonical_case_defs": [
+      "claim",
+      "position",
+      "model_node",
+      "position_edge",
+      "claim_position_edge",
+      "position_model_binding"
+    ],
+    "kernel_object_aliases": {
+      "Claim": ["claim"],
+      "CaseReading": ["position"],
+      "ModelNode": ["model_node"]
+    },
+    "non_kernel_graph_defs": [
+      "position_edge",
+      "claim_position_edge",
+      "position_model_binding"
+    ],
+    "dynamic_output_schema": "backend/dynamics/schemas/state_transition_engine_output.schema.json",
+    "dynamic_output_object_types": [
+      "ARTIFACT",
+      "CLAIM",
+      "COMPONENT",
+      "MODEL_NODE",
+      "POSITION",
+      "SUPPORT_ROUTE"
+    ],
+    "dynamic_mutation_object_types": [
+      "ARTIFACT",
+      "CLAIM",
+      "MODEL_NODE",
+      "POSITION",
+      "SUPPORT_ROUTE"
+    ]
+  },
+  "classification_policy": {
+    "ALREADY_COVERED": "A concrete durable, compiler, runtime, or projection representation exists. PARTIAL does not claim full kernel-v0.2 conformance.",
+    "RUNTIME_GAP": "The type must participate directly in deterministic state or frozen runtime relations, but has no first-class Dynamic representation.",
+    "SEMANTIC_ONLY": "The type belongs in provenance, compiler, ledger, retrieval, or UI projections and must not become a Dynamic mutation merely to match the kernel vocabulary.",
+    "implementation_status": ["COMPLETE", "PARTIAL", "ABSENT"],
+    "freeze_boundary": "This audit does not modify the frozen canonical case or Dynamic schemas. Every runtime gap requires an explicit versioned migration or adapter decision."
+  },
+  "summary": {
+    "ALREADY_COVERED": 14,
+    "RUNTIME_GAP": 3,
+    "SEMANTIC_ONLY": 5,
+    "complete": 6,
+    "partial": 14,
+    "absent": 2
+  },
+  "objects": [
+    {
+      "kernel_type": "Case",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "PARTIAL",
+      "current_representation": "case_id at the canonical graph root plus case-scoped Current/Candidate snapshots and deal metadata",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "backend/dynamics/schemas/canonical_investment_case.schema.json", "anchor": "\"case_id\""},
+        {"path": "app/v20_router.py", "anchor": "def _runtime_current_graph"}
+      ],
+      "next_step": "Keep Case as the aggregate root; align remaining kernel metadata only through a versioned case-profile contract."
+    },
+    {
+      "kernel_type": "Entity",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "PARTIAL",
+      "current_representation": "vault entity notes and EntityCandidate proposals; not a Dynamic node",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "vault/ontology/entity.md", "anchor": "# Schema: Entity"},
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/04_semantic_extraction_contract_v0_2.schema.json", "anchor": "EntityCandidate"}
+      ],
+      "next_step": "Retain in the semantic/provenance layer; add a versioned entity ledger only when identity admission is implemented."
+    },
+    {
+      "kernel_type": "Source",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "COMPLETE",
+      "current_representation": "validated, case-scoped SourceEnvelope plus durable intake and source projections",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "tools/source_envelope.py", "anchor": "def build_source_envelope"},
+        {"path": "app/v20_router.py", "anchor": "def _build_sources_from_claims"}
+      ],
+      "next_step": "Keep Source outside Dynamic traversal and preserve it through provenance references."
+    },
+    {
+      "kernel_type": "SourceVersion",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "COMPLETE",
+      "current_representation": "SourceEnvelope source_version_id and content hash identify immutable uploaded bytes",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "tools/source_envelope.py", "anchor": "source_version_id"},
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/05_canonical_case_event_v0_2.schema.json", "anchor": "source_version_ids"}
+      ],
+      "next_step": "Keep immutable and referenced by admitted assertions; no Dynamic mutation type is required."
+    },
+    {
+      "kernel_type": "Interaction",
+      "classification": "SEMANTIC_ONLY",
+      "implementation_status": "ABSENT",
+      "current_representation": "transcript and email parsers retain source locators but do not create a durable Interaction object",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "tools/extract_v2.py", "anchor": "def parse_transcript"},
+        {"path": "tools/extract_v2.py", "anchor": "def parse_email"}
+      ],
+      "next_step": "Introduce only in the semantic ledger when conversation-level identity is needed; never add it to Dynamic solely for vocabulary parity."
+    },
+    {
+      "kernel_type": "Utterance",
+      "classification": "SEMANTIC_ONLY",
+      "implementation_status": "ABSENT",
+      "current_representation": "cue/timecode locators exist, but speech acts and immutable utterance identity are not materialized",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "tools/source_capabilities.py", "anchor": "cue number and source timecode"},
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/04_semantic_extraction_contract_v0_2.md", "anchor": "utterance"}
+      ],
+      "next_step": "Keep as an optional semantic extraction output behind an Interaction ledger contract."
+    },
+    {
+      "kernel_type": "Claim",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "COMPLETE",
+      "current_representation": "canonical claims collection, admitted corpus, event assertions, and CLAIM Dynamic mutations",
+      "dynamic_mutation_type": "CLAIM",
+      "evidence": [
+        {"path": "backend/dynamics/schemas/canonical_investment_case.schema.json", "anchor": "\"claim\""},
+        {"path": "backend/dynamics/runtime/panta_transition_engine.py", "anchor": "\"CLAIM\""}
+      ],
+      "next_step": "No new object type; migrate shape only through a versioned contract."
+    },
+    {
+      "kernel_type": "Definition",
+      "classification": "SEMANTIC_ONLY",
+      "implementation_status": "PARTIAL",
+      "current_representation": "DefinitionCandidate is accepted by the compiler contract; production definitions remain policy/vault metadata",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/04_semantic_extraction_contract_v0_2.schema.json", "anchor": "DefinitionCandidate"},
+        {"path": "vault/ontology/claim.md", "anchor": "definition"}
+      ],
+      "next_step": "Version definitions upstream and pass only resolved identifiers/values into the Dynamic."
+    },
+    {
+      "kernel_type": "MetricObservation",
+      "classification": "SEMANTIC_ONLY",
+      "implementation_status": "PARTIAL",
+      "current_representation": "compiler proposal type plus quantitative Claim and ModelNode projections",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/04_semantic_extraction_contract_v0_2.schema.json", "anchor": "MetricObservation"},
+        {"path": "backend/dynamics/runtime/extraction_adapter.py", "anchor": "compile_extraction_to_runtime_inputs"}
+      ],
+      "next_step": "Keep the observation in the ledger/compiler boundary; map admitted values to existing Claim/ModelNode runtime inputs."
+    },
+    {
+      "kernel_type": "Question",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "COMPLETE",
+      "current_representation": "versioned archetype/Fund-Lens question registry and case projection",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "app/v20_router.py", "anchor": "def _ensure_question_registry"},
+        {"path": "tools/archetype_pack.py", "anchor": "def canonical_question_spine"}
+      ],
+      "next_step": "Questions remain governed semantic structure; only their bound runtime objects traverse the Dynamic."
+    },
+    {
+      "kernel_type": "StatedPosition",
+      "classification": "RUNTIME_GAP",
+      "implementation_status": "PARTIAL",
+      "current_representation": "compiler proposals can name StatedPosition, but POSITION currently means the computed CaseReading and has no attribution fields",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/04_semantic_extraction_contract_v0_2.schema.json", "anchor": "StatedPosition"},
+        {"path": "backend/dynamics/schemas/canonical_investment_case.schema.json", "anchor": "epistemic_status_at_ic"}
+      ],
+      "next_step": "Resolve PAN-74's versioning/name decision, then add a versioned adapter without reusing POSITION silently.",
+      "follow_up_issue": "PAN-74"
+    },
+    {
+      "kernel_type": "CaseReading",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "PARTIAL",
+      "current_representation": "legacy canonical position/case_positions is the computed reading projection, with a documented vocabulary alias",
+      "dynamic_mutation_type": "POSITION",
+      "evidence": [
+        {"path": "backend/dynamics/schemas/canonical_investment_case.schema.json", "anchor": "\"position\""},
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/10_legacy_to_v0_2_mapping.yaml", "anchor": "target: CaseReading"}
+      ],
+      "next_step": "PAN-75 must stop synthesizing readings by default; rename only through a versioned migration."
+    },
+    {
+      "kernel_type": "Assumption",
+      "classification": "RUNTIME_GAP",
+      "implementation_status": "PARTIAL",
+      "current_representation": "load-bearing assumptions are derived UI projections, not first-class versioned nodes in the execution graph",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "app/v20_router.py", "anchor": "load_bearing_assumptions"},
+        {"path": "vault/ontology/assumption.md", "anchor": "# Schema: Assumption"}
+      ],
+      "next_step": "Specify a versioned Assumption adapter and identity contract before allowing SUPPORTS/CONTRADICTS/CONDITIONS traversal.",
+      "follow_up_issue": "FOLLOW_UP_REQUIRED"
+    },
+    {
+      "kernel_type": "Unknown",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "PARTIAL",
+      "current_representation": "deterministic unknown/work-gap projection from uncovered questions, blockers, and coverage limits",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "app/v20_router.py", "anchor": "rooms[\"unknowns\"]"},
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/04_semantic_extraction_contract_v0_2.schema.json", "anchor": "\"Unknown\""}
+      ],
+      "next_step": "Keep derived until a durable lifecycle for owned closure work is explicitly required."
+    },
+    {
+      "kernel_type": "Risk",
+      "classification": "SEMANTIC_ONLY",
+      "implementation_status": "PARTIAL",
+      "current_representation": "Risk proposals exist at the compiler boundary; no direct Dynamic mutation is defined",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/04_semantic_extraction_contract_v0_2.schema.json", "anchor": "\"Risk\""},
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/10_legacy_to_v0_2_mapping.yaml", "anchor": "target: Risk"}
+      ],
+      "next_step": "Represent causal effects through existing runtime relations; keep the Risk label as a semantic projection until a distinct state transition is justified."
+    },
+    {
+      "kernel_type": "Condition",
+      "classification": "RUNTIME_GAP",
+      "implementation_status": "PARTIAL",
+      "current_representation": "CONDITIONS is a frozen runtime relation and blockers carry condition-like data, but Condition is not a registered object",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "backend/dynamics/runtime/extraction_adapter.py", "anchor": "\"CONDITIONS\""},
+        {"path": "backend/dynamics/schemas/state_transition_engine_output.schema.json", "anchor": "missing_assumption_or_condition"}
+      ],
+      "next_step": "Complete the relation orchestrator and define condition-specific propagation before registering the object.",
+      "follow_up_issue": "PAN-69"
+    },
+    {
+      "kernel_type": "ModelNode",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "COMPLETE",
+      "current_representation": "canonical model_nodes plus MODEL_NODE mutations and execution mappings",
+      "dynamic_mutation_type": "MODEL_NODE",
+      "evidence": [
+        {"path": "backend/dynamics/schemas/canonical_investment_case.schema.json", "anchor": "\"model_node\""},
+        {"path": "backend/dynamics/runtime/panta_transition_engine.py", "anchor": "\"MODEL_NODE\""}
+      ],
+      "next_step": "No new type; preserve formula/value provenance through existing execution mappings."
+    },
+    {
+      "kernel_type": "Decision",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "PARTIAL",
+      "current_representation": "human-only decision events, authority records, immutable IC records, and decision_status projections",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "backend/dynamics/runtime/panta_transition_engine.py", "anchor": "HUMAN_DECISION_EVENTS"},
+        {"path": "app/v20_router.py", "anchor": "authority_record_id"}
+      ],
+      "next_step": "Keep decisions ledger-first and human-only; consolidate shape only through a versioned authority contract."
+    },
+    {
+      "kernel_type": "WorkItem",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "PARTIAL",
+      "current_representation": "governed mission drafts, action proposals, ownership and next-best-work projections",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "app/v20_router.py", "anchor": "mission_id"},
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/10_legacy_to_v0_2_mapping.yaml", "anchor": "target: WorkItem / orchestration object"}
+      ],
+      "next_step": "Keep operational and outside the minimal Dynamic object registry."
+    },
+    {
+      "kernel_type": "ArtifactVersion",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "PARTIAL",
+      "current_representation": "ARTIFACT Dynamic mutations plus versioned proposal, execution-package, and artifact change-set records",
+      "dynamic_mutation_type": "ARTIFACT",
+      "evidence": [
+        {"path": "backend/dynamics/runtime/panta_transition_engine.py", "anchor": "\"ARTIFACT\""},
+        {"path": "app/v20_router.py", "anchor": "artifact_change_sets"}
+      ],
+      "next_step": "Retain the existing ARTIFACT runtime alias; formalize immutable version identity only in a versioned artifact-store contract."
+    },
+    {
+      "kernel_type": "Outcome",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "PARTIAL",
+      "current_representation": "outcome_status_at_ic and transition outcomes exist as projections, not as an independently mutable Dynamic object",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "backend/dynamics/schemas/canonical_investment_case.schema.json", "anchor": "outcome_status_at_ic"},
+        {"path": "vault/ontology/outcome.md", "anchor": "# Schema: Outcome"}
+      ],
+      "next_step": "Keep append-only outcome observations in the ledger and project status onto readings; do not add a mutation type without a separate lifecycle."
+    },
+    {
+      "kernel_type": "CoverageLimit",
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "COMPLETE",
+      "current_representation": "typed compiler coverage limits, Dynamic coverage_limits output, blockers, and Unknown projection",
+      "dynamic_mutation_type": null,
+      "evidence": [
+        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/04_semantic_extraction_contract_v0_2.schema.json", "anchor": "coverageLimit"},
+        {"path": "backend/dynamics/schemas/state_transition_engine_output.schema.json", "anchor": "\"coverage_limits\""}
+      ],
+      "next_step": "No new Dynamic mutation type; preserve it as ledger assertion plus deterministic projection/output."
+    }
+  ]
+}

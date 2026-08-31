@@ -2068,7 +2068,20 @@ def _runtime_execution_graph(case_id: str) -> Path:
         )
         try:
             payload = json.loads(formula_graphs_path.read_text(encoding="utf-8"))
-            graph = compile_workbook_formula_graphs(payload, case_id)
+            # PAN-67 activates only when PAN-65 has persisted its auditable
+            # resolution.  Without that artifact the PAN-55 cell-address graph
+            # remains the conservative fallback; no semantic binding is guessed
+            # merely because workbook formulas exist.
+            binding_resolution_path = pipeline_out / "model_binding_resolution.json"
+            graph = compile_workbook_formula_graphs(
+                payload,
+                case_id,
+                binding_resolution=(
+                    binding_resolution_path
+                    if binding_resolution_path.exists()
+                    else None
+                ),
+            )
         except WorkbookModelCompilerError as exc:
             # Same failure shape admit_evidence already knows how to turn
             # into a declared RUNTIME_MAPPING_REQUIRED Human Stop -- a case

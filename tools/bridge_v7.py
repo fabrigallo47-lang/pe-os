@@ -1038,7 +1038,16 @@ def _normalize_execution_mapping(execution: dict,
             f for f in execution.get("formulas", [])
             if f.get("evaluation_type") not in {"WORKBOOK_READ", "WORKBOOK_FUNCTION_CALL"}
         ],
-        "rule_switches": execution.get("rule_switches", []),
+        # A mechanical workbook graph may carry an explicit
+        # NO_INSTITUTIONAL_OVERRIDES_DECLARED marker so V7 admission can tell
+        # the difference between "not inspected" and "none declared".  It is
+        # provenance, not an executable two-branch rule, and therefore must
+        # not be emitted into the state-transition schema's rule_switches[].
+        "rule_switches": [
+            rule for rule in execution.get("rule_switches", [])
+            if rule.get("declaration_type")
+            != "NO_INSTITUTIONAL_OVERRIDES_DECLARED"
+        ],
         "cyclic_component_solver_configs": execution.get("cyclic_component_solver_configs", []),
         "inverse_solver_configs": execution.get("inverse_solver_configs", []),
         "model_controls": controls,

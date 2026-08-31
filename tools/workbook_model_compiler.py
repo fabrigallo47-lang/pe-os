@@ -29,6 +29,8 @@ def compile_workbook_formula_graphs(
     source: dict[str, Any] | str | Path,
     case_id: str,
     archetype_id: str = "buyout-v1",
+    *,
+    binding_resolution: dict[str, Any] | list[dict[str, Any]] | str | Path | None = None,
 ) -> dict[str, Any]:
     """Return a V7 execution graph from source-graph-1 workbook records.
 
@@ -37,6 +39,13 @@ def compile_workbook_formula_graphs(
     compiler never maps workbook cells to institutional concepts.
     """
     payload = _load_source(source)
+    if binding_resolution is not None:
+        return _compile_resolved_workbook_formula_graph(
+            payload,
+            binding_resolution,
+            case_id=case_id,
+            archetype_id=archetype_id,
+        )
     workbooks = _workbooks(payload)
     if not workbooks:
         raise WorkbookModelCompilerError("HUMAN_STOP: no captured workbook graph was supplied")
@@ -167,6 +176,109 @@ def compile_workbook_formula_graphs(
             "Workbook formulas are mechanically represented; semantic mapping, "
             "institutional rules, and executable solver configuration are not inferred."
         ),
+    }
+    return graph
+
+
+def _compile_resolved_workbook_formula_graph(
+    source: dict[str, Any],
+    binding_resolution: dict[str, Any] | list[dict[str, Any]] | str | Path,
+    *,
+    case_id: str,
+    archetype_id: str,
+) -> dict[str, Any]:
+    """Return a V7 graph whose executable slice is populated by PAN-67.
+
+    The legacy path above remains the honest fallback when no semantic binding
+    artifact exists.  Once PAN-65 has resolved identities, raw Excel text must
+    no longer be shipped as ``WORKBOOK_FORMULA``: PAN-66/PAN-67 either compile
+    it to the bounded runtime grammar or disclose a Human Stop.
+    """
+
+    from tools.execution_mapping_compiler import populate_execution_mapping
+
+    try:
+        mapping = populate_execution_mapping(source, binding_resolution)
+    except (OSError, TypeError, ValueError) as exc:
+        raise WorkbookModelCompilerError(
+            f"HUMAN_STOP: PAN-67 could not compose the resolved workbook mapping: {exc}"
+        ) from exc
+    if not mapping["formulas"] or not mapping["directed_model_edges"]:
+        reasons = sorted(
+            {
+                str(item.get("reason_code") or "UNSPECIFIED")
+                for item in mapping.get("coverage_limits", [])
+                if isinstance(item, dict)
+            }
+        )
+        detail = ", ".join(reasons) or "NO_EXECUTABLE_FORMULAS"
+        raise WorkbookModelCompilerError(
+            "HUMAN_STOP: PAN-65/PAN-66 produced no executable formula dependency "
+            f"for this workbook ({detail})"
+        )
+
+    reverse_forms = {
+        "DIRECT_INPUT": "INPUT",
+        "DIRECT_FORMULA": "DERIVED",
+        "NUMERICAL_CYCLE": "SCC_MEMBER",
+    }
+    model_nodes = {
+        str(node["model_node_id"]): {
+            "id": str(node["model_node_id"]),
+            "label": node.get("label"),
+            "computational_form": reverse_forms.get(
+                str(node.get("computational_form") or ""),
+                str(node.get("computational_form") or "MONITOR_ONLY"),
+            ),
+            "unit": node.get("unit"),
+            "period": node.get("period"),
+            "perimeter": node.get("perimeter"),
+            "epistemic_class": "derived" if node.get("formula_id") else "observed",
+            "value_current": node.get("initial_value"),
+            "workbook_ref": node.get("workbook_ref"),
+            "directed_deps": list(node.get("directed_deps") or []),
+            "formula_id": node.get("formula_id"),
+            "coverage_limits": [],
+            "binding_id": node.get("binding_id"),
+            "concept_id": node.get("concept_id"),
+        }
+        for node in mapping["model_nodes"]
+    }
+    case_config = {
+        "archetype_id": archetype_id,
+        "name": case_id,
+        "company": case_id,
+        "model_nodes": model_nodes,
+        "formulas": mapping["formulas"],
+        "directed_model_edges": mapping["directed_model_edges"],
+        "rule_switches": mapping["rule_switches"] or [_no_overrides_declaration()],
+        "model_controls": [_coverage_control(sorted(model_nodes))],
+    }
+    graph = instantiate(case_id, case_config)
+    graph["compiler"] = {
+        "source": "tools/workbook_model_compiler.py",
+        "archetype_id": archetype_id,
+        "mode": "PAN67_RESOLVED_FORMULA_COMPILATION",
+        "formula_compilation": mapping["formula_compilation"],
+    }
+    graph["cyclic_component_models"] = []
+    graph["cyclic_component_solver_configs"] = mapping[
+        "cyclic_component_solver_configs"
+    ]
+    graph["inverse_solver_configs"] = mapping["inverse_solver_configs"]
+    graph["inverse_solver_models"] = []
+    graph["coverage_limits"] = mapping["coverage_limits"]
+    graph["admission_manifest"] = {
+        "status": (
+            "HUMAN_STOP"
+            if mapping["coverage_limits"]
+            else "RESOLVED_FORMULA_COMPILE_COMPLETE"
+        ),
+        "reason": (
+            "PAN-65 identities and PAN-66 formulas were composed by PAN-67; "
+            "all unresolved bindings or formula constructs remain declared."
+        ),
+        "coverage_limits": mapping["coverage_limits"],
     }
     return graph
 

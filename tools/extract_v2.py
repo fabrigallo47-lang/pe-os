@@ -314,6 +314,25 @@ TOPIC_ENUM = [
     "Valuation & Returns", "Operational", "Legal & Compliance", "Other",
 ]
 
+# ── Identity dimensions (bounded) ─────────────────────────────────────────────
+# `perimeter` stays prose because a human reads it. These carry the machine
+# identity instead: an exact-match table cannot normalize unbounded language, so
+# the dimensions that decide whether two claims are comparable are asked for
+# separately and constrained here. See tools/object_identity.py.
+BASIS_ENUM = [
+    "SellerView", "QoEView", "FirmView", "CovenantView", "ReportedView", "unspecified",
+]
+SCOPE_ENUM = ["consolidated", "standalone", "customer", "segment", "unspecified"]
+SCENARIO_ENUM = ["base", "management", "seller", "upside", "downside", "unspecified"]
+
+# Canonical period grammar. Anything outside it is "none" — an honest gap beats
+# an extraction timestamp masquerading as a period (the failure that put
+# "as of <ingest date>" on 227 vault claims).
+PERIOD_CANONICAL_PATTERN = (
+    r"^(FY\d{4}[AE]?|LTM|ExitLTM|Opening|EntryToExit|CrossPeriod"
+    r"|\d{4}-\d{2}-\d{2}|none)$"
+)
+
 # Known definition IDs — if LLM flags a claim as definition-linked, map to DEF-xxx.
 # These align with the definitions[] array in the canonical benchmark.
 DEFINITION_ENUM: list[str | None] = [
@@ -350,6 +369,7 @@ CLAIM_TOOL = {
                     "type": "object",
                     "required": [
                         "metric", "value", "unit", "period", "perimeter",
+                        "entity", "period_canonical", "scope", "basis", "scenario",
                         "epistemic_class", "direction", "topic",
                         "statement", "locator_hint",
                     ],
@@ -392,6 +412,62 @@ CLAIM_TOOL = {
                                 "'Alderstone customer revenue measured by individual billing account', "
                                 "'Alderstone accounts-receivable ledger'. "
                                 "Use 'unknown' only if scope is truly unspecified."
+                            ),
+                        },
+                        "entity": {
+                            "type": "string",
+                            "minLength": 1,
+                            "description": (
+                                "The bare proper name of the company or counterparty this claim "
+                                "measures — nothing else. 'Keystone', 'Riverton', 'Apex'. "
+                                "NOT a sentence, NOT the metric, NOT the perimeter. If the text "
+                                "says 'the Company' or 'the Target', resolve it to the deal's "
+                                "proper name when the document makes it unambiguous, otherwise "
+                                "write 'unspecified'."
+                            ),
+                        },
+                        "period_canonical": {
+                            "type": "string",
+                            "pattern": PERIOD_CANONICAL_PATTERN,
+                            "description": (
+                                "The same period as the `period` field, reduced to one canonical "
+                                "token: FY2025A, FY2025E, FY2024A, LTM, ExitLTM, Opening, "
+                                "EntryToExit, CrossPeriod, an ISO date (2026-03-31), or exactly "
+                                "'none'. Write 'none' when the source states no period — never "
+                                "substitute today's date, and never guess a fiscal year the "
+                                "document does not give."
+                            ),
+                        },
+                        "scope": {
+                            "type": "string",
+                            "enum": SCOPE_ENUM,
+                            "description": (
+                                "Economic boundary: consolidated=whole group; standalone=one "
+                                "entity; customer=one customer/account; segment=a division."
+                            ),
+                        },
+                        "basis": {
+                            "type": "string",
+                            "enum": BASIS_ENUM,
+                            "description": (
+                                "Which party's adjustments the figure is stated under. This is "
+                                "what makes seller EBITDA and QoE EBITDA two legitimate numbers "
+                                "rather than a contradiction, so do not guess: "
+                                "SellerView=seller/management adjusted; QoEView=independent "
+                                "quality-of-earnings; FirmView=our own underwriting basis; "
+                                "CovenantView=credit-agreement definition; ReportedView=statutory "
+                                "or unadjusted; unspecified=the source does not say."
+                            ),
+                        },
+                        "scenario": {
+                            "type": "string",
+                            "enum": SCENARIO_ENUM,
+                            "description": (
+                                "Which case the figure belongs to. Base/upside/downside of the "
+                                "same metric are NOT contradictions, so label them: "
+                                "management=management's own forecast; seller=seller case; "
+                                "base=our base case or an actual historical figure; "
+                                "unspecified=the source does not distinguish cases."
                             ),
                         },
                         "epistemic_class": {
@@ -774,6 +850,13 @@ class RawClaim:
     known_at: str
     derivation: str | None = None
     author: str | None = None
+    # Identity dimensions. Defaulted so a cached raw_claims run predating these
+    # fields still loads — it simply scores as unresolvable until re-extracted.
+    entity: str = "unspecified"
+    period_canonical: str = "none"
+    scope: str = "unspecified"
+    basis: str = "unspecified"
+    scenario: str = "unspecified"
 
 
 def _is_fatal_provider_error(exc: Exception) -> bool:
@@ -906,6 +989,11 @@ def annotate_chunk(
                     known_at=src["known_at"],
                     derivation=c.get("derivation"),
                     author=c.get("author"),
+                    entity=c.get("entity") or "unspecified",
+                    period_canonical=c.get("period_canonical") or "none",
+                    scope=c.get("scope") or "unspecified",
+                    basis=c.get("basis") or "unspecified",
+                    scenario=c.get("scenario") or "unspecified",
                 ))
     return raw_claims
 
@@ -972,6 +1060,12 @@ class CanonicalClaim:
     topic: str
     derivation: str | None
     author: str | None
+    # Identity dimensions — see tools/object_identity.py for how they key a claim.
+    entity: str = "unspecified"
+    period_canonical: str = "none"
+    scope: str = "unspecified"
+    basis: str = "unspecified"
+    scenario: str = "unspecified"
     validation_errors: list[str] = field(default_factory=list)
 
 
@@ -1013,6 +1107,11 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         topic=raw.topic,
         derivation=raw.derivation,
         author=raw.author,
+        entity=raw.entity or "unspecified",
+        period_canonical=raw.period_canonical or "none",
+        scope=raw.scope or "unspecified",
+        basis=raw.basis or "unspecified",
+        scenario=raw.scenario or "unspecified",
         validation_errors=errors,
     )
 
@@ -1120,6 +1219,11 @@ def _to_e3_manifest(graph: SubGraph, deal: str, manifest: str,
                     "topic": c.topic,
                     "derivation": c.derivation,
                     "author": c.author,
+                    "entity": c.entity,
+                    "period_canonical": c.period_canonical,
+                    "scope": c.scope,
+                    "basis": c.basis,
+                    "scenario": c.scenario,
                 }
                 for c in graph.claims
             ],

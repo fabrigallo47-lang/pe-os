@@ -33,6 +33,7 @@ class OperativeClaimsTests(unittest.TestCase):
         ))
         group = report["groups"][0]
         self.assertEqual(group["operative_claim_id"], "CL-ATTESTED")
+        self.assertEqual(group["superseded_ids"], ["CL-ASSERTED"])
         self.assertEqual(group["rule_applied"], "EPISTEMIC_TIER")
 
     def test_recency_breaks_same_epistemic_tier(self):

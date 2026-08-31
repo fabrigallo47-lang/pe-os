@@ -294,6 +294,12 @@ def compute_operative_claims(graph: Mapping[str, Any], *, as_of: str | None = No
             "explanation": explanation,
         })
 
+    # Keep the kernel's explicit name and expose the shorter R14 contract name.
+    # Both are derived from the same list, so consumers cannot observe divergent
+    # supersession state while older integrations migrate.
+    for group in groups:
+        group["superseded_ids"] = list(group["superseded_claim_ids"])
+
     return {
         "groups": groups,
         "unresolvable": sorted(unresolvable),

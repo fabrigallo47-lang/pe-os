@@ -65,18 +65,6 @@ NEEDS_API_KEY: dict[str, str] = {
         "browser on localhost:8765. Hangs rather than fails when run headless.",
 }
 
-# Tests whose result depends on tools/cell_engine.py, a private module excluded
-# from the public repository by .gitignore. They pass in CI, where it is absent,
-# and fail on a developer machine that has it. Not quarantined — CI is the
-# environment they were written for — but recorded so the local failure is not
-# mistaken for a regression.
-ENVIRONMENT_DEPENDENT: dict[str, str] = {
-    "backend/dynamics/tests/test_pan65_model_resolver.py":
-        "asserts reachability_status == NOT_AVAILABLE, true only without "
-        "tools/cell_engine.py. Green in CI, red locally if you have that module.",
-}
-
-
 def discover() -> list[Path]:
     found: list[Path] = []
     for directory in (ROOT / "tools", DYNAMICS / "tests"):
@@ -131,16 +119,11 @@ def main() -> int:
     if args.list:
         print(f"gate ({len(gating)}):")
         for t in gating:
-            mark = "  ~" if rel[t] in ENVIRONMENT_DEPENDENT else "   "
-            print(f"{mark} {rel[t]}")
+            print(f"    {rel[t]}")
         print(f"\nquarantined ({len(quarantined)}):")
         for t in quarantined:
             why = KNOWN_FAILING.get(rel[t]) or NEEDS_API_KEY.get(rel[t], "")
             print(f"    {rel[t]}\n        {why}")
-        if ENVIRONMENT_DEPENDENT:
-            print("\n~ environment-dependent (green in CI, may be red locally):")
-            for path, why in ENVIRONMENT_DEPENDENT.items():
-                print(f"    {path}\n        {why}")
         return 0
 
     selected = quarantined if args.quarantine else gating + (quarantined if args.all else [])

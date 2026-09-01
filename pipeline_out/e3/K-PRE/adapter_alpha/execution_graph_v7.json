@@ -2983,7 +2983,7 @@
   ],
   "admission_manifest": {
     "manifest_id": "KS-V7-20260826",
-    "extraction_hash": "sha256:3abf3ce7a034abd298e6d377078a19b92049dd4a6de95269c7e0b625c8105d51",
+    "extraction_hash": "sha256:7bc2e70e6ec1d9c02f453f02a5010f6b05200631de78aae4eac81c51813093f5",
     "compiled_at": "2026-08-26T15:12:39Z",
     "compiler_source_hash": "883047dbf87a8d35df3fc48ce4fce2d8fa9228257bca0ec6b8912e8f88b4f1cf",
     "deal": "Project Keystone / Alderstone",

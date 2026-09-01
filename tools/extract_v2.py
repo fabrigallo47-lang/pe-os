@@ -1435,9 +1435,15 @@ class RawClaim:
 def _is_fatal_provider_error(exc: Exception) -> bool:
     """Return True when retrying more chunks with the same key cannot succeed."""
     status_code = getattr(exc, "status_code", None)
+    message = str(exc).lower()
+    # OpenRouter uses HTTP 402 both for an exhausted account and for its
+    # temporary in-flight spending cap.  The latter explicitly asks callers to
+    # wait for outstanding requests to settle, so treating every 402 as fatal
+    # throws away an otherwise resumable extraction batch.
+    if status_code == 402 and "in_flight_budget_exhausted" in message:
+        return False
     if status_code in {401, 402, 403}:
         return True
-    message = str(exc).lower()
     return any(
         marker in message
         for marker in (
@@ -1452,7 +1458,12 @@ def _is_fatal_provider_error(exc: Exception) -> bool:
 def _provider_retry_delay(exc: Exception, attempt: int) -> float | None:
     """Return a bounded retry delay for transient provider failures."""
     status_code = getattr(exc, "status_code", None)
-    if status_code not in {408, 409, 429, 500, 502, 503, 504, 529}:
+    message = str(exc)
+    transient_in_flight_cap = (
+        status_code == 402
+        and "in_flight_budget_exhausted" in message.lower()
+    )
+    if status_code not in {408, 409, 429, 500, 502, 503, 504, 529} and not transient_in_flight_cap:
         return None
 
     response = getattr(exc, "response", None)
@@ -1461,9 +1472,15 @@ def _provider_retry_delay(exc: Exception, attempt: int) -> float | None:
     if raw_delay is None:
         match = re.search(
             r"retry_after_seconds(?:_raw)?['\"\s:]+([0-9]+(?:\.[0-9]+)?)",
-            str(exc),
+            message,
             re.IGNORECASE,
         )
+        if match is None:
+            match = re.search(
+                r"retry-after['\"\s:]+['\"]?([0-9]+(?:\.[0-9]+)?)",
+                message,
+                re.IGNORECASE,
+            )
         raw_delay = match.group(1) if match else None
     try:
         delay = float(raw_delay) if raw_delay is not None else 2 ** attempt
@@ -1704,7 +1721,11 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         "source_version_id": raw.source_version_id,
         "locator": raw.locator,
         "epistemic_class": ec,
-        "value": value,
+        # Hash the value exactly as E3 will persist it. Non-numeric bounded or
+        # textual quantities (for example "30-60 days") keep ``value_raw``;
+        # hashing None here made their emitted IDs impossible to reproduce from
+        # e3_claims.json.
+        "value": value if value is not None else raw.value,
         "perimeter": perimeter,
     })
     return CanonicalClaim(

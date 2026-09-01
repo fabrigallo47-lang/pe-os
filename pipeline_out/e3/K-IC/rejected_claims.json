@@ -1,502 +1,651 @@
 [
   {
-    "claim_id": "ks-8077957f960b",
-    "metric": "Recurring Revenue",
+    "claim_id": "claim:63ef343ed2273d62",
+    "metric": "Market Position",
     "errors": [
-      "unrecognized period: 'FY2025E'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Scheduled or recurring programs revenue is $28.1m or 38% of total FY2025E revenu"
+    "statement": "Keystone is a scaled regional platform in a fragmented outsourced technical-serv"
   },
   {
-    "claim_id": "ks-74a476fa57c8",
-    "metric": "Revenue",
+    "claim_id": "claim:3046e0cb3d866386",
+    "metric": "Customer Retention",
     "errors": [
-      "unrecognized period: 'FY2025E'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Total FY2025E revenue is $74.0m, comprised of $28.1m recurring programs, $25.2m "
+    "statement": "Keystone has long-standing customer relationships and high repeat activity in co"
   },
   {
-    "claim_id": "ks-f8be3e3a2b82",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Management forecasts FY2025E revenue of $74.0m for Alderstone."
-  },
-  {
-    "claim_id": "ks-526603fe6943",
-    "metric": "EBITDA",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Seller-adjusted EBITDA for FY2025E is forecasted at $12.7m, representing a 17.2%"
-  },
-  {
-    "claim_id": "ks-4478171710cf",
-    "metric": "EBITDA Margin",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "FY2025E seller-adjusted EBITDA margin is 17.2%."
-  },
-  {
-    "claim_id": "ks-da333f571e89",
-    "metric": "Recurring Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "72% of revenue derives from recurring or repeat activity (38% scheduled/programm"
-  },
-  {
-    "claim_id": "ks-4d5906f485e1",
-    "metric": "Customer Concentration",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "The largest billing account represents 7.6% of revenue; certain billing accounts"
-  },
-  {
-    "claim_id": "ks-f8be3e3a2b82",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Management expects FY2025E revenue of $74.0 million for Alderstone Compliance & "
-  },
-  {
-    "claim_id": "ks-526603fe6943",
-    "metric": "EBITDA",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Management expects seller-adjusted EBITDA of $12.7 million for FY2025E."
-  },
-  {
-    "claim_id": "ks-4478171710cf",
-    "metric": "EBITDA Margin",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Seller-adjusted EBITDA margin is expected to be 17.2% in FY2025E."
-  },
-  {
-    "claim_id": "ks-08a33bedd93d",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Environmental, health and safety compliance service line is projected to generat"
-  },
-  {
-    "claim_id": "ks-851b84df7258",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Industrial hygiene and workplace testing service line is projected to generate $"
-  },
-  {
-    "claim_id": "ks-660db1aa651a",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Field inspection and asset integrity service line is projected to generate $14.1"
-  },
-  {
-    "claim_id": "ks-74a476fa57c8",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Total projected revenue across all service lines is $74.0m in FY2025E."
-  },
-  {
-    "claim_id": "ks-a3d6f1989246",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Industrial manufacturing end market revenue is projected at $22.9m in FY2025E, r"
-  },
-  {
-    "claim_id": "ks-13df5b4ff64c",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Infrastructure and utilities end market revenue is projected at $17.8m in FY2025"
-  },
-  {
-    "claim_id": "ks-563d89f62366",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Municipal and public sector end market revenue is projected at $13.3m in FY2025E"
-  },
-  {
-    "claim_id": "ks-74a476fa57c8",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Total revenue is projected at $74.0m in FY2025E across all end markets."
-  },
-  {
-    "claim_id": "ks-feede7d2e448",
-    "metric": "Customer Concentration",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "The largest billing account represents 7.6% of revenue in FY2025E, measured by i"
-  },
-  {
-    "claim_id": "ks-7025130731fe",
-    "metric": "Customer Concentration",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "The top five billing accounts represent 21.4% of revenue in FY2025E, measured by"
-  },
-  {
-    "claim_id": "ks-a073cbcd71a0",
-    "metric": "Customer Concentration",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "The top ten billing accounts represent 31.5% of revenue in FY2025E, measured by "
-  },
-  {
-    "claim_id": "ks-2721189a50de",
-    "metric": "EBITDA",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Reported EBITDA for FY2025E is $10.2 million."
-  },
-  {
-    "claim_id": "ks-57cffbec2406",
-    "metric": "EBITDA Adjustment",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Management identified $2.5 million in total adjustments to reported EBITDA compr"
-  },
-  {
-    "claim_id": "ks-5cd8221739b2",
-    "metric": "EBITDA",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Seller-adjusted EBITDA for FY2025E is $12.7 million, representing reported EBITD"
-  },
-  {
-    "claim_id": "ks-74a476fa57c8",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "Management forecasts FY2025E revenue of $74.0 million."
-  },
-  {
-    "claim_id": "ks-90470008efc5",
+    "claim_id": "claim:1a1d19a620d28551",
     "metric": "Revenue Growth",
     "errors": [
-      "unrecognized period: 'FY2025E'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Management forecasts FY2025E revenue growth of 13.1%."
+    "statement": "Keystone has attractive historical growth supported by pricing, customer expansi"
   },
   {
-    "claim_id": "ks-c42d68d7ef0c",
-    "metric": "EBITDA",
+    "claim_id": "claim:810eb3a668b4b473",
+    "metric": "Seller Rollover",
     "errors": [
-      "unrecognized period: 'FY2025E'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Management forecasts FY2025E seller-adjusted EBITDA of $12.7 million."
+    "statement": "Founder and senior management are expected to retain a meaningful equity interes"
   },
   {
-    "claim_id": "ks-f282d3ad9499",
-    "metric": "EBITDA Margin",
+    "claim_id": "claim:a166b3d6ee36fb3e",
+    "metric": "Customer Contract Terms",
     "errors": [
-      "unrecognized period: 'FY2025E'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Management forecasts FY2025E EBITDA margin of 17.2%."
+    "statement": "Customer relationships are generally governed by master agreements and site-leve"
   },
   {
-    "claim_id": "ks-5d1b1a514d92",
-    "metric": "Revenue",
+    "claim_id": "claim:0e8b7ab4022fc518",
+    "metric": "Systems Integration Risk",
     "errors": [
-      "unrecognized period: 'FY2023A'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Alderstone revenue for FY2023A was $56.8 million."
+    "statement": "Acquired branches continue to operate on partially different systems and process"
   },
   {
-    "claim_id": "ks-bc0ae613d9bd",
-    "metric": "Revenue",
+    "claim_id": "claim:bf723a4738867546",
+    "metric": "Key Person Risk",
     "errors": [
-      "unrecognized period: 'FY2024A'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Alderstone revenue for FY2024A was $65.4 million."
+    "statement": "The Company depends on qualified technical personnel and local customer relation"
   },
   {
-    "claim_id": "ks-036ce04e242e",
-    "metric": "Revenue Growth",
+    "claim_id": "claim:39efe22a72263a17",
+    "metric": "Contract Terms",
     "errors": [
-      "unrecognized period: 'FY2024A'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Alderstone revenue growth in FY2024A was 15.1%."
+    "statement": "Keystone customer ledger shows contract type mix: 2 Project contracts (SM-029, S"
   },
   {
-    "claim_id": "ks-db28f1a5c55f",
-    "metric": "EBITDA",
+    "claim_id": "claim:b3f5fc1ddac850a8",
+    "metric": "Customer Retention",
     "errors": [
-      "unrecognized period: 'FY2023A'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Reported EBITDA was $7.5m in FY2023A."
+    "statement": "Keystone customer ledger shows contract start dates ranging from 2016-09-01 (Pra"
   },
   {
-    "claim_id": "ks-3b85d21c93f3",
-    "metric": "EBITDA",
-    "errors": [
-      "unrecognized period: 'FY2024A'"
-    ],
-    "statement": "Reported EBITDA was $8.8m in FY2024A."
-  },
-  {
-    "claim_id": "ks-e6f1d89cec46",
-    "metric": "EBITDA Margin",
-    "errors": [
-      "unrecognized period: 'FY2023A'"
-    ],
-    "statement": "EBITDA margin was 13.2% in FY2023A."
-  },
-  {
-    "claim_id": "ks-2ef96f58c9bf",
-    "metric": "Accounts Receivable",
-    "errors": [
-      "unknown metric: 'Accounts Receivable'"
-    ],
-    "statement": "Total accounts receivable as of December 31, 2025 is $0.29 million across two in"
-  },
-  {
-    "claim_id": "ks-74a476fa57c8",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: 'FY2025E'"
-    ],
-    "statement": "FY2025E revenue is estimated at $74.0m."
-  },
-  {
-    "claim_id": "ks-f2130217b6d9",
+    "claim_id": "claim:c9f9c077ed6a37af",
     "metric": "Customer Concentration",
     "errors": [
-      "invalid epistemic_class: 'context'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Diligence question identifies concern that customer concentration may be underst"
+    "statement": "Riverton Industrial Group operates six active projects across EHS Compliance, Fi"
   },
   {
-    "claim_id": "ks-cb75ae5cddd5",
+    "claim_id": "claim:8a1bec558c1c24ff",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Riverton Industrial Group Permitting & Advisory project contract terms are 30-60"
+  },
+  {
+    "claim_id": "claim:7a7f1a282e04e234",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "MedCore Health Industrial Hygiene recurring project MED-02-P1 contract terms are"
+  },
+  {
+    "claim_id": "claim:e0de76a0d7d44996",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "MedCore Health Industrial Hygiene recurring project MED-02-P2 contract terms are"
+  },
+  {
+    "claim_id": "claim:2ff0e6de38ed1efd",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Apex Manufacturing Field Inspection repeat project APX-02-P1 contract terms are "
+  },
+  {
+    "claim_id": "claim:6506df919559dd29",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Apex Manufacturing Field Inspection repeat project APX-02-P2 contract terms are "
+  },
+  {
+    "claim_id": "claim:de095fdfd5623bb6",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Harbor Utilities Field Inspection recurring project HBR-01-P1 contract terms are"
+  },
+  {
+    "claim_id": "claim:b66829e1032b95b5",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Harbor Utilities Field Inspection project (HBR-01-P2) has a payment term of 30-6"
+  },
+  {
+    "claim_id": "claim:a42ea22fe1cf92f2",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Harbor Utilities EHS Compliance project (HBR-02-P1) has a payment term of 30-60 "
+  },
+  {
+    "claim_id": "claim:039de263c02f23d6",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Harbor Utilities EHS Compliance project (HBR-02-P2) has a payment term of 30-60 "
+  },
+  {
+    "claim_id": "claim:940b19335454ee9b",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "CityWorks Municipal Group Permitting & Advisory project (CTY-01-P1) has a paymen"
+  },
+  {
+    "claim_id": "claim:0080dbecb3ea9197",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "CityWorks Municipal Group Permitting & Advisory project (CTY-01-P2) has a paymen"
+  },
+  {
+    "claim_id": "claim:005a0c14964b5abb",
+    "metric": "Customer Concentration",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Keystone's project ledger contains multiple customer accounts across service lin"
+  },
+  {
+    "claim_id": "claim:a311d1a6baf27099",
+    "metric": "Customer Contract Terms",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Keystone project and service contracts across multiple service lines (Permitting"
+  },
+  {
+    "claim_id": "claim:a2732b3d7479468c",
+    "metric": "Market Position",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Keystone operates across three service lines: Permitting & Advisory, EHS Complia"
+  },
+  {
+    "claim_id": "claim:6af6cc6d55b417fb",
     "metric": "Recurring Revenue",
     "errors": [
-      "invalid epistemic_class: 'context'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Seller asserts that 72% of revenue is recurring or repeat work; diligence questi"
+    "statement": "SM-030-P1 (Redwood Utilities 2, Industrial Hygiene) is classified as Recurring r"
   },
   {
-    "claim_id": "ks-d97e2edbf8e5",
+    "claim_id": "claim:65e331e5061b996c",
+    "metric": "Recurring Revenue",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "SM-030-P2 (Redwood Utilities 2, Industrial Hygiene) is classified as Recurring r"
+  },
+  {
+    "claim_id": "claim:36884cab921cf09b",
+    "metric": "Recurring Revenue",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "SM-031-P1 (Silverline Medical 2, Field Inspection) is classified as Repeat reven"
+  },
+  {
+    "claim_id": "claim:9b1c2d541ce57227",
+    "metric": "Recurring Revenue",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "SM-032-P1 (Prairie Public Works 2, Permitting & Advisory) is classified as Proje"
+  },
+  {
+    "claim_id": "claim:ecee7d717477f709",
+    "metric": "Recurring Revenue",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "SM-033-P1 (Atlas Manufacturing 2, EHS Compliance) is classified as Recurring rev"
+  },
+  {
+    "claim_id": "claim:7cec5a220b0e5773",
+    "metric": "Team Tenure",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Keystone employee roster shows mixed tenure: three employees hired in 2022\u20132024 "
+  },
+  {
+    "claim_id": "claim:199c384efc826ce2",
+    "metric": "Revenue Quality",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Keystone's work-in-progress projects show mixed approval status: 5 projects appr"
+  },
+  {
+    "claim_id": "claim:94ef39e24ac00b12",
+    "metric": "Market Position",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Alderstone operates in regulated, safety-critical service categories."
+  },
+  {
+    "claim_id": "claim:79a9b79487e0b261",
+    "metric": "Revenue Quality",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Revenue is diversified by service line and end market."
+  },
+  {
+    "claim_id": "claim:18da6a96858cbf94",
+    "metric": "Leverage",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Entry debt is moderate relative to firm-underwritten EBITDA."
+  },
+  {
+    "claim_id": "claim:38eb4d20db316b8f",
+    "metric": "Systems Integration Risk",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Acquired branches still use partially different systems and processes."
+  },
+  {
+    "claim_id": "claim:3408d0c11cef1118",
     "metric": "EBITDA Adjustment",
     "errors": [
-      "invalid epistemic_class: 'context'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Diligence question identifies open issue regarding which EBITDA adjustments are "
+    "statement": "The seller-adjusted EBITDA figure includes run-rate pricing and utilization init"
   },
   {
-    "claim_id": "ks-46f3abe29768",
-    "metric": "Financial Performance",
-    "errors": [
-      "unknown metric: 'Financial Performance'",
-      "unrecognized period: 'FY2023A'",
-      "invalid epistemic_class: 'context'"
-    ],
-    "statement": "The Firm model includes FY2023A historical results as part of its coverage perio"
-  },
-  {
-    "claim_id": "ks-02f91a96d0aa",
-    "metric": "Financial Performance",
-    "errors": [
-      "unknown metric: 'Financial Performance'",
-      "invalid epistemic_class: 'context'"
-    ],
-    "statement": "The Firm model includes FY2025A historical results as the most recent completed "
-  },
-  {
-    "claim_id": "ks-a0bc50ca5fd5",
-    "metric": "Financial Performance",
-    "errors": [
-      "unknown metric: 'Financial Performance'"
-    ],
-    "statement": "The Firm model projects an April-December 2026 ownership stub period with quarte"
-  },
-  {
-    "claim_id": "ks-1ac659154c92",
-    "metric": "Revenue Synergies",
-    "errors": [
-      "unknown metric: 'Revenue Synergies'"
-    ],
-    "statement": "No unidentified revenue synergies are included in the firm model."
-  },
-  {
-    "claim_id": "ks-32ae1749034b",
-    "metric": "Net Income",
-    "errors": [
-      "unrecognized period: 'FY2023A'"
-    ],
-    "statement": "Net income for FY2023A was $4.18 million."
-  },
-  {
-    "claim_id": "ks-cc651e85d908",
-    "metric": "Net Income",
-    "errors": [
-      "unrecognized period: 'FY2024A'"
-    ],
-    "statement": "Net income for FY2024A was $4.92 million."
-  },
-  {
-    "claim_id": "ks-454441ed7f92",
+    "claim_id": "claim:2f9c2b98d8327c42",
     "metric": "Net Working Capital",
     "errors": [
-      "unrecognized period: 'FY2023A'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Operating net working capital is $3.5mm in FY2023A per the LBO model historical "
+    "statement": "Keystone is asset-light but not working-capital-light, with unbilled WIP, AR agi"
   },
   {
-    "claim_id": "ks-3d05286bcd1a",
+    "claim_id": "claim:e9f745b15c14e6f5",
+    "metric": "Management_Sponsor_and_Governance",
+    "errors": [
+      "unknown metric: 'Management_Sponsor_and_Governance'",
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Management is credible."
+  },
+  {
+    "claim_id": "claim:092d343a67dc3d97",
+    "metric": "Management_Sponsor_and_Governance",
+    "errors": [
+      "unknown metric: 'Management_Sponsor_and_Governance'"
+    ],
+    "statement": "Finance, reporting and integration functions need to be assessed for sponsor-bac"
+  },
+  {
+    "claim_id": "claim:16e365a8ee497fa7",
+    "metric": "Systems Integration Risk",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Acquired offices use different project, time-entry and billing processes."
+  },
+  {
+    "claim_id": "claim:956184d0ac8635d7",
+    "metric": "Revenue Quality",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Unbilled WIP increased faster than revenue and aging controls are inconsistent."
+  },
+  {
+    "claim_id": "claim:c76a0b364eae2fc1",
+    "metric": "Model Valuation and Returns",
+    "errors": [
+      "unknown metric: 'Model Valuation and Returns'"
+    ],
+    "statement": "The Firm model covers FY2023A\u2013FY2025A historical results, the April\u2013December 202"
+  },
+  {
+    "claim_id": "claim:348429a0b416ff9b",
+    "metric": "Operational Risk",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Standalone downside scenario assumes lower growth, lower margin, and higher work"
+  },
+  {
+    "claim_id": "claim:ae95093e8c453e2d",
+    "metric": "Exit Multiple",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Standalone downside scenario assumes a lower exit multiple."
+  },
+  {
+    "claim_id": "claim:ab274f817e6f0a05",
+    "metric": "Financing_and_Liquidity",
+    "errors": [
+      "unknown metric: 'Financing_and_Liquidity'"
+    ],
+    "statement": "Standalone downside scenario preserves solvency under a customer or integration "
+  },
+  {
+    "claim_id": "claim:445c9a568bbac79a",
+    "metric": "Attribution",
+    "errors": [
+      "unknown metric: 'Attribution'"
+    ],
+    "statement": "Sentinel closes September 30, 2026."
+  },
+  {
+    "claim_id": "claim:0716509b512696d2",
+    "metric": "Revenue Growth",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Organic revenue growth is a key assumption carrying the return in the base case "
+  },
+  {
+    "claim_id": "claim:ecd841b1f37e7b67",
+    "metric": "Gross Margin",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Gradual margin improvement through pricing, utilization and project discipline i"
+  },
+  {
+    "claim_id": "claim:6c84c6cd8437e2b1",
     "metric": "Net Working Capital",
     "errors": [
-      "unrecognized period: 'FY2024A'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Operating net working capital is $4.1mm in FY2024A per the LBO model historical "
+    "statement": "Working-capital management is a key assumption carrying the return in the base c"
   },
   {
-    "claim_id": "ks-4236a15d375e",
-    "metric": "Total Debt",
-    "errors": [
-      "unknown metric: 'Total Debt'",
-      "unrecognized period: 'FY2024A'"
-    ],
-    "statement": "Total debt of $9.4mm in FY2024A comprises bank debt of $9.5mm and finance leases"
-  },
-  {
-    "claim_id": "ks-16f5242abfbd",
+    "claim_id": "claim:029593dd27197918",
     "metric": "Gross Debt",
     "errors": [
-      "unrecognized period: 'FY2024A'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Bank debt is $9.5mm in FY2024A per the LBO model historical balance sheet."
+    "statement": "Scheduled debt amortization and cash generation is a key assumption carrying the"
   },
   {
-    "claim_id": "ks-bc1f7bfab8ea",
-    "metric": "Contracted Backlog",
+    "claim_id": "claim:6d7e2fad0de3f0c3",
+    "metric": "Recurring Revenue",
     "errors": [
-      "unknown metric: 'Contracted Backlog'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Project RIV-DEC-P1 had $0.741m contracted backlog as of FY2025A."
+    "statement": "Riverton Advanced Materials - Decatur (RIV-DEC) revenue is classified as Repeat "
   },
   {
-    "claim_id": "ks-887acda589df",
-    "metric": "Goodwill",
+    "claim_id": "claim:dc63248b85fc8113",
+    "metric": "Recurring Revenue",
     "errors": [
-      "unknown metric: 'Goodwill'"
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
     ],
-    "statement": "Goodwill on opening balance sheet is $71.0m."
+    "statement": "Metro Utility - North (MET-N) revenue is classified as Recurring business."
   },
   {
-    "claim_id": "ks-72a8531d2f13",
+    "claim_id": "claim:1d0d353e4dfe4bbb",
+    "metric": "Team Tenure",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Keystone employee roster shows tenure ranging from 2015 to 2025, with employees "
+  },
+  {
+    "claim_id": "claim:99734322740acab1",
+    "metric": "Team Tenure",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Keystone employee roster shows tenure ranging from 2015-07-01 to 2025-05-01, wit"
+  },
+  {
+    "claim_id": "claim:2b729749bdc29bbc",
     "metric": "Cash floor",
     "errors": [
       "unknown metric: 'Cash floor'"
     ],
-    "statement": "The LBO model Scenario_Drivers sheet specifies a cash floor of $3 million mainta"
+    "statement": "Keystone maintains a cash floor of $3 million across the forecast period under t"
   },
   {
-    "claim_id": "ks-31558fd91593",
+    "claim_id": "claim:d74f4b712b7723dc",
+    "metric": "Forced revolver target",
+    "errors": [
+      "unknown metric: 'Forced revolver target'"
+    ],
+    "statement": "Keystone's forced revolver target is set to \u2013$1 million across the forecast peri"
+  },
+  {
+    "claim_id": "claim:67016af1d860977e",
+    "metric": "Core PPA amortization",
+    "errors": [
+      "unknown metric: 'Core PPA amortization'"
+    ],
+    "statement": "Keystone core PPA amortization is held constant at $0.75 million annually across"
+  },
+  {
+    "claim_id": "claim:bc29ba736e3d0fdf",
     "metric": "SOFR",
     "errors": [
       "unknown metric: 'SOFR'"
     ],
-    "statement": "The LBO model assumes SOFR rates starting at 4.25% in the initial periods, decli"
+    "statement": "Keystone SOFR rate is modeled at 4.25% in scenarios C and D, 3.75% in scenarios "
   },
   {
-    "claim_id": "ks-620634fcc453",
-    "metric": "Enterprise Value",
+    "claim_id": "claim:97db496aab758ade",
+    "metric": "Cash Floor",
     "errors": [
-      "unrecognized period: '<UNKNOWN>'"
+      "unknown metric: 'Cash Floor'"
     ],
-    "statement": "One acquisition within the Keystone portfolio had an acquisition enterprise valu"
+    "statement": "Keystone cash floor is modeled at $3.0m across all scenarios in the LBO model as"
   },
   {
-    "claim_id": "ks-406453961175",
-    "metric": "Enterprise Value",
+    "claim_id": "claim:57dbdafb42b4fd8b",
+    "metric": "Other assets",
     "errors": [
-      "unrecognized period: '<UNKNOWN>'"
+      "unknown metric: 'Other assets'"
     ],
-    "statement": "Another acquisition within the Keystone portfolio had an acquisition enterprise "
+    "statement": "Other assets are held constant at $1.3 million across all forecast periods in th"
   },
   {
-    "claim_id": "ks-3c2ef45d05f1",
-    "metric": "Firm EBITDA",
-    "errors": [
-      "unknown metric: 'Firm EBITDA'"
-    ],
-    "statement": "Keystone Firm EBITDA at transaction opening is $2.87 million."
-  },
-  {
-    "claim_id": "ks-d11e15e103cf",
-    "metric": "Revenue",
-    "errors": [
-      "unrecognized period: '<UNKNOWN>'"
-    ],
-    "statement": "Core PPA amortization scheduled at $0.75mm in the first modeled period, with rev"
-  },
-  {
-    "claim_id": "ks-86404e591104",
-    "metric": "Gross Margin",
-    "errors": [
-      "unrecognized period: '<UNKNOWN>'"
-    ],
-    "statement": "Gross margin projected at 35.5% in the first modeled period, with subsequent per"
-  },
-  {
-    "claim_id": "ks-f7e5ebbefbfd",
-    "metric": "EBITDA Add-back",
-    "errors": [
-      "unrecognized period: '<UNKNOWN>'"
-    ],
-    "statement": "Core PPA amortization add-back modeled at $0.75mm for the first two periods, inc"
-  },
-  {
-    "claim_id": "ks-60c8560f560b",
+    "claim_id": "claim:65fcaa10152467f0",
     "metric": "Liquidity",
     "errors": [
       "unknown metric: 'Liquidity'"
     ],
-    "statement": "Liquidity is $2.92m, below the $3.0m minimum covenant threshold."
+    "statement": "Total liquidity is calculated as cash on hand (row 67) plus revolver availabilit"
   },
   {
-    "claim_id": "ks-013aa3600fd1",
-    "metric": "Exit LTM Revenue",
+    "claim_id": "claim:cf21f0e31734f3f0",
+    "metric": "Liquidity Headroom",
     "errors": [
-      "unknown metric: 'Exit LTM Revenue'"
+      "unknown metric: 'Liquidity Headroom'"
     ],
-    "statement": "In Standalone Base case, modeled exit LTM revenue is $105.46m."
+    "statement": "Liquidity headroom is calculated as total liquidity (row 102) less minimum liqui"
   },
   {
-    "claim_id": "ks-11cd79a61311",
-    "metric": "Exit EBITDA",
+    "claim_id": "claim:9c8b3f748d5f13b9",
+    "metric": "Other assets",
     "errors": [
-      "unknown metric: 'Exit EBITDA'"
+      "unknown metric: 'Other assets'"
     ],
-    "statement": "Exit LTM EBITDA in Standalone Base case is $18.3m."
+    "statement": "Other assets are held constant at $1.3 million across all periods in the downsid"
+  },
+  {
+    "claim_id": "claim:f9c50518f8027ed3",
+    "metric": "Liquidity",
+    "errors": [
+      "unknown metric: 'Liquidity'"
+    ],
+    "statement": "Total liquidity is calculated as the sum of cash (row 67) and revolver availabil"
+  },
+  {
+    "claim_id": "claim:f200f15790517dac",
+    "metric": "Other assets",
+    "errors": [
+      "unknown metric: 'Other assets'"
+    ],
+    "statement": "Other assets are held constant at $1.3 million across all forecast periods in th"
+  },
+  {
+    "claim_id": "claim:0650da39c16052ba",
+    "metric": "Term Loan",
+    "errors": [
+      "unknown metric: 'Term Loan'"
+    ],
+    "statement": "Term loan balance is calculated as the maximum of zero and the sum of opening te"
+  },
+  {
+    "claim_id": "claim:4afe08316ef854c9",
+    "metric": "Goodwill",
+    "errors": [
+      "unknown metric: 'Goodwill'"
+    ],
+    "statement": "Goodwill is calculated as opening balance plus scenario-driven goodwill adjustme"
+  },
+  {
+    "claim_id": "claim:b121be9b78bb0d16",
+    "metric": "Intangibles, net",
+    "errors": [
+      "unknown metric: 'Intangibles, net'"
+    ],
+    "statement": "Intangible assets net are calculated as the maximum of zero and opening balance "
+  },
+  {
+    "claim_id": "claim:af2193ceaa3546ac",
+    "metric": "Deferred financing fees",
+    "errors": [
+      "unknown metric: 'Deferred financing fees'"
+    ],
+    "statement": "Deferred financing fees are calculated as the maximum of zero and opening balanc"
+  },
+  {
+    "claim_id": "claim:8d5ffb3ca51eb4f2",
+    "metric": "Other assets",
+    "errors": [
+      "unknown metric: 'Other assets'"
+    ],
+    "statement": "Other assets are held constant at $1.3 million throughout the projection period."
+  },
+  {
+    "claim_id": "claim:c3ef3c05f344ae59",
+    "metric": "Total assets",
+    "errors": [
+      "unknown metric: 'Total assets'"
+    ],
+    "statement": "Total assets are the sum of cash, receivables, inventory, PP&E, goodwill, intang"
+  },
+  {
+    "claim_id": "claim:8d0a12fbd3a938e5",
+    "metric": "Liquidity",
+    "errors": [
+      "unknown metric: 'Liquidity'"
+    ],
+    "statement": "Total liquidity is defined as cash on hand plus revolver availability."
+  },
+  {
+    "claim_id": "claim:b5c0cfbaacd11310",
+    "metric": "Liquidity",
+    "errors": [
+      "unknown metric: 'Liquidity'"
+    ],
+    "statement": "Minimum liquidity covenant or requirement is set at $3.0 million."
+  },
+  {
+    "claim_id": "claim:c72f4a7d72c0b5cc",
+    "metric": "Other assets",
+    "errors": [
+      "unknown metric: 'Other assets'"
+    ],
+    "statement": "Other assets are held constant at $1.3 million across all forecast periods in th"
+  },
+  {
+    "claim_id": "claim:5b161524fa6a7d15",
+    "metric": "Market Position",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Keystone is a scaled platform in outsourced technical compliance with long-stand"
+  },
+  {
+    "claim_id": "claim:9565b63bf0fb8846",
+    "metric": "Revenue Growth",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Organic growth is expected through pricing, customer expansion and new logos."
+  },
+  {
+    "claim_id": "claim:107d4b0c640341d1",
+    "metric": "Gross Margin",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Moderate, gradual margin improvement is expected from utilization and project di"
+  },
+  {
+    "claim_id": "claim:94aa3f92dee2523e",
+    "metric": "MOIC",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Return construction is based on operations and deleveraging, not multiple expans"
+  },
+  {
+    "claim_id": "claim:410fcf8e9a0487b6",
+    "metric": "Customer Concentration Risk",
+    "errors": [
+      "unknown metric: 'Customer Concentration Risk'"
+    ],
+    "statement": "The IC majority accepts customer risk with conditions, concluding that simultane"
+  },
+  {
+    "claim_id": "claim:19947f16f565c676",
+    "metric": "Opening Cash",
+    "errors": [
+      "unknown metric: 'Opening Cash'"
+    ],
+    "statement": "IC condition: Opening cash at least $3.0m and revolver undrawn."
+  },
+  {
+    "claim_id": "claim:3dacca582d669465",
+    "metric": "Systems Integration Risk",
+    "errors": [
+      "characterisation without checkable content \u2014 a descriptor, not evidence"
+    ],
+    "statement": "Integration is incomplete, creating operational risk that the dissenting IC memb"
   }
 ]

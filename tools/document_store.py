@@ -188,6 +188,8 @@ def vocabulary_context(case_id: str, query: str, *, top_k: int = 4) -> dict[str,
             payload = json.loads(path.read_text(encoding="utf-8"))
         except (OSError, json.JSONDecodeError):
             continue
+        if payload.get("deal") and str(payload["deal"]).lower() != case_id.lower():
+            continue
         sidecar = payload.get("extraction_metadata", {}).get("compiler_fields_per_claim", [])
         by_id = {str(item.get("claim_id")): item for item in sidecar}
         for claim in payload.get("claims", []):

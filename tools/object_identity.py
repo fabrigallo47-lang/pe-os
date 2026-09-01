@@ -42,7 +42,10 @@ Run ``python3 tools/object_identity.py`` to audit vault coverage.
 from __future__ import annotations
 
 import hashlib
+import json
 import re
+import sys
+from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
 
@@ -115,18 +118,21 @@ METRIC_VOCABULARY: tuple[str, ...] = (
     "Gross Profit", "Gross Margin", "EBIT", "Net Income", "Free Cash Flow",
     "Operating Cash Flow", "Capex", "Working Capital", "DSO", "DPO",
     "Inventory Days", "Recurring Revenue", "Earnings Quality Risk",
-    "Adjustment Supportability", "Customer Concentration", "Customer Count",
+    "Revenue Quality", "Adjustment Supportability", "Customer Concentration", "Customer Count",
     "Active Billing Accounts", "Customer Retention", "Contract Terms",
     "Customer Contract Terms", "Market Position", "Market Size",
-    "Enterprise Value", "Equity Value", "Entry Multiple", "Exit Multiple",
-    "Net Debt", "Gross Debt", "Net Leverage", "Interest Coverage",
-    "Sponsor Equity", "Seller Equity", "Seller Rollover", "First-Lien Debt",
+    "Enterprise Value", "Equity Value", "Entry Multiple", "Exit Multiple", "Exit EV",
+    "Net Debt", "Gross Debt", "Leverage", "Interest Coverage",
+    "Sponsor Equity", "Seller Rollover", "First-Lien Debt",
     "Revolver Capacity", "DDTL Availability", "Covenant EBITDA",
-    "Covenant Threshold", "Covenant Headroom", "Exit Horizon", "Exit Multiple",
-    "Supported Price", "MOIC", "IRR", "Headcount", "Team Tenure",
+    "Covenant Threshold", "Covenant Headroom", "Exit Horizon",
+    "Supported Price", "MOIC", "IRR", "Net Working Capital",
+    "Net Working Capital Target", "Net Working Capital Adjustment",
+    "Headcount", "Team Tenure",
     "Acquisition Count", "Systems Integration Risk", "Integration Risk",
     "Operational Risk", "Key Person Risk", "Regulatory Risk", "Competition Risk",
     "IC Conditions", "IC Vote", "Decision Coherence",
+    "EBITDA Add-back",
 )
 
 
@@ -220,7 +226,10 @@ PERIOD_CANONICAL = frozenset(
 # ── Normalization ─────────────────────────────────────────────────────────────
 
 def _clean(s: Any) -> str:
-    return re.sub(r"\s+", " ", str(s or "")).strip()
+    # Numeric zero is evidence, not absence. ``s or ""`` erased 0/0.0 before
+    # hashing, so an ID computed from RawClaim(value=0) differed from the same
+    # claim reloaded from E3, where the serialized value is "0.0".
+    return re.sub(r"\s+", " ", "" if s is None else str(s)).strip()
 
 
 def normalize_metric(raw: Any) -> str:
@@ -474,6 +483,166 @@ def is_resolvable(claim: dict) -> bool:
 
 # ── Audit ─────────────────────────────────────────────────────────────────────
 
+IDENTITY_DIMENSION_NAMES: tuple[str, ...] = (
+    "entity",
+    "metric",
+    "period",
+    "scope",
+    "basis",
+    "measurement",
+    "scenario",
+    "unit",
+    "currency",
+)
+
+_TEMPORAL_HINT_RE = re.compile(
+    r"\b(?:FY\s*\d{2,4}[AE]?|LTM|Q[1-4]\s*\d{2,4}|20\d{2}|"
+    r"year\s+ended|as\s+of|entry|opening|exit)\b",
+    re.IGNORECASE,
+)
+
+
+def claims_from_e3(payload: dict[str, Any]) -> list[dict[str, Any]]:
+    """Join frozen CAP-003 claims to the structured compiler sidecar."""
+    sidecar = {
+        str(item.get("claim_id")): item
+        for item in payload.get("extraction_metadata", {}).get(
+            "compiler_fields_per_claim", []
+        )
+    }
+    return [
+        {**claim, **sidecar.get(str(claim.get("claim_id")), {})}
+        for claim in payload.get("claims", [])
+    ]
+
+
+def _missing_classification(claim: dict[str, Any], dimension: str) -> str:
+    """Classify a missing identity field without pretending source text says more.
+
+    This is deliberately conservative. A structured cue that the extractor
+    failed to carry is a defect; otherwise absence remains a declared source
+    limitation. Qualitative statements legitimately lack several quantitative
+    dimensions.
+    """
+    kind = _clean(claim.get("claim_kind") or "QUANTITATIVE").upper()
+    text = " ".join(
+        (_clean(claim.get("statement")), _clean(claim.get("perimeter")))
+    ).lower()
+
+    if dimension in {"entity", "metric"}:
+        return "extractor_defect"
+    if kind == "QUALITATIVE" and dimension in {
+        "period", "scope", "basis", "measurement", "unit", "currency"
+    }:
+        return "legitimate_qualitative_claim"
+    if dimension == "period":
+        return (
+            "extractor_defect"
+            if _TEMPORAL_HINT_RE.search(text)
+            else "legitimate_source_omission"
+        )
+
+    cue_tables = {
+        "scope": SCOPE_ALIASES,
+        "basis": BASIS_ALIASES,
+        "measurement": MEASUREMENT_ALIASES,
+        "scenario": {key: value for key, value in SCENARIO_ALIASES.items() if key},
+    }
+    if dimension in cue_tables and _find_alias(text, cue_tables[dimension]):
+        return "extractor_defect"
+    if dimension == "unit" and re.search(
+        r"(?:[$£€]\s*\d|\d\s*(?:%|x|bps|days?)\b)", text, re.IGNORECASE
+    ):
+        return "extractor_defect"
+    if dimension == "currency" and re.search(r"[$£€]\s*\d", text):
+        return "extractor_defect"
+    return "legitimate_source_omission"
+
+
+def audit_claims(claims: Iterable[dict[str, Any]]) -> dict[str, Any]:
+    """Return reproducible identity coverage and classified missing dimensions."""
+    items = list(claims)
+    resolvable = 0
+    missing: dict[str, Counter[str]] = {
+        name: Counter() for name in IDENTITY_DIMENSION_NAMES
+    }
+    defect_examples: dict[str, list[dict[str, str]]] = {
+        name: [] for name in IDENTITY_DIMENSION_NAMES
+    }
+
+    for claim in items:
+        identity = metric_identity(claim)
+        if is_resolvable(claim):
+            resolvable += 1
+        for name, value in zip(IDENTITY_DIMENSION_NAMES, identity):
+            if value:
+                continue
+            classification = _missing_classification(claim, name)
+            missing[name][classification] += 1
+            if classification == "extractor_defect" and len(defect_examples[name]) < 10:
+                defect_examples[name].append({
+                    "claim_id": _clean(claim.get("claim_id")),
+                    "locator": _clean(claim.get("locator")),
+                    "statement": _clean(claim.get("statement"))[:180],
+                })
+
+    total = len(items)
+    dimensions: dict[str, Any] = {}
+    for name in IDENTITY_DIMENSION_NAMES:
+        classifications = dict(sorted(missing[name].items()))
+        dimensions[name] = {
+            "missing": sum(classifications.values()),
+            "classifications": classifications,
+            "extractor_defect_examples": defect_examples[name],
+        }
+
+    structured_fields = {}
+    for name in ("entity", "measurement", "bound"):
+        missing_tokens = {"unspecified", "unknown", "none"}
+        if name == "bound":
+            # NONE is a real member of BOUND_ENUM: it means the claim carries
+            # no numeric comparison, not that L2 omitted the field.
+            missing_tokens.remove("none")
+        absent = sum(
+            1
+            for claim in items
+            if not _clean(claim.get(name))
+            or _clean(claim.get(name)).lower() in missing_tokens
+        )
+        structured_fields[name] = {"present": total - absent, "missing": absent}
+
+    return {
+        "claim_count": total,
+        "resolvable": resolvable,
+        "unresolvable": total - resolvable,
+        "resolvable_pct": round(100.0 * resolvable / total, 2) if total else 0.0,
+        "identity_dimensions": dimensions,
+        "structured_extraction_fields": structured_fields,
+    }
+
+
+def audit_e3_files(paths: Iterable[Path]) -> dict[str, Any]:
+    manifests: list[dict[str, Any]] = []
+    unique_claims: dict[str, dict[str, Any]] = {}
+    for path in sorted(paths):
+        payload = json.loads(path.read_text(encoding="utf-8"))
+        claims = claims_from_e3(payload)
+        manifests.append({
+            "path": str(path),
+            "manifest_id": str(payload.get("manifest_id") or path.parent.name),
+            "audit": audit_claims(claims),
+        })
+        for claim in claims:
+            key = _clean(claim.get("claim_id")) or json.dumps(
+                claim, sort_keys=True, ensure_ascii=False
+            )
+            unique_claims.setdefault(key, claim)
+    return {
+        "schema_version": "panta.identity-audit/1.0",
+        "manifests": manifests,
+        "unique_corpus": audit_claims(unique_claims.values()),
+    }
+
 def _audit_vault() -> None:
     """Report how much of the current vault has a resolvable identity."""
     import collections
@@ -518,8 +687,52 @@ def _audit_vault() -> None:
         print(f"  {name:<16} {count}")
 
 
-if __name__ == "__main__":
-    _audit_vault()
+def _print_audit(report: dict[str, Any]) -> None:
+    for manifest in report["manifests"]:
+        audit = manifest["audit"]
+        print(
+            f"{manifest['manifest_id']}: {audit['resolvable']}/"
+            f"{audit['claim_count']} resolvable ({audit['resolvable_pct']:.2f}%)"
+        )
+        for name, result in audit["identity_dimensions"].items():
+            if result["missing"]:
+                classes = ", ".join(
+                    f"{key}={value}"
+                    for key, value in result["classifications"].items()
+                )
+                print(f"  {name:<12} missing={result['missing']} ({classes})")
+    combined = report["unique_corpus"]
+    print(
+        f"unique corpus: {combined['resolvable']}/{combined['claim_count']} "
+        f"resolvable ({combined['resolvable_pct']:.2f}%)"
+    )
+
+
+def _audit_main(argv: list[str] | None = None) -> int:
+    import argparse
+
+    parser = argparse.ArgumentParser(description="Audit canonical identity coverage")
+    parser.add_argument("claims", nargs="*", type=Path, help="E3 e3_claims.json files")
+    parser.add_argument("--json-out", type=Path, help="write the complete classified audit")
+    args = parser.parse_args(argv)
+
+    paths = args.claims or sorted((ROOT / "pipeline_out" / "e3").glob("*/e3_claims.json"))
+    if not paths:
+        _audit_vault()
+        return 0
+    missing = [path for path in paths if not path.exists()]
+    if missing:
+        print(f"not found: {missing[0]}", file=sys.stderr)
+        return 1
+
+    report = audit_e3_files(paths)
+    _print_audit(report)
+    if args.json_out:
+        args.json_out.parent.mkdir(parents=True, exist_ok=True)
+        args.json_out.write_text(
+            json.dumps(report, ensure_ascii=False, indent=2), encoding="utf-8"
+        )
+    return 0
 
 
 # ── Comparing values that carry a bound ───────────────────────────────────────
@@ -574,3 +787,7 @@ def values_conflict(a: dict, b: dict, *, tolerance: float = 0.005) -> tuple[bool
             return True, f"il {who} claim è {bound} {limit:g}, ma {other:g} lo viola"
 
     return True, f"due valori esatti divergenti: {x:g} contro {y:g}"
+
+
+if __name__ == "__main__":
+    raise SystemExit(_audit_main())

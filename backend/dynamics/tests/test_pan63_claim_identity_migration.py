@@ -7,13 +7,14 @@ DYNAMICS_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = DYNAMICS_ROOT.parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from tools.extract_v2 import RawClaim, assemble, validate  # noqa: E402
-from tools.object_identity import claim_id  # noqa: E402
+from tools.extract_v2 import METRIC_ENUM, RawClaim, assemble, validate  # noqa: E402
+from tools.object_identity import METRIC_VOCABULARY, claim_id  # noqa: E402
 from vercel.api._claim_graph import claims_to_graph  # noqa: E402
 
 
 def raw_claim(
     *,
+    value=74,
     source_id="SRC-CIM",
     source_version_id="SV-CIM-1",
     locator="cim.md::Revenue",
@@ -21,7 +22,7 @@ def raw_claim(
 ):
     return RawClaim(
         metric="Revenue",
-        value=74,
+        value=value,
         unit="$m",
         period="FY2025A",
         perimeter="Keystone consolidated reported revenue",
@@ -72,6 +73,9 @@ def graph_claim(*, subject="Keystone", claim_id_value=None):
 
 
 class Pan63ClaimIdentityMigrationTests(unittest.TestCase):
+    def test_identity_metric_vocabulary_cannot_drift_from_extractor_enum(self):
+        self.assertEqual(set(METRIC_VOCABULARY), set(METRIC_ENUM))
+
     def test_source_and_source_version_are_part_of_claim_identity(self):
         base = validate(raw_claim())
         other_source = validate(raw_claim(source_id="SRC-QOE"))
@@ -109,6 +113,24 @@ class Pan63ClaimIdentityMigrationTests(unittest.TestCase):
         reworded = validate(raw_claim(statement="Reported sales totalled $74m."))
 
         self.assertEqual(original.claim_id, reworded.claim_id)
+
+    def test_non_numeric_value_id_is_reproducible_from_emitted_e3_value(self):
+        raw = raw_claim(value="30-60 days")
+        canonical = validate(raw)
+        emitted = graph_claim(claim_id_value=canonical.claim_id)
+        emitted["value"] = canonical.value_raw
+
+        self.assertIsNone(canonical.value)
+        self.assertEqual(canonical.claim_id, claim_id(emitted))
+
+    def test_zero_value_id_is_reproducible_from_emitted_e3_value(self):
+        raw = raw_claim(value=0)
+        canonical = validate(raw)
+        emitted = graph_claim(claim_id_value=canonical.claim_id)
+        emitted["value"] = str(canonical.value)
+
+        self.assertEqual(canonical.value, 0.0)
+        self.assertEqual(canonical.claim_id, claim_id(emitted))
 
     def test_independent_sources_are_not_deduplicated_by_assembler(self):
         claims = [

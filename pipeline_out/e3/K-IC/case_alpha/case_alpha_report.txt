@@ -3,54 +3,53 @@ Case Compiler Alpha — E3 K-IC
   Deal        : keystone
   Manifest    : K-IC
   Positions   : 10
-  Total edges : 457
+  Total edges : 1864
   Proposed Qs : 8
   Coverage gaps: 4
 
 [✓] CP-01: Customer concentration at billing-account level understates true parent-lev
-    claims= 58  supports=35  contradicts=1  context=22  verdict=well_supported
-    SUPPORTS: Riverton Corporate EHS (RIV-CORP) represents 2.58% of customer revenue concentration.
+    claims=213  supports=82  contradicts=1  context=130  verdict=well_supported
+    SUPPORTS: The largest billing account represents 7.6% of revenue; certain billing accounts may share
     CONTRADICTS: The Company serves more than 600 active billing accounts.
 
-[~] CP-02: Revenue quality is supported by recurring/repeat work but the 72% recurring
-    claims= 36  supports=4  contradicts=1  context=31  verdict=supported
-    SUPPORTS: Customer relationships are generally governed by master agreements and site-level statemen
-    CONTRADICTS: Riverton Industrial Group operates multiple service lines (RIV-CHEM, RIV-LOG, RIV-WST) acr
+[✓] CP-02: Revenue quality is supported by recurring/repeat work but the 72% recurring
+    claims=160  supports=19  contradicts=2  context=139  verdict=well_supported
+    SUPPORTS: Scheduled or recurring programs revenue is $28.1m in FY2025E, representing 38% of total re
+    CONTRADICTS: New and discrete project activity revenue is $20.7m in FY2025E, representing 28% of total
 
 [!] CP-03: EBITDA add-backs total ~$3.5m; QoE accepted the largest items but the run-r
-    claims= 91  supports=7  contradicts=3  context=81  verdict=contested
-    SUPPORTS: The Firm should underwrite only implemented or supportable adjustments to seller-adjusted 
-    CONTRADICTS: Seller-adjusted EBITDA includes run-rate pricing and utilization initiatives.
+    claims=155  supports=17  contradicts=5  context=133  verdict=contested
+    SUPPORTS: Keystone management adjusts FY2025E EBITDA by $0.4 million for founder and executive-compe
+    CONTRADICTS: Keystone management adjusts FY2025E EBITDA by $0.4 million for run-rate branch and corpora
 
-[✓] CP-04: Working-capital requirement is material and the normalized target is contes
-    claims= 35  supports=5  contradicts=0  context=30  verdict=well_supported
-    SUPPORTS: Normalized operating working capital is $8.4m according to the QoE analysis.
+[!] CP-04: Working-capital requirement is material and the normalized target is contes
+    claims= 69  supports=5  contradicts=6  context=58  verdict=contested
+    SUPPORTS: Normalized operating working capital is $8.4m.
+    CONTRADICTS: WIP-0001 (Metro Utility Holdings, Field Inspection service line) carries $0.1125735818m in
 
 [!] CP-05: Entry leverage is moderate but financing structure includes meaningful cont
-    claims= 51  supports=8  contradicts=3  context=40  verdict=contested
-    SUPPORTS: First-lien funded debt is $10.10m, derived by summing existing bank term loan ($8.60m), ex
-    CONTRADICTS: Gross debt and debt-like items total $14.40m, comprising $10.75m in funded debt and $3.65m
+    claims=134  supports=21  contradicts=6  context=107  verdict=contested
+    SUPPORTS: Keystone first-lien opening debt is $42.8m at entry.
+    CONTRADICTS: Keystone gross debt and debt-like items total $14.40m as of 2026-02-20 per QoE report.
 
 [?] CP-06: Multi-system fragmentation across acquired branches is the primary integrat
-    claims= 15  supports=0  contradicts=1  context=14  verdict=thin
-    CONTRADICTS: Acquired branches continue to operate on partially different systems and processes.
+    claims= 34  supports=0  contradicts=0  context=34  verdict=thin
 
 [✓] CP-07: Acquisition track record demonstrates integration capability, but prior del
-    claims= 27  supports=6  contradicts=0  context=21  verdict=well_supported
+    claims=403  supports=5  contradicts=0  context=398  verdict=well_supported
     SUPPORTS: Alderstone has completed four acquisitions since 2020.
 
-[?] CP-08: Change-of-control exposure is limited to a subset of contracts; the founder
-    claims=  2  supports=0  contradicts=1  context=1  verdict=thin
-    CONTRADICTS: IC accepted the material customer concentration risk conditional on ultimate-parent (18.2%
+[!] CP-08: Change-of-control exposure is limited to a subset of contracts; the founder
+    claims=  3  supports=0  contradicts=3  context=0  verdict=contested
+    CONTRADICTS: IC condition: Riverton reference call and change-of-control notice completed without adver
 
 [!] CP-09: Returns are achievable at base assumptions; covenant definitions are the ke
-    claims=113  supports=2  contradicts=8  context=103  verdict=contested
-    SUPPORTS: Gross MOIC in Standalone Base case is 1.996x, per audited LBO model.
-    CONTRADICTS: Standalone Downside scenario models Firm EBITDA margin of 14.5% in Year 1 (FY2026E).
+    claims=231  supports=0  contradicts=31  context=200  verdict=contested
+    CONTRADICTS: Keystone consolidated Firm EBITDA under downside scenario is $2.7898m for FY2026E.
 
 [?] CP-10: Management continuity and post-close governance require structured retentio
-    claims= 29  supports=0  contradicts=1  context=28  verdict=thin
-    CONTRADICTS: The Company depends on qualified technical personnel and local customer relationships.
+    claims=462  supports=0  contradicts=1  context=461  verdict=thin
+    CONTRADICTS: One employee (E0087, Louisville, Finance, Permitting & Advisory) is flagged as key-person
 
 Proposed questions (no answer key):
   PQ-01: What is the ultimate-parent concentration as a percentage of revenue for the top 5 corporate families?
@@ -71,7 +70,7 @@ Proposed questions (no answer key):
     → bears on ['CP-10']  [zero_coverage] Q-20: no claims extracted — governance design question, not in source documents
 
 Coverage gaps:
-  CP-06: thin_evidence — supports=0 / total=15
-  CP-08: thin_evidence — supports=0 / total=2
-  CP-09: thin_evidence — supports=2 / total=113
-  CP-10: thin_evidence — supports=0 / total=29
+  CP-06: thin_evidence — supports=0 / total=34
+  CP-08: thin_evidence — supports=0 / total=3
+  CP-09: thin_evidence — supports=0 / total=231
+  CP-10: thin_evidence — supports=0 / total=462

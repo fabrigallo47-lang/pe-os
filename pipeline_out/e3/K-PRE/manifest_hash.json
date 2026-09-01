@@ -8,11 +8,8 @@
     "SRC-QL",
     "SRC-QOE",
     "SRC-MODEL-SUM",
-    "SRC-MODEL",
-    "SRC-MODEL",
-    "SRC-MODEL",
     "SRC-MODEL"
   ],
-  "admitted_count": 254,
-  "e3_claims_sha256": "7333723f21ca51b8bf338f13e662c8c9d03bb449dfd35537582fae576b00e164"
+  "admitted_count": 1127,
+  "e3_claims_sha256": "d8120aed121160b4ae602979e0da8f028b213731906e06e5d07fd11b667a2bbe"
 }

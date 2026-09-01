@@ -227,6 +227,14 @@ class WorkbookV2ContractTests(unittest.TestCase):
         self.assertEqual(_provider_retry_delay(error, 0), 5.0)
         self.assertIsNone(_provider_retry_delay(RuntimeError("bad request"), 0))
 
+        in_flight = RuntimeError(
+            "billing_error: in_flight_budget_exhausted; "
+            "headers={'Retry-After': '120'}"
+        )
+        in_flight.status_code = 402
+        self.assertEqual(_provider_retry_delay(in_flight, 0), 30.0)
+        self.assertFalse(_is_fatal_provider_error(in_flight))
+
     def test_fatal_key_and_billing_errors_stop_the_remaining_batch(self) -> None:
         self.assertTrue(_is_fatal_provider_error(RuntimeError("billing_error")))
         self.assertTrue(_is_fatal_provider_error(RuntimeError("Key limit exceeded")))

@@ -562,7 +562,14 @@ CLAIM_TOOL = {
                                 "CHARACTERISATION — the seller's adjectives, with nothing to "
                                 "check. 'No material litigation as of 30 June' is NEGATIVE: an "
                                 "absence someone can verify. Do not reach for NEGATIVE when a "
-                                "phrase is merely favourable."
+                                "phrase is merely favourable. 'The dissenting IC member views "
+                                "the integration risk as inadequately compensated' is "
+                                "ATTRIBUTION even though it carries no number: the checkable "
+                                "content is that this specific person holds this view, not "
+                                "whether the view itself is correct. A named party's stated "
+                                "position, objection or vote is ATTRIBUTION; CHARACTERISATION "
+                                "is for un-attributed narrative color with no party to check it "
+                                "against."
                             ),
                         },
                         "bound": {

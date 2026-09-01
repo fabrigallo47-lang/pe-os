@@ -260,6 +260,14 @@ def is_hygiene_noise(c: dict) -> bool:
     ]).lower()
     return any(pat in combined for pat in _HYGIENE_NOISE)
 
+
+def _has_claim_value(claim: dict) -> bool:
+    """Return whether a claim carries a value, including numeric zero."""
+    value = claim.get("value")
+    if value is None:
+        return False
+    return bool(value.strip()) if isinstance(value, str) else True
+
 # ── V2: Standard artifacts ───────────────────────────────────────────────────
 _STANDARD_ARTIFACTS: list[tuple[str, str, str]] = [
     ("art:model",       "Financial Model",   "model"),
@@ -826,7 +834,7 @@ def claims_to_graph(
     for i in range(n):
         a    = claims[i]
         a_id = claim_ids[i]
-        if not a_id or (a.get("value") or "").strip():
+        if not a_id or _has_claim_value(a):
             continue
         s_a    = (a.get("subject") or "").lower().strip()
         area_a = _topic_to_area(a.get("topic") or "")
@@ -837,7 +845,7 @@ def claims_to_graph(
                 continue
             b    = claims[j]
             b_id = claim_ids[j]
-            if not b_id or not (b.get("value") or "").strip():
+            if not b_id or not _has_claim_value(b):
                 continue
             s_b    = (b.get("subject") or "").lower().strip()
             area_b = _topic_to_area(b.get("topic") or "")

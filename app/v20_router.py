@@ -682,7 +682,20 @@ def _configure_fund_lens(case_id: str, payload: dict) -> dict:
 
 def _question_registry_records(case_id: str, fund_lens: dict | None = None) -> list[dict]:
     """Merge the canonical archetype spine with optional Lens refinements."""
-    pack_questions = canonical_question_spine(load_pack("buyout"))
+    archetype_id = str((fund_lens or {}).get("archetype") or "buyout").strip().lower()
+    try:
+        pack = load_pack(archetype_id)
+    except ValueError as exc:
+        if "Unknown archetype pack" not in str(exc):
+            raise
+        # A validated case Lens is sufficient to govern its own questions even
+        # when no canonical pack exists for that archetype yet.  Borrowing the
+        # buyout spine here would attach confident but wrong domain semantics.
+        pack_questions = []
+    else:
+        # A known but malformed pack must remain a hard error; only absence of a
+        # pack is safely represented by the Lens-only registry above.
+        pack_questions = canonical_question_spine(pack)
     records: dict[str, dict] = {}
     canonical_ids: dict[str, str] = {}
     order: list[str] = []
@@ -3543,6 +3556,11 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     events = _load_projection_events(case_id)
     questions = _load_questions(case_id)
     fund_lens = _active_fund_lens(case_id)
+    archetype_id = str(fund_lens.get("archetype") or "buyout").strip()
+    archetype_label = archetype_id.replace("_", " ").replace("-", " ").title()
+    uses_repository_default_lens = not (
+        VAULT / "deals" / case_id / "fund_lens.json"
+    ).exists()
     question_spine = _build_question_spine(questions, claims)
     semantic_graph = _load_json_safe(pipeline_out / "semantic_current_graph.json")
     current_graph = _load_json_safe(pipeline_out / "current_graph.json")
@@ -3611,7 +3629,9 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
             "case_id": case_id,
             "entity": profile.get("entity", case_id),
             "archetype": {
-                "id": "buyout", "label": "Buyout", "is_default": True,
+                "id": archetype_id,
+                "label": archetype_label,
+                "is_default": uses_repository_default_lens,
                 "fund_lens": fund_lens["lens_id"],
                 "fund_lens_version": fund_lens["version"],
             },

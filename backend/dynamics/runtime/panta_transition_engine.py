@@ -3272,6 +3272,15 @@ def apply_state_transition(
                     }
                     if supersedes is not None:
                         new_stated_position["supersedes_stated_position_id"] = supersedes
+                    # Optional: which claim this attributed view is anchored to, if the
+                    # caller supplied one. Not required -- a partner's own judgment is a
+                    # legitimate input with no claim behind it -- but when supplied it
+                    # must survive onto the object. Dropping it here silently erases the
+                    # only link a later reader (e.g. the CaseReading projection) could use
+                    # to check whether that claim's identity is even resolvable.
+                    claim_id = mutation.get("claim_id")
+                    if claim_id is not None:
+                        new_stated_position["claim_id"] = str(claim_id)
                     new_stated_position["content_hash"] = _sha256(
                         {
                             key: new_stated_position[key]

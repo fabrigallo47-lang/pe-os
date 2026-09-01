@@ -54,14 +54,14 @@
     "RUNTIME_GAP": "The type must participate directly in deterministic state or frozen runtime relations, but has no first-class Dynamic representation.",
     "SEMANTIC_ONLY": "The type belongs in provenance, compiler, ledger, retrieval, or UI projections and must not become a Dynamic mutation merely to match the kernel vocabulary.",
     "implementation_status": ["COMPLETE", "PARTIAL", "ABSENT"],
-    "freeze_boundary": "PAN-74 adds StatedPosition without renaming or changing the meaning of frozen POSITION/CaseReading fields. Remaining runtime gaps still require an explicit versioned migration or adapter decision."
+    "freeze_boundary": "PAN-74 adds StatedPosition without renaming frozen POSITION/CaseReading fields; PAN-75 makes CaseReading a system-attributed projection instead of a Question-title default. Remaining runtime gaps still require an explicit versioned migration or adapter decision."
   },
   "summary": {
     "ALREADY_COVERED": 15,
     "RUNTIME_GAP": 2,
     "SEMANTIC_ONLY": 5,
-    "complete": 7,
-    "partial": 13,
+    "complete": 8,
+    "partial": 12,
     "absent": 2
   },
   "objects": [
@@ -200,14 +200,14 @@
     {
       "kernel_type": "CaseReading",
       "classification": "ALREADY_COVERED",
-      "implementation_status": "PARTIAL",
-      "current_representation": "legacy canonical position/case_positions is the computed reading projection, with a documented vocabulary alias",
+      "implementation_status": "COMPLETE",
+      "current_representation": "system-attributed question projection from operative StatedPositions, admitted evidence, and explicit runtime POSITION dependencies; Question titles never synthesize readings",
       "dynamic_mutation_type": "POSITION",
       "evidence": [
         {"path": "backend/dynamics/schemas/canonical_investment_case.schema.json", "anchor": "\"position\""},
-        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/10_legacy_to_v0_2_mapping.yaml", "anchor": "target: CaseReading"}
+        {"path": "app/v20_router.py", "anchor": "def _semantic_rooms"}
       ],
-      "next_step": "PAN-75 must stop synthesizing readings by default; rename only through a versioned migration."
+      "next_step": "Keep system attribution and derivation hashes explicit; rename POSITION only through a versioned migration."
     },
     {
       "kernel_type": "Assumption",

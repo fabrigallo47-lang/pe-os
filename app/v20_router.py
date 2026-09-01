@@ -1196,9 +1196,22 @@ def _semantic_graph_from_claims(
     nodes = graph.get("nodes", [])
     edges = graph.get("edges", [])
     node_ids = {n.get("id") for n in nodes}
+    node_index = {
+        str(node.get("id")): node
+        for node in nodes
+        if isinstance(node, dict) and node.get("id")
+    }
     # Make source provenance first-class in the test graph: Source → Claim.
     for index, claim in enumerate(semantic_claims):
         claim_node = f"claim:{index:03d}"
+        if claim_node in node_index:
+            node_index[claim_node]["claim_id"] = str(
+                claim.get("claim_id")
+                or claim.get("id")
+                or claim.get("stable_id")
+                or claim_node
+            )
+            node_index[claim_node]["source_id"] = claim.get("source_id")
         for source_id in claim.get("source_ids") or [claim.get("source_id")]:
             if not source_id:
                 continue
@@ -1217,45 +1230,12 @@ def _semantic_graph_from_claims(
             nodes.append({"id": condition_id, "type": "condition", "label": f"Evidence required for {qid}",
                           "coverage_status": "missing", "question_id": qid})
             edges.append({"source": f"q:{qid}", "target": condition_id, "rel": "REQUIRES_EVIDENCE"})
-    # A covered underwriting question forms a reviewable Case Position even
-    # before an archetype supplies executable model mappings.  This makes the
-    # semantic case visible in Foundations without treating it as runtime fact.
-    question_nodes = {str(q.get("id")): q for q in _load_questions(case_id)}
-    # Compiler-origin question nodes may use a different question-type ID from
-    # the Fund Lens. They still form explicit case positions; evidence links
-    # are added below where claim bindings are available.
-    for node in list(nodes):
-        if node.get("type") != "question" or not node.get("id"):
-            continue
-        qid = str(node["id"]).removeprefix("q:")
-        position_id = f"position:{qid}"
-        if position_id not in node_ids:
-            nodes.append({"id": position_id, "type": "case_position", "label": node.get("label") or qid,
-                          "statement": node.get("label") or qid, "question_id": qid,
-                          "decision_status": node.get("decision_status", "PENDING"),
-                          "epistemic_status": "EVIDENCE_FORMING"})
-            node_ids.add(position_id)
-            edges.append({"source": node["id"], "target": position_id, "rel": "FRAMES_POSITION"})
-    for edge in list(edges):
-        if edge.get("rel") not in {"BEARS_ON", "ANSWERS_TO"}:
-            continue
-        claim_id, qid = edge.get("source"), str(edge.get("target", "")).removeprefix("q:")
-        question = question_nodes.get(qid)
-        if not question or not claim_id:
-            continue
-        position_id = f"position:{qid}"
-        if position_id not in node_ids:
-            nodes.append({"id": position_id, "type": "case_position",
-                          "label": question.get("title") or qid,
-                          "statement": question.get("title") or qid,
-                          "question_id": qid, "decision_status": "PENDING",
-                          "epistemic_status": "EVIDENCE_FORMING"})
-            node_ids.add(position_id)
-            edges.append({"source": f"q:{qid}", "target": position_id, "rel": "FRAMES_POSITION"})
-        claim = nodes[next((i for i,n in enumerate(nodes) if n.get("id") == claim_id), -1)] if claim_id in node_ids else {}
-        direction = str(claim.get("direction", "")).lower()
-        edges.append({"source": claim_id, "target": position_id,
-                      "rel": "CONTRADICTS" if direction in {"against", "negative", "downside"} else "SUPPORTS"})
+    # A Question and evidence that BEARS_ON it do not, by themselves, create a
+    # CaseReading.  Readings are projected below only from admitted
+    # StatedPositions and a versioned runtime link or Question identity on a
+    # computed POSITION.  In particular, never copy a Question title into a
+    # synthetic position statement: the day-zero state must remain visibly
+    # unformed.
     # Workbook formulas are deterministic source evidence.  Keep the complete
     # cell/dependency graph in its sidecar (so a large model does not make the
     # interactive semantic canvas unusable) and project one inspectable model
@@ -1353,58 +1333,374 @@ def _build_semantic_current(claims: list[dict], case_id: str) -> dict:
     (pipeline_out / "semantic_current_graph.json").write_text(json.dumps(graph, indent=2, ensure_ascii=False) + "\n")
     return graph
 
-def _semantic_rooms(graph: dict, question_spine: list[dict]) -> tuple[list[dict], dict, list[dict]]:
-    """Project semantic positions and evidence gaps into Foundations and Unknowns.
+def _semantic_rooms(
+    graph: dict,
+    question_spine: list[dict],
+    current_graph: dict | None = None,
+) -> tuple[list[dict], dict, list[dict]]:
+    """Project admitted StatedPositions into system-attributed CaseReadings.
 
-    Foundations = Case Position nodes plus their SUPPORTS/CONTRADICTS evidence,
-    plus CONDITION nodes -- declared coverage gaps a position's underlying
-    question still rests on (REQUIRES_EVIDENCE edges from ``_build_semantic_current``).
-    The Unknowns room returned here is a minimal fallback (question-spine gaps
-    only); ``_apply_decision_intelligence`` is the authority that ranks it and
-    folds in conflicts/runtime blockers, and always runs after this.
+    A Question or a Claim that merely bears on it never fabricates a Reading.
+    A projected Reading requires an operative, attributed StatedPosition and a
+    computed POSITION linked by an explicit runtime dependency or versioned
+    Question identity. Questions without that chain remain visible with the
+    day-zero message required by the semantic contract.
     """
-    nodes = {n.get("id"): n for n in graph.get("nodes", [])}
-    evidence: dict[str, list[dict]] = {}
+    current = current_graph if isinstance(current_graph, dict) else {}
+    nodes = {
+        str(node.get("id")): node
+        for node in graph.get("nodes", [])
+        if isinstance(node, dict) and node.get("id")
+    }
+
+    question_evidence: dict[str, list[dict]] = {}
     for edge in graph.get("edges", []):
-        if edge.get("rel") not in {"SUPPORTS", "CONTRADICTS"}:
+        if not isinstance(edge, dict) or edge.get("rel") not in {
+            "BEARS_ON",
+            "CHALLENGES_QUESTION",
+        }:
             continue
-        claim, position = nodes.get(edge.get("source"), {}), nodes.get(edge.get("target"), {})
-        if claim.get("type") == "claim" and position.get("type") == "case_position":
-            evidence.setdefault(position["id"], []).append({
-                "claim_id": claim["id"], "value": claim.get("value"), "unit": claim.get("unit"),
-                "period": claim.get("period"), "perimeter": claim.get("perimeter"),
-                "relation": edge["rel"], "definition_id": claim.get("definition"),
+        claim = nodes.get(str(edge.get("source") or ""), {})
+        if claim.get("type") != "claim":
+            continue
+        question_id = str(edge.get("target") or "").removeprefix("q:")
+        if not question_id:
+            continue
+        claim_id = str(
+            claim.get("claim_id")
+            or claim.get("stable_id")
+            or claim.get("id")
+            or edge.get("source")
+        )
+        question_evidence.setdefault(question_id, []).append({
+            "object_type": "CLAIM",
+            "claim_id": claim_id,
+            "value": copy.deepcopy(claim.get("value")),
+            "unit": claim.get("unit"),
+            "period": claim.get("period"),
+            "perimeter": claim.get("perimeter"),
+            "source_id": claim.get("source_id") or claim.get("source_doc"),
+            "locator": claim.get("locator"),
+            "relation": edge["rel"],
+            "definition_id": claim.get("definition"),
+        })
+
+    all_stated = {
+        str(item.get("stated_position_id")): item
+        for item in current.get("stated_positions", []) or []
+        if isinstance(item, dict) and item.get("stated_position_id")
+    }
+    superseded_ids = {
+        str(item.get("supersedes_stated_position_id"))
+        for item in all_stated.values()
+        if item.get("supersedes_stated_position_id")
+    }
+    operative_stated = {
+        object_id: item
+        for object_id, item in all_stated.items()
+        if object_id not in superseded_ids
+    }
+    stated_by_question: dict[str, list[dict]] = {}
+    for item in operative_stated.values():
+        for question_id in item.get("question_ids", []) or []:
+            if isinstance(question_id, str) and question_id:
+                stated_by_question.setdefault(question_id, []).append(item)
+    for items in stated_by_question.values():
+        items.sort(
+            key=lambda item: (
+                str(item.get("known_at") or ""),
+                str(item.get("stated_position_id") or ""),
+            )
+        )
+
+    readings = {
+        str(item.get("position_id")): item
+        for item in current.get("case_positions", current.get("positions", [])) or []
+        if isinstance(item, dict) and item.get("position_id")
+    }
+    reading_ids_by_stated: dict[str, set[str]] = {}
+    relation_by_pair: dict[tuple[str, str], str] = {}
+    for edge in current.get("position_dependencies", []) or []:
+        if not isinstance(edge, dict):
+            continue
+        source_id = str(
+            edge.get("from_position_id")
+            or edge.get("source_position_id")
+            or edge.get("source")
+            or ""
+        )
+        target_id = str(
+            edge.get("to_position_id")
+            or edge.get("target_position_id")
+            or edge.get("target")
+            or ""
+        )
+        if source_id not in operative_stated or target_id not in readings:
+            continue
+        reading_ids_by_stated.setdefault(source_id, set()).add(target_id)
+        relation_by_pair[(source_id, target_id)] = str(
+            edge.get("relation_type") or edge.get("rel") or "BEARS_ON"
+        )
+
+    reading_ids_by_question: dict[str, set[str]] = {}
+    for question_id, stated_items in stated_by_question.items():
+        linked = reading_ids_by_question.setdefault(question_id, set())
+        for item in stated_items:
+            item_question_ids = {
+                str(value)
+                for value in item.get("question_ids", []) or []
+                if value
+            }
+            for reading_id in reading_ids_by_stated.get(
+                str(item["stated_position_id"]), set()
+            ):
+                reading = readings[reading_id]
+                explicit_reading_questions = {
+                    str(value)
+                    for value in reading.get("question_ids", []) or []
+                    if value
+                }
+                if reading.get("question_id"):
+                    explicit_reading_questions.add(str(reading["question_id"]))
+                if (
+                    question_id in explicit_reading_questions
+                    or len(item_question_ids) == 1
+                ):
+                    linked.add(reading_id)
+        # A versioned runtime Reading may carry its Question identity directly.
+        # It is usable only when an admitted StatedPosition bears on that same
+        # Question; the Question field alone never creates a Reading.
+        for reading_id, reading in readings.items():
+            reading_question_ids = set(reading.get("question_ids", []) or [])
+            if reading.get("question_id"):
+                reading_question_ids.add(str(reading["question_id"]))
+            if question_id in reading_question_ids:
+                linked.add(reading_id)
+
+    foundations: list[dict] = []
+    positions: list[dict] = []
+    unknown_items: list[dict] = []
+    position_ids_seen: set[str] = set()
+
+    for question in question_spine:
+        question_id = str(question.get("id") or question.get("question_id") or "")
+        if not question_id:
+            continue
+        stated_items = stated_by_question.get(question_id, [])
+        linked_reading_ids = sorted(reading_ids_by_question.get(question_id, set()))
+        relevant_claims = copy.deepcopy(question_evidence.get(question_id, []))
+        projected_for_question: list[dict] = []
+
+        for reading_id in linked_reading_ids:
+            reading = readings[reading_id]
+            linked_stated = [
+                item
+                for item in stated_items
+                if reading_id in reading_ids_by_stated.get(
+                    str(item["stated_position_id"]), set()
+                )
+                or str(reading.get("question_id") or "") == question_id
+                or question_id in set(reading.get("question_ids", []) or [])
+            ]
+            if not linked_stated:
+                continue
+            stated_options = [
+                {
+                    "object_type": "STATED_POSITION",
+                    "stated_position_id": item["stated_position_id"],
+                    "stated_by": item.get("stated_by"),
+                    "statement": item.get("statement"),
+                    "direction": item.get("direction"),
+                    "source_id": item.get("source_id"),
+                    "locator": item.get("locator"),
+                    "effective_date": item.get("effective_date"),
+                    "known_at": item.get("known_at"),
+                    "relation": relation_by_pair.get(
+                        (str(item["stated_position_id"]), reading_id),
+                        "BEARS_ON",
+                    ),
+                }
+                for item in linked_stated
+            ]
+            evidence_options = stated_options + relevant_claims
+            support_route_ids = sorted({
+                str(route.get("route_id"))
+                for route in reading.get("support_routes", []) or []
+                if isinstance(route, dict) and route.get("route_id")
+            } | {
+                str(route.get("route_id"))
+                for route in current.get("support_routes", []) or []
+                if isinstance(route, dict)
+                and route.get("route_id")
+                and str(route.get("target_position_id") or "") == reading_id
             })
-    foundations, positions = [], []
-    for node in nodes.values():
-        if node.get("type") != "case_position":
-            continue
-        opts = evidence.get(node["id"], [])
-        positions.append({"position_id": node["id"], "id": node["id"], "label": node.get("label"), **node})
-        foundations.append({"id": node["id"], "label": node.get("label"), "economic": node.get("statement") or node.get("note", ""),
-                            "strength": "contested" if node.get("decision_status") == "CONTESTED" else "weak",
-                            "status": node.get("decision_status", "PENDING"), "evidence_options": opts,
-                            "members": [x["claim_id"] for x in opts]})
+            challenge_relation_ids = sorted({
+                str(edge.get("edge_id"))
+                for edge in current.get("claim_position_edges", []) or []
+                if isinstance(edge, dict)
+                and edge.get("edge_id")
+                and str(edge.get("position_id") or "") == reading_id
+                and str(edge.get("relation_type") or "").upper() == "CONTRADICTS"
+            })
+            reading_statement = str(
+                reading.get("reading_statement")
+                or reading.get("statement")
+                or reading.get("proposition")
+                or ""
+            )
+            epistemic_status = str(
+                reading.get("epistemic_status")
+                or reading.get("epistemic_status_at_ic")
+                or "OPEN"
+            )
+            freshness_status = str(
+                reading.get("freshness_status")
+                or reading.get("freshness_status_at_ic")
+                or "CURRENT"
+            )
+            decision_status = str(
+                reading.get("decision_status")
+                or reading.get("decision_status_at_ic")
+                or "PENDING"
+            )
+            stated_ids = [str(item["stated_position_id"]) for item in linked_stated]
+            derivation_hash = reading.get("derivation_hash") or _graph_content_hash({
+                "question_id": question_id,
+                "reading_id": reading_id,
+                "reading_statement": reading_statement,
+                "stated_position_ids": stated_ids,
+                "claim_ids": [item["claim_id"] for item in relevant_claims],
+                "support_route_ids": support_route_ids,
+                "challenge_relation_ids": challenge_relation_ids,
+            })
+            projected = {
+                **copy.deepcopy(reading),
+                "id": reading_id,
+                "position_id": reading_id,
+                "reading_id": reading_id,
+                "question_id": question_id,
+                "label": reading.get("label") or reading_statement or reading_id,
+                "proposition": reading_statement,
+                "reading_statement": reading_statement,
+                "epistemic_status": epistemic_status,
+                "freshness_status": freshness_status,
+                "decision_status": decision_status,
+                "support_route_ids": support_route_ids,
+                "challenge_relation_ids": challenge_relation_ids,
+                "stated_position_ids": stated_ids,
+                "derivation_hash": derivation_hash,
+                "system_attributed": True,
+                "evidence_options": evidence_options,
+            }
+            projected_for_question.append(projected)
+            if reading_id not in position_ids_seen:
+                positions.append(projected)
+                position_ids_seen.add(reading_id)
+
+            normalized_epistemic = epistemic_status.upper()
+            strength = (
+                "contested"
+                if normalized_epistemic == "CONTESTED"
+                else "strong"
+                if normalized_epistemic in {"SUPPORTED", "ESTABLISHED"}
+                else "weak"
+            )
+            foundations.append({
+                "id": reading_id,
+                "label": projected["label"],
+                "economic": reading_statement,
+                "strength": strength,
+                "status": decision_status,
+                "kind": "case_reading",
+                "question_id": question_id,
+                "system_attributed": True,
+                "evidence_options": evidence_options,
+                "members": stated_ids
+                + [item["claim_id"] for item in relevant_claims],
+            })
+
+        if not stated_items:
+            current_view = {
+                "view": "No one has expressed a view.",
+                "state": "UNEXAMINED",
+                "strength": "UNEXAMINED",
+                "cause": "No admitted StatedPosition bears on this Question.",
+            }
+            unknown_value = current_view["view"]
+            closure = "Admit an attributed StatedPosition with exact source and locator."
+        elif not projected_for_question:
+            current_view = {
+                "view": "Reading not formed.",
+                "state": "OPEN",
+                "strength": "OPEN",
+                "cause": (
+                    f"{len(stated_items)} attributed view(s) exist, but no computed "
+                    "CaseReading is linked."
+                ),
+            }
+            unknown_value = "Attributed view exists; CaseReading not formed."
+            closure = "Compute and link a CaseReading without rewriting the stated view."
+        elif len(projected_for_question) > 1:
+            current_view = {
+                "view": "Multiple computed readings require reconciliation.",
+                "state": "CONTESTED",
+                "strength": "CONTESTED",
+                "cause": ", ".join(item["reading_id"] for item in projected_for_question),
+            }
+            unknown_value = current_view["view"]
+            closure = "Reconcile the runtime readings under an explicit policy or decision."
+        else:
+            reading = projected_for_question[0]
+            current_view = {
+                "view": reading["reading_statement"],
+                "state": reading["epistemic_status"],
+                "strength": reading["epistemic_status"],
+                "cause": (
+                    f"Computed from {len(reading['stated_position_ids'])} attributed "
+                    f"view(s) and {len(relevant_claims)} admitted claim(s)."
+                ),
+                "known_at": reading.get("known_at"),
+                "reading_id": reading["reading_id"],
+            }
+            unknown_value = "No admitted claim evidence yet"
+            closure = "Admit source evidence or accept the residual risk."
+
+        question["current_view"] = current_view
+        prior_versions = question.get("versions")
+        question["versions"] = {
+            **copy.deepcopy(prior_versions if isinstance(prior_versions, dict) else {}),
+            "current": current_view,
+        }
+        if not projected_for_question or question.get("coverage") == "gap":
+            unknown_items.append({
+                "id": f"unknown:{question_id}",
+                "label": question.get("label", question_id),
+                "question_id": question_id,
+                "value": unknown_value,
+                "closure": closure,
+            })
 
     for edge in graph.get("edges", []):
-        if edge.get("rel") != "REQUIRES_EVIDENCE":
+        if not isinstance(edge, dict) or edge.get("rel") != "REQUIRES_EVIDENCE":
             continue
-        condition = nodes.get(edge.get("target"), {})
+        condition = nodes.get(str(edge.get("target") or ""), {})
         if condition.get("type") != "condition":
             continue
         foundations.append({
-            "id": condition["id"], "label": condition.get("label", condition["id"]),
-            "economic": "", "strength": "weak", "status": "MISSING_EVIDENCE",
-            "kind": "condition", "question_id": condition.get("question_id"),
-            "evidence_options": [], "members": [],
+            "id": condition["id"],
+            "label": condition.get("label", condition["id"]),
+            "economic": "",
+            "strength": "weak",
+            "status": "MISSING_EVIDENCE",
+            "kind": "condition",
+            "question_id": condition.get("question_id"),
+            "evidence_options": [],
+            "members": [],
         })
 
-    unknowns = {"items": [
-        {"id": f"unknown:{q['id']}", "label": q.get("label", q["id"]), "question_id": q["id"],
-         "value": "No admitted evidence yet", "closure": "Admit source evidence or accept the residual risk."}
-        for q in question_spine if q.get("coverage") == "gap"
-    ]}
-    return foundations, unknowns, positions
+    positions.sort(key=lambda item: (item["question_id"], item["reading_id"]))
+    foundations.sort(key=lambda item: (str(item.get("question_id") or ""), item["id"]))
+    return foundations, {"items": unknown_items}, positions
 
 
 def _scenario_lab(current_graph: dict | None) -> dict:
@@ -3043,11 +3339,22 @@ def _apply_decision_intelligence(projection: dict) -> dict:
     deal["load_bearing_assumptions"] = load_bearing
 
     spine = deal.get("question_spine", []) or []
-    open_questions = [
-        item for item in spine
-        if item.get("coverage") in {"gap", "partial"}
-        and str(item.get("status", "open")).lower() not in {"closed", "resolved"}
-    ]
+    open_questions = []
+    for item in spine:
+        current_view = (
+            item.get("current_view")
+            if isinstance(item.get("current_view"), dict)
+            else {}
+        )
+        reading_unformed = (
+            not current_view.get("reading_id")
+            and str(current_view.get("state") or "").upper()
+            in {"UNEXAMINED", "OPEN", "CONTESTED"}
+        )
+        if (
+            item.get("coverage") in {"gap", "partial"} or reading_unformed
+        ) and str(item.get("status", "open")).lower() not in {"closed", "resolved"}:
+            open_questions.append(item)
     open_questions.sort(key=lambda item: (
         not bool(item.get("critical")),
         item.get("coverage") != "gap",
@@ -3059,12 +3366,37 @@ def _apply_decision_intelligence(projection: dict) -> dict:
         question_id = str(question.get("id") or question.get("question_id") or "")
         work_plan = question.get("work_plan", []) or []
         first_work = work_plan[0] if work_plan and isinstance(work_plan[0], dict) else {}
+        current_view = (
+            question.get("current_view")
+            if isinstance(question.get("current_view"), dict)
+            else {}
+        )
+        view_state = str(current_view.get("state") or "").upper()
+        if not current_view.get("reading_id") and view_state == "UNEXAMINED":
+            value = current_view.get("view") or "No one has expressed a view."
+            default_closure = (
+                "Admit an attributed StatedPosition with exact source and locator."
+            )
+        elif not current_view.get("reading_id") and view_state in {"OPEN", "CONTESTED"}:
+            value = current_view.get("view") or "Reading not formed."
+            default_closure = (
+                "Compute and link a CaseReading without rewriting the stated view."
+            )
+        else:
+            value = (
+                "Critical evidence gap"
+                if question.get("critical")
+                else "Open evidence gap"
+            )
+            default_closure = f"Admit evidence that bears on {question_id}."
         unknowns.append({
             "id": f"unknown:{question_id}",
             "label": question.get("label", question_id),
             "question_id": question_id,
-            "value": "Critical evidence gap" if question.get("critical") else "Open evidence gap",
-            "closure": first_work.get("label") or first_work.get("task") or f"Admit evidence that bears on {question_id}.",
+            "value": value,
+            "closure": first_work.get("label")
+            or first_work.get("task")
+            or default_closure,
             "owner": first_work.get("owner") or question.get("owner") or "Unassigned",
             "rank": rank,
             "status": "OPEN",
@@ -3078,6 +3410,7 @@ def _apply_decision_intelligence(projection: dict) -> dict:
                 "critical": bool(question.get("critical")),
                 "coverage": question.get("coverage"),
                 "admitted_claim_count": int(question.get("claim_count") or 0),
+                "reading_status": view_state or None,
             },
         })
 
@@ -3216,9 +3549,10 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     candidate_graph = _load_json_safe(pipeline_out / "candidate_graph.json")
     transition_output = _load_json_safe(pipeline_out / "transition_output.json")
     graph_versions = _list_graph_versions(case_id)
-    foundations, unknowns, semantic_positions = (
-        _semantic_rooms(semantic_graph, question_spine)
-        if semantic_graph else ([], {"items": []}, [])
+    foundations, unknowns, semantic_positions = _semantic_rooms(
+        semantic_graph,
+        question_spine,
+        current_graph,
     )
     scenario_lab = _scenario_lab(current_graph)
 
@@ -5910,9 +6244,11 @@ def replay(case_id: str, as_of_date: str | None = None, event_id: str | None = N
     questions = _load_questions(case_id)
     question_spine = _build_question_spine(questions, filtered_claims)
     semantic_graph = _semantic_graph_from_claims(filtered_claims, case_id)
+    current_graph, graph_metadata = _current_graph_as_of(case_id, cutoff)
     foundations, unknowns, semantic_positions = _semantic_rooms(
         semantic_graph,
         question_spine,
+        current_graph,
     )
     sources = _build_sources_from_claims(filtered_claims)
     retired_sources = {
@@ -5928,7 +6264,6 @@ def replay(case_id: str, as_of_date: str | None = None, event_id: str | None = N
             source["retired_at"] = retirement["known_at"]
             source["retirement_event_id"] = retirement["event_id"]
 
-    current_graph, graph_metadata = _current_graph_as_of(case_id, cutoff)
     if "case_positions" in current_graph:
         current_graph = {
             **current_graph,

@@ -25,6 +25,10 @@ from pathlib import Path
 from typing import Any, Literal
 
 ROOT = Path(__file__).resolve().parent.parent
+if str(ROOT) not in sys.path:
+    sys.path.insert(0, str(ROOT))
+
+from tools.object_identity import claim_id as canonical_claim_id  # noqa: E402
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Test harness
@@ -176,9 +180,24 @@ def normalize_unit(raw: str | None) -> str | None:
     return _UNIT_MAP.get(stripped, stripped)
 
 
-def stable_claim_id(metric: str, value: Any, period_iso: str, perimeter: str) -> str:
-    key = f"{metric}|{value}|{period_iso}|{perimeter}"
-    return "ks-" + hashlib.sha256(key.encode()).hexdigest()[:12]
+def stable_claim_id(
+    metric: str,
+    value: Any,
+    period_iso: str,
+    perimeter: str,
+    source_id: str = "",
+    locator: str = "",
+    epistemic_class: str = "asserted",
+) -> str:
+    return canonical_claim_id({
+        "metric": metric,
+        "value": value,
+        "period": period_iso,
+        "perimeter": perimeter,
+        "source_id": source_id,
+        "locator": locator,
+        "epistemic_class": epistemic_class,
+    })
 
 
 def validate_and_normalize(raw: RawClaim) -> CanonicalClaim:
@@ -212,7 +231,15 @@ def validate_and_normalize(raw: RawClaim) -> CanonicalClaim:
 
     perimeter = raw.perimeter or "Alderstone standalone"
 
-    claim_id = stable_claim_id(raw.metric, value, period_iso, perimeter)
+    claim_id = stable_claim_id(
+        raw.metric,
+        value,
+        period_iso,
+        perimeter,
+        raw.source_id,
+        raw.locator,
+        ec,
+    )
 
     return CanonicalClaim(
         claim_id=claim_id,
@@ -529,8 +556,8 @@ def tests_l3_validator() -> list[TR]:
 def tests_l4_assembler() -> list[TR]:
     results = []
 
-    # T3a — assembler deduplicates identical claims
-    t = TR("T3a", "L4 Assembler: deduplicates identical stable_ids")
+    # T3a — independent sources remain independent claims
+    t = TR("T3a", "L4 Assembler: preserves independent source claims")
     claims = []
     for source in ["CIM", "QOE", "IC-MEMO"]:
         raw = RawClaim(
@@ -541,10 +568,10 @@ def tests_l4_assembler() -> list[TR]:
         )
         claims.append(validate_and_normalize(raw))
     graph = assemble(claims)
-    if graph["admitted_count"] == 1:
-        t.passed("3 identical claims → 1 deduplicated entry (no conflicts)")
+    if graph["admitted_count"] == 3:
+        t.passed("3 source/locator identities → 3 claims (agreement is evidence)")
     else:
-        t.failed(f"Expected 1, got {graph['admitted_count']}")
+        t.failed(f"Expected 3, got {graph['admitted_count']}")
     results.append(t)
 
     # T3b — assembler flags conflict when same ID has different values

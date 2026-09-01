@@ -420,12 +420,25 @@ def claim_identity(claim: dict) -> tuple[str, ...]:
     Two sources stating the same number are two claims, never one: agreement
     between independent sources is evidence, not redundancy.
     """
+    source = claim.get("source")
+    source_record = source if isinstance(source, dict) else {}
+    source_id = (
+        source_record.get("source_id")
+        or source_record.get("artifact")
+        or claim.get("source_id")
+        or (source if isinstance(source, str) else "")
+    )
+    source_version = (
+        claim.get("source_version_id")
+        or claim.get("source_version")
+        or source_record.get("source_version_id")
+        or source_record.get("source_version")
+    )
+    locator = claim.get("locator") or source_record.get("locator")
     return metric_identity(claim) + (
-        _clean(claim.get("source") or claim.get("source_id")
-               or (claim.get("source") or {}).get("artifact") if isinstance(claim.get("source"), dict) else ""),
-        _clean(claim.get("source_version")),
-        _clean(claim.get("locator") or (claim.get("source") or {}).get("locator")
-               if isinstance(claim.get("source"), dict) else claim.get("locator")),
+        _clean(source_id),
+        _clean(source_version),
+        _clean(locator),
         _clean(claim.get("epistemic") or claim.get("epistemic_class") or "asserted"),
         _clean(claim.get("value")),
     )

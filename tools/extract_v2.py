@@ -63,6 +63,7 @@ from tools.llm_provider import (  # noqa: E402
     openrouter_extra_body,
 )
 from tools.archetype_pack import load_pack, workstream_ids  # noqa: E402
+from tools.object_identity import claim_id as canonical_claim_id  # noqa: E402
 from tools.source_envelope import extractor_source_record  # noqa: E402
 from tools.source_capabilities import (  # noqa: E402
     CAPABILITY_SCHEMA,
@@ -1414,6 +1415,7 @@ class RawClaim:
     source_id: str
     source_path: str
     known_at: str
+    source_version_id: str | None = None
     derivation: str | None = None
     author: str | None = None
     # Identity dimensions. Defaulted so a cached raw_claims run predating these
@@ -1574,6 +1576,9 @@ def annotate_chunk(
                     source_id=src["source_id"],
                     source_path=chunk.source_path,
                     known_at=src["known_at"],
+                    source_version_id=(
+                        (src.get("source_envelope") or {}).get("source_version_id")
+                    ),
                     derivation=c.get("derivation"),
                     author=c.get("author"),
                     entity=c.get("entity") or "unspecified",
@@ -1619,15 +1624,10 @@ def _normalize_period(raw: str | None) -> str:
     return f"RAW:{raw}"
 
 
-def _stable_id(metric: str, value: Any, period_iso: str, perimeter: str) -> str:
-    key = f"{metric}|{value}|{period_iso}|{perimeter}"
-    return "ks-" + hashlib.sha256(key.encode()).hexdigest()[:12]
-
-
 @dataclass
 class CanonicalClaim:
     # --- CAP-003 required fields (aligned to benchmark v1.1) ---
-    claim_id: str           # ks-sha256 stable content-addressed ID
+    claim_id: str           # canonical claim:<sha256> content-addressed ID
     statement: str
     source_id: str          # SRC-CIM, SRC-QOE, etc.
     locator: str
@@ -1650,6 +1650,7 @@ class CanonicalClaim:
     topic: str
     derivation: str | None
     author: str | None
+    source_version_id: str | None = None
     # Identity dimensions — see tools/object_identity.py for how they key a claim.
     entity: str = "unspecified"
     period_canonical: str = "none"
@@ -1689,7 +1690,23 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         errors.append(
             "characterisation without checkable content — a descriptor, not evidence"
         )
-    claim_id = _stable_id(raw.metric, value, period_iso, perimeter)
+    claim_id = canonical_claim_id({
+        "entity": raw.entity,
+        "metric": raw.metric,
+        "period": raw.period,
+        "period_canonical": raw.period_canonical,
+        "scope": raw.scope,
+        "basis": raw.basis,
+        "measurement": raw.measurement,
+        "scenario": raw.scenario,
+        "unit": raw.unit,
+        "source_id": raw.source_id,
+        "source_version_id": raw.source_version_id,
+        "locator": raw.locator,
+        "epistemic_class": ec,
+        "value": value,
+        "perimeter": perimeter,
+    })
     return CanonicalClaim(
         claim_id=claim_id,
         statement=raw.statement,
@@ -1709,6 +1726,7 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         metric=raw.metric,
         source_path=raw.source_path,
         known_at=raw.known_at,
+        source_version_id=raw.source_version_id,
         direction=raw.direction,
         topic=raw.topic,
         derivation=raw.derivation,
@@ -1824,6 +1842,7 @@ def _to_e3_manifest(graph: SubGraph, deal: str, manifest: str,
                     "claim_id": c.claim_id,
                     "metric": c.metric,
                     "known_at": c.known_at,
+                    "source_version_id": c.source_version_id,
                     "direction": c.direction,
                     "topic": c.topic,
                     "derivation": c.derivation,

@@ -47,6 +47,11 @@ import hashlib as _hashlib
 import json as _json
 import re
 
+try:
+    from tools.object_identity import claim_id as _canonical_claim_id
+except ModuleNotFoundError:  # Vercel receives canonical IDs from _extract_v2.
+    _canonical_claim_id = None
+
 # ── Macro area taxonomy ──────────────────────────────────────────────────────
 _AREA_RULES: list[tuple[str, str]] = [
     ("revenue",          "Revenue"),    ("recurring",     "Revenue"),
@@ -595,14 +600,28 @@ def claims_to_graph(
         period_raw = c.get("period", "")
         as_of_raw  = c.get("as_of", "")
 
-        # Stable content-based ID — persists across re-extractions of the same claim.
-        # Hash of: metric + value + period + perimeter + source_doc + epistemic + subject[:32]
-        _stable_payload = "|".join([
-            metric, str(c.get("value", "")), period_raw,
-            c.get("perimeter", ""), src_doc_raw,
-            c.get("epistemic", "asserted"), subject[:32],
-        ]).encode()
-        stable_id = "cid:" + _hashlib.sha256(_stable_payload).hexdigest()[:16]
+        # Identity is normalized before hashing by the canonical owner. Modern
+        # extractors persist that ID; local graph callers without one compute it
+        # through the same contract. Never hash raw statement/subject prose.
+        supplied_claim_id = str(c.get("claim_id") or "")
+        if supplied_claim_id.startswith("claim:"):
+            stable_id = supplied_claim_id
+        elif _canonical_claim_id is not None:
+            stable_id = _canonical_claim_id({
+                **c,
+                "metric": metric or c.get("subject"),
+                "source_id": c.get("source_id") or src_doc_raw,
+                "epistemic_class": c.get("epistemic_class")
+                or c.get("epistemic", "asserted"),
+            })
+        elif supplied_claim_id:
+            # Compatibility for a Vercel bundle still reading a frozen legacy
+            # corpus. New extraction output must always carry claim:<hash>.
+            stable_id = supplied_claim_id
+        else:
+            raise ValueError(
+                "claim_id is required when canonical identity is unavailable"
+            )
 
         # effective_date: normalized period for temporal ordering.
         # known_at: when the data was ingested (set to as_of as proxy; real ingestion

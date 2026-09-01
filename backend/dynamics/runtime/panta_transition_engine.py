@@ -321,9 +321,56 @@ def compute_operative_claims(graph: Mapping[str, Any], *, as_of: str | None = No
     for group in groups:
         group["superseded_ids"] = list(group["superseded_claim_ids"])
 
+    # Stated positions are deliberately not claims: they are immutable,
+    # attributed human views and have neither the metric-identity tuple nor the
+    # epistemic ranking used above.  Do not silently make them disappear when a
+    # caller supplies the whole Current graph to this claim-only resolver.  In
+    # particular, opposite current views from one person require a human to
+    # express an explicit supersession; recency is not authority to choose one.
+    stated_by_id = {
+        str(item.get("stated_position_id")): item
+        for item in graph.get("stated_positions", []) or []
+        if isinstance(item, Mapping) and item.get("stated_position_id")
+    }
+    superseded_stated_ids = {
+        str(item.get("supersedes_stated_position_id"))
+        for item in stated_by_id.values()
+        if item.get("supersedes_stated_position_id")
+    }
+    current_stated_by_person: dict[str, list[tuple[str, Mapping[str, Any]]]] = defaultdict(list)
+    for stated_id, stated in stated_by_id.items():
+        if stated_id in superseded_stated_ids:
+            continue
+        stated_by = str(stated.get("stated_by") or "")
+        if stated_by:
+            current_stated_by_person[stated_by].append((stated_id, stated))
+
+    coverage_limits: list[dict[str, Any]] = []
+    for stated_by, entries in sorted(current_stated_by_person.items()):
+        directions = {str(item.get("direction") or "") for _id, item in entries}
+        has_opposed_views = bool({"SUPPORTIVE", "ADVERSE"} <= directions)
+        if len(entries) > 1 and has_opposed_views:
+            scope_ids = sorted(stated_id for stated_id, _item in entries)
+            coverage_limits.append(
+                {
+                    "limit_id": "STATED-POSITION-CONFLICT:"
+                    + hashlib.sha256("|".join(scope_ids).encode("utf-8")).hexdigest()[:12],
+                    "reason_code": "STATED_POSITION_OPERATIVE_RESOLUTION_UNSUPPORTED",
+                    "scope_ids": scope_ids,
+                    "stated_by": stated_by,
+                    "resolution": "HUMAN_STOP",
+                    "effect": (
+                        "Conflicting current StatedPositions are attributed human views, "
+                        "not metric-identified claims. Record an explicit supersession or "
+                        "a human reconciliation; compute_operative_claims selected no view."
+                    ),
+                }
+            )
+
     return {
         "groups": groups,
         "unresolvable": sorted(unresolvable),
+        "coverage_limits": coverage_limits,
         "stats": {
             "total_claims": len(claims), "eligible_claims": sum(len(items) for items in grouped.values()),
             "unresolvable_claims": len(unresolvable), "excluded_as_of_claims": excluded_as_of,

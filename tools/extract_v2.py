@@ -1435,9 +1435,25 @@ def annotate_chunk(
             "tool_choice": {"type": "tool", "name": "emit_claims"},
             "messages": [{"role": "user", "content": prompt}],
         }
-        extra_body = openrouter_extra_body()
-        if extra_body:
-            request["extra_body"] = extra_body
+        # Sampling temperature. SDK 1.0.0 dropped `temperature` from the typed
+        # signature of messages.create, but the API still honours it, and the SDK
+        # forwards extra_body verbatim — so this is the only route to it here.
+        #
+        # It is not a nicety. Measured on one 92-word Keystone chunk at the API
+        # default of 1.0: the claim count was stable at 11 across four runs, yet
+        # all four identity fingerprints differed and not one of the 33
+        # identities recurred in every run — the same EBITDA was FirmView twice
+        # and something else the other two times.
+        #
+        # Extraction varying in *what* it finds would be visible. Varying in how
+        # it *classifies* what it found is invisible and worse: the same quantity
+        # lands under different identities, so grouping and contradiction
+        # detection quietly stop working.
+        extra_body = {"temperature": 0}
+        provider_extra = openrouter_extra_body()
+        if provider_extra:
+            extra_body.update(provider_extra)
+        request["extra_body"] = extra_body
         resp = client.messages.create(**request)
         time.sleep(rate_limit_delay)
     except Exception as e:

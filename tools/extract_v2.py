@@ -322,6 +322,31 @@ PERIOD_MAP: dict[str, str] = {
 
 EPISTEMIC_CLASS_ENUM = ["asserted", "observed", "derived", "attested"]
 DIRECTION_ENUM = ["supports", "contradicts", "context"]
+
+# What kind of assertion a claim is. The distinction that matters is the last
+# one: a sentence with no number earns a claim only if someone could later
+# confirm or refute it. "No material litigation as of 30 June" is checkable;
+# "a scaled regional platform" is not, and admitting it puts a seller's adjective
+# into the case as though it were evidence.
+#
+# This criterion used to be implicit, and that is exactly where extraction
+# wobbled: across runs of one paragraph the quantified claims were identical
+# every time, while a valueless MarketPosition claim from the phrase "scaled
+# regional platform" appeared in some runs and not others.
+CLAIM_KIND_ENUM = [
+    "QUANTITATIVE",     # carries a number or a measured quantity
+    "DEFINITION",       # states how something is defined or calculated
+    "CONDITION",        # states a requirement, contingency or covenant
+    "ATTRIBUTION",      # states who said, did or decided something
+    "NEGATIVE",         # explicitly asserts an absence — checkable, so admissible
+    "CHARACTERISATION", # a descriptor with no checkable content — DO NOT EMIT
+]
+
+# How to read the number. "More than 600 accounts" recorded as 600 EXACT makes a
+# later, entirely consistent "640" look like a contradiction. The bound is not
+# part of identity — it describes the value, not the quantity being measured —
+# but comparison must respect it.
+BOUND_ENUM = ["EXACT", "AT_LEAST", "AT_MOST", "APPROXIMATE", "RANGE", "NONE"]
 ARCHETYPE_PACK = load_pack()
 # "Use workstream/concept families to select schemas. Category never creates identity or contradiction."
 # Topic is extraction routing metadata only; identity and conflict logic deliberately ignore it.
@@ -401,6 +426,7 @@ CLAIM_TOOL = {
                     "required": [
                         "metric", "value", "unit", "period", "perimeter",
                         "entity", "period_canonical", "scope", "measurement", "basis", "scenario",
+                        "claim_kind", "bound",
                         "epistemic_class", "direction", "topic",
                         "statement", "locator_hint",
                     ],
@@ -516,6 +542,43 @@ CLAIM_TOOL = {
                                 "management=management's own forecast; seller=seller case; "
                                 "base=our base case or an actual historical figure; "
                                 "unspecified=the source does not distinguish cases."
+                            ),
+                        },
+                        "claim_kind": {
+                            "type": "string",
+                            "enum": CLAIM_KIND_ENUM,
+                            "description": (
+                                "What kind of assertion this is. The test for a sentence with no "
+                                "number is whether someone could later CONFIRM OR REFUTE it:\n"
+                                "  QUANTITATIVE    carries a number or measured quantity\n"
+                                "  DEFINITION      states how something is defined or calculated\n"
+                                "  CONDITION       states a requirement, contingency or covenant\n"
+                                "  ATTRIBUTION     states who said, did or decided something\n"
+                                "  NEGATIVE        explicitly asserts an absence — checkable\n"
+                                "  CHARACTERISATION a descriptor with no checkable content\n"
+                                "Label honestly; what happens to each kind is not your "
+                                "concern. 'A scaled regional platform', 'low capital "
+                                "expenditure' and 'strong market position' are "
+                                "CHARACTERISATION — the seller's adjectives, with nothing to "
+                                "check. 'No material litigation as of 30 June' is NEGATIVE: an "
+                                "absence someone can verify. Do not reach for NEGATIVE when a "
+                                "phrase is merely favourable."
+                            ),
+                        },
+                        "bound": {
+                            "type": "string",
+                            "enum": BOUND_ENUM,
+                            "description": (
+                                "How to read the number.\n"
+                                "  EXACT       the figure as stated\n"
+                                "  AT_LEAST    'more than 600', 'over 72%', 'at least 4'\n"
+                                "  AT_MOST     'up to 15%', 'no more than 3x', 'below 2%'\n"
+                                "  APPROXIMATE 'around 11.4', 'circa', 'roughly'\n"
+                                "  RANGE       '1%-2%' — put the lower figure in value\n"
+                                "  NONE        the claim carries no number\n"
+                                "Get this right or a later consistent figure reads as a conflict: "
+                                "'more than 600' stored as EXACT 600 makes a subsequent 640 look "
+                                "like a contradiction when the two agree."
                             ),
                         },
                         "epistemic_class": {
@@ -1361,6 +1424,8 @@ class RawClaim:
     # Which slice of the quantity. "total" means the whole; blank collides a
     # component with its own total, which reads as a contradiction.
     measurement: str = "total"
+    claim_kind: str = "QUANTITATIVE"
+    bound: str = "EXACT"
     basis: str = "unspecified"
     scenario: str = "unspecified"
 
@@ -1515,6 +1580,8 @@ def annotate_chunk(
                     period_canonical=c.get("period_canonical") or "none",
                     scope=c.get("scope") or "unspecified",
                     measurement=c.get("measurement") or "total",
+                    claim_kind=c.get("claim_kind") or "QUANTITATIVE",
+                    bound=c.get("bound") or "EXACT",
                     basis=c.get("basis") or "unspecified",
                     scenario=c.get("scenario") or "unspecified",
                 ))
@@ -1588,6 +1655,8 @@ class CanonicalClaim:
     period_canonical: str = "none"
     scope: str = "unspecified"
     measurement: str = "total"
+    claim_kind: str = "QUANTITATIVE"
+    bound: str = "EXACT"
     basis: str = "unspecified"
     scenario: str = "unspecified"
     validation_errors: list[str] = field(default_factory=list)
@@ -1607,6 +1676,19 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         errors.append(f"invalid epistemic_class: '{raw.epistemic_class}'")
     if ec == "derived" and not (raw.derivation or "").strip():
         errors.append("derived claim missing derivation field")
+    # The schema tells the model not to emit a CHARACTERISATION, and the model
+    # labels one correctly and emits it anyway — observed on "low capital
+    # expenditure", classified CHARACTERISATION and returned regardless.
+    #
+    # So the rule is enforced here instead of asked for. A deterministic filter
+    # is the right home for it in any case: it cannot drift between runs, and the
+    # claim lands in rejected_claims.json with a reason rather than silently
+    # never existing. A seller's adjective kept out of the case is a decision
+    # somebody can review; one that was never extracted is invisible.
+    if str(raw.claim_kind or "").upper() == "CHARACTERISATION":
+        errors.append(
+            "characterisation without checkable content — a descriptor, not evidence"
+        )
     claim_id = _stable_id(raw.metric, value, period_iso, perimeter)
     return CanonicalClaim(
         claim_id=claim_id,
@@ -1635,6 +1717,8 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         period_canonical=raw.period_canonical or "none",
         scope=raw.scope or "unspecified",
         measurement=raw.measurement or "total",
+        claim_kind=raw.claim_kind or "QUANTITATIVE",
+        bound=raw.bound or "EXACT",
         basis=raw.basis or "unspecified",
         scenario=raw.scenario or "unspecified",
         validation_errors=errors,
@@ -1748,6 +1832,8 @@ def _to_e3_manifest(graph: SubGraph, deal: str, manifest: str,
                     "period_canonical": c.period_canonical,
                     "scope": c.scope,
                     "measurement": c.measurement,
+                    "claim_kind": c.claim_kind,
+                    "bound": c.bound,
                     "basis": c.basis,
                     "scenario": c.scenario,
                 }

@@ -507,3 +507,57 @@ def _audit_vault() -> None:
 
 if __name__ == "__main__":
     _audit_vault()
+
+
+# ── Comparing values that carry a bound ───────────────────────────────────────
+
+def _as_number(value: Any) -> float | None:
+    try:
+        return float(str(value).strip().replace(",", ""))
+    except (TypeError, ValueError):
+        return None
+
+
+def values_conflict(a: dict, b: dict, *, tolerance: float = 0.005) -> tuple[bool, str]:
+    """Do two claims about the SAME identity actually disagree?
+
+    Returns (conflict, reason). Identity is the caller's job — this only answers
+    whether the numbers are incompatible once they are known to describe the same
+    quantity.
+
+    Recording a bound is pointless unless comparison honours it. "More than 600"
+    and "640" agree; stored as two exact figures they read as a contradiction,
+    and the case gains a conflict that does not exist. That failure is worse than
+    missing a real one, because someone then spends an afternoon reconciling two
+    statements that never disagreed.
+    """
+    x, y = _as_number(a.get("value")), _as_number(b.get("value"))
+    if x is None or y is None:
+        return False, "almeno un claim non porta un numero — nessun confronto possibile"
+
+    bound_a = str(a.get("bound") or "EXACT").upper()
+    bound_b = str(b.get("bound") or "EXACT").upper()
+    scale = max(abs(x), abs(y), 1.0)
+
+    if abs(x - y) <= tolerance * scale:
+        return False, "stesso valore entro tolleranza"
+
+    # A lower bound is satisfied by anything at or above it, and vice versa. Only
+    # a figure on the wrong side of the bound is a real disagreement.
+    def satisfies(bound: str, limit: float, other: float) -> bool | None:
+        if bound == "AT_LEAST":
+            return other >= limit
+        if bound == "AT_MOST":
+            return other <= limit
+        if bound == "APPROXIMATE":
+            return abs(other - limit) <= 0.10 * max(abs(limit), 1.0)
+        return None
+
+    for bound, limit, other, who in ((bound_a, x, y, "primo"), (bound_b, y, x, "secondo")):
+        verdict = satisfies(bound, limit, other)
+        if verdict is True:
+            return False, f"il {who} claim è {bound} {limit:g}, e {other:g} lo soddisfa"
+        if verdict is False:
+            return True, f"il {who} claim è {bound} {limit:g}, ma {other:g} lo viola"
+
+    return True, f"due valori esatti divergenti: {x:g} contro {y:g}"

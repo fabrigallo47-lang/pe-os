@@ -77,6 +77,7 @@
           "enum": [
             "CLAIM",
             "POSITION",
+            "STATED_POSITION",
             "MODEL_NODE",
             "SUPPORT_ROUTE",
             "ARTIFACT"
@@ -120,6 +121,52 @@
             "string",
             "null"
           ]
+        },
+        "stated_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "direction": {
+          "enum": [
+            "SUPPORTIVE",
+            "ADVERSE",
+            "MIXED",
+            "NEUTRAL",
+            "UNRESOLVED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "effective_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "known_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "question_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "supersedes_stated_position_id": {
+          "type": "string",
+          "minLength": 1
         }
       },
       "additionalProperties": true

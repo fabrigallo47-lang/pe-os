@@ -46,7 +46,7 @@ if str(_REPOSITORY_ROOT) not in sys.path:
 from tools.object_identity import is_resolvable, metric_identity
 
 
-ENGINE_VERSION = "0.4.0-conformance"
+ENGINE_VERSION = "0.5.0-conformance"
 OUTPUT_SCHEMA_VERSION = "transition-output-1.0"
 RUNTIME_STATE_VERSION = "runtime-state-1.0"
 
@@ -72,7 +72,28 @@ MUTATION_OPERATIONS = frozenset(
     {"ADD", "OBSERVE", "CORRECT", "SUPERSEDE", "RETRACT"}
 )
 MUTATION_OBJECT_TYPES = frozenset(
-    {"CLAIM", "POSITION", "MODEL_NODE", "SUPPORT_ROUTE", "ARTIFACT"}
+    {
+        "CLAIM",
+        "POSITION",
+        "STATED_POSITION",
+        "MODEL_NODE",
+        "SUPPORT_ROUTE",
+        "ARTIFACT",
+    }
+)
+STATED_POSITION_DIRECTIONS = frozenset(
+    {"SUPPORTIVE", "ADVERSE", "MIXED", "NEUTRAL", "UNRESOLVED", "NOT_APPLICABLE"}
+)
+STATED_POSITION_REQUIRED_FIELDS = frozenset(
+    {
+        "stated_by",
+        "source_id",
+        "locator",
+        "statement",
+        "direction",
+        "effective_date",
+        "known_at",
+    }
 )
 
 # Fields only a recorded human decision may write. The engine can compute how
@@ -359,6 +380,69 @@ def _validate_iso(value: Any, field: str) -> None:
         raise EventInputError(f"invalid {field}: {value!r}") from exc
 
 
+def _validate_stated_position_mutation(
+    event: Mapping[str, Any], mutation: Mapping[str, Any]
+) -> None:
+    """Validate one append-only attributed view before it reaches the graph."""
+    event_id = str(event["event_id"])
+    if mutation["operation"] != "ADD":
+        raise EventInputError(
+            f"event {event_id}: STATED_POSITION is immutable; a changed view must be "
+            "a new ADD with supersedes_stated_position_id"
+        )
+    if mutation.get("field") not in {None, "__lifecycle__"}:
+        raise EventInputError(
+            f"event {event_id}: STATED_POSITION ADD cannot target a mutable field"
+        )
+    missing = sorted(
+        field
+        for field in STATED_POSITION_REQUIRED_FIELDS
+        if not isinstance(mutation.get(field), str) or not mutation[field].strip()
+    )
+    if missing:
+        raise EventInputError(
+            f"event {event_id}: STATED_POSITION missing non-empty fields: "
+            + ", ".join(missing)
+        )
+    if mutation["direction"] not in STATED_POSITION_DIRECTIONS:
+        raise EventInputError(
+            f"event {event_id}: unsupported STATED_POSITION direction "
+            f"{mutation['direction']!r}"
+        )
+    _validate_iso(mutation["effective_date"], "effective_date")
+    _validate_iso(mutation["known_at"], "known_at")
+    if mutation["effective_date"] != event["effective_date"]:
+        raise EventInputError(
+            f"event {event_id}: STATED_POSITION effective_date must match its event"
+        )
+    if mutation["known_at"] != event["known_at"]:
+        raise EventInputError(
+            f"event {event_id}: STATED_POSITION known_at must match its event"
+        )
+    if mutation["source_id"] not in event["source_ids"]:
+        raise EventInputError(
+            f"event {event_id}: STATED_POSITION source_id must be declared in source_ids"
+        )
+    question_ids = mutation.get("question_ids", [])
+    if (
+        not isinstance(question_ids, list)
+        or any(not isinstance(item, str) or not item for item in question_ids)
+        or len(question_ids) != len(set(question_ids))
+    ):
+        raise EventInputError(
+            f"event {event_id}: STATED_POSITION question_ids must be unique non-empty strings"
+        )
+    supersedes = mutation.get("supersedes_stated_position_id")
+    if supersedes is not None and (
+        not isinstance(supersedes, str)
+        or not supersedes
+        or supersedes == mutation["object_id"]
+    ):
+        raise EventInputError(
+            f"event {event_id}: invalid supersedes_stated_position_id"
+        )
+
+
 def _event_batch_key(event: Mapping[str, Any]) -> tuple[str, str]:
     if event.get("batch_id"):
         return ("BATCH", str(event["batch_id"]))
@@ -452,6 +536,8 @@ def normalize_event_batch(event_batch: Sequence[Mapping[str, Any]]) -> list[dict
                 raise EventInputError(
                     f"event {event_id}: mutation object_id must be a non-empty string"
                 )
+            if mutation["object_type"] == "STATED_POSITION":
+                _validate_stated_position_mutation(event, mutation)
             if "unit" in mutation:
                 mutation["unit"] = _normalize_unit(mutation["unit"])
             normalized_mutations.append(mutation)
@@ -561,6 +647,7 @@ def _validate_case_graph(graph: Mapping[str, Any]) -> None:
     for collection, id_field in (
         ("claims", "claim_id"),
         ("case_positions", "position_id"),
+        ("stated_positions", "stated_position_id"),
         ("model_nodes", "model_node_id"),
         ("support_routes", "route_id"),
     ):
@@ -572,6 +659,7 @@ def _object_registry(graph: MutableMapping[str, Any]) -> dict[str, dict[str, Any
     specs = (
         ("claims", "claim_id", "CLAIM"),
         ("case_positions", "position_id", "POSITION"),
+        ("stated_positions", "stated_position_id", "STATED_POSITION"),
         ("model_nodes", "model_node_id", "MODEL_NODE"),
         ("support_routes", "route_id", "SUPPORT_ROUTE"),
         ("artifacts", "artifact_id", "ARTIFACT"),
@@ -3067,6 +3155,134 @@ def apply_state_transition(
             )[0]
             entry = registry.get(object_id)
             if entry is None:
+                if (
+                    mutation["operation"] == "ADD"
+                    and mutation["object_type"] == "STATED_POSITION"
+                ):
+                    relation_type = mutation.get("relation_type")
+                    target_position_id = mutation.get("target_position_id")
+                    if (relation_type is None) != (target_position_id is None):
+                        rejected_mutations.append(
+                            {
+                                "object_type": "STATED_POSITION",
+                                "object_id": object_id,
+                                "field": field,
+                                "reason_code": "INCOMPLETE_STATED_POSITION_RELATION",
+                            }
+                        )
+                        continue
+                    if relation_type is not None:
+                        target_entry = registry.get(str(target_position_id))
+                        if relation_type not in {"SUPPORTS", "CONTRADICTS"}:
+                            rejected_mutations.append(
+                                {
+                                    "object_type": "STATED_POSITION",
+                                    "object_id": object_id,
+                                    "field": field,
+                                    "reason_code": "UNSUPPORTED_STATED_POSITION_RUNTIME_RELATION",
+                                }
+                            )
+                            continue
+                        if target_entry is None or target_entry["object_type"] != "POSITION":
+                            rejected_mutations.append(
+                                {
+                                    "object_type": "STATED_POSITION",
+                                    "object_id": object_id,
+                                    "field": field,
+                                    "reason_code": "UNKNOWN_TARGET_POSITION_ID",
+                                }
+                            )
+                            continue
+
+                    supersedes = mutation.get("supersedes_stated_position_id")
+                    if supersedes is not None:
+                        prior_position = registry.get(str(supersedes))
+                        if (
+                            prior_position is None
+                            or prior_position["object_type"] != "STATED_POSITION"
+                        ):
+                            rejected_mutations.append(
+                                {
+                                    "object_type": "STATED_POSITION",
+                                    "object_id": object_id,
+                                    "field": field,
+                                    "reason_code": "UNKNOWN_SUPERSEDED_STATED_POSITION_ID",
+                                }
+                            )
+                            continue
+
+                    new_stated_position = {
+                        "stated_position_id": object_id,
+                        "stated_by": mutation["stated_by"],
+                        "source_id": mutation["source_id"],
+                        "locator": mutation["locator"],
+                        "statement": mutation["statement"],
+                        "direction": mutation["direction"],
+                        "effective_date": mutation["effective_date"],
+                        "known_at": mutation["known_at"],
+                        "question_ids": sorted(set(mutation.get("question_ids", []))),
+                        "created_by_event_id": event["event_id"],
+                    }
+                    if supersedes is not None:
+                        new_stated_position["supersedes_stated_position_id"] = supersedes
+                    new_stated_position["content_hash"] = _sha256(
+                        {
+                            key: new_stated_position[key]
+                            for key in (
+                                "stated_by",
+                                "source_id",
+                                "locator",
+                                "statement",
+                                "direction",
+                                "effective_date",
+                                "known_at",
+                                "question_ids",
+                            )
+                        }
+                    )
+                    candidate_graph.setdefault("stated_positions", []).append(
+                        new_stated_position
+                    )
+                    registry[object_id] = {
+                        "object_type": "STATED_POSITION",
+                        "collection": "stated_positions",
+                        "id_field": "stated_position_id",
+                        "object": new_stated_position,
+                    }
+                    admitted = {
+                        "event_id": event["event_id"],
+                        "operation": "ADD",
+                        "object_type": "STATED_POSITION",
+                        "object_id": object_id,
+                        "field": "__lifecycle__",
+                        "from": None,
+                        "to": "ACTIVE",
+                        "unit": None,
+                        "relation_type": relation_type,
+                        "target_position_id": target_position_id,
+                    }
+                    if supersedes is not None:
+                        admitted["supersedes_stated_position_id"] = supersedes
+                    admitted_mutations.append(admitted)
+                    trigger_ids.add(object_id)
+
+                    if relation_type is not None:
+                        edge_id = "EVENT-EDGE:" + hashlib.sha256(
+                            f"{event['event_id']}|{object_id}|{relation_type}|{target_position_id}".encode(
+                                "utf-8"
+                            )
+                        ).hexdigest()[:12]
+                        candidate_graph.setdefault("position_dependencies", []).append(
+                            {
+                                "edge_id": edge_id,
+                                "from_position_id": object_id,
+                                "to_position_id": target_position_id,
+                                "relation_type": relation_type,
+                                "semantic_role": "ATTRIBUTED_VIEW_TO_CASE_READING",
+                                "traversal_rule": "source_to_target_then_target_downstream",
+                            }
+                        )
+                    continue
                 if mutation["operation"] == "ADD" and mutation["object_type"] == "CLAIM":
                     relation_type = mutation.get("relation_type")
                     target_position_id = mutation.get("target_position_id")

@@ -40,6 +40,13 @@
         "$ref": "#/$defs/position"
       }
     },
+    "stated_positions": {
+      "description": "Append-only attributed human views. Legacy case_positions remain computed CaseReadings.",
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/stated_position"
+      }
+    },
     "model_nodes": {
       "type": "array",
       "items": {
@@ -167,6 +174,83 @@
           ]
         }
       }
+    },
+    "stated_position": {
+      "type": "object",
+      "required": [
+        "stated_position_id",
+        "stated_by",
+        "source_id",
+        "locator",
+        "statement",
+        "direction",
+        "effective_date",
+        "known_at",
+        "question_ids",
+        "created_by_event_id",
+        "content_hash"
+      ],
+      "properties": {
+        "stated_position_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "stated_by": {
+          "type": "string",
+          "minLength": 1
+        },
+        "source_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "locator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "statement": {
+          "type": "string",
+          "minLength": 1
+        },
+        "direction": {
+          "enum": [
+            "SUPPORTIVE",
+            "ADVERSE",
+            "MIXED",
+            "NEUTRAL",
+            "UNRESOLVED",
+            "NOT_APPLICABLE"
+          ]
+        },
+        "effective_date": {
+          "type": "string",
+          "format": "date"
+        },
+        "known_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "question_ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "created_by_event_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "supersedes_stated_position_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "content_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        }
+      },
+      "additionalProperties": false
     },
     "model_node": {
       "type": "object",

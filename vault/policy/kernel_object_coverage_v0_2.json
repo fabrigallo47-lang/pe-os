@@ -13,6 +13,7 @@
     "canonical_case_defs": [
       "claim",
       "position",
+      "stated_position",
       "model_node",
       "position_edge",
       "claim_position_edge",
@@ -21,6 +22,7 @@
     "kernel_object_aliases": {
       "Claim": ["claim"],
       "CaseReading": ["position"],
+      "StatedPosition": ["stated_position"],
       "ModelNode": ["model_node"]
     },
     "non_kernel_graph_defs": [
@@ -35,6 +37,7 @@
       "COMPONENT",
       "MODEL_NODE",
       "POSITION",
+      "STATED_POSITION",
       "SUPPORT_ROUTE"
     ],
     "dynamic_mutation_object_types": [
@@ -42,6 +45,7 @@
       "CLAIM",
       "MODEL_NODE",
       "POSITION",
+      "STATED_POSITION",
       "SUPPORT_ROUTE"
     ]
   },
@@ -50,14 +54,14 @@
     "RUNTIME_GAP": "The type must participate directly in deterministic state or frozen runtime relations, but has no first-class Dynamic representation.",
     "SEMANTIC_ONLY": "The type belongs in provenance, compiler, ledger, retrieval, or UI projections and must not become a Dynamic mutation merely to match the kernel vocabulary.",
     "implementation_status": ["COMPLETE", "PARTIAL", "ABSENT"],
-    "freeze_boundary": "This audit does not modify the frozen canonical case or Dynamic schemas. Every runtime gap requires an explicit versioned migration or adapter decision."
+    "freeze_boundary": "PAN-74 adds StatedPosition without renaming or changing the meaning of frozen POSITION/CaseReading fields. Remaining runtime gaps still require an explicit versioned migration or adapter decision."
   },
   "summary": {
-    "ALREADY_COVERED": 14,
-    "RUNTIME_GAP": 3,
+    "ALREADY_COVERED": 15,
+    "RUNTIME_GAP": 2,
     "SEMANTIC_ONLY": 5,
-    "complete": 6,
-    "partial": 14,
+    "complete": 7,
+    "partial": 13,
     "absent": 2
   },
   "objects": [
@@ -183,16 +187,15 @@
     },
     {
       "kernel_type": "StatedPosition",
-      "classification": "RUNTIME_GAP",
-      "implementation_status": "PARTIAL",
-      "current_representation": "compiler proposals can name StatedPosition, but POSITION currently means the computed CaseReading and has no attribution fields",
-      "dynamic_mutation_type": null,
+      "classification": "ALREADY_COVERED",
+      "implementation_status": "COMPLETE",
+      "current_representation": "append-only stated_positions collection and STATED_POSITION ADD mutations, separate from computed POSITION/CaseReading",
+      "dynamic_mutation_type": "STATED_POSITION",
       "evidence": [
-        {"path": "vault/policy/archetypes/semantic_handoff_v0_2/04_semantic_extraction_contract_v0_2.schema.json", "anchor": "StatedPosition"},
-        {"path": "backend/dynamics/schemas/canonical_investment_case.schema.json", "anchor": "epistemic_status_at_ic"}
+        {"path": "backend/dynamics/schemas/canonical_investment_case.schema.json", "anchor": "\"stated_position\""},
+        {"path": "backend/dynamics/runtime/panta_transition_engine.py", "anchor": "STATED_POSITION_REQUIRED_FIELDS"}
       ],
-      "next_step": "Resolve PAN-74's versioning/name decision, then add a versioned adapter without reusing POSITION silently.",
-      "follow_up_issue": "PAN-74"
+      "next_step": "Keep immutable and separate from POSITION; a changed view is a new record linked by supersedes_stated_position_id."
     },
     {
       "kernel_type": "CaseReading",

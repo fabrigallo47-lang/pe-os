@@ -499,6 +499,7 @@
       "enum": [
         "CLAIM",
         "POSITION",
+        "STATED_POSITION",
         "MODEL_NODE",
         "SUPPORT_ROUTE",
         "ARTIFACT",

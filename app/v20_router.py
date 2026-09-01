@@ -1501,6 +1501,7 @@ def _graph_content_hash(graph: dict) -> str:
 _GRAPH_OBJECT_COLLECTIONS = (
     ("claims", "claim_id"),
     ("case_positions", "position_id"),
+    ("stated_positions", "stated_position_id"),
     ("model_nodes", "model_node_id"),
     ("support_routes", "route_id"),
     ("artifacts", "artifact_id"),
@@ -1859,6 +1860,7 @@ def _graph_counts(graph: dict) -> dict[str, int]:
     return {
         "claims": len(graph.get("claims", [])),
         "case_positions": len(graph.get("case_positions", graph.get("positions", []))),
+        "stated_positions": len(graph.get("stated_positions", [])),
         "model_nodes": len(graph.get("model_nodes", [])),
         "support_routes": len(graph.get("support_routes", [])),
         "claim_position_edges": len(graph.get("claim_position_edges", [])),

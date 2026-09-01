@@ -24,7 +24,7 @@ class Pan82KernelObjectInventoryTests(unittest.TestCase):
         self.assertEqual(audit_inventory(self.inventory), [])
         self.assertEqual(len(self.by_type), 22)
 
-    def test_six_frozen_defs_are_three_kernel_aliases_and_three_graph_constructs(self):
+    def test_runtime_defs_separate_kernel_aliases_from_graph_constructs(self):
         contracts = self.inventory["frozen_contracts"]
         aliases = {
             schema_def
@@ -33,20 +33,23 @@ class Pan82KernelObjectInventoryTests(unittest.TestCase):
         }
         graph_defs = set(contracts["non_kernel_graph_defs"])
 
-        self.assertEqual(aliases, {"claim", "position", "model_node"})
+        self.assertEqual(
+            aliases,
+            {"claim", "position", "stated_position", "model_node"},
+        )
         self.assertEqual(
             graph_defs,
             {"position_edge", "claim_position_edge", "position_model_binding"},
         )
         self.assertEqual(aliases | graph_defs, set(contracts["canonical_case_defs"]))
 
-    def test_only_three_first_class_runtime_gaps_are_proposed(self):
+    def test_only_two_first_class_runtime_gaps_remain_after_pan74(self):
         runtime_gaps = {
             item["kernel_type"]
             for item in self.inventory["objects"]
             if item["classification"] == "RUNTIME_GAP"
         }
-        self.assertEqual(runtime_gaps, {"StatedPosition", "Assumption", "Condition"})
+        self.assertEqual(runtime_gaps, {"Assumption", "Condition"})
         for object_type in runtime_gaps:
             self.assertTrue(self.by_type[object_type]["follow_up_issue"])
 
@@ -73,15 +76,15 @@ class Pan82KernelObjectInventoryTests(unittest.TestCase):
         for object_type in semantic_only:
             self.assertIsNone(self.by_type[object_type]["dynamic_mutation_type"])
 
-    def test_audit_is_explicitly_non_binding_for_frozen_contracts(self):
+    def test_audit_records_pan74_as_additive_without_position_rename(self):
         self.assertEqual(
             self.inventory["status"],
             "ENGINEERING_AUDIT_NON_BINDING",
         )
-        self.assertIn(
-            "does not modify the frozen canonical case or Dynamic schemas",
-            self.inventory["classification_policy"]["freeze_boundary"],
-        )
+        boundary = self.inventory["classification_policy"]["freeze_boundary"]
+        self.assertIn("PAN-74 adds StatedPosition", boundary)
+        self.assertIn("without renaming", boundary)
+        self.assertIn("POSITION/CaseReading", boundary)
 
 
 if __name__ == "__main__":

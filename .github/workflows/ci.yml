@@ -1,0 +1,31 @@
+name: CI
+
+on:
+  push:
+    branches: [main, master, dev]
+  pull_request:
+
+jobs:
+  guards:
+    name: guards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: python3 tools/check_guards.py
+
+  suite:
+    name: suite
+    needs: guards
+    runs-on: ubuntu-latest
+    env:
+      PEOS_CI: "1"
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - run: pip install -r requirements.txt
+      - run: python3 tools/run_tests.py

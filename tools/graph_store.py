@@ -92,6 +92,8 @@ REFINES      = "REFINES"
 CORROBORATES = "CORROBORATES"
 DERIVES_FROM = "DERIVES_FROM"
 SUPPORTS     = "SUPPORTS"
+DRIVES       = "DRIVES"
+CONDITIONS   = "CONDITIONS"
 SUPERSEDES   = "SUPERSEDES"
 # Structural (V2)
 SUPPORTS_ROUTE     = "SUPPORTS_ROUTE"
@@ -105,7 +107,8 @@ ASSIGNED_TO        = "ASSIGNED_TO"
 UPDATES_STATE      = "UPDATES_STATE"
 
 SEMANTIC_RELS = {CONTRADICTS, CHALLENGES, TRACKS, REFINES,
-                 CORROBORATES, DERIVES_FROM, SUPPORTS, SUPERSEDES}
+                 CORROBORATES, DERIVES_FROM, SUPPORTS, DRIVES,
+                 CONDITIONS, SUPERSEDES}
 STRUCTURAL_RELS = {ABOUT, MEASURES, IN_PERIOD, SCOPED_TO,
                    FROM_SOURCE, BY_AUTHOR, IN_AREA_E, BEARS_ON}
 V2_STRUCTURAL_RELS = {SUPPORTS_ROUTE, ROUTE_FOR_POSITION, BINDS_TO,
@@ -180,9 +183,9 @@ class DealGraph:
             self.G.add_node(nid, **attrs)
         return nid
 
-    def _edge(self, src: str, tgt: str, rel: str) -> None:
+    def _edge(self, src: str, tgt: str, rel: str, **attrs) -> None:
         if not self.G.has_edge(src, tgt):
-            self.G.add_edge(src, tgt, rel=rel)
+            self.G.add_edge(src, tgt, rel=rel, **attrs)
 
     # ── Public: build ──────────────────────────────────────────────────────────
 
@@ -234,9 +237,9 @@ class DealGraph:
 
         return c_id
 
-    def add_semantic_edge(self, src_id: str, tgt_id: str, rel: str) -> None:
+    def add_semantic_edge(self, src_id: str, tgt_id: str, rel: str, **attrs) -> None:
         if src_id in self.G and tgt_id in self.G:
-            self._edge(src_id, tgt_id, rel)
+            self._edge(src_id, tgt_id, rel, **attrs)
 
     def load_from_claims_graph(self, claims: list[dict], graph_dict: dict) -> None:
         """
@@ -257,7 +260,17 @@ class DealGraph:
         for edge in graph_dict.get("edges", []):
             rel = edge.get("rel", "")
             if rel in SEMANTIC_RELS:
-                self.add_semantic_edge(_remap(edge["source"]), _remap(edge["target"]), rel)
+                attrs = {
+                    key: value
+                    for key, value in edge.items()
+                    if key not in {"source", "target", "rel"}
+                }
+                self.add_semantic_edge(
+                    _remap(edge["source"]),
+                    _remap(edge["target"]),
+                    rel,
+                    **attrs,
+                )
 
     # ── Public: analytics ────────────────────────────────────────────────────
 

@@ -38,6 +38,8 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
+from tools.relation_rules import annotate_edge  # noqa: E402
+
 
 SCHEMA_VERSION = "excel-formula-compilation/1.0"
 COMPILER_VERSION = "pan66-1.0"
@@ -916,7 +918,7 @@ class FormulaCompiler:
         directed_edges = []
         for formula in formulas:
             for input_id in formula["input_ids"]:
-                directed_edges.append(
+                directed_edges.append(annotate_edge(
                     {
                         "edge_id": _stable_id(
                             "E-EXCEL",
@@ -924,11 +926,14 @@ class FormulaCompiler:
                         ),
                         "from_model_node_id": input_id,
                         "to_model_node_id": formula["output_id"],
+                        "relation_type": "DRIVES",
                         "formula_or_function_ref": formula["formula_id"],
                         "control_ids": [],
                         "scenario": None,
-                    }
-                )
+                    },
+                    "FORMULA_PRECEDENT_DRIVES",
+                    evidence={"formula_or_function_ref": formula["formula_id"]},
+                ))
 
         unique_limits = {item["limit_id"]: item for item in limits}
         limits = [unique_limits[key] for key in sorted(unique_limits)]

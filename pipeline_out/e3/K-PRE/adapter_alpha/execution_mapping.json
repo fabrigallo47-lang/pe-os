@@ -2,12 +2,12 @@
   "mapping_version": "v7",
   "deal": "CASE-KEYSTONE",
   "company": "",
-  "canonical_graph_hash": "sha256:7704e72018947828accd01ce14ce269aec0d20e2980689200842cd283fa7d755",
+  "canonical_graph_hash": "sha256:35307909db880c9bb08ec50e1f5f6ea62353ce66679b422e2df088daddfbf679",
   "provenance": {
     "extraction_hash": "sha256:7bc2e70e6ec1d9c02f453f02a5010f6b05200631de78aae4eac81c51813093f5",
     "execution_graph_hash": "sha256:8eaf3afb9fa7eabe3ab0de6f8fa8eca90b99d6f2510d2f7f3be285968916ef14",
-    "canonical_current_hash": "sha256:7704e72018947828accd01ce14ce269aec0d20e2980689200842cd283fa7d755",
-    "admission_manifest_hash": "sha256:e4479187c4dedaeb57515c1fa72c7b10d3990f075406ca4c1e873f04c282dbb8"
+    "canonical_current_hash": "sha256:35307909db880c9bb08ec50e1f5f6ea62353ce66679b422e2df088daddfbf679",
+    "admission_manifest_hash": "sha256:71b0ee559061403cf716f71e810b7178c8d8b904165cded2dbd732876d924819"
   },
   "lbo_runtime_module": "tools/keystone_model.py",
   "lbo_runtime_entrypoint": "propagate_claim",
@@ -1183,7 +1183,18 @@
       "to_model_node_id": "MN-QUARTERLY-FIRM-EBITDA",
       "formula_or_function_ref": "F-QUARTERLY-FIRM-EBITDA",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-QUARTERLY-FIRM-EBITDA"
+        }
+      }
     },
     {
       "edge_id": "E-EBITDA-COV-EBITDA",
@@ -1191,7 +1202,18 @@
       "to_model_node_id": "MN-QUARTERLY-COV-EBITDA",
       "formula_or_function_ref": "F-QUARTERLY-COV-EBITDA",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-QUARTERLY-COV-EBITDA"
+        }
+      }
     },
     {
       "edge_id": "E-EBITDA-LEVERAGE",
@@ -1199,7 +1221,18 @@
       "to_model_node_id": "MN-NET-LEVERAGE",
       "formula_or_function_ref": "F-NET-LEVERAGE",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-NET-LEVERAGE"
+        }
+      }
     },
     {
       "edge_id": "E-QEBITDA-LEVERAGE",
@@ -1207,7 +1240,18 @@
       "to_model_node_id": "MN-NET-LEVERAGE",
       "formula_or_function_ref": "F-NET-LEVERAGE",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-NET-LEVERAGE"
+        }
+      }
     },
     {
       "edge_id": "E-DEBT-TERM",
@@ -1215,7 +1259,18 @@
       "to_model_node_id": "MN-QUARTERLY-TERM-LOAN",
       "formula_or_function_ref": "F-TERM-LOAN-AMORT",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-TERM-LOAN-AMORT"
+        }
+      }
     },
     {
       "edge_id": "E-DEBT-DDTL",
@@ -1223,7 +1278,18 @@
       "to_model_node_id": "MN-QUARTERLY-DDTL",
       "formula_or_function_ref": "F-DDTL-BALANCE",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-DDTL-BALANCE"
+        }
+      }
     },
     {
       "edge_id": "E-SCC-INT-REV",
@@ -1231,7 +1297,18 @@
       "to_model_node_id": "MN-QUARTERLY-REVOLVER",
       "formula_or_function_ref": "F-REVOLVER-DRAW-REPAY",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-REVOLVER-DRAW-REPAY"
+        }
+      }
     },
     {
       "edge_id": "E-SCC-REV-INT",
@@ -1239,7 +1316,18 @@
       "to_model_node_id": "MN-QUARTERLY-INTEREST",
       "formula_or_function_ref": "F-INTEREST-EXPENSE",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-INTEREST-EXPENSE"
+        }
+      }
     },
     {
       "edge_id": "E-SCC-CFO-REV",
@@ -1247,7 +1335,18 @@
       "to_model_node_id": "MN-QUARTERLY-REVOLVER",
       "formula_or_function_ref": "F-REVOLVER-DRAW-REPAY",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-REVOLVER-DRAW-REPAY"
+        }
+      }
     },
     {
       "edge_id": "E-SCC-INT-CFO",
@@ -1255,7 +1354,18 @@
       "to_model_node_id": "MN-QUARTERLY-CFO",
       "formula_or_function_ref": "F-CFO",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-CFO"
+        }
+      }
     },
     {
       "edge_id": "E-EBITDA-CFO",
@@ -1263,7 +1373,18 @@
       "to_model_node_id": "MN-QUARTERLY-CFO",
       "formula_or_function_ref": "F-CFO",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-CFO"
+        }
+      }
     },
     {
       "edge_id": "E-NWC-CFO",
@@ -1271,7 +1392,18 @@
       "to_model_node_id": "MN-QUARTERLY-CFO",
       "formula_or_function_ref": "F-CFO",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-CFO"
+        }
+      }
     },
     {
       "edge_id": "E-REV-CFO",
@@ -1279,7 +1411,18 @@
       "to_model_node_id": "MN-QUARTERLY-CFO",
       "formula_or_function_ref": "F-CFO",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-CFO"
+        }
+      }
     },
     {
       "edge_id": "E-CFO-CASH",
@@ -1287,7 +1430,18 @@
       "to_model_node_id": "MN-QUARTERLY-CASH",
       "formula_or_function_ref": "F-ENDING-CASH",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-ENDING-CASH"
+        }
+      }
     },
     {
       "edge_id": "E-REV-CASH",
@@ -1295,7 +1449,18 @@
       "to_model_node_id": "MN-QUARTERLY-CASH",
       "formula_or_function_ref": "F-ENDING-CASH",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-ENDING-CASH"
+        }
+      }
     },
     {
       "edge_id": "E-OPENING-CASH",
@@ -1303,7 +1468,18 @@
       "to_model_node_id": "MN-QUARTERLY-CASH",
       "formula_or_function_ref": "F-ENDING-CASH",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-ENDING-CASH"
+        }
+      }
     },
     {
       "edge_id": "E-LEV-DEBTCAP",
@@ -1311,7 +1487,18 @@
       "to_model_node_id": "MN-DEBT-CAPACITY",
       "formula_or_function_ref": "F-DEBT-CAPACITY",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-DEBT-CAPACITY"
+        }
+      }
     },
     {
       "edge_id": "E-DEBTCAP-SU",
@@ -1319,7 +1506,18 @@
       "to_model_node_id": "MN-CHECK-SOURCES-USES",
       "formula_or_function_ref": "F-CHECK-SOURCES-USES",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-CHECK-SOURCES-USES"
+        }
+      }
     },
     {
       "edge_id": "E-SU-EQUITY",
@@ -1329,7 +1527,18 @@
       "control_ids": [
         "CTRL-SOURCES-USES-BALANCE"
       ],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-SOURCES-USES-EQUITY"
+        }
+      }
     },
     {
       "edge_id": "E-EBITDA-EXITV",
@@ -1337,7 +1546,18 @@
       "to_model_node_id": "MN-EXIT-EV",
       "formula_or_function_ref": "F-EXIT-EV",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-EXIT-EV"
+        }
+      }
     },
     {
       "edge_id": "E-FIRM-EBITDA-EXITV",
@@ -1345,7 +1565,18 @@
       "to_model_node_id": "MN-EXIT-EV",
       "formula_or_function_ref": "F-EXIT-EV",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-EXIT-EV"
+        }
+      }
     },
     {
       "edge_id": "E-MULT-EXITV",
@@ -1353,7 +1584,18 @@
       "to_model_node_id": "MN-EXIT-EV",
       "formula_or_function_ref": "F-EXIT-EV",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-EXIT-EV"
+        }
+      }
     },
     {
       "edge_id": "E-EXITV-NETDEBT",
@@ -1361,7 +1603,18 @@
       "to_model_node_id": "MN-EXIT-NET-DEBT",
       "formula_or_function_ref": "F-EXIT-NET-DEBT",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-EXIT-NET-DEBT"
+        }
+      }
     },
     {
       "edge_id": "E-CASH-NETDEBT",
@@ -1369,7 +1622,18 @@
       "to_model_node_id": "MN-EXIT-NET-DEBT",
       "formula_or_function_ref": "F-EXIT-NET-DEBT",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-EXIT-NET-DEBT"
+        }
+      }
     },
     {
       "edge_id": "E-TERM-NETDEBT",
@@ -1377,7 +1641,18 @@
       "to_model_node_id": "MN-EXIT-NET-DEBT",
       "formula_or_function_ref": "F-EXIT-NET-DEBT",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-EXIT-NET-DEBT"
+        }
+      }
     },
     {
       "edge_id": "E-EXITV-EQUITY",
@@ -1385,7 +1660,18 @@
       "to_model_node_id": "MN-EXIT-EQUITY",
       "formula_or_function_ref": "F-EXIT-EQUITY",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-EXIT-EQUITY"
+        }
+      }
     },
     {
       "edge_id": "E-NETDEBT-EQUITY",
@@ -1393,7 +1679,18 @@
       "to_model_node_id": "MN-EXIT-EQUITY",
       "formula_or_function_ref": "F-EXIT-EQUITY",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-EXIT-EQUITY"
+        }
+      }
     },
     {
       "edge_id": "E-EQUITY-MOIC",
@@ -1401,7 +1698,18 @@
       "to_model_node_id": "MN-BASE-MOIC",
       "formula_or_function_ref": "F-GROSS-MOIC",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-GROSS-MOIC"
+        }
+      }
     },
     {
       "edge_id": "E-EQUITY-IRR",
@@ -1409,7 +1717,18 @@
       "to_model_node_id": "MN-BASE-IRR",
       "formula_or_function_ref": "F-GROSS-XIRR",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-GROSS-XIRR"
+        }
+      }
     },
     {
       "edge_id": "E-EQUITY-DOWN-MOIC",
@@ -1417,7 +1736,18 @@
       "to_model_node_id": "MN-DOWN-MOIC",
       "formula_or_function_ref": "F-GROSS-MOIC",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-GROSS-MOIC"
+        }
+      }
     },
     {
       "edge_id": "E-EQUITY-DOWN-IRR",
@@ -1425,7 +1755,18 @@
       "to_model_node_id": "MN-DOWN-IRR",
       "formula_or_function_ref": "F-GROSS-XIRR",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-GROSS-XIRR"
+        }
+      }
     },
     {
       "edge_id": "E-EQUITY-ACQ-MOIC",
@@ -1433,7 +1774,18 @@
       "to_model_node_id": "MN-ACQ-MOIC",
       "formula_or_function_ref": "F-GROSS-MOIC",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-GROSS-MOIC"
+        }
+      }
     },
     {
       "edge_id": "E-EQUITY-ACQ-IRR",
@@ -1441,7 +1793,18 @@
       "to_model_node_id": "MN-ACQ-IRR",
       "formula_or_function_ref": "F-GROSS-XIRR",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-GROSS-XIRR"
+        }
+      }
     },
     {
       "edge_id": "E-EQUITY-COMB-MOIC",
@@ -1449,7 +1812,18 @@
       "to_model_node_id": "MN-COMBINED-RISK-MOIC",
       "formula_or_function_ref": "F-GROSS-MOIC",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-GROSS-MOIC"
+        }
+      }
     },
     {
       "edge_id": "E-EQUITY-COMB-IRR",
@@ -1457,7 +1831,18 @@
       "to_model_node_id": "MN-COMBINED-RISK-IRR",
       "formula_or_function_ref": "F-GROSS-XIRR",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-GROSS-XIRR"
+        }
+      }
     },
     {
       "edge_id": "E-MOIC-SUPPRICE",
@@ -1465,7 +1850,18 @@
       "to_model_node_id": "MN-SUPPORTED-PRICE",
       "formula_or_function_ref": "F-SUPPORTED-PRICE-SOLVER",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-SUPPORTED-PRICE-SOLVER"
+        }
+      }
     },
     {
       "edge_id": "E-IRR-SUPPRICE",
@@ -1473,9 +1869,34 @@
       "to_model_node_id": "MN-SUPPORTED-PRICE",
       "formula_or_function_ref": "F-SUPPORTED-PRICE-SOLVER",
       "control_ids": [],
-      "scenario": null
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-SUPPORTED-PRICE-SOLVER"
+        }
+      }
     }
   ],
+  "relation_audit": {
+    "schema_version": "panta.relation-orchestration/1.0",
+    "materialized_edge_count": 37,
+    "deterministic_edge_count": 37,
+    "unclassified_edge_count": 0,
+    "proposal_count": 0,
+    "deterministic_edge_pct": 100.0,
+    "deterministic_output_pct": 100.0,
+    "by_relation": {
+      "DRIVES": {
+        "deterministic": 37
+      }
+    }
+  },
   "position_model_directions": [
     {
       "binding_id": "PMD-001",

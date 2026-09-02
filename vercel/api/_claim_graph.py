@@ -52,6 +52,184 @@ try:
 except ModuleNotFoundError:  # Vercel receives canonical IDs from _extract_v2.
     _canonical_claim_id = None
 
+try:
+    from tools.relation_rules import (
+        annotate_edge as _annotate_relation_edge,
+        audit_relation_outputs as _audit_relation_outputs,
+        orchestrate_claim_relations as _orchestrate_claim_relations,
+    )
+except ModuleNotFoundError:
+    # Vercel packages ``vercel/api`` as a standalone function, without the
+    # repository-level tools package. Keep the same governed envelope and a
+    # conservative structured-field rule set so the serverless graph does not
+    # regress to unlabelled edges or fail at import time.
+    _RUNTIME_RELATIONS = {
+        "SUPPORTS", "CONTRADICTS", "DERIVES_FROM", "DRIVES", "CONDITIONS",
+    }
+    _FALLBACK_RULES = {
+        "IDENTITY_VALUE_CONFLICT": ("CONTRADICTS", "DETERMINISTIC"),
+        "EXPLICIT_DERIVATION_INPUT": ("DERIVES_FROM", "DETERMINISTIC"),
+        "CLAIM_POSITION_BINDING_SUPPORTS": ("SUPPORTS", "DETERMINISTIC"),
+        "CLAIM_POSITION_BINDING_REJECTS": ("CONTRADICTS", "DETERMINISTIC"),
+        "PROSE_DERIVATION_CANDIDATE": ("DERIVES_FROM", "PROPOSAL"),
+        "NARRATIVE_SUPPORT_CANDIDATE": ("SUPPORTS", "PROPOSAL"),
+    }
+
+    def _fallback_rule(rule_id: str, evidence: dict | None = None) -> dict:
+        relation_type, mode = _FALLBACK_RULES[rule_id]
+        output = {
+            "rule_id": rule_id,
+            "rule_version": "pan68-1.0",
+            "relation_type": relation_type,
+            "mode": mode,
+            "basis": "serverless structured-field compatibility rule",
+        }
+        if evidence:
+            output["evidence"] = evidence
+        return output
+
+    def _annotate_relation_edge(edge: dict, rule_id: str, *, evidence=None) -> dict:
+        output = dict(edge)
+        output["relation_rule"] = _fallback_rule(rule_id, evidence)
+        return output
+
+    def _audit_relation_outputs(edges, proposals=()) -> dict:
+        selected = [
+            edge for edge in edges
+            if (edge.get("rel") or edge.get("relation_type")) in _RUNTIME_RELATIONS
+        ]
+        deterministic = sum(
+            edge.get("relation_rule", {}).get("mode") == "DETERMINISTIC"
+            for edge in selected
+        )
+        proposal_list = list(proposals)
+        total = len(selected)
+        by_relation: dict[str, dict[str, int]] = {}
+        for edge in selected:
+            relation = edge.get("rel") or edge.get("relation_type")
+            mode = edge.get("relation_rule", {}).get("mode", "UNCLASSIFIED").lower()
+            by_relation.setdefault(relation, {})[mode] = (
+                by_relation.setdefault(relation, {}).get(mode, 0) + 1
+            )
+        for proposal in proposal_list:
+            relation = proposal.get("relation_type") or proposal.get("rel")
+            by_relation.setdefault(relation, {})["proposals"] = (
+                by_relation.setdefault(relation, {}).get("proposals", 0) + 1
+            )
+        return {
+            "schema_version": "panta.relation-orchestration/1.0",
+            "materialized_edge_count": total,
+            "deterministic_edge_count": deterministic,
+            "unclassified_edge_count": total - deterministic,
+            "proposal_count": len(proposal_list),
+            "deterministic_edge_pct": round(100 * deterministic / total, 2) if total else 0.0,
+            "deterministic_output_pct": round(
+                100 * deterministic / (total + len(proposal_list)), 2
+            ) if total + len(proposal_list) else 0.0,
+            "by_relation": by_relation,
+        }
+
+    def _orchestrate_claim_relations(claims, claim_ids, *, area_resolver=None) -> dict:
+        edges: list[dict] = []
+        proposals: list[dict] = []
+        ids = [
+            str(claim_ids[index] or claim.get("claim_id") or f"claim:{index:04d}")
+            for index, claim in enumerate(claims)
+        ]
+        known_ids = set(ids)
+
+        def identity(claim: dict) -> tuple[str, ...]:
+            perimeter = str(claim.get("perimeter") or "").strip().lower()
+            return tuple(str(value or "").strip().lower() for value in (
+                claim.get("entity") or claim.get("subject"),
+                claim.get("metric") or claim.get("subject"),
+                claim.get("period_canonical") or claim.get("period") or claim.get("as_of"),
+                claim.get("scope") or perimeter,
+                claim.get("basis") or claim.get("definition") or perimeter,
+                claim.get("measurement") or perimeter,
+                claim.get("scenario"),
+                claim.get("unit"),
+                claim.get("currency") or claim.get("unit"),
+            ))
+
+        def source(claim: dict) -> str:
+            return str(claim.get("source_id") or claim.get("source_doc") or "")
+
+        for left_index, left in enumerate(claims):
+            left_identity = identity(left)
+            if any(not value for value in left_identity[:6]):
+                continue
+            for right_index in range(left_index + 1, len(claims)):
+                right = claims[right_index]
+                if left_identity != identity(right) or source(left) == source(right):
+                    continue
+                left_value = str(left.get("value") or "").strip()
+                right_value = str(right.get("value") or "").strip()
+                if not left_value or not right_value or left_value == right_value:
+                    continue
+                edge = {
+                    "source": min(ids[left_index], ids[right_index]),
+                    "target": max(ids[left_index], ids[right_index]),
+                    "rel": "CONTRADICTS",
+                    "canonical": True,
+                }
+                edges.append(_annotate_relation_edge(
+                    edge,
+                    "IDENTITY_VALUE_CONFLICT",
+                    evidence={"identity": list(left_identity)},
+                ))
+
+        for index, claim in enumerate(claims):
+            explicit = claim.get("derivation_claim_ids") or claim.get("input_claim_ids") or []
+            for input_id in sorted({str(value) for value in explicit}):
+                if input_id not in known_ids or input_id == ids[index]:
+                    continue
+                edges.append(_annotate_relation_edge(
+                    {
+                        "source": ids[index],
+                        "target": input_id,
+                        "rel": "DERIVES_FROM",
+                        "canonical": True,
+                    },
+                    "EXPLICIT_DERIVATION_INPUT",
+                    evidence={"declared_input_claim_id": input_id},
+                ))
+            derivation = claim.get("derivation")
+            if explicit or not isinstance(derivation, str):
+                continue
+            for candidate_index, candidate in enumerate(claims):
+                metric = str(candidate.get("metric") or "").strip().lower()
+                if candidate_index == index or len(metric) < 5 or metric not in derivation.lower():
+                    continue
+                proposals.append({
+                    "source": ids[index],
+                    "target": ids[candidate_index],
+                    "relation_type": "DERIVES_FROM",
+                    "proposal_status": "PENDING_HUMAN_REVIEW",
+                    "llm_authority": "PROPOSE_ONLY",
+                    "adjudication": "HUMAN_REQUIRED",
+                    "canonical": False,
+                    "relation_rule": _fallback_rule(
+                        "PROSE_DERIVATION_CANDIDATE", {"matched_metric": metric}
+                    ),
+                })
+
+        unique_edges = {
+            (edge["source"], edge["target"], edge["rel"]): edge for edge in edges
+        }
+        unique_proposals = {
+            (item["source"], item["target"], item["relation_type"]): item
+            for item in proposals
+        }
+        ordered_edges = [unique_edges[key] for key in sorted(unique_edges)]
+        ordered_proposals = [unique_proposals[key] for key in sorted(unique_proposals)]
+        return {
+            "schema_version": "panta.relation-orchestration/1.0",
+            "edges": ordered_edges,
+            "proposals": ordered_proposals,
+            "audit": _audit_relation_outputs(ordered_edges, ordered_proposals),
+        }
+
 # ── Macro area taxonomy ──────────────────────────────────────────────────────
 _AREA_RULES: list[tuple[str, str]] = [
     ("revenue",          "Revenue"),    ("recurring",     "Revenue"),
@@ -680,58 +858,7 @@ def claims_to_graph(
                     formation_basis="extractor_bears_on")
             _edge(c_id, q_id, ET_BEARS_ON)
 
-    # ── Pass 2a: V1 semantic edges — CONTRADICTS (applicability-gated) ────────
-    # CONTRADICTS is emitted only when two claims:
-    #   (a) are about the same subject and conflicting metric, and
-    #   (b) one is direction="supports", the other direction="contradicts", and
-    #   (c) they share compatible period AND compatible perimeter.
-    # Different periods or perimeters = different applicability domains → not a contradiction.
-    #
-    # SUPERSEDES: removed from this loop. Version-based SUPERSEDES is handled
-    # in Pass 2d using as_of dates, not trust levels.
-
-    by_subject: dict[str, list[tuple[str, str, str]]] = {}
-    for nid, node in nodes.items():
-        if node["type"] != "claim":
-            continue
-        for e in edges:
-            if e["rel"] == "HAS_CLAIM" and e["target"] == nid:
-                metric = (node.get("metric") or node.get("subject") or "").lower().strip()
-                by_subject.setdefault(e["source"], []).append(
-                    (nid, node.get("direction", "context"), metric))
-                break
-
-    seen_dir: set[tuple[str, str, str]] = set()
-
-    def _add_dir(src: str, tgt: str, rel: str) -> None:
-        key = (src, tgt, rel)
-        if key not in seen_dir:
-            seen_dir.add(key)
-            _edge(src, tgt, rel)
-
-    for _, clist in by_subject.items():
-        supports_l    = [(c, m) for c, d, m in clist if d == "supports"]
-        contradicts_l = [(c, m) for c, d, m in clist if d == "contradicts"]
-        for s_cid, s_met in supports_l:
-            for c_cid, c_met in contradicts_l:
-                if not _metrics_conflict(s_met, c_met):
-                    continue
-                # Applicability gate: check period compatibility
-                s_node = nodes.get(s_cid, {})
-                c_node = nodes.get(c_cid, {})
-                s_per    = (s_node.get("period")    or "").strip()
-                c_per    = (c_node.get("period")    or "").strip()
-                s_perim  = (s_node.get("perimeter") or "").strip()
-                c_perim  = (c_node.get("perimeter") or "").strip()
-                # Different non-empty periods = different domains, not contradiction
-                if s_per and c_per and s_per != c_per:
-                    continue
-                # Different non-empty perimeters = different scopes, not contradiction
-                if s_perim and c_perim and s_perim != c_perim:
-                    continue
-                _add_dir(s_cid, c_cid, "CONTRADICTS")
-
-    # ── Pass 2b: V1 pair-wise semantic edges — TRACKS / REFINES / CHALLENGES ──
+    # ── Pass 2a: informational V1 edges — TRACKS / REFINES / CHALLENGES ──────
     n = len(claims)
     bears_index: dict[str, list[int]] = {}
     for i, c in enumerate(claims):
@@ -799,7 +926,28 @@ def claims_to_graph(
                                 else:
                                     _add_sem(b_id, a_id, "CHALLENGES")
 
-    # ── Pass 2c: CORROBORATES / DERIVES_FROM / SUPPORTS ──────────────────────
+    # ── Pass 2b: governed runtime relations + informational corroboration ────
+    # Runtime relations are produced centrally. Complete identity/value and
+    # explicit provenance materialize deterministic edges; prose-only matches
+    # remain non-canonical proposals and never enter runtime traversal.
+    relation_result = _orchestrate_claim_relations(
+        claims,
+        claim_ids,
+        area_resolver=_topic_to_area,
+    )
+    relation_proposals = relation_result["proposals"]
+    for produced in relation_result["edges"]:
+        _add_sem(
+            produced["source"],
+            produced["target"],
+            produced["rel"],
+            **{
+                key: value
+                for key, value in produced.items()
+                if key not in {"source", "target", "rel"}
+            },
+        )
+
     # CORROBORATES: two supporting claims from different sources on the same question
     for q, idxs in bears_index.items():
         supporters = [idx for idx in idxs
@@ -812,48 +960,7 @@ def claims_to_graph(
                 if src_a != src_b:
                     _add_sem(claim_ids[ia], claim_ids[ib], "CORROBORATES")
 
-    # DERIVES_FROM: derived claim → the claims it was computed from
-    for i, c in enumerate(claims):
-        a_id = claim_ids[i]
-        if not a_id or c.get("epistemic") != "derived":
-            continue
-        deriv = (c.get("derivation") or "").lower()
-        if len(deriv) < 5:
-            continue
-        for j, b in enumerate(claims):
-            if i == j:
-                continue
-            b_id = claim_ids[j]
-            if not b_id:
-                continue
-            m_b = (b.get("metric") or b.get("subject") or "").lower().strip()
-            if m_b and len(m_b) >= 5 and m_b in deriv:
-                _add_sem(a_id, b_id, "DERIVES_FROM")
-
-    # SUPPORTS: quantitative claim supports a qualitative narrative on same subject+area
-    for i in range(n):
-        a    = claims[i]
-        a_id = claim_ids[i]
-        if not a_id or _has_claim_value(a):
-            continue
-        s_a    = (a.get("subject") or "").lower().strip()
-        area_a = _topic_to_area(a.get("topic") or "")
-        if not s_a or area_a == "Other":
-            continue
-        for j in range(n):
-            if i == j:
-                continue
-            b    = claims[j]
-            b_id = claim_ids[j]
-            if not b_id or not _has_claim_value(b):
-                continue
-            s_b    = (b.get("subject") or "").lower().strip()
-            area_b = _topic_to_area(b.get("topic") or "")
-            if (s_a and s_b and (s_a == s_b or s_a in s_b or s_b in s_a)
-                    and area_a == area_b):
-                _add_sem(b_id, a_id, "SUPPORTS")
-
-    # ── Pass 2d: Version-based SUPERSEDES ─────────────────────────────────────
+    # ── Pass 2c: Version-based SUPERSEDES ─────────────────────────────────────
     # SUPERSEDES is only emitted when:
     #   - same metric, same period, same perimeter (same object)
     #   - later as_of date (genuine version replacement)
@@ -1081,10 +1188,42 @@ def claims_to_graph(
         for cid in supporting_cids:
             sc = _claim_score(cid, bd, mn_unit_local, mn_id_local)
             if sc <= -500:
-                _edge(cid, cp_id, "CONTRADICTS", score=sc, canonical=True)
+                governed = _annotate_relation_edge(
+                    {
+                        "source": cid,
+                        "target": cp_id,
+                        "rel": "CONTRADICTS",
+                        "score": sc,
+                        "canonical": True,
+                    },
+                    "CLAIM_POSITION_BINDING_REJECTS",
+                    evidence={"score": sc, "position_id": cp_id},
+                )
+                _edge(
+                    governed.pop("source"),
+                    governed.pop("target"),
+                    governed.pop("rel"),
+                    **governed,
+                )
             else:
-                _edge(cid, cp_id, "SUPPORTS",
-                      score=sc, is_selected=(cid == winner_id), canonical=True)
+                governed = _annotate_relation_edge(
+                    {
+                        "source": cid,
+                        "target": cp_id,
+                        "rel": "SUPPORTS",
+                        "score": sc,
+                        "is_selected": cid == winner_id,
+                        "canonical": True,
+                    },
+                    "CLAIM_POSITION_BINDING_SUPPORTS",
+                    evidence={"score": sc, "position_id": cp_id},
+                )
+                _edge(
+                    governed.pop("source"),
+                    governed.pop("target"),
+                    governed.pop("rel"),
+                    **governed,
+                )
 
     # ── Pass 4.8: Qualitative case positions (not model-node-bound) ─────────────
     # Fund beliefs that are inherently qualitative — customer concentration,
@@ -1134,7 +1273,23 @@ def claims_to_graph(
         for cid in ql_matching:
             sc = _claim_score(cid)
             if sc > -500:
-                _edge(cid, ql_cp_id, "SUPPORTS", score=sc, canonical=True)
+                governed = _annotate_relation_edge(
+                    {
+                        "source": cid,
+                        "target": ql_cp_id,
+                        "rel": "SUPPORTS",
+                        "score": sc,
+                        "canonical": True,
+                    },
+                    "CLAIM_POSITION_BINDING_SUPPORTS",
+                    evidence={"score": sc, "position_id": ql_cp_id},
+                )
+                _edge(
+                    governed.pop("source"),
+                    governed.pop("target"),
+                    governed.pop("rel"),
+                    **governed,
+                )
 
     # ── Pass 5: V2 — support_routes (per-period grouping) ────────────────────
     for cp_id, supporting_cids in cp_to_claims.items():
@@ -1363,6 +1518,8 @@ def claims_to_graph(
         t = nd.get("type", "?")
         node_type_counts[t] = node_type_counts.get(t, 0) + 1
 
+    relation_audit = _audit_relation_outputs(edges, relation_proposals)
+
     by_coverage: dict[str, list[str]] = {
         "mapped": [], "partial": [], "ambiguous": [], "missing": [],
     }
@@ -1378,6 +1535,7 @@ def claims_to_graph(
         "ambiguous": by_coverage.get("ambiguous", []),
         "missing":   by_coverage.get("missing",   []),
         "hygiene_flags": hygiene_flags,
+        "relation_audit": relation_audit,
         "v1_only_relations": [
             "REFINES (canonical=False — not traversed by transition engine)",
             "TRACKS (canonical=False — not traversed by transition engine)",
@@ -2049,6 +2207,8 @@ def claims_to_graph(
         "area_colors":        AREA_COLORS,
         "area_border_colors": AREA_BORDER_COLORS,
         "execution_mapping":  execution_mapping,
+        "relation_proposals": relation_proposals,
+        "relation_audit":     relation_audit,
         "coverage_report":    coverage_report,
         "stats": {
             "subjects":        node_type_counts.get("subject",        0),
@@ -2066,5 +2226,9 @@ def claims_to_graph(
             "edges":           len(edges),
             "edge_types":      edge_type_counts,
             "node_types":      node_type_counts,
+            "deterministic_relation_edge_pct": relation_audit[
+                "deterministic_edge_pct"
+            ],
+            "relation_proposals": relation_audit["proposal_count"],
         },
     }

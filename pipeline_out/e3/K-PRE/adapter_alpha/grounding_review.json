@@ -1160,8 +1160,8 @@
       "claim_id": "claim:86447a7bf111845f",
       "statement": "Keystone customer ledger extract shows 6 active billing accounts (SM-029 through SM-034) as of 2025-11-15, spanning EHS Compliance, Industrial Hygiene, Field In",
       "perimeter": "Keystone consolidated customer ledger by individual billing account",
-      "locator": "keystone_data_room_extract.md::section:w4000-4250:Customer ledger / KS-DL-1.2, rows 3\u20138",
-      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w4000-4250:Customer ledger / KS-DL-1.2, rows 3\u20138': value and entity could not be checked against it."
+      "locator": "keystone_data_room_extract.md::section:w4000-4250:Customer ledger / KS-DL-1.2, rows 3–8",
+      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w4000-4250:Customer ledger / KS-DL-1.2, rows 3–8': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -1518,7 +1518,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:1603127d2e5c5339",
-      "statement": "All six Riverton Industrial Group projects are contracted on 30\u201360 day payment terms.",
+      "statement": "All six Riverton Industrial Group projects are contracted on 30–60 day payment terms.",
       "perimeter": "Keystone consolidated customer contract terms measured by individual project account",
       "locator": "keystone_data_room_extract.md::section:w5750-6000",
       "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w5750-6000': value and entity could not be checked against it."
@@ -1824,7 +1824,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:24b5196ec1486984",
-      "statement": "Northfield Foods Field Inspection contract is a Repeat engagement with 30\u201360 day payment terms, classified as Legacy A, running from 2024-02-01 to 2026-03-01.",
+      "statement": "Northfield Foods Field Inspection contract is a Repeat engagement with 30–60 day payment terms, classified as Legacy A, running from 2024-02-01 to 2026-03-01.",
       "perimeter": "Northfield Foods Field Inspection service contract",
       "locator": "keystone_data_room_extract.md::section:w8500-8750",
       "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w8500-8750': value and entity could not be checked against it."
@@ -1833,7 +1833,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:e661bf05063cbbb6",
-      "statement": "Northfield Foods Field Inspection contract is a Repeat engagement with 30\u201360 day payment terms, classified as Legacy B, running from 2024-03-01 to 2026-05-01.",
+      "statement": "Northfield Foods Field Inspection contract is a Repeat engagement with 30–60 day payment terms, classified as Legacy B, running from 2024-03-01 to 2026-05-01.",
       "perimeter": "Northfield Foods Field Inspection service contract",
       "locator": "keystone_data_room_extract.md::section:w8500-8750",
       "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w8500-8750': value and entity could not be checked against it."
@@ -1842,7 +1842,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:3b4259c75569fe2f",
-      "statement": "Ironbridge Logistics Permitting & Advisory contract is a Project engagement with 30\u201360 day payment terms, classified as Legacy A, running from 2024-02-01 to 202",
+      "statement": "Ironbridge Logistics Permitting & Advisory contract is a Project engagement with 30–60 day payment terms, classified as Legacy A, running from 2024-02-01 to 202",
       "perimeter": "Ironbridge Logistics Permitting & Advisory service contract",
       "locator": "keystone_data_room_extract.md::section:w8500-8750",
       "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w8500-8750': value and entity could not be checked against it."
@@ -1851,7 +1851,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:854ee4496c697fa8",
-      "statement": "Ironbridge Logistics Permitting & Advisory contract is a Project engagement with 30\u201360 day payment terms, classified as Legacy B, running from 2024-03-01 to 202",
+      "statement": "Ironbridge Logistics Permitting & Advisory contract is a Project engagement with 30–60 day payment terms, classified as Legacy B, running from 2024-03-01 to 202",
       "perimeter": "Ironbridge Logistics Permitting & Advisory service contract",
       "locator": "keystone_data_room_extract.md::section:w8500-8750",
       "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w8500-8750': value and entity could not be checked against it."
@@ -1860,7 +1860,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:424b867d50b3ce7e",
-      "statement": "Cedar Municipal EHS Compliance contract is a Recurring engagement with 30\u201360 day payment terms, classified as Central PSA, running from 2024-02-01 to 2026-03-01",
+      "statement": "Cedar Municipal EHS Compliance contract is a Recurring engagement with 30–60 day payment terms, classified as Central PSA, running from 2024-02-01 to 2026-03-01",
       "perimeter": "Cedar Municipal EHS Compliance service contract",
       "locator": "keystone_data_room_extract.md::section:w8500-8750",
       "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w8500-8750': value and entity could not be checked against it."
@@ -2697,7 +2697,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:594285cebaf01a21",
-      "statement": "Keystone HRIS extract shows 7 active staff and manager records (E0071\u2013E0077) as of 2025-11-15.",
+      "statement": "Keystone HRIS extract shows 7 active staff and manager records (E0071–E0077) as of 2025-11-15.",
       "perimeter": "Keystone consolidated active staff and manager headcount from HRIS extract",
       "locator": "keystone_data_room_extract.md::section:w12500-12750",
       "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w12500-12750': value and entity could not be checked against it."
@@ -3246,10 +3246,10 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:f2290b3b125a1a0a",
-      "statement": "Seven active staff employees are recorded in the HRIS extract (E0146\u2013E0152) as of 2025-11-15.",
+      "statement": "Seven active staff employees are recorded in the HRIS extract (E0146–E0152) as of 2025-11-15.",
       "perimeter": "Keystone consolidated headcount by employee record",
-      "locator": "keystone_data_room_extract.md::section:w15250-15500:HRIS / KS-DL-1.2 table rows E0146\u2013E0152",
-      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w15250-15500:HRIS / KS-DL-1.2 table rows E0146\u2013E0152': value and entity could not be checked against it."
+      "locator": "keystone_data_room_extract.md::section:w15250-15500:HRIS / KS-DL-1.2 table rows E0146–E0152",
+      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w15250-15500:HRIS / KS-DL-1.2 table rows E0146–E0152': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -4119,10 +4119,10 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:7111341f8ecd7801",
-      "statement": "Keystone HRIS records show 8 active employees (E0262\u2013E0268) as of 2025-11-15, spanning Technical, Project Management, Corporate, Sales, Finance, and HR function",
+      "statement": "Keystone HRIS records show 8 active employees (E0262–E0268) as of 2025-11-15, spanning Technical, Project Management, Corporate, Sales, Finance, and HR function",
       "perimeter": "Keystone consolidated headcount by individual employee record",
-      "locator": "keystone_data_room_extract.md::section:w19500-19750:HRIS / KS-DL-1.2 employee roster, rows E0262\u2013E0268",
-      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w19500-19750:HRIS / KS-DL-1.2 employee roster, rows E0262\u2013E0268': value and entity could not be checked against it."
+      "locator": "keystone_data_room_extract.md::section:w19500-19750:HRIS / KS-DL-1.2 employee roster, rows E0262–E0268",
+      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w19500-19750:HRIS / KS-DL-1.2 employee roster, rows E0262–E0268': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -4337,8 +4337,8 @@
       "claim_id": "claim:96a3c5d9ef2da53c",
       "statement": "Keystone HRIS extract shows 9 active staff employees as of 2025-11-15, spanning locations in Louisville, Nashville, Raleigh, Charlotte, Cincinnati, Columbus, an",
       "perimeter": "Keystone consolidated headcount by employee record",
-      "locator": "keystone_data_room_extract.md::section:w20250-20500:HRIS / KS-DL-1.2 employee roster table, rows E0283\u2013E0289",
-      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w20250-20500:HRIS / KS-DL-1.2 employee roster table, rows E0283\u2013E0289': value and entity could not be checked against it."
+      "locator": "keystone_data_room_extract.md::section:w20250-20500:HRIS / KS-DL-1.2 employee roster table, rows E0283–E0289",
+      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w20250-20500:HRIS / KS-DL-1.2 employee roster table, rows E0283–E0289': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -4715,8 +4715,8 @@
       "claim_id": "claim:81220a40763eb0df",
       "statement": "Keystone HRIS data room extract shows 7 active staff and manager employees across multiple regions and service lines as of 2025-11-15.",
       "perimeter": "Keystone consolidated headcount by individual employee record",
-      "locator": "keystone_data_room_extract.md::section:w22500-22750:HRIS / KS-DL-1.2 employee roster, rows E0344\u2013E0350",
-      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w22500-22750:HRIS / KS-DL-1.2 employee roster, rows E0344\u2013E0350': value and entity could not be checked against it."
+      "locator": "keystone_data_room_extract.md::section:w22500-22750:HRIS / KS-DL-1.2 employee roster, rows E0344–E0350",
+      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w22500-22750:HRIS / KS-DL-1.2 employee roster, rows E0344–E0350': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -5109,10 +5109,10 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:0e0ed9016f8b1a81",
-      "statement": "Keystone HRIS extract shows 7 active staff employees (E0385\u2013E0391) as of 2025-11-15, spanning Corporate, Sales, Finance, HR, IT, and Technical functions across ",
-      "perimeter": "Keystone consolidated headcount by employee ID (E0385\u2013E0391)",
-      "locator": "keystone_data_room_extract.md::section:w24000-24250:HRIS / KS-DL-1.2 data room extract, rows E0385\u2013E0391",
-      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w24000-24250:HRIS / KS-DL-1.2 data room extract, rows E0385\u2013E0391': value and entity could not be checked against it."
+      "statement": "Keystone HRIS extract shows 7 active staff employees (E0385–E0391) as of 2025-11-15, spanning Corporate, Sales, Finance, HR, IT, and Technical functions across ",
+      "perimeter": "Keystone consolidated headcount by employee ID (E0385–E0391)",
+      "locator": "keystone_data_room_extract.md::section:w24000-24250:HRIS / KS-DL-1.2 data room extract, rows E0385–E0391",
+      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w24000-24250:HRIS / KS-DL-1.2 data room extract, rows E0385–E0391': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -5415,10 +5415,10 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:6a83e393006494e0",
-      "statement": "Keystone HRIS data room extract shows 8 active staff employees (E0426\u2013E0432) as of 2025-11-15.",
+      "statement": "Keystone HRIS data room extract shows 8 active staff employees (E0426–E0432) as of 2025-11-15.",
       "perimeter": "Keystone consolidated headcount by employee record",
-      "locator": "keystone_data_room_extract.md::section:w25500-25750:HRIS / KS-DL-1.2 employee roster, rows E0426\u2013E0432",
-      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w25500-25750:HRIS / KS-DL-1.2 employee roster, rows E0426\u2013E0432': value and entity could not be checked against it."
+      "locator": "keystone_data_room_extract.md::section:w25500-25750:HRIS / KS-DL-1.2 employee roster, rows E0426–E0432",
+      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w25500-25750:HRIS / KS-DL-1.2 employee roster, rows E0426–E0432': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -5435,8 +5435,8 @@
       "claim_id": "claim:af37d9c299928c4b",
       "statement": "Three employees (E0430, E0431, E0432) are identified as originating from Legacy Alderstone acquisition, representing 37.5% of the active staff roster.",
       "perimeter": "Keystone consolidated headcount by acquisition origin (Legacy Alderstone, Northstar, Delta, Meridian, Summit)",
-      "locator": "keystone_data_room_extract.md::section:w25500-25750:HRIS / KS-DL-1.2 employee roster, acquisition origin column, rows E0430\u2013E0432",
-      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w25500-25750:HRIS / KS-DL-1.2 employee roster, acquisition origin column, rows E0430\u2013E0432': value and entity could not be checked against it."
+      "locator": "keystone_data_room_extract.md::section:w25500-25750:HRIS / KS-DL-1.2 employee roster, acquisition origin column, rows E0430–E0432",
+      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w25500-25750:HRIS / KS-DL-1.2 employee roster, acquisition origin column, rows E0430–E0432': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -5705,8 +5705,8 @@
       "claim_id": "claim:30aa57bec7756540",
       "statement": "Keystone has three active billing accounts as of December 31, 2025: MedCore Health (MED-01), Apex Manufacturing (APX-01), and a third account (STA-02) with inco",
       "perimeter": "Keystone consolidated active billing accounts",
-      "locator": "keystone_data_room_extract.md::section:w27000-27250:AR_WIP table, Accounts Receivable Detail section, rows 1\u20133",
-      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w27000-27250:AR_WIP table, Accounts Receivable Detail section, rows 1\u20133': value and entity could not be checked against it."
+      "locator": "keystone_data_room_extract.md::section:w27000-27250:AR_WIP table, Accounts Receivable Detail section, rows 1–3",
+      "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w27000-27250:AR_WIP table, Accounts Receivable Detail section, rows 1–3': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -5721,7 +5721,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:a628399c868bae80",
-      "statement": "Invoice INV-0002 to Apex Manufacturing (APX-01) was issued on 2025-11-11 for $0.20202857928 million, due 2025-12-11, currently 50 days old and in the 31\u201360 day ",
+      "statement": "Invoice INV-0002 to Apex Manufacturing (APX-01) was issued on 2025-11-11 for $0.20202857928 million, due 2025-12-11, currently 50 days old and in the 31–60 day ",
       "perimeter": "Keystone customer revenue measured by individual billing account APX-01",
       "locator": "keystone_data_room_extract.md::section:w27000-27250:AR_WIP table, Accounts Receivable Detail, INV-0002 row",
       "detail": "cited source not found for locator 'keystone_data_room_extract.md::section:w27000-27250:AR_WIP table, Accounts Receivable Detail, INV-0002 row': value and entity could not be checked against it."
@@ -7451,8 +7451,8 @@
       "claim_id": "claim:9184f407f712ea58",
       "statement": "Keystone consolidated gross margin for FY2023A was 34.15% (constant across all 2023 months).",
       "perimeter": "Keystone consolidated gross margin under firm underwriting basis",
-      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns C\u2013N (2023 months)",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns C\u2013N (2023 months)': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns C–N (2023 months)",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns C–N (2023 months)': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7460,8 +7460,8 @@
       "claim_id": "claim:c9c78655e9ed8a3f",
       "statement": "Keystone consolidated gross margin for FY2024A was 35.02% (constant across all 2024 months).",
       "perimeter": "Keystone consolidated gross margin under firm underwriting basis",
-      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns O\u2013Z (2024 months)",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns O\u2013Z (2024 months)': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns O–Z (2024 months)",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns O–Z (2024 months)': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7469,8 +7469,8 @@
       "claim_id": "claim:d311b90ae366228e",
       "statement": "Keystone consolidated gross margin for FY2025A was 35.95% (constant across all 2025 months).",
       "perimeter": "Keystone consolidated gross margin under firm underwriting basis",
-      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns AA\u2013AL (2025 months)",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns AA\u2013AL (2025 months)': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns AA–AL (2025 months)",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 6, columns AA–AL (2025 months)': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7496,8 +7496,8 @@
       "claim_id": "claim:5c5f512f11c7e556",
       "statement": "Keystone consolidated EBITDA margin for FY2023A was 13.20% (constant across all 2023 months).",
       "perimeter": "Keystone consolidated EBITDA margin under firm underwriting basis",
-      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns C\u2013N (2023 months)",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns C\u2013N (2023 months)': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns C–N (2023 months)",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns C–N (2023 months)': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7505,8 +7505,8 @@
       "claim_id": "claim:90baed6d402a9f7b",
       "statement": "Keystone consolidated EBITDA margin for FY2024A was 13.46% (constant across all 2024 months).",
       "perimeter": "Keystone consolidated EBITDA margin under firm underwriting basis",
-      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns O\u2013Z (2024 months)",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns O\u2013Z (2024 months)': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns O–Z (2024 months)",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns O–Z (2024 months)': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7514,8 +7514,8 @@
       "claim_id": "claim:b2e663c4000c21a0",
       "statement": "Keystone consolidated EBITDA margin for FY2025A was 13.78% (constant across all 2025 months).",
       "perimeter": "Keystone consolidated EBITDA margin under firm underwriting basis",
-      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns AA\u2013AL (2025 months)",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns AA\u2013AL (2025 months)': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns AA–AL (2025 months)",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Hist_Monthly!1:9:Hist_Monthly sheet, row 8, columns AA–AL (2025 months)': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7892,8 +7892,8 @@
       "claim_id": "claim:aabd930147a534a3",
       "statement": "Keystone has 32 active employees as of December 31, 2025, recorded in the HRIS employee roster.",
       "perimeter": "Keystone consolidated active employee headcount",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, rows 4\u201335, employee ID E0001 through E0032",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, rows 4\u201335, employee ID E0001 through E0032': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, rows 4–35, employee ID E0001 through E0032",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, rows 4–35, employee ID E0001 through E0032': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7901,8 +7901,8 @@
       "claim_id": "claim:f2a3f8e75eaaa80f",
       "statement": "Keystone has 16 billable employees (those with Billable? = Yes) as of December 31, 2025.",
       "perimeter": "Keystone consolidated billable employee headcount",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column F (Billable?), rows 4\u201335",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column F (Billable?), rows 4\u201335': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column F (Billable?), rows 4–35",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column F (Billable?), rows 4–35': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7910,8 +7910,8 @@
       "claim_id": "claim:24670854d6583025",
       "statement": "Keystone has 16 non-billable employees (those with Billable? = No) as of December 31, 2025.",
       "perimeter": "Keystone consolidated non-billable employee headcount",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column F (Billable?), rows 4\u201335",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column F (Billable?), rows 4\u201335': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column F (Billable?), rows 4–35",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column F (Billable?), rows 4–35': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7919,8 +7919,8 @@
       "claim_id": "claim:fa271c0914fc301b",
       "statement": "Keystone has 2 manager-level employees (E0012 and E0024) as of December 31, 2025.",
       "perimeter": "Keystone consolidated manager-level employee headcount",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column N (Manager Level), rows 4\u201335",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column N (Manager Level), rows 4\u201335': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column N (Manager Level), rows 4–35",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!1:35:Employees sheet, column N (Manager Level), rows 4–35': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7973,8 +7973,8 @@
       "claim_id": "claim:ad8cd7e8075ed224",
       "statement": "The Keystone LBO model employee roster contains 33 individual employee records (E0099 through E0131) as of 2026-03-05.",
       "perimeter": "Keystone consolidated headcount by employee record",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7982,8 +7982,8 @@
       "claim_id": "claim:3ae1bd377481bca6",
       "statement": "The Keystone LBO model shows 20 employees assigned to the Technical department across all rows.",
       "perimeter": "Keystone consolidated headcount by employee record, Technical department",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -7991,8 +7991,8 @@
       "claim_id": "claim:c68bbad611c4b297",
       "statement": "The Keystone LBO model shows 6 employees assigned to the Corporate department.",
       "perimeter": "Keystone consolidated headcount by employee record, Corporate department",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8000,8 +8000,8 @@
       "claim_id": "claim:948fd936f3d7e91d",
       "statement": "The Keystone LBO model shows 2 employees assigned to the Project Management department.",
       "perimeter": "Keystone consolidated headcount by employee record, Project Management department",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8009,8 +8009,8 @@
       "claim_id": "claim:619db408a82de606",
       "statement": "The Keystone LBO model shows 2 employees assigned to the Sales department.",
       "perimeter": "Keystone consolidated headcount by employee record, Sales department",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8018,8 +8018,8 @@
       "claim_id": "claim:85ef399b0a104e4e",
       "statement": "The Keystone LBO model shows 1 employee assigned to the Finance department.",
       "perimeter": "Keystone consolidated headcount by employee record, Finance department",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8027,8 +8027,8 @@
       "claim_id": "claim:a06c3a3da4b4ad37",
       "statement": "The Keystone LBO model shows 1 employee assigned to the HR department.",
       "perimeter": "Keystone consolidated headcount by employee record, HR department",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8036,8 +8036,8 @@
       "claim_id": "claim:435d192a5353efdc",
       "statement": "The Keystone LBO model shows 18 employees assigned to the EHS Compliance service line.",
       "perimeter": "Keystone consolidated headcount by employee record, EHS Compliance service line",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8045,8 +8045,8 @@
       "claim_id": "claim:e7f78ea09056d85b",
       "statement": "The Keystone LBO model shows 9 employees assigned to the Field Inspection service line.",
       "perimeter": "Keystone consolidated headcount by employee record, Field Inspection service line",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8054,8 +8054,8 @@
       "claim_id": "claim:ec1d1ca6ff95795e",
       "statement": "The Keystone LBO model shows 9 employees assigned to the Permitting & Advisory service line.",
       "perimeter": "Keystone consolidated headcount by employee record, Permitting & Advisory service line",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8063,8 +8063,8 @@
       "claim_id": "claim:d813aa49fafee6e4",
       "statement": "The Keystone LBO model shows 6 employees assigned to the Industrial Hygiene service line.",
       "perimeter": "Keystone consolidated headcount by employee record, Industrial Hygiene service line",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column E (Service Line), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8072,14 +8072,14 @@
       "claim_id": "claim:b5f056736158de61",
       "statement": "The Keystone LBO model shows 1 employee assigned to the IT department.",
       "perimeter": "Keystone consolidated headcount by employee record, IT department",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102\u2013134': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!102:134:Employees sheet, column D (Department), rows 102–134': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:e6f8aa0a953609be",
-      "statement": "The Keystone LBO model Employees sheet lists 33 active employee records (E0132 through E0164) across rows 135\u2013167, spanning multiple service lines, departments,",
+      "statement": "The Keystone LBO model Employees sheet lists 33 active employee records (E0132 through E0164) across rows 135–167, spanning multiple service lines, departments,",
       "perimeter": "Keystone consolidated headcount by service line and department",
       "locator": "keystone_lbo_model_working.xlsx::Employees!135:167",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!135:167': value and entity could not be checked against it."
@@ -8151,7 +8151,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:90fe3116828cf25f",
-      "statement": "The Keystone LBO model employee roster (rows 168\u2013200) contains 33 individual employee records with active status as of 2026-03-05.",
+      "statement": "The Keystone LBO model employee roster (rows 168–200) contains 33 individual employee records with active status as of 2026-03-05.",
       "perimeter": "Keystone consolidated headcount by employee roster",
       "locator": "keystone_lbo_model_working.xlsx::Employees!168:200",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!168:200': value and entity could not be checked against it."
@@ -8160,7 +8160,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:0ff9afadf5bab348",
-      "statement": "The Keystone LBO model employee roster identifies 20 employees assigned to the Technical department across rows 168\u2013200.",
+      "statement": "The Keystone LBO model employee roster identifies 20 employees assigned to the Technical department across rows 168–200.",
       "perimeter": "Keystone consolidated headcount by employee roster, Technical department",
       "locator": "keystone_lbo_model_working.xlsx::Employees!168:200",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!168:200': value and entity could not be checked against it."
@@ -8178,7 +8178,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:fc20ceac274e57dd",
-      "statement": "Keystone consolidated headcount totals 3,089 employees across 30 records (E0198\u2013E0230) as of 2026-03-05, drawn from HRIS data source KS-DL-1.2.",
+      "statement": "Keystone consolidated headcount totals 3,089 employees across 30 records (E0198–E0230) as of 2026-03-05, drawn from HRIS data source KS-DL-1.2.",
       "perimeter": "Keystone consolidated headcount by employee record",
       "locator": "keystone_lbo_model_working.xlsx::Employees!201:233",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!201:233': value and entity could not be checked against it."
@@ -8207,8 +8207,8 @@
       "claim_id": "claim:e73d8b2cc3504387",
       "statement": "Keystone employee roster contains 33 active staff members across multiple locations and service lines as of 2026-03-05.",
       "perimeter": "Keystone consolidated employee roster",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!300:332:Employees sheet, rows 300\u2013332",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!300:332:Employees sheet, rows 300\u2013332': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!300:332:Employees sheet, rows 300–332",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!300:332:Employees sheet, rows 300–332': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8216,8 +8216,8 @@
       "claim_id": "claim:dbb456bb103e18fe",
       "statement": "The earliest employee hire date in the Keystone roster is 2015-10-01, indicating tenure spanning approximately 10 years.",
       "perimeter": "Keystone consolidated employee tenure",
-      "locator": "keystone_lbo_model_working.xlsx::Employees!300:332:Employees sheet, column K (hire dates), rows 300\u2013332",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!300:332:Employees sheet, column K (hire dates), rows 300\u2013332': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Employees!300:332:Employees sheet, column K (hire dates), rows 300–332",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Employees!300:332:Employees sheet, column K (hire dates), rows 300–332': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8421,7 +8421,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:6765c54580330903",
-      "statement": "Invoice INV-0002 (Apex Manufacturing, $0.202 million) is 50 days old and falls in the 31\u201360 day aging bucket as of December 31, 2025.",
+      "statement": "Invoice INV-0002 (Apex Manufacturing, $0.202 million) is 50 days old and falls in the 31–60 day aging bucket as of December 31, 2025.",
       "perimeter": "Keystone consolidated accounts receivable aging",
       "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 6, columns G and I",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 6, columns G and I': value and entity could not be checked against it."
@@ -8549,8 +8549,8 @@
       "claim_id": "claim:a51e9787cf84e2a5",
       "statement": "Keystone PP&E allocated at fair value of $3.4m with 5-year useful life and annual amortization of $0.68m in purchase accounting as of 2026-03-05.",
       "perimeter": "Keystone consolidated PP&E fair value under purchase accounting allocation",
-      "locator": "keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 5, columns B\u2013D",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 5, columns B\u2013D': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 5, columns B–D",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 5, columns B–D': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8558,8 +8558,8 @@
       "claim_id": "claim:8cc9cb419b37442d",
       "statement": "Keystone customer relationships intangible allocated at fair value of $28m with 10-year useful life and annual amortization of $2.8m in purchase accounting as o",
       "perimeter": "Keystone consolidated customer relationships intangible amortization under purchase accounting allocation",
-      "locator": "keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 7, columns B\u2013D",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 7, columns B\u2013D': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 7, columns B–D",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 7, columns B–D': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8567,8 +8567,8 @@
       "claim_id": "claim:5a219a2e254d35b4",
       "statement": "Keystone non-compete intangible allocated at fair value of $1m with 5-year useful life and annual amortization of $0.2m in purchase accounting as of 2026-03-05.",
       "perimeter": "Keystone consolidated non-compete intangible amortization under purchase accounting allocation",
-      "locator": "keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 9, columns B\u2013D",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 9, columns B\u2013D': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 9, columns B–D",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Purchase_Accounting!1:12:Purchase_Accounting sheet, row 9, columns B–D': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8691,7 +8691,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:c486db39e1ae3bb4",
-      "statement": "Keystone consolidated leverage covenant limit is 4.25x for FY2026E through FY2027E (columns C\u2013I of Scenario_Drivers).",
+      "statement": "Keystone consolidated leverage covenant limit is 4.25x for FY2026E through FY2027E (columns C–I of Scenario_Drivers).",
       "perimeter": "Keystone consolidated leverage covenant limit under Firm LBO model",
       "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A32:V32",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A32:V32': value and entity could not be checked against it."
@@ -8700,7 +8700,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:507fac2f016118d8",
-      "statement": "Keystone consolidated leverage covenant limit is 4.0x for FY2028E (columns J\u2013M of Scenario_Drivers).",
+      "statement": "Keystone consolidated leverage covenant limit is 4.0x for FY2028E (columns J–M of Scenario_Drivers).",
       "perimeter": "Keystone consolidated leverage covenant limit under Firm LBO model",
       "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A32:V32",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A32:V32': value and entity could not be checked against it."
@@ -8709,7 +8709,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:fdefc02f86761315",
-      "statement": "Keystone consolidated leverage covenant limit is 3.75x for FY2029E (columns N\u2013Q of Scenario_Drivers).",
+      "statement": "Keystone consolidated leverage covenant limit is 3.75x for FY2029E (columns N–Q of Scenario_Drivers).",
       "perimeter": "Keystone consolidated leverage covenant limit under Firm LBO model",
       "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A32:V32",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A32:V32': value and entity could not be checked against it."
@@ -8718,7 +8718,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:6df777f45de719c8",
-      "statement": "Keystone consolidated leverage covenant limit is 3.5x for FY2030E through FY2031E (columns R\u2013V of Scenario_Drivers).",
+      "statement": "Keystone consolidated leverage covenant limit is 3.5x for FY2030E through FY2031E (columns R–V of Scenario_Drivers).",
       "perimeter": "Keystone consolidated leverage covenant limit under Firm LBO model",
       "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A32:V32",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A32:V32': value and entity could not be checked against it."
@@ -8736,7 +8736,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:da8a355a6b69f969",
-      "statement": "Keystone consolidated Firm EBITDA under downside scenario is $2.901392m for FY2026E (columns D\u2013E).",
+      "statement": "Keystone consolidated Firm EBITDA under downside scenario is $2.901392m for FY2026E (columns D–E).",
       "perimeter": "Keystone consolidated EBITDA under Firm LBO model downside scenario",
       "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A41:V41",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A41:V41': value and entity could not be checked against it."
@@ -8754,7 +8754,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:262d6d29d05cc3cc",
-      "statement": "Keystone consolidated gross margin under downside scenario is 35.5% for FY2026E (columns C\u2013E).",
+      "statement": "Keystone consolidated gross margin under downside scenario is 35.5% for FY2026E (columns C–E).",
       "perimeter": "Keystone consolidated gross margin under Firm LBO model downside scenario",
       "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A40:V40",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!30:57:keystone_lbo_model_working.xlsx::Scenario_Drivers!A40:V40': value and entity could not be checked against it."
@@ -8781,10 +8781,10 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:b1697462f78450dc",
-      "statement": "Keystone's covenant leverage limit is 4.25x for FY2026E\u2013FY2027E, stepping down to 4.0x for FY2028E\u2013FY2029E and 3.5x for FY2030E under the Firm upside scenario.",
+      "statement": "Keystone's covenant leverage limit is 4.25x for FY2026E–FY2027E, stepping down to 4.0x for FY2028E–FY2029E and 3.5x for FY2030E under the Firm upside scenario.",
       "perimeter": "Keystone consolidated under Firm valuation basis",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 66, columns C\u2013V",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 66, columns C\u2013V': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 66, columns C–V",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 66, columns C–V': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -8826,28 +8826,28 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:f9ee048f7d56552c",
-      "statement": "Keystone gross margin is assumed at 36.5% for FY2026E\u2013FY2027E, improving to 37.2% for FY2028E\u2013FY2029E and 38.4%\u201338.5% for FY2030E under the upside scenario.",
+      "statement": "Keystone gross margin is assumed at 36.5% for FY2026E–FY2027E, improving to 37.2% for FY2028E–FY2029E and 38.4%–38.5% for FY2030E under the upside scenario.",
       "perimeter": "Keystone consolidated gross margin under Firm valuation basis",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 74, columns C\u2013V",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 74, columns C\u2013V': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 74, columns C–V",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 74, columns C–V': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:d8adeea77b52dcd4",
-      "statement": "Keystone DSO is assumed at 62 days for FY2026E\u2013FY2027E, improving to 60 days for FY2028E\u2013FY2029E and 58 days for FY2030E under the upside scenario.",
+      "statement": "Keystone DSO is assumed at 62 days for FY2026E–FY2027E, improving to 60 days for FY2028E–FY2029E and 58 days for FY2030E under the upside scenario.",
       "perimeter": "Keystone consolidated days sales outstanding under Firm valuation basis",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 78, columns C\u2013V",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 78, columns C\u2013V': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 78, columns C–V",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 78, columns C–V': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:2bd2d5b236d53716",
-      "statement": "Keystone capex is assumed at 1.6% of revenue across the entire forecast period FY2026E\u2013FY2030E under the upside scenario.",
+      "statement": "Keystone capex is assumed at 1.6% of revenue across the entire forecast period FY2026E–FY2030E under the upside scenario.",
       "perimeter": "Keystone consolidated capex as percentage of revenue under Firm valuation basis",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 84, columns C\u2013V",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 84, columns C\u2013V': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 84, columns C–V",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!58:85:Scenario_Drivers sheet, row 84, columns C–V': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9006,46 +9006,46 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:cf4c2f093eff204f",
-      "statement": "SOFR rate is 4.25% in the base case for the initial forecast period (columns C\u2013E).",
+      "statement": "SOFR rate is 4.25% in the base case for the initial forecast period (columns C–E).",
       "perimeter": "Keystone consolidated SOFR rate under firm LBO model",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns C\u2013E",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns C\u2013E': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns C–E",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns C–E': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:9e0feffd411cc638",
-      "statement": "SOFR rate is 3.75% in the base case for the mid-forecast period (columns F\u2013I).",
+      "statement": "SOFR rate is 3.75% in the base case for the mid-forecast period (columns F–I).",
       "perimeter": "Keystone consolidated SOFR rate under firm LBO model",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns F\u2013I",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns F\u2013I': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns F–I",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns F–I': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:0a41b530787d47fa",
-      "statement": "SOFR rate is 3.50% in the base case for the later-forecast period (columns J\u2013M).",
+      "statement": "SOFR rate is 3.50% in the base case for the later-forecast period (columns J–M).",
       "perimeter": "Keystone consolidated SOFR rate under firm LBO model",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns J\u2013M",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns J\u2013M': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns J–M",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns J–M': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:8ff6510bf82f65b4",
-      "statement": "SOFR rate is 3.25% in the base case for the penultimate-forecast period (columns N\u2013Q).",
+      "statement": "SOFR rate is 3.25% in the base case for the penultimate-forecast period (columns N–Q).",
       "perimeter": "Keystone consolidated SOFR rate under firm LBO model",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns N\u2013Q",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns N\u2013Q': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns N–Q",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns N–Q': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:a06488d80b7b22e6",
-      "statement": "SOFR rate is 3.00% in the base case for the final-forecast period (columns R\u2013V).",
+      "statement": "SOFR rate is 3.00% in the base case for the final-forecast period (columns R–V).",
       "perimeter": "Keystone consolidated SOFR rate under firm LBO model",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns R\u2013V",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns R\u2013V': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns R–V",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 169, columns R–V': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9053,26 +9053,26 @@
       "claim_id": "claim:4af8930a7cc0fbfb",
       "statement": "Rate step-up is 0.75% beginning in period H (column H) and continuing through the forecast.",
       "perimeter": "Keystone consolidated rate step-up under firm LBO model",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 170, columns H\u2013V",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 170, columns H\u2013V': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 170, columns H–V",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 170, columns H–V': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:a784f7c5263bce46",
-      "statement": "Core PPA amortization is $0.75 million in the initial forecast periods (columns C\u2013D).",
+      "statement": "Core PPA amortization is $0.75 million in the initial forecast periods (columns C–D).",
       "perimeter": "Keystone consolidated core PPA amortization under firm LBO model",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 171, columns C\u2013D",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 171, columns C\u2013D': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 171, columns C–D",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 171, columns C–D': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:8f822e1c836d3b02",
-      "statement": "Core PPA amortization is $0.853125 million from period E onward (columns E\u2013V).",
+      "statement": "Core PPA amortization is $0.853125 million from period E onward (columns E–V).",
       "perimeter": "Keystone consolidated core PPA amortization under firm LBO model",
-      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 171, columns E\u2013V",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 171, columns E\u2013V': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 171, columns E–V",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Scenario_Drivers!169:172:Sheet Scenario_Drivers, row 171, columns E–V': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9294,7 +9294,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:4fd0a7eda907ea70",
-      "statement": "Gross profit is calculated as Revenue \u00d7 Gross Margin for each period in the downside scenario.",
+      "statement": "Gross profit is calculated as Revenue × Gross Margin for each period in the downside scenario.",
       "perimeter": "Keystone consolidated gross profit under downside scenario",
       "locator": "keystone_lbo_model_working.xlsx::SB_Down!5:23:SB_Down!A8:V8",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::SB_Down!5:23:SB_Down!A8:V8': value and entity could not be checked against it."
@@ -9494,14 +9494,14 @@
       "claim_id": "claim:7768f83e237af286",
       "statement": "Covenant net debt is defined as gross debt (sum of first-lien debt, revolver, and DDTL) less eligible cash (minimum of total cash and a specified cap from Input",
       "perimeter": "Keystone consolidated net debt under LBO model upside scenario",
-      "locator": "keystone_lbo_model_working.xlsx::SB_Up!81:99:SB_Up sheet, rows 89\u201391; formula structure defines covenant net debt calculation",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::SB_Up!81:99:SB_Up sheet, rows 89\u201391; formula structure defines covenant net debt calculation': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::SB_Up!81:99:SB_Up sheet, rows 89–91; formula structure defines covenant net debt calculation",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::SB_Up!81:99:SB_Up sheet, rows 89–91; formula structure defines covenant net debt calculation': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:abb6f7ccbc136c9e",
-      "statement": "Gross debt is defined as the sum of first-lien debt, revolver, and DDTL (rows 76\u201378).",
+      "statement": "Gross debt is defined as the sum of first-lien debt, revolver, and DDTL (rows 76–78).",
       "perimeter": "Keystone consolidated gross debt under LBO model upside scenario",
       "locator": "keystone_lbo_model_working.xlsx::SB_Up!81:99:SB_Up sheet, row 89; formula =SUM(C76:C78) and equivalent across periods",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::SB_Up!81:99:SB_Up sheet, row 89; formula =SUM(C76:C78) and equivalent across periods': value and entity could not be checked against it."
@@ -9764,8 +9764,8 @@
       "claim_id": "claim:d6b36e65db4382f1",
       "statement": "Working capital is tracked through accounts receivable, inventory, accounts payable, and accrued liabilities line items on the balance sheet.",
       "perimeter": "Keystone consolidated balance sheet working capital components under firm LBO model base case",
-      "locator": "keystone_lbo_model_working.xlsx::Acq_Base!62:80:Sheet Acq_Base, rows 79\u201380, accounts payable and accrued liabilities linked to operating model",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Acq_Base!62:80:Sheet Acq_Base, rows 79\u201380, accounts payable and accrued liabilities linked to operating model': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Acq_Base!62:80:Sheet Acq_Base, rows 79–80, accounts payable and accrued liabilities linked to operating model",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Acq_Base!62:80:Sheet Acq_Base, rows 79–80, accounts payable and accrued liabilities linked to operating model': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9888,7 +9888,7 @@
       "code": "SOURCE_NOT_RESOLVED",
       "blocking": false,
       "claim_id": "claim:e3caf602acc11d8e",
-      "statement": "Gross debt is defined as the sum of first-lien debt, second-lien debt, and revolver borrowings (rows 76\u201378).",
+      "statement": "Gross debt is defined as the sum of first-lien debt, second-lien debt, and revolver borrowings (rows 76–78).",
       "perimeter": "Keystone consolidated gross debt under firm valuation perimeter",
       "locator": "keystone_lbo_model_working.xlsx::Combined_Risk!81:99:Combined_Risk!A89:V89",
       "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Combined_Risk!81:99:Combined_Risk!A89:V89': value and entity could not be checked against it."
@@ -9935,8 +9935,8 @@
       "claim_id": "claim:ba218854787ac55f",
       "statement": "First-lien term loan commitment is $42.8m with opening draw of $42.8m, maturing Mar-31-2032, priced at SOFR + 5.50%, with 1.0% annual amortization.",
       "perimeter": "Keystone consolidated debt facilities",
-      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4\u20135, Facility Terms table",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4\u20135, Facility Terms table': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4–5, Facility Terms table",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4–5, Facility Terms table': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9944,8 +9944,8 @@
       "claim_id": "claim:6b95a07740b6f881",
       "statement": "Revolver commitment is $7.5m with opening draw of $0m, maturing Sep-30-2031, priced at SOFR + 5.00%, with no amortization.",
       "perimeter": "Keystone consolidated debt facilities",
-      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4\u20136, Facility Terms table",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4\u20136, Facility Terms table': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4–6, Facility Terms table",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4–6, Facility Terms table': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9953,8 +9953,8 @@
       "claim_id": "claim:934c6504e8c7a13d",
       "statement": "DDTL commitment is $10m with opening draw of $0m, maturing Mar-31-2032, priced at SOFR + 5.75%, with 1.0% annual amortization after draw.",
       "perimeter": "Keystone consolidated debt facilities",
-      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4\u20137, Facility Terms table",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4\u20137, Facility Terms table': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4–7, Facility Terms table",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 4–7, Facility Terms table': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9962,8 +9962,8 @@
       "claim_id": "claim:b1d3e611c0ec4639",
       "statement": "Total net leverage covenant threshold is 4.25x through 2027, tested quarterly, with steps down thereafter.",
       "perimeter": "Keystone consolidated total net leverage covenant definition",
-      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9\u201311, Original Financial Covenants table",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9\u201311, Original Financial Covenants table': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9–11, Original Financial Covenants table",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9–11, Original Financial Covenants table': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9971,8 +9971,8 @@
       "claim_id": "claim:e7597ff5281cfcf3",
       "statement": "Fixed charge coverage covenant minimum is 1.25x, tested quarterly on LTM basis.",
       "perimeter": "Keystone consolidated fixed charge coverage covenant definition",
-      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9\u201312, Original Financial Covenants table",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9\u201312, Original Financial Covenants table': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9–12, Original Financial Covenants table",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9–12, Original Financial Covenants table': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9980,8 +9980,8 @@
       "claim_id": "claim:4d532c97e6b6d335",
       "statement": "Minimum liquidity covenant is $3.0m, tested monthly, measured as cash plus revolver availability.",
       "perimeter": "Keystone consolidated minimum liquidity covenant definition",
-      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9\u201313, Original Financial Covenants table",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9\u201313, Original Financial Covenants table': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9–13, Original Financial Covenants table",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9–13, Original Financial Covenants table': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9989,8 +9989,8 @@
       "claim_id": "claim:62a6dac797535e50",
       "statement": "Eligible cash netting cap is $5.0m, tested quarterly, covenant only.",
       "perimeter": "Keystone consolidated eligible cash netting covenant definition",
-      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9\u201314, Original Financial Covenants table",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9\u201314, Original Financial Covenants table': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9–14, Original Financial Covenants table",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9–14, Original Financial Covenants table': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",
@@ -9998,8 +9998,8 @@
       "claim_id": "claim:54ffaea1eefcf187",
       "statement": "Add-back cap is 20% of pre-adjustment EBITDA, tested quarterly.",
       "perimeter": "Keystone consolidated add-back cap covenant definition",
-      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9\u201315, Original Financial Covenants table",
-      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9\u201315, Original Financial Covenants table': value and entity could not be checked against it."
+      "locator": "keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9–15, Original Financial Covenants table",
+      "detail": "cited source not found for locator 'keystone_lbo_model_working.xlsx::Debt_Covenants!1:28:Debt_Covenants sheet, rows 9–15, Original Financial Covenants table': value and entity could not be checked against it."
     },
     {
       "code": "SOURCE_NOT_RESOLVED",

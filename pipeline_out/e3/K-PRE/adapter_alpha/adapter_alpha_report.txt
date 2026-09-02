@@ -3,7 +3,7 @@ Adapter Alpha Report — K-PRE
   Deal            : keystone
   Manifest        : K-PRE
   E3 sha256       : d8120aed121160b4...
-  Status          : ALPHA
+  Status          : COMPLETE
 
 E3 → extraction graph:
   Input claims    : 1127
@@ -19,9 +19,9 @@ V7 bridge output:
 
 Output files:
   extraction_graph.json     924KB
-  current_graph.json        2084KB
-  execution_mapping.json    104KB
-  adapter_report.json       73KB
+  current_graph.json        2401KB
+  execution_mapping.json    119KB
+  adapter_report.json       74KB
   admission_manifest.json   33KB
 
 Case Positions admitted:

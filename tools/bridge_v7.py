@@ -39,6 +39,7 @@ from typing import Any
 sys.path.insert(0, str(Path(__file__).resolve().parent.parent))
 
 from tools import deal_profile as _dp
+from tools.relation_rules import annotate_edge, audit_relation_outputs
 
 ROOT = Path(__file__).resolve().parent.parent
 
@@ -830,12 +831,16 @@ def _build_current_graph(
     # Claim–position edges: schema requires edge_id, claim_id, position_id,
     # relation_type ∈ {SUPPORTS, CONTRADICTS}
     panta_edges = [
-        {
-            "edge_id": f"CPE-{e['claim_stable_id'][:8]}-{e['to_cp_id']}",
-            "claim_id": e["claim_stable_id"],
-            "position_id": e["to_cp_id"],
-            "relation_type": "SUPPORTS",
-        }
+        annotate_edge(
+            {
+                "edge_id": f"CPE-{e['claim_stable_id'][:8]}-{e['to_cp_id']}",
+                "claim_id": e["claim_stable_id"],
+                "position_id": e["to_cp_id"],
+                "relation_type": "SUPPORTS",
+            },
+            "CLAIM_POSITION_BINDING_SUPPORTS",
+            evidence={"position_id": e["to_cp_id"]},
+        )
         for e in cp_edges
     ]
 
@@ -878,6 +883,7 @@ def _build_current_graph(
         "model_nodes": list(node_values.values()),
         "position_dependencies": [],
         "claim_position_edges": panta_edges,
+        "relation_audit": audit_relation_outputs(panta_edges),
         "position_model_bindings": position_model_bindings,
         "support_routes": all_support_routes,
         "coverage_gaps": [],
@@ -1015,6 +1021,20 @@ def _normalize_execution_mapping(execution: dict,
             l["resolution"] = "PARTIAL_SETTLEMENT"
         all_limits.append(l)
 
+    directed_model_edges = []
+    for raw in execution.get("directed_model_edges", []):
+        edge = dict(raw)
+        edge.setdefault("relation_type", "DRIVES")
+        if not edge.get("relation_rule"):
+            edge = annotate_edge(
+                edge,
+                "FORMULA_PRECEDENT_DRIVES",
+                evidence={
+                    "formula_or_function_ref": edge.get("formula_or_function_ref")
+                },
+            )
+        directed_model_edges.append(edge)
+
     return {
         "mapping_version": "v7",
         "deal": _profile().case_id,
@@ -1029,7 +1049,8 @@ def _normalize_execution_mapping(execution: dict,
         "lbo_runtime_module": "tools/keystone_model.py",
         "lbo_runtime_entrypoint": "propagate_claim",
         "model_nodes": nodes_list,
-        "directed_model_edges": execution.get("directed_model_edges", []),
+        "directed_model_edges": directed_model_edges,
+        "relation_audit": audit_relation_outputs(directed_model_edges),
         "position_model_directions": pm_directions,
         # Exclude workbook-reference formulas: the reference runtime's AST
         # evaluator only handles Python arithmetic expressions.  WORKBOOK_READ /
@@ -1262,6 +1283,11 @@ def compile_v7_bundle(
     adapter_report = _build_adapter_report(
         all_claims, admitted, case_positions, execution
     )
+    adapter_report["relation_orchestration"] = audit_relation_outputs([
+        *current_graph.get("claim_position_edges", []),
+        *current_graph.get("position_dependencies", []),
+        *execution_mapping.get("directed_model_edges", []),
+    ])
     # Surface deal-profile conformance: any position/model node whose perimeter
     # the profile could not supply is reported, not silently defaulted.
     adapter_report["deal_profile"] = _profile().conformance_report()

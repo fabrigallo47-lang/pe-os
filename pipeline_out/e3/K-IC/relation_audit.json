@@ -1,0 +1,879 @@
+{
+  "schema_version": "panta.relation-orchestration/1.0",
+  "claims_file": "pipeline_out/e3/K-IC/e3_claims.json",
+  "execution_mapping": "pipeline_out/e3/K-PRE/adapter_alpha/execution_mapping.json",
+  "audit": {
+    "schema_version": "panta.relation-orchestration/1.0",
+    "materialized_edge_count": 43,
+    "deterministic_edge_count": 43,
+    "unclassified_edge_count": 0,
+    "proposal_count": 389,
+    "deterministic_edge_pct": 100.0,
+    "deterministic_output_pct": 9.95,
+    "by_relation": {
+      "CONTRADICTS": {
+        "deterministic": 6
+      },
+      "DERIVES_FROM": {
+        "proposals": 389
+      },
+      "DRIVES": {
+        "deterministic": 37
+      }
+    }
+  },
+  "rules": {
+    "IDENTITY_VALUE_CONFLICT": {
+      "relation_type": "CONTRADICTS",
+      "mode": "DETERMINISTIC",
+      "basis": "complete metric identity plus bound-aware incompatible values"
+    },
+    "EXPLICIT_DERIVATION_INPUT": {
+      "relation_type": "DERIVES_FROM",
+      "mode": "DETERMINISTIC",
+      "basis": "source claim identifier explicitly declared by the derived claim"
+    },
+    "FORMULA_PRECEDENT_DRIVES": {
+      "relation_type": "DRIVES",
+      "mode": "DETERMINISTIC",
+      "basis": "compiled formula input is a declared precedent of the output node"
+    },
+    "CLAIM_POSITION_BINDING_SUPPORTS": {
+      "relation_type": "SUPPORTS",
+      "mode": "DETERMINISTIC",
+      "basis": "claim passed the deterministic position binding gate"
+    },
+    "CLAIM_POSITION_BINDING_REJECTS": {
+      "relation_type": "CONTRADICTS",
+      "mode": "DETERMINISTIC",
+      "basis": "claim failed the deterministic position binding gate"
+    },
+    "DECLARED_POSITION_CONDITION": {
+      "relation_type": "CONDITIONS",
+      "mode": "DETERMINISTIC",
+      "basis": "typed prerequisite explicitly declared by a governed position"
+    },
+    "PROSE_DERIVATION_CANDIDATE": {
+      "relation_type": "DERIVES_FROM",
+      "mode": "PROPOSAL",
+      "basis": "free-text derivation mentions a candidate source metric"
+    },
+    "NARRATIVE_SUPPORT_CANDIDATE": {
+      "relation_type": "SUPPORTS",
+      "mode": "PROPOSAL",
+      "basis": "quantitative and narrative claims share subject and underwriting area"
+    }
+  },
+  "deterministic_edge_sample": [
+    {
+      "source": "claim:15eb06ceeb33f08e",
+      "target": "claim:87841bde1b31a4e2",
+      "rel": "CONTRADICTS",
+      "canonical": true,
+      "relation_rule": {
+        "rule_id": "IDENTITY_VALUE_CONFLICT",
+        "rule_version": "pan68-1.0",
+        "relation_type": "CONTRADICTS",
+        "mode": "DETERMINISTIC",
+        "basis": "complete metric identity plus bound-aware incompatible values",
+        "evidence": {
+          "identity": [
+            "Keystone",
+            "EBITDA",
+            "2025-12-01",
+            "consolidated",
+            "FirmView",
+            "total",
+            "base",
+            "mm",
+            "USD"
+          ],
+          "reason": "due valori esatti divergenti: 11.4 contro 0.9486"
+        }
+      }
+    },
+    {
+      "source": "claim:1883a66094b122a0",
+      "target": "claim:49227752986a3a95",
+      "rel": "CONTRADICTS",
+      "canonical": true,
+      "relation_rule": {
+        "rule_id": "IDENTITY_VALUE_CONFLICT",
+        "rule_version": "pan68-1.0",
+        "relation_type": "CONTRADICTS",
+        "mode": "DETERMINISTIC",
+        "basis": "complete metric identity plus bound-aware incompatible values",
+        "evidence": {
+          "identity": [
+            "Keystone",
+            "NetLeverage",
+            "2026-03-05",
+            "consolidated",
+            "FirmView",
+            "total",
+            "base",
+            "x",
+            ""
+          ],
+          "reason": "due valori esatti divergenti: 3.49 contro 2.5"
+        }
+      }
+    },
+    {
+      "source": "claim:2a67b6294a02a271",
+      "target": "claim:49227752986a3a95",
+      "rel": "CONTRADICTS",
+      "canonical": true,
+      "relation_rule": {
+        "rule_id": "IDENTITY_VALUE_CONFLICT",
+        "rule_version": "pan68-1.0",
+        "relation_type": "CONTRADICTS",
+        "mode": "DETERMINISTIC",
+        "basis": "complete metric identity plus bound-aware incompatible values",
+        "evidence": {
+          "identity": [
+            "Keystone",
+            "NetLeverage",
+            "2026-03-05",
+            "consolidated",
+            "FirmView",
+            "total",
+            "base",
+            "x",
+            ""
+          ],
+          "reason": "due valori esatti divergenti: 3.49 contro 0.107"
+        }
+      }
+    },
+    {
+      "source": "claim:2cfbf338ac586aa3",
+      "target": "claim:49227752986a3a95",
+      "rel": "CONTRADICTS",
+      "canonical": true,
+      "relation_rule": {
+        "rule_id": "IDENTITY_VALUE_CONFLICT",
+        "rule_version": "pan68-1.0",
+        "relation_type": "CONTRADICTS",
+        "mode": "DETERMINISTIC",
+        "basis": "complete metric identity plus bound-aware incompatible values",
+        "evidence": {
+          "identity": [
+            "Keystone",
+            "NetLeverage",
+            "2026-03-05",
+            "consolidated",
+            "FirmView",
+            "total",
+            "base",
+            "x",
+            ""
+          ],
+          "reason": "due valori esatti divergenti: 3.49 contro 3"
+        }
+      }
+    },
+    {
+      "source": "claim:3e57033a5e0a1e81",
+      "target": "claim:f3862e5f5589a072",
+      "rel": "CONTRADICTS",
+      "canonical": true,
+      "relation_rule": {
+        "rule_id": "IDENTITY_VALUE_CONFLICT",
+        "rule_version": "pan68-1.0",
+        "relation_type": "CONTRADICTS",
+        "mode": "DETERMINISTIC",
+        "basis": "complete metric identity plus bound-aware incompatible values",
+        "evidence": {
+          "identity": [
+            "Keystone",
+            "EBITDA",
+            "2026-03-05",
+            "consolidated",
+            "FirmView",
+            "total",
+            "base",
+            "mm",
+            "USD"
+          ],
+          "reason": "due valori esatti divergenti: 11.4 contro 2.87027"
+        }
+      }
+    },
+    {
+      "source": "claim:3e57033a5e0a1e81",
+      "target": "claim:f769238bf0f44369",
+      "rel": "CONTRADICTS",
+      "canonical": true,
+      "relation_rule": {
+        "rule_id": "IDENTITY_VALUE_CONFLICT",
+        "rule_version": "pan68-1.0",
+        "relation_type": "CONTRADICTS",
+        "mode": "DETERMINISTIC",
+        "basis": "complete metric identity plus bound-aware incompatible values",
+        "evidence": {
+          "identity": [
+            "Keystone",
+            "EBITDA",
+            "2026-03-05",
+            "consolidated",
+            "FirmView",
+            "total",
+            "base",
+            "mm",
+            "USD"
+          ],
+          "reason": "due valori esatti divergenti: 11.4 contro 2.87027"
+        }
+      }
+    },
+    {
+      "edge_id": "E-EBITDA-QUARTERLY",
+      "from_model_node_id": "MN-FIRM-EBITDA",
+      "to_model_node_id": "MN-QUARTERLY-FIRM-EBITDA",
+      "formula_or_function_ref": "F-QUARTERLY-FIRM-EBITDA",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-QUARTERLY-FIRM-EBITDA"
+        }
+      }
+    },
+    {
+      "edge_id": "E-EBITDA-COV-EBITDA",
+      "from_model_node_id": "MN-QUARTERLY-FIRM-EBITDA",
+      "to_model_node_id": "MN-QUARTERLY-COV-EBITDA",
+      "formula_or_function_ref": "F-QUARTERLY-COV-EBITDA",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-QUARTERLY-COV-EBITDA"
+        }
+      }
+    },
+    {
+      "edge_id": "E-EBITDA-LEVERAGE",
+      "from_model_node_id": "MN-FIRM-EBITDA",
+      "to_model_node_id": "MN-NET-LEVERAGE",
+      "formula_or_function_ref": "F-NET-LEVERAGE",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-NET-LEVERAGE"
+        }
+      }
+    },
+    {
+      "edge_id": "E-QEBITDA-LEVERAGE",
+      "from_model_node_id": "MN-QUARTERLY-COV-EBITDA",
+      "to_model_node_id": "MN-NET-LEVERAGE",
+      "formula_or_function_ref": "F-NET-LEVERAGE",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-NET-LEVERAGE"
+        }
+      }
+    },
+    {
+      "edge_id": "E-DEBT-TERM",
+      "from_model_node_id": "MN-DEBT",
+      "to_model_node_id": "MN-QUARTERLY-TERM-LOAN",
+      "formula_or_function_ref": "F-TERM-LOAN-AMORT",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-TERM-LOAN-AMORT"
+        }
+      }
+    },
+    {
+      "edge_id": "E-DEBT-DDTL",
+      "from_model_node_id": "MN-DEBT",
+      "to_model_node_id": "MN-QUARTERLY-DDTL",
+      "formula_or_function_ref": "F-DDTL-BALANCE",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-DDTL-BALANCE"
+        }
+      }
+    },
+    {
+      "edge_id": "E-SCC-INT-REV",
+      "from_model_node_id": "MN-QUARTERLY-INTEREST",
+      "to_model_node_id": "MN-QUARTERLY-REVOLVER",
+      "formula_or_function_ref": "F-REVOLVER-DRAW-REPAY",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-REVOLVER-DRAW-REPAY"
+        }
+      }
+    },
+    {
+      "edge_id": "E-SCC-REV-INT",
+      "from_model_node_id": "MN-QUARTERLY-REVOLVER",
+      "to_model_node_id": "MN-QUARTERLY-INTEREST",
+      "formula_or_function_ref": "F-INTEREST-EXPENSE",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-INTEREST-EXPENSE"
+        }
+      }
+    },
+    {
+      "edge_id": "E-SCC-CFO-REV",
+      "from_model_node_id": "MN-QUARTERLY-CFO",
+      "to_model_node_id": "MN-QUARTERLY-REVOLVER",
+      "formula_or_function_ref": "F-REVOLVER-DRAW-REPAY",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-REVOLVER-DRAW-REPAY"
+        }
+      }
+    },
+    {
+      "edge_id": "E-SCC-INT-CFO",
+      "from_model_node_id": "MN-QUARTERLY-INTEREST",
+      "to_model_node_id": "MN-QUARTERLY-CFO",
+      "formula_or_function_ref": "F-CFO",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-CFO"
+        }
+      }
+    },
+    {
+      "edge_id": "E-EBITDA-CFO",
+      "from_model_node_id": "MN-QUARTERLY-FIRM-EBITDA",
+      "to_model_node_id": "MN-QUARTERLY-CFO",
+      "formula_or_function_ref": "F-CFO",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-CFO"
+        }
+      }
+    },
+    {
+      "edge_id": "E-NWC-CFO",
+      "from_model_node_id": "MN-NWC",
+      "to_model_node_id": "MN-QUARTERLY-CFO",
+      "formula_or_function_ref": "F-CFO",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-CFO"
+        }
+      }
+    },
+    {
+      "edge_id": "E-REV-CFO",
+      "from_model_node_id": "MN-REVENUE",
+      "to_model_node_id": "MN-QUARTERLY-CFO",
+      "formula_or_function_ref": "F-CFO",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-CFO"
+        }
+      }
+    },
+    {
+      "edge_id": "E-CFO-CASH",
+      "from_model_node_id": "MN-QUARTERLY-CFO",
+      "to_model_node_id": "MN-QUARTERLY-CASH",
+      "formula_or_function_ref": "F-ENDING-CASH",
+      "control_ids": [],
+      "scenario": null,
+      "relation_type": "DRIVES",
+      "relation_rule": {
+        "rule_id": "FORMULA_PRECEDENT_DRIVES",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DRIVES",
+        "mode": "DETERMINISTIC",
+        "basis": "compiled formula input is a declared precedent of the output node",
+        "evidence": {
+          "formula_or_function_ref": "F-ENDING-CASH"
+        }
+      }
+    }
+  ],
+  "proposal_sample": [
+    {
+      "source": "claim:e1054ee9440bf451",
+      "target": "claim:4402a816cbe0edf8",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "net income"
+        }
+      }
+    },
+    {
+      "source": "claim:e1054ee9440bf451",
+      "target": "claim:677a64c03806a7b1",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "net income"
+        }
+      }
+    },
+    {
+      "source": "claim:e1054ee9440bf451",
+      "target": "claim:766e6cc297aea077",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "net income"
+        }
+      }
+    },
+    {
+      "source": "claim:e1054ee9440bf451",
+      "target": "claim:b6c7e5e21daf7bea",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "net income"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0384b2781007942e",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:03a226b8cc4fec98",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:07285055b2cd5185",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:07485b0b514badb2",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:07f56a7550cbe1f7",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:091ad6835027875e",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0a19b47a74a8be5d",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0ac4e8bece457a70",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0b974f66e0227354",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0c39865ed297df25",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0c9621638be72c22",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0e0ed9016f8b1a81",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0e171107f75dd378",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0efedcc3e276894f",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0f3a072e858f1ae3",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    },
+    {
+      "source": "claim:fc20ceac274e57dd",
+      "target": "claim:0f61ccd7a9274d8b",
+      "relation_type": "DERIVES_FROM",
+      "proposal_status": "PENDING_HUMAN_REVIEW",
+      "llm_authority": "PROPOSE_ONLY",
+      "adjudication": "HUMAN_REQUIRED",
+      "canonical": false,
+      "relation_rule": {
+        "rule_id": "PROSE_DERIVATION_CANDIDATE",
+        "rule_version": "pan68-1.0",
+        "relation_type": "DERIVES_FROM",
+        "mode": "PROPOSAL",
+        "basis": "free-text derivation mentions a candidate source metric",
+        "evidence": {
+          "matched_metric": "headcount"
+        }
+      }
+    }
+  ]
+}

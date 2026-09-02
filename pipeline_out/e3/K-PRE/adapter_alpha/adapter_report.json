@@ -2052,6 +2052,23 @@
   ],
   "coverage_limits": [],
   "validation_errors": [],
+  "relation_orchestration": {
+    "schema_version": "panta.relation-orchestration/1.0",
+    "materialized_edge_count": 982,
+    "deterministic_edge_count": 982,
+    "unclassified_edge_count": 0,
+    "proposal_count": 0,
+    "deterministic_edge_pct": 100.0,
+    "deterministic_output_pct": 100.0,
+    "by_relation": {
+      "DRIVES": {
+        "deterministic": 37
+      },
+      "SUPPORTS": {
+        "deterministic": 945
+      }
+    }
+  },
   "deal_profile": {
     "deal": "keystone",
     "profile_loaded": false,

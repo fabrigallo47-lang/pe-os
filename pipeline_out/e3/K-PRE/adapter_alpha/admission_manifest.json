@@ -3,7 +3,7 @@
   "case_id": "CASE-KEYSTONE",
   "as_of_known_at": "2026-08-24T00:00:00Z",
   "source_graph_hash": "sha256:59e7d96376e4f9a2966a90c329110d561b5d2b48e0e3ba2959d501e5f530a831",
-  "execution_graph_hash": "sha256:7bdcdd638e9d0969dc3a2c93fc4faa316b3abb247f5e8bdad929507d76fcc024",
+  "execution_graph_hash": "sha256:8eaf3afb9fa7eabe3ab0de6f8fa8eca90b99d6f2510d2f7f3be285968916ef14",
   "mapping_version_ref": "v7",
   "policy_refs": {
     "materiality": "vault/policy/keystone_materiality_policy_v0.json",
@@ -1128,10 +1128,10 @@
     "claim:eacaaeb33ae0c95d"
   ],
   "admitted_claim_count": 1116,
-  "status": "ALPHA",
+  "status": "COMPLETE",
   "temporal_class_filter": "underwriting",
   "underwriting_cutoff": "2026-03-10",
   "known_at_cutoff": "2026-03-10T23:59:59Z",
-  "generated_at": "2026-09-01T22:02:36Z",
+  "generated_at": "2026-09-02T00:20:51Z",
   "compiler": "tools/bridge_v7.py"
 }

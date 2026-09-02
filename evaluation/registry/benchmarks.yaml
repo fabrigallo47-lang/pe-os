@@ -1,0 +1,169 @@
+schema: panta-eval.registry/1.0
+datasets:
+  - id: panta_smoke
+    name: PANTA multimodal smoke gold
+    version: "1.0.0"
+    adapter: native
+    enabled_by_default: true
+    local_path: evaluation/fixtures/cases
+    formats: [pdf, docx, pptx, xlsx, eml, png]
+    tasks: [document_parsing, field_extraction, semantic_qa, visual_qa, mixed_qa, grounding]
+    acquisition:
+      type: bundled
+      redistributable: true
+      requires_acceptance: false
+    license: PANTA synthetic test fixture
+
+  - id: office_comprehension_bench
+    name: Microsoft Office Comprehension Benchmark
+    version: "2026"
+    adapter: office_comprehension
+    enabled_by_default: false
+    formats: [docx, xlsx, pptx]
+    tasks: [semantic_qa, visual_qa]
+    source_url: https://github.com/microsoft/OfficeComprehensionBench
+    data_url: https://huggingface.co/datasets/microsoft/OfficeComprehensionBenchmark
+    acquisition:
+      type: upstream_script
+      redistributable: partial
+      requires_acceptance: false
+      note: Use the upstream downloader; some URL-backed source documents require manual retrieval or conversion.
+    license: CDLA-Permissive-2.0 for released data; URL-referenced files retain source terms
+
+  - id: omnidocbench
+    name: OmniDocBench
+    version: "1.7"
+    adapter: omnidocbench
+    enabled_by_default: false
+    formats: [pdf, pdf_page]
+    tasks: [document_parsing, text_extraction, table_extraction, layout_extraction]
+    source_url: https://github.com/opendatalab/OmniDocBench
+    data_url: https://huggingface.co/datasets/opendatalab/OmniDocBench
+    acquisition:
+      type: manual
+      redistributable: false
+      requires_acceptance: true
+      note: Download the version matching the evaluator and retain the upstream terms with the local copy.
+    license: Research-only/non-commercial corpus terms; verify upstream dataset card
+
+  - id: docile
+    name: DocILE
+    version: "1.0"
+    adapter: docile
+    enabled_by_default: false
+    formats: [pdf]
+    tasks: [field_extraction, table_extraction, layout_extraction]
+    source_url: https://github.com/rossumai/docile
+    data_url: https://docile.rossum.ai/
+    acquisition:
+      type: token_gated
+      redistributable: false
+      requires_acceptance: true
+      note: Obtain a DocILE token and use the official download_dataset.sh script.
+    license: Competition/research terms; verify upstream
+
+  - id: docvqa
+    name: DocVQA
+    version: "2026"
+    adapter: docvqa
+    enabled_by_default: false
+    formats: [pdf_page, png, jpeg]
+    tasks: [visual_qa, semantic_qa, grounding]
+    source_url: https://github.com/VLR-CVC/DocVQA2026
+    data_url: https://www.docvqa.org/
+    acquisition:
+      type: challenge
+      redistributable: false
+      requires_acceptance: true
+      note: Validation gold is local-evaluable; official test gold can remain private on the challenge server.
+    license: Verify challenge terms
+
+  - id: slidevqa
+    name: SlideVQA
+    version: "1.0"
+    adapter: slidevqa
+    enabled_by_default: false
+    formats: [slide_images, pptx]
+    tasks: [visual_qa, semantic_qa, grounding]
+    source_url: https://github.com/nttmdlab-nlp/SlideVQA
+    acquisition:
+      type: upstream_script
+      redistributable: partial
+      requires_acceptance: true
+      note: Use the upstream annotations and image downloader or the linked Hugging Face dataset.
+    license: NTT restricted research license plus source-slide terms; acceptance required
+
+  - id: spreadsheetbench
+    name: SpreadsheetBench
+    version: "0.1"
+    adapter: spreadsheetbench
+    enabled_by_default: false
+    formats: [xlsx, xlsm]
+    tasks: [spreadsheet_manipulation, semantic_qa]
+    source_url: https://github.com/RUCKBReasoning/SpreadsheetBench
+    acquisition:
+      type: upstream_repository
+      redistributable: partial
+      requires_acceptance: false
+      note: Keep this as a manipulation track, separate from extraction scores.
+    license: CC-BY-SA-4.0
+
+  - id: spreadsheetbench2
+    name: SpreadsheetBench 2
+    version: "2.0"
+    adapter: spreadsheetbench2
+    enabled_by_default: false
+    formats: [xlsx, xlsm]
+    tasks: [spreadsheet_manipulation]
+    source_url: https://github.com/RUCKBReasoning/SpreadsheetBench-2
+    acquisition:
+      type: upstream_repository
+      redistributable: partial
+      requires_acceptance: false
+      note: Four workflow tracks; use the official workbook grader and the visual checklist evaluator for visualization tasks.
+    license: Verify repository, dataset card, and source-workbook terms
+
+  - id: apache_tika_fixtures
+    name: Apache Tika parser fixtures
+    version: "4.x"
+    adapter: tika_fixtures
+    enabled_by_default: false
+    formats: [pdf, doc, docx, ppt, pptx, xls, xlsx, msg, pst, eml, mbox]
+    tasks: [parsing, text_extraction]
+    source_url: https://github.com/apache/tika
+    acquisition:
+      type: upstream_repository
+      redistributable: true
+      requires_acceptance: false
+      note: Build a small manifest over selected upstream test-documents and expected parser assertions.
+    license: Apache-2.0
+
+  - id: qaconv
+    name: QAConv
+    version: "1.1"
+    adapter: qaconv
+    enabled_by_default: false
+    formats: [email_thread]
+    tasks: [semantic_qa, abstention]
+    source_url: https://github.com/salesforce/QAConv
+    acquisition:
+      type: upstream_archive
+      redistributable: partial
+      requires_acceptance: false
+      note: Use the released trn/val/tst question files and article segment/full files.
+    license: Verify upstream dataset terms
+
+  - id: emailsum
+    name: EmailSum
+    version: "1.0"
+    adapter: emailsum
+    enabled_by_default: false
+    formats: [email_thread]
+    tasks: [summarization, semantic_qa]
+    source_url: https://github.com/ZhangShiyue/EmailSum
+    acquisition:
+      type: licensed_corpus
+      redistributable: partial
+      requires_acceptance: true
+      note: Human summaries are released; the Avocado source corpus requires an LDC license.
+    license: Mixed; Avocado corpus requires LDC license

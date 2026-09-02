@@ -48,6 +48,9 @@ pipeline_out/e3/K-IC/adapter_alpha/
 pipeline_out/cases/
 logs/
 
+# Downloaded benchmark corpora and derived evaluation runs.
+.panta-eval/
+
 # Proprietary algorithms — not for public repo
 tools/case_compiler_alpha.py
 tools/b0_assembler.py

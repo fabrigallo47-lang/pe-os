@@ -67,7 +67,7 @@ NEEDS_API_KEY: dict[str, str] = {
 
 def discover() -> list[Path]:
     found: list[Path] = []
-    for directory in (ROOT / "tools", DYNAMICS / "tests"):
+    for directory in (ROOT / "tools", DYNAMICS / "tests", ROOT / "evaluation" / "tests"):
         if directory.is_dir():
             found.extend(sorted(directory.glob("test_*.py")))
     return found

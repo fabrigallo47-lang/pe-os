@@ -27,6 +27,7 @@ make report     # open questions · contradictions · unbound claims
 make ui DEAL=aurora      # static shareable dashboard export
 make contracts  # show what the machine contracts load
 make baseline   # verify frozen inputs, hashes and external-package markers
+make document-eval  # multimodal gold suite: PDF/Word/PowerPoint/Excel/email/images
 ```
 
 Open `vault/` in Obsidian anytime — same truth, different projection.
@@ -101,6 +102,7 @@ material and derived claim memory. A fresh clone starts without it.
 | `agents/` | The deployed runtime. Every agent binds to a row of the human-vs-automatable register; `human_judgment_required` and `authority_only_human_action` classes refuse to deploy. |
 | `tools/` | `contracts.py` (loads the machine contracts as data) · `engine.py` (state resolution by event replay + guards) · `indexer.py` (vault → SQLite) · `ui.py` (static export) |
 | `backend/dynamics/` | Deterministic Candidate/Current/Approved transition runtime, extraction adapters, policy fixtures, schemas and executable conformance tests. The runtime consumes the compiled Live Investment Case, never the raw extraction graph. |
+| `evaluation/` | Versioned multimodal gold suite for extraction and semantic understanding across PDF, Word, PowerPoint, Excel, Outlook-compatible email, images and mixed attachments. See [`evaluation/README.md`](evaluation/README.md). |
 | `app/` | FastAPI server + live UI. The API is the policy boundary: writes are ontology-validated, agent endpoints map to policy rows. |
 | `docs/` | `00` problem structure · `01` spec/stack · `02` backbone map · `03` architecture (canonical) · `reproducible-baseline.md` input/access plan · `report/` client teaser · `ui/` static exports |
 | `CLAUDE.md` | Agent operating manual: the 10 invariants, build-order status, conventions |

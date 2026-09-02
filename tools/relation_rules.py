@@ -14,8 +14,10 @@ The current deterministic producers are:
 * admitted claim/position binding -> ``SUPPORTS`` (or ``CONTRADICTS`` when the
   binding gate rejects the claim).
 
-``CONDITIONS`` is registered here but its producer is intentionally deferred to
-PAN-69, where its propagation semantics are verified before it is connected.
+Coverage gaps are materialized as typed ``CONDITIONS`` prerequisites only when
+they can be bound to an explicit governed CaseReading.  The Dynamic traverses
+those edges from prerequisite to dependent and blocks the dependent while the
+prerequisite remains unsatisfied.
 """
 from __future__ import annotations
 
@@ -75,7 +77,8 @@ RULES: dict[str, dict[str, str]] = {
     "DECLARED_POSITION_CONDITION": {
         "relation_type": "CONDITIONS",
         "mode": "DETERMINISTIC",
-        "basis": "typed prerequisite explicitly declared by a governed position",
+        "basis": "typed coverage prerequisite explicitly bound to a governed position",
+        "rule_version": "pan69-1.0",
     },
     "PROSE_DERIVATION_CANDIDATE": {
         "relation_type": "DERIVES_FROM",

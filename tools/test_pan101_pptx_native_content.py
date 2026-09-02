@@ -81,6 +81,26 @@ class PAN101PptxNativeContentTests(unittest.TestCase):
         body = self._slide1_body()
         self.assertIn("Revenue Bridge", body)
 
+    def test_flat_image_chart_is_a_declared_gap_not_a_silent_drop(self):
+        import io
+
+        from PIL import Image
+
+        presentation = Presentation()
+        slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+        png_bytes = io.BytesIO()
+        Image.new("RGB", (4, 4), color="white").save(png_bytes, format="PNG")
+        png_bytes.seek(0)
+        picture = slide.shapes.add_picture(png_bytes, Inches(1), Inches(1), Inches(2), Inches(2))
+
+        with_picture_path = Path(self.temporary.name) / "deck_with_picture.pptx"
+        presentation.save(str(with_picture_path))
+
+        chunks = parse_pptx(with_picture_path)
+        self.assertEqual(len(chunks), 1)
+        self.assertIn(picture.name, chunks[0].body)
+        self.assertIn("IMAGE_NOT_EXTRACTED", chunks[0].body)
+
     def test_invalid_pptx_is_a_declared_rejection_not_a_crash(self):
         from tools.extract_v2 import UnsupportedSourceError
 

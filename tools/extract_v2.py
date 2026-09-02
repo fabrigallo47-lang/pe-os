@@ -1061,6 +1061,18 @@ def _pptx_shape_text(shape: Any) -> list[str]:
         text = (shape.text_frame.text or "").strip()
         if text:
             parts.append(text)
+    elif getattr(shape, "shape_type", None) == MSO_SHAPE_TYPE.PICTURE:
+        # A chart pasted as a flat image (no native chart XML) has no
+        # series data to read here. This is a declared coverage limit, not
+        # a silent drop: a human or a later vision-capable pass can see
+        # exactly which shape on which slide still needs review, instead
+        # of the picture simply never having existed as far as any chunk
+        # is concerned.
+        parts.append(
+            f"[{shape.name}] IMAGE_NOT_EXTRACTED: a picture is present on this "
+            "slide with no native chart data behind it; its content (chart, "
+            "diagram, or photo) was not read."
+        )
     if getattr(shape, "shape_type", None) == MSO_SHAPE_TYPE.GROUP:
         for sub_shape in shape.shapes:
             parts.extend(_pptx_shape_text(sub_shape))
@@ -1071,8 +1083,9 @@ def parse_pptx(path: Path, max_words: int = CHUNK_WORDS,
                source_record: dict | None = None) -> list[Chunk]:
     """Extract shape text, native table grids, native chart data, and
     speaker notes per slide. A chart pasted as a flat picture (no native
-    chart XML) has no series data to read here and is not invented; it
-    surfaces later through whatever image/vision path the case has."""
+    chart XML) has no series data to read here and is not invented; a
+    declared IMAGE_NOT_EXTRACTED marker names the shape so the gap is
+    visible instead of the picture simply never having existed."""
     try:
         from pptx import Presentation
         from pptx.exc import PackageNotFoundError

@@ -101,6 +101,42 @@ class PAN101PptxNativeContentTests(unittest.TestCase):
         self.assertIn(picture.name, chunks[0].body)
         self.assertIn("IMAGE_NOT_EXTRACTED", chunks[0].body)
 
+    def test_chartex_waterfall_chart_is_a_declared_gap_not_a_silent_drop(self):
+        """PowerPoint's native waterfall/funnel/histogram chart family (the
+        standard chart type for an EBITDA bridge) uses a 'chart-ex' graphicData
+        namespace python-pptx's has_chart never matches -- confirmed by direct
+        source-code reading of pptx/shapes/graphfrm.py (PAN-101 research).
+        python-pptx cannot create a real chart-ex chart via its API (no
+        creation support), so this simulates one the honest way: build a real
+        native chart, then swap only its graphicData uri attribute to the
+        real, confirmed chart-ex namespace -- everything else (rels, cached
+        series data, package structure) stays exactly as a real chart
+        produces, so this exercises the real detection path, not a fabricated
+        shortcut.
+        """
+        presentation = Presentation()
+        slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+        chart_data = CategoryChartData()
+        chart_data.categories = ["FY2023A"]
+        chart_data.add_series("EBITDA bridge", (1.0,))
+        graphic_frame = slide.shapes.add_chart(
+            XL_CHART_TYPE.COLUMN_CLUSTERED, Inches(1), Inches(1), Inches(3), Inches(3), chart_data
+        )
+        graphic_data_el = graphic_frame._element.find(
+            ".//{http://schemas.openxmlformats.org/drawingml/2006/main}graphicData"
+        )
+        graphic_data_el.set("uri", "http://schemas.microsoft.com/office/drawing/2014/chartex")
+        self.assertFalse(graphic_frame.has_chart)  # confirms the simulated condition is real
+
+        path = Path(self.temporary.name) / "waterfall.pptx"
+        presentation.save(str(path))
+
+        chunks = parse_pptx(path)
+        self.assertEqual(len(chunks), 1)
+        self.assertIn(graphic_frame.name, chunks[0].body)
+        self.assertIn("UNSUPPORTED_GRAPHIC_FRAME", chunks[0].body)
+        self.assertIn("waterfall", chunks[0].body.lower())
+
     def test_invalid_pptx_is_a_declared_rejection_not_a_crash(self):
         from tools.extract_v2 import UnsupportedSourceError
 

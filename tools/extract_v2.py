@@ -1073,6 +1073,25 @@ def _pptx_shape_text(shape: Any) -> list[str]:
             "slide with no native chart data behind it; its content (chart, "
             "diagram, or photo) was not read."
         )
+    elif getattr(shape, "shape_type", None) is None and getattr(shape, "has_chart", None) is not None:
+        # A GraphicFrame whose graphicData python-pptx doesn't recognize as
+        # chart/table/OLE -- shape_type's own docstring names this exact
+        # case as SmartArt, and it is also what a modern "chart-ex" chart
+        # (waterfall, funnel, histogram, box-and-whisker -- the family that
+        # covers PowerPoint's native EBITDA-bridge chart type) produces,
+        # since chart-ex uses a different graphicData namespace that
+        # python-pptx's has_chart never matches. Both fall through every
+        # branch above with no text, no marker, and no error today. Naming
+        # the gap explicitly is cheap even before either is truly readable.
+        kind = "shape"
+        graphic_data_uri = getattr(getattr(shape, "_element", None), "graphicData_uri", None)
+        if graphic_data_uri and "chartex" in graphic_data_uri.lower():
+            kind = "modern chart (waterfall/funnel/histogram/box-whisker-family)"
+        parts.append(
+            f"[{shape.name}] UNSUPPORTED_GRAPHIC_FRAME: a {kind} is present on "
+            "this slide that this parser does not yet read (SmartArt or a "
+            "chart-ex chart type); its content was not extracted."
+        )
     if getattr(shape, "shape_type", None) == MSO_SHAPE_TYPE.GROUP:
         for sub_shape in shape.shapes:
             parts.extend(_pptx_shape_text(sub_shape))

@@ -999,10 +999,39 @@ def _read_openxml_root(path: Path, member: str, capability_id: str) -> ElementTr
         ) from exc
 
 
-def parse_docx(path: Path, max_words: int = CHUNK_WORDS,
-               source_record: dict | None = None) -> list[Chunk]:
-    """Extract addressable DOCX paragraphs using only the Open XML package."""
-    src = source_record or _source_record(path)
+def _docx2python_render_section(section: list) -> str | None:
+    """Render one docx2python body section as markdown-table text if it's a
+    real table (more than one row, or more than one cell in its one row),
+    or as plain paragraph text otherwise. docx2python wraps every paragraph
+    in the same row/cell/paragraph-list shape as a 1x1 "table" -- this is
+    what tells a real w:tbl apart from ordinary body text without a second
+    XML pass."""
+    rows = []
+    for row in section:
+        cells = ["\n".join(p for p in cell if p.strip()).strip() for cell in row]
+        if any(cells):
+            rows.append(cells)
+    if not rows:
+        return None
+    if len(rows) == 1 and len(rows[0]) == 1:
+        return rows[0][0]
+
+    ncols = max(len(row) for row in rows)
+    lines = []
+    for row_index, row in enumerate(rows):
+        padded = row + [""] * (ncols - len(row))
+        safe = [cell.replace("|", "\\|").replace("\n", " ") for cell in padded]
+        lines.append("| " + " | ".join(safe) + " |")
+        if row_index == 0:
+            lines.append("| " + " | ".join(["---"] * ncols) + " |")
+    return "\n".join(lines)
+
+
+def _parse_docx_openxml_text_only(path: Path, max_words: int, src: dict) -> list[Chunk]:
+    """Paragraph-text-only fallback: no table structure, no images, no
+    comments, no tracked-changes revision status. This is the whole DOCX
+    pipeline when docx2python isn't installed -- a real, optional
+    dependency (see PAN-103), not assumed always present."""
     root = _read_openxml_root(path, "word/document.xml", "docx")
     namespace = "{http://schemas.openxmlformats.org/wordprocessingml/2006/main}"
     paragraphs: list[str] = []
@@ -1011,6 +1040,38 @@ def parse_docx(path: Path, max_words: int = CHUNK_WORDS,
         if text:
             paragraphs.append(text)
     return _chunks_from_numbered_lines(paragraphs, path, max_words, "docx", src, "paragraphs")
+
+
+def parse_docx(path: Path, max_words: int = CHUNK_WORDS,
+               source_record: dict | None = None) -> list[Chunk]:
+    """Extract DOCX paragraphs and real table structure via docx2python.
+
+    Falls back to plain paragraph text (no tables) when docx2python isn't
+    installed -- a real, optional dependency. Verified against a real
+    41-table Keystone document: the previous paragraph-only reader
+    flattened every table into run-on text with no row/column boundary at
+    all (e.g. a 6-row, 2-column "what changed" table became one
+    undifferentiated paragraph); this preserves the grid.
+
+    Tracked-changes (w:ins/w:del) status and comments are not yet
+    surfaced here -- PAN-103's docx-revisions integration is separate,
+    real remaining work, not silently assumed done by this function.
+    """
+    src = source_record or _source_record(path)
+    _read_openxml_root(path, "word/document.xml", "docx")  # validity check, existing error contract
+
+    try:
+        from docx2python import docx2python
+    except ImportError:
+        return _parse_docx_openxml_text_only(path, max_words, src)
+
+    with docx2python(str(path)) as doc:
+        blocks = [
+            rendered
+            for section in doc.body
+            if (rendered := _docx2python_render_section(section)) is not None
+        ]
+    return _chunks_from_numbered_lines(blocks, path, max_words, "docx", src, "blocks")
 
 
 def _pptx_table_text(table: Any) -> str:

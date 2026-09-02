@@ -2,6 +2,7 @@ fastapi
 httpx
 pyyaml
 python-multipart
+docx2python
 openpyxl
 pdfplumber
 python-pptx

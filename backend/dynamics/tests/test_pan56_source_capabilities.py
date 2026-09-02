@@ -44,15 +44,18 @@ def _record(path: Path, document_type: str = "Diligence source") -> dict:
 
 
 def _write_docx(path: Path) -> None:
-    document = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body>
-    <w:p><w:r><w:t>Revenue was EUR 20m in FY2025A.</w:t></w:r></w:p>
-    <w:p><w:r><w:t>Management expects growth in FY2026E.</w:t></w:r></w:p>
-  </w:body>
-</w:document>"""
-    with zipfile.ZipFile(path, "w") as package:
-        package.writestr("word/document.xml", document)
+    # PAN-103: parse_docx reads via docx2python (native table-grid access),
+    # which requires a genuinely valid OOXML package -- a bare
+    # word/document.xml with no [Content_Types].xml or relationships (the
+    # old raw-XML reader's minimum) no longer opens. Build a real, minimal
+    # document through python-docx itself instead of hand-rolling package
+    # structure (same fix already applied to _write_pptx for PAN-101).
+    from docx import Document
+
+    document = Document()
+    document.add_paragraph("Revenue was EUR 20m in FY2025A.")
+    document.add_paragraph("Management expects growth in FY2026E.")
+    document.save(str(path))
 
 
 def _write_pptx(path: Path) -> None:
@@ -125,7 +128,10 @@ class PAN56CapabilityContractTests(unittest.TestCase):
             document_chunks = parse_source(docx, source_record=_record(docx))
             slide_chunks = parse_source(pptx, source_record=_record(pptx, "Management deck"))
         self.assertEqual(document_chunks[0].source_type, "docx")
-        self.assertRegex(document_chunks[0].locator, r"report\.docx::paragraphs:1-2")
+        # PAN-103: locator label is "blocks" now, not "paragraphs" --
+        # docx2python-derived chunks may carry paragraphs or real tables,
+        # and the old label stopped being accurate.
+        self.assertRegex(document_chunks[0].locator, r"report\.docx::blocks:\d+-\d+")
         self.assertIn("FY2025A", document_chunks[0].body)
         self.assertEqual(slide_chunks[0].source_type, "pptx")
         self.assertIn("deck.pptx::slide:1", slide_chunks[0].locator)

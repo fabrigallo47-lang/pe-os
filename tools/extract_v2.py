@@ -1259,18 +1259,17 @@ def parse_email(path: Path, max_words: int = CHUNK_WORDS,
     return chunks
 
 
-def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
-              source_record: dict | None = None) -> list[Chunk]:
-    try:
-        import pdfplumber
-    except ImportError as exc:
-        raise _reject_source(
-            path,
-            "READER_UNAVAILABLE",
-            "Native PDF parsing is unavailable because the approved local reader is not installed.",
-            capability_id="native_pdf",
-        ) from exc
-    src = source_record or _source_record(path)
+def _pdfplumber_text_only_pdf(path: Path, max_words: int, src: dict) -> list[Chunk]:
+    """Text-only fallback: page.extract_text(), no tables, no scanned pages.
+
+    This is the whole PDF pipeline when the Granite-Docling stack (torch,
+    transformers, docling_core) isn't installed -- a real, heavy, optional
+    dependency (see PAN-99/PAN-100). Kept intact rather than replaced so a
+    deployment without it still gets real, if degraded, PDF support instead
+    of losing the format outright.
+    """
+    import pdfplumber
+
     chunks: list[Chunk] = []
     try:
         with pdfplumber.open(path) as pdf:
@@ -1311,6 +1310,236 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
             path,
             "OCR_REQUIRED",
             f"{path.name} contains no extractable text; PANTA will not pretend that image pixels were parsed.",
+            capability_id="scanned_pdf_ocr",
+        )
+    return chunks
+
+
+_GRANITE_DOCLING_MODEL_ID = "ibm-granite/granite-docling-258M"
+_granite_docling_pipeline_cache: dict[str, Any] = {}
+_granite_docling_availability_cache: bool | None = None
+
+
+def _granite_docling_available() -> bool:
+    """Whether torch/transformers/docling_core are importable, checked once.
+
+    Re-running `import torch` on every parse_pdf call (rather than once) hit
+    a real, reproducible torch-internal crash on the second call in the same
+    process: `RuntimeError: function '_has_torch_function' already has a
+    docstring` inside torch/overrides.py. Likely a torch re-init quirk
+    triggered by module-cache interactions in the test suite, not something
+    to guess a workaround for -- caching the check once, like the model
+    pipeline itself is already cached, avoids the repeat import entirely.
+    """
+    global _granite_docling_availability_cache
+    if _granite_docling_availability_cache is None:
+        try:
+            import docling_core  # noqa: F401
+            import torch  # noqa: F401
+            import transformers  # noqa: F401
+            _granite_docling_availability_cache = True
+        except ImportError:
+            _granite_docling_availability_cache = False
+    return _granite_docling_availability_cache
+
+
+def _granite_docling_pipeline() -> tuple[Any, Any, Any]:
+    """Lazily load and cache the Granite-Docling processor/model/torch module.
+
+    Loaded once per process, not once per page or per document -- load time
+    is a few seconds and is wasted if repeated. MPS (Apple GPU) was found to
+    hang indefinitely on generate() for this model (PAN-99 research); CPU
+    with float32 and an explicit use_cache=True is the confirmed-working
+    configuration, not a guess.
+    """
+    if "model" in _granite_docling_pipeline_cache:
+        cached = _granite_docling_pipeline_cache
+        return cached["torch"], cached["processor"], cached["model"]
+    import torch
+    from transformers import AutoModelForImageTextToText, AutoProcessor
+
+    processor = AutoProcessor.from_pretrained(_GRANITE_DOCLING_MODEL_ID)
+    model = AutoModelForImageTextToText.from_pretrained(
+        _GRANITE_DOCLING_MODEL_ID, dtype=torch.float32, _attn_implementation="sdpa",
+    ).to("cpu")
+    model.eval()
+    _granite_docling_pipeline_cache.update(torch=torch, processor=processor, model=model)
+    return torch, processor, model
+
+
+def _granite_docling_convert_page(image: Any, max_new_tokens: int = 2048) -> tuple[str, list[str]]:
+    """Convert one rendered page image to markdown plus a list of picture
+    classifications (e.g. "bar_chart") found on the page.
+
+    Uses docling_core's own DoclingDocument.pictures[].meta.classification
+    rather than regexing the raw doctags -- a real, structured field, not a
+    fragile string match.
+    """
+    from docling_core.types.doc import DoclingDocument
+    from docling_core.types.doc.document import DocTagsDocument
+
+    torch, processor, model = _granite_docling_pipeline()
+    messages = [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": "Convert this page to docling."}]}]
+    prompt = processor.apply_chat_template(messages, add_generation_prompt=True)
+    inputs = processor(text=prompt, images=[image], return_tensors="pt").to("cpu")
+    with torch.no_grad():
+        generated_ids = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False, use_cache=True)
+    trimmed_ids = generated_ids[:, inputs.input_ids.shape[1]:]
+    doctags = processor.batch_decode(trimmed_ids, skip_special_tokens=False)[0].lstrip()
+
+    doctags_doc = DocTagsDocument.from_doctags_and_image_pairs([doctags], [image])
+    doc = DoclingDocument.load_from_doctags(doctags_doc, document_name="page")
+    markdown = doc.export_to_markdown()
+
+    picture_classes: list[str] = []
+    for picture in doc.pictures:
+        classification = getattr(picture.meta, "classification", None)
+        predictions = getattr(classification, "predictions", None) if classification else None
+        if predictions:
+            picture_classes.append(predictions[0].class_name)
+        else:
+            picture_classes.append("unclassified")
+    return markdown, picture_classes
+
+
+def _chunk_markdown_blocks(markdown: str, max_words: int, locator_prefix: str,
+                            source_path: str, source_record: dict,
+                            page_or_slide_number: int) -> list[Chunk]:
+    """Group markdown into word-bounded chunks without ever splitting inside
+    a block (a table, a paragraph, a heading) -- a naive word-count
+    rejoin-and-resplit (as _split_words does) would flatten a markdown
+    table's newlines into a single run-on line, destroying the row/column
+    structure this whole path exists to produce (the same real failure
+    mode found for PPTX shape text -- see PAN-101)."""
+    blocks = [b for b in re.split(r"\n\s*\n", markdown) if b.strip()]
+    chunks: list[Chunk] = []
+    pending: list[str] = []
+    pending_words = 0
+    start_block = 0
+
+    def flush(end_block: int) -> None:
+        nonlocal pending, pending_words
+        if not pending:
+            return
+        body = "\n\n".join(pending)
+        locator = f"{locator_prefix}:b{start_block}-{end_block}"
+        chunks.append(Chunk(
+            chunk_id=_chunk_hash(body),
+            locator=locator,
+            body=body,
+            source_path=source_path,
+            source_type="pdf",
+            source_record=source_record,
+            word_count=len(body.split()),
+            page_or_slide_number=page_or_slide_number,
+        ))
+        pending, pending_words = [], 0
+
+    for i, block in enumerate(blocks):
+        block_words = len(block.split())
+        if pending and pending_words + block_words > max_words:
+            flush(i)
+            start_block = i
+        pending.append(block)
+        pending_words += block_words
+    flush(len(blocks))
+
+    if len(chunks) == 1:
+        chunks[0].locator = locator_prefix
+    return chunks
+
+
+def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
+              source_record: dict | None = None) -> list[Chunk]:
+    """Convert each page via Granite-Docling-258M (real table structure,
+    reads pixels directly so scanned pages need no separate OCR pass --
+    verified against a real 9-page financial-narrative PDF: dense tables
+    with distinct economic-basis EBITDA figures extracted with zero errors,
+    section headings and callout boxes correctly separated from body text).
+    Falls back to plain pdfplumber text extraction -- no tables, requires a
+    real text layer -- when the model stack (torch/transformers/docling_core)
+    isn't installed; this is a real, heavy, optional dependency, not assumed
+    always present. A picture/chart on a page becomes a declared
+    IMAGE_NOT_EXTRACTED-style marker naming its detected type, never
+    invented data: a real waterfall/EBITDA-bridge chart was tested directly
+    and produced a structurally confident but factually wrong table (real
+    deltas swapped between categories) -- exactly the "confident wrong
+    answer" this codebase's coverage-limit philosophy exists to prevent, so
+    chart pixels are named as present, not blindly converted to numbers.
+    """
+    try:
+        import pdfplumber
+    except ImportError as exc:
+        raise _reject_source(
+            path,
+            "READER_UNAVAILABLE",
+            "Native PDF parsing is unavailable because the approved local reader is not installed.",
+            capability_id="native_pdf",
+        ) from exc
+    src = source_record or _source_record(path)
+
+    if not _granite_docling_available():
+        return _pdfplumber_text_only_pdf(path, max_words, src)
+
+    chunks: list[Chunk] = []
+    try:
+        with pdfplumber.open(path) as pdf:
+            for page_num, page in enumerate(pdf.pages, 1):
+                try:
+                    image = page.to_image(resolution=200).original
+                    markdown, picture_classes = _granite_docling_convert_page(image)
+                except Exception as exc:
+                    # A single page's model failure must not lose the rest
+                    # of the document -- fall back to plain text for just
+                    # this page rather than aborting the whole PDF.
+                    print(f"  [PDF] page {page_num}: Granite-Docling failed ({exc}), falling back to text", file=sys.stderr)
+                    text = page.extract_text() or ""
+                    if not text.strip():
+                        continue
+                    words = text.split()
+                    if len(words) <= max_words:
+                        body = text.strip()
+                        chunks.append(Chunk(
+                            chunk_id=_chunk_hash(body), locator=f"p{page_num}", body=body,
+                            source_path=str(path), source_type="pdf", source_record=src,
+                            word_count=len(words), page_or_slide_number=page_num,
+                        ))
+                    else:
+                        chunks.extend(_split_words(
+                            text, max_words, f"p{page_num}", str(path), "pdf", src,
+                            page_or_slide_number=page_num,
+                        ))
+                    continue
+
+                body_parts = [markdown.strip()] if markdown.strip() else []
+                for picture_class in picture_classes:
+                    body_parts.append(
+                        f"[picture] IMAGE_NOT_EXTRACTED: a {picture_class} is present on this "
+                        "page; its content was not reliably extracted. Chart pixel data is "
+                        "not converted to numbers here -- a real waterfall/bridge chart test "
+                        "showed this can produce confidently wrong values (PAN-100)."
+                    )
+                body = "\n\n".join(body_parts)
+                if not body.strip():
+                    continue
+                chunks.extend(_chunk_markdown_blocks(
+                    body, max_words, f"p{page_num}", str(path), src, page_num,
+                ))
+    except UnsupportedSourceError:
+        raise
+    except Exception as exc:
+        raise _reject_source(
+            path,
+            "PDF_INVALID",
+            f"The native PDF reader could not open {path.name}: {exc}.",
+            capability_id="native_pdf",
+            action="Repair the PDF or export it as searchable PDF or UTF-8 text.",
+        ) from exc
+    if not chunks:
+        raise _reject_source(
+            path,
+            "OCR_REQUIRED",
+            f"{path.name} contains no extractable content on any page.",
             capability_id="scanned_pdf_ocr",
         )
     return chunks

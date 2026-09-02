@@ -1,0 +1,23 @@
+# Optional: real table/chart structure extraction for parse_pdf (PAN-100).
+#
+# Not required for the system to run -- tools/extract_v2.py::parse_pdf
+# checks for these at runtime and falls back cleanly to plain
+# pdfplumber text extraction (no tables, requires a real text layer) when
+# they aren't installed. Install this file only when PDF table/chart
+# fidelity matters more than a much smaller footprint.
+#
+# Real, measured cost on this project's dev machine: ~1GB of model
+# weights (auto-downloaded to ~/.cache/huggingface/hub on first use,
+# not part of this pip install), plus torch itself. See PAN-99/PAN-100
+# in Linear for the evaluation this choice is based on (Granite-Docling-258M
+# beat Docling's classic TableFormer pipeline and PaddleOCR-VL on a real
+# financial table, in a real local test, not a vendor benchmark).
+#
+# Known limitation, not a bug to fix here: waterfall/EBITDA-bridge charts
+# are NOT reliably extracted -- tested directly, produces a structurally
+# confident but factually wrong table. parse_pdf never trusts chart pixels
+# as data; a picture on a page becomes a declared IMAGE_NOT_EXTRACTED-style
+# marker naming its detected type, not invented numbers.
+torch
+transformers
+docling_core

@@ -10,16 +10,20 @@ Verifies the acceptance criteria directly:
 """
 from __future__ import annotations
 
+import asyncio
+import json
 import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools.extract_v2 import UnsupportedSourceError, _source_record, parse_source  # noqa: E402
 from tools.source_envelope import build_source_envelope, extractor_source_record  # noqa: E402
+import app.v20_router as router  # noqa: E402
 
 
 class PAN53SourceGeneralizationTests(unittest.TestCase):
@@ -78,8 +82,8 @@ class PAN53SourceGeneralizationTests(unittest.TestCase):
 
     def test_unsupported_format_is_explicitly_rejected_not_coerced(self) -> None:
         with tempfile.TemporaryDirectory() as tmp:
-            path = Path(tmp) / "legacy_report.docx"
-            path.write_text("not a real docx, just proving routing", encoding="utf-8")
+            path = Path(tmp) / "opaque_archive.bin"
+            path.write_text("not a supported document", encoding="utf-8")
             with self.assertRaises(UnsupportedSourceError):
                 parse_source(path)
 
@@ -96,6 +100,116 @@ class PAN53SourceGeneralizationTests(unittest.TestCase):
             self.assertEqual(record["source_id"], "SRC-CIM")
             self.assertEqual(record["party"], "Alderstone management and Hawthorne Capital Markets")
             self.assertIn("K-PRE", record["manifest"])
+
+    def test_envelope_survives_admission_reload_and_source_retirement(self) -> None:
+        with tempfile.TemporaryDirectory() as tmp:
+            root = Path(tmp)
+            source_path = root / "acme_management_notes.md"
+            source_path.write_text(
+                "Revenue was EUR 10m in FY2026.\n",
+                encoding="utf-8",
+            )
+            envelope = build_source_envelope(
+                source_path,
+                "scout",
+                "2026-09-02T12:00:00Z",
+                declared_metadata={
+                    "document_type": "Management notes",
+                    "issuer": "Acme management",
+                    "author": "Chief Financial Officer",
+                    "effective_date": "2026-08-31",
+                    "provenance": "diligence_upload",
+                },
+            )
+            claim = {
+                "claim_id": "PAN53-LIFECYCLE-001",
+                "statement": "Revenue was EUR 10m in FY2026.",
+                "value": 10,
+                "unit": "EURm",
+                "period": "FY2026",
+                "perimeter": "Acme consolidated",
+                "epistemic_class": "asserted",
+                "locator": "acme_management_notes.md::paragraph 1",
+                "source_id": envelope["source_id"],
+                "source_ids": [envelope["source_id"]],
+                "source_version_id": envelope["source_version_id"],
+                "known_at": envelope["known_at"],
+                "effective_date": envelope["effective_date"],
+                "bears_on": [],
+            }
+
+            previous = {
+                "VAULT": router.VAULT,
+                "PIPELINE_OUT": router.PIPELINE_OUT,
+                "INGEST_JOBS_LOG": router.INGEST_JOBS_LOG,
+                "INGEST_BATCHES_LOG": router.INGEST_BATCHES_LOG,
+                "RUNS_LOG": router.RUNS_LOG,
+                "jobs": dict(router._jobs),
+                "batches": dict(router._batches),
+                "runs": dict(router._runs),
+            }
+            router.VAULT = root / "vault"
+            router.PIPELINE_OUT = root / "pipeline_out"
+            router.INGEST_JOBS_LOG = root / "logs" / "ingest_jobs.json"
+            router.INGEST_BATCHES_LOG = root / "logs" / "ingest_batches.json"
+            router.RUNS_LOG = root / "logs" / "runs.json"
+            router._jobs.clear()
+            router._batches.clear()
+            router._runs.clear()
+            try:
+                proposal_path = router._write_evidence_proposal(
+                    "pan53-lifecycle",
+                    "scout",
+                    source_path.name,
+                    [claim],
+                    source_envelope=envelope,
+                )
+                with patch.object(router, "_rebuild_index", return_value=None):
+                    admitted = asyncio.run(router.admit_evidence(
+                        "scout",
+                        "pan53-lifecycle",
+                        {"decision": "ADMIT", "actor_id": "pan53-test"},
+                    ))
+
+                    # Simulate a process reload by discarding in-memory state;
+                    # claims and the proposal must be recoverable from disk.
+                    router._jobs.clear()
+                    router._batches.clear()
+                    router._runs.clear()
+                    reloaded_claims = router._load_claims("scout")
+                    retired = router.retire_source(
+                        "scout",
+                        envelope["source_id"],
+                        {"actor_id": "pan53-test"},
+                    )
+
+                final_proposal = json.loads(
+                    proposal_path.read_text(encoding="utf-8")
+                )
+                self.assertEqual(admitted["status"], "ADMITTED")
+                self.assertEqual(final_proposal["status"], "ADMITTED")
+                self.assertEqual(final_proposal["source_envelope"], envelope)
+                self.assertEqual(
+                    reloaded_claims[0]["source_version_id"],
+                    envelope["source_version_id"],
+                )
+                self.assertEqual(retired["status"], "RETIRED")
+                self.assertEqual(
+                    json.loads(proposal_path.read_text(encoding="utf-8"))["source_envelope"],
+                    envelope,
+                )
+            finally:
+                router.VAULT = previous["VAULT"]
+                router.PIPELINE_OUT = previous["PIPELINE_OUT"]
+                router.INGEST_JOBS_LOG = previous["INGEST_JOBS_LOG"]
+                router.INGEST_BATCHES_LOG = previous["INGEST_BATCHES_LOG"]
+                router.RUNS_LOG = previous["RUNS_LOG"]
+                router._jobs.clear()
+                router._jobs.update(previous["jobs"])
+                router._batches.clear()
+                router._batches.update(previous["batches"])
+                router._runs.clear()
+                router._runs.update(previous["runs"])
 
 
 if __name__ == "__main__":

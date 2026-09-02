@@ -1264,6 +1264,47 @@ def _email_body(message: Any) -> str:
     return "\n".join(plain or html_parts).strip()
 
 
+def _strip_quoted_reply_history(body: str) -> tuple[str, bool]:
+    """Drop quoted prior-message text and signatures from a reply body.
+
+    Without this, a thread's later .mbox message re-surfaces every earlier
+    message's full text inline -- the same statement gets chunked once per
+    reply, each time attributed to the later message's own known_at instead
+    of the message that actually said it. email_reply_parser is a small,
+    zero-dependency, regex/heuristic library built exactly for this (Gmail
+    "On DATE, X wrote:" headers, ">" quote markers, "---- Original
+    Message ----" blocks, signature blocks) -- deliberately not `talon`
+    (PAN-104's other candidate), which pulls in scikit-learn/scipy/numpy for
+    a signature-detection feature this ticket doesn't need.
+    """
+    from email_reply_parser import EmailReplyParser
+
+    try:
+        reply_only = EmailReplyParser.parse_reply(body).strip()
+    except Exception:
+        return body, False
+    # A pure forward with no original commentary parses down to just the
+    # "---- Forwarded message ----"-style boundary line, not to nothing --
+    # never let stripping silently erase an entire message's only content.
+    if not reply_only or reply_only == body.strip() or _is_boilerplate_only(reply_only):
+        return body, False
+    return reply_only, True
+
+
+_QUOTE_BOUNDARY_LINE = re.compile(
+    r"^[-_=]{3,}|^(from|date|subject|to|cc|sent):", re.IGNORECASE
+)
+
+
+def _is_boilerplate_only(text: str) -> bool:
+    """True if every non-blank line is a separator/header-style boundary
+    marker (e.g. "---- Forwarded message ----", "From: ...") rather than
+    actual message content.
+    """
+    lines = [line.strip() for line in text.splitlines() if line.strip()]
+    return bool(lines) and all(_QUOTE_BOUNDARY_LINE.match(line) for line in lines)
+
+
 def _email_date(message: Any) -> str | None:
     raw = message.get("Date")
     if not raw:
@@ -1287,7 +1328,12 @@ def parse_email(path: Path, max_words: int = CHUNK_WORDS,
                 action="Export the message as RFC 822 .eml with complete headers.",
             ) from exc
     else:
-        box = mailbox.mbox(path, create=False)
+        # Default mbox factory yields compat32 Message objects with no
+        # get_content() -- _email_body would crash on every real .mbox file.
+        # Use the same modern EmailPolicy the .eml branch above already does.
+        box = mailbox.mbox(
+            path, factory=lambda f: BytesParser(policy=email_policy.default).parse(f), create=False
+        )
         try:
             messages = [message for message in box]
         finally:
@@ -1295,6 +1341,9 @@ def parse_email(path: Path, max_words: int = CHUNK_WORDS,
     chunks: list[Chunk] = []
     for message_number, message in enumerate(messages, 1):
         body = _email_body(message)
+        if not body:
+            continue
+        body, quoted_history_stripped = _strip_quoted_reply_history(body)
         if not body:
             continue
         attachment_count = sum(
@@ -1311,6 +1360,7 @@ def parse_email(path: Path, max_words: int = CHUNK_WORDS,
             chunk.provenance = {
                 "excluded_attachments": attachment_count,
                 "attachment_policy": "SEPARATE_SOURCE_ENVELOPE_REQUIRED",
+                "quoted_reply_history_stripped": quoted_history_stripped,
             }
             chunk.period_context = {
                 "document_date": document_date,

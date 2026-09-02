@@ -6,6 +6,7 @@ docx2python
 openpyxl
 pdfplumber
 python-pptx
+email-reply-parser
 requests
 jsonschema
 referencing

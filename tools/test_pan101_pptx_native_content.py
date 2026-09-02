@@ -137,6 +137,31 @@ class PAN101PptxNativeContentTests(unittest.TestCase):
         self.assertIn("UNSUPPORTED_GRAPHIC_FRAME", chunks[0].body)
         self.assertIn("waterfall", chunks[0].body.lower())
 
+    def test_pie_chart_type_extracted_with_real_numbers(self):
+        """Only COLUMN_CLUSTERED was exercised above. Pie is a structurally
+        different chart type (single series, no value axis) -- verified here
+        against real Keystone customer-concentration numbers (18.2% / 81.8%,
+        from the ultimate-parent-basis figure in the Full Story narrative) to
+        confirm chart-type coverage isn't accidentally narrower than
+        has_chart's dispatch implies.
+        """
+        presentation = Presentation()
+        slide = presentation.slides.add_slide(presentation.slide_layouts[5])
+        slide.shapes.title.text = "Customer Concentration"
+        chart_data = CategoryChartData()
+        chart_data.categories = ["Riverton Industrial Group", "All other customers"]
+        chart_data.add_series("Share of revenue", (18.2, 81.8))
+        slide.shapes.add_chart(XL_CHART_TYPE.PIE, Inches(1.5), Inches(1.5), Inches(6), Inches(4.5), chart_data)
+
+        path = Path(self.temporary.name) / "pie.pptx"
+        presentation.save(str(path))
+
+        chunks = parse_pptx(path)
+        self.assertEqual(len(chunks), 1)
+        body = chunks[0].body
+        self.assertIn("Riverton Industrial Group=18.2", body)
+        self.assertIn("All other customers=81.8", body)
+
     def test_invalid_pptx_is_a_declared_rejection_not_a_crash(self):
         from tools.extract_v2 import UnsupportedSourceError
 

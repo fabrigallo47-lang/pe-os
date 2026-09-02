@@ -50,6 +50,7 @@ from backend.dynamics import (
 )
 from tools.source_envelope import build_source_envelope
 from tools.relation_rules import annotate_edge, audit_relation_outputs, relation_rule
+from tools.decision_criticality import next_position_work, rank_decision_criticality
 from tools.archetype_pack import (
     UNASSIGNED_WORKSTREAM,
     canonical_question_spine,
@@ -2752,7 +2753,10 @@ def _build_reunderwrite(
         "transition_output": {},
         "reunderwrite": comparison,
     })
-    projection = _apply_decision_intelligence(projection)
+    projection = _apply_decision_intelligence(
+        projection,
+        _load_json_safe(_pipeline_out_for_case(case_id) / "execution_mapping.json"),
+    )
     context = _make_context(
         case_id,
         str(current_meta["state_id"]),
@@ -3497,7 +3501,10 @@ def _build_question_spine(questions: list[dict], claims: list[dict]) -> list[dic
     return spine
 
 
-def _apply_decision_intelligence(projection: dict) -> dict:
+def _apply_decision_intelligence(
+    projection: dict,
+    execution_mapping: dict | None = None,
+) -> dict:
     """Add transparent structural rankings without inventing business weights."""
     deal = projection.get("deal") if isinstance(projection, dict) else None
     if not isinstance(deal, dict):
@@ -3589,6 +3596,33 @@ def _apply_decision_intelligence(projection: dict) -> dict:
             f"dependent_positions={item['ranking_basis']['dependent_position_count']}; "
             f"contested={str(item['contested']).lower()}"
         )
+
+    decision_criticality = None
+    if isinstance(execution_mapping, dict) and execution_mapping:
+        decision_criticality = rank_decision_criticality(
+            graph,
+            execution_mapping,
+            deal.get("transition_output"),
+        )
+        deal["decision_criticality"] = decision_criticality
+        dependencies_by_position: dict[str, list[str]] = {}
+        for item in load_bearing:
+            dependencies_by_position[item["position_id"]] = item["dependent_position_ids"]
+        load_bearing = []
+        for item in decision_criticality["ranking"]:
+            factors = item["factors"]
+            load_bearing.append({
+                **item,
+                "active_model_node_ids": factors["economic_sensitivity_from_mapping"]["bound_model_node_ids"],
+                "dependent_position_ids": dependencies_by_position.get(item["position_id"], []),
+                "gate_relevant": item["decision_status"] in {
+                    "BLOCKED", "PENDING", "CONTESTED", "ACCEPTED_WITH_CONDITIONS",
+                },
+                "contested": item["epistemic_status"] in {
+                    "CONTESTED", "WEAK", "UNKNOWN", "STALE",
+                },
+                "ranking_basis": item["ordering_key"],
+            })
     deal["load_bearing_assumptions"] = load_bearing
 
     spine = deal.get("question_spine", []) or []
@@ -3714,22 +3748,40 @@ def _apply_decision_intelligence(projection: dict) -> dict:
     rooms["unknowns"] = {"items": unknowns}
     rooms.setdefault("shadowIC", {"theses": []})
 
-    if unknowns:
+    position_work = next_position_work(decision_criticality) if decision_criticality else None
+    if position_work:
+        deal["next_best_work"] = position_work
+    elif unknowns:
         first = unknowns[0]
-        basis = first["ranking_basis"]
-        deal["next_best_work"] = {
-            "id": f"NBW-{first['question_id']}",
-            "question_id": first["question_id"],
-            "label": first["closure"],
-            "reason": (
-                f"Ranked first by declared lexicographic policy: critical={str(basis['critical']).lower()}, "
-                f"coverage={basis['coverage']}, admitted_claims={basis['admitted_claim_count']}."
-            ),
-            "owner": first["owner"],
-            "duration": "Not estimated",
-            "unlocks": [first["question_id"]],
-            "ranking_basis": basis,
-        }
+        basis = first.get("ranking_basis")
+        if basis:
+            deal["next_best_work"] = {
+                "id": f"NBW-{first['question_id']}",
+                "question_id": first["question_id"],
+                "label": first["closure"],
+                "reason": (
+                    f"Ranked first by declared lexicographic policy: critical={str(basis['critical']).lower()}, "
+                    f"coverage={basis['coverage']}, admitted_claims={basis['admitted_claim_count']}."
+                ),
+                "owner": first["owner"],
+                "duration": "Not estimated",
+                "unlocks": [first["question_id"]],
+                "ranking_basis": basis,
+            }
+        else:
+            deal["next_best_work"] = {
+                "id": f"NBW-{first['id']}",
+                "question_id": first.get("question_id"),
+                "label": first["closure"],
+                "reason": f"The runtime reported an unresolved {first['status'].lower()}.",
+                "owner": "Unassigned",
+                "duration": "Not estimated",
+                "unlocks": [first["id"]],
+                "ranking_basis": {
+                    "method": "RUNTIME_DECLARATION",
+                    "status": first["status"],
+                },
+            }
     else:
         deal["next_best_work"] = {
             "id": None,
@@ -3806,6 +3858,7 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     current_graph = _load_json_safe(pipeline_out / "current_graph.json")
     candidate_graph = _load_json_safe(pipeline_out / "candidate_graph.json")
     transition_output = _load_json_safe(pipeline_out / "transition_output.json")
+    execution_mapping = _load_json_safe(pipeline_out / "execution_mapping.json")
     graph_versions = _list_graph_versions(case_id)
     foundations, unknowns, semantic_positions = _semantic_rooms(
         semantic_graph,
@@ -3982,12 +4035,14 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
         result["actor_directory"] = projection["actor_directory"]
         result["disclosure"] = projection["disclosure"]
         return _apply_decision_intelligence(
-            _apply_compiler_reviews(result, case_id)
+            _apply_compiler_reviews(result, case_id),
+            execution_mapping,
         )
     except Exception as exc:
         projection["_adapter_error"] = str(exc)
         return _apply_decision_intelligence(
-            _apply_compiler_reviews(projection, case_id)
+            _apply_compiler_reviews(projection, case_id),
+            execution_mapping,
         )
 
 
@@ -6563,7 +6618,10 @@ def replay(case_id: str, as_of_date: str | None = None, event_id: str | None = N
         },
     })
     proj["events"] = filtered_events
-    proj = _apply_decision_intelligence(proj)
+    proj = _apply_decision_intelligence(
+        proj,
+        _load_json_safe(_pipeline_out_for_case(case_id) / "execution_mapping.json"),
+    )
     stable_hash = _stable_json_hash({
         "case_id": case_id,
         "cutoff": cutoff.isoformat(),

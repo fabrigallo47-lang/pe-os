@@ -124,6 +124,81 @@ class V20DecisionIntelligenceTests(unittest.TestCase):
         self.assertEqual(deal["rooms"]["unknowns"]["items"], [])
         self.assertEqual(deal["next_best_work"]["label"], "No unresolved evidence gap")
 
+    def test_execution_mapping_exposes_pan78_factors_and_drives_next_work(self):
+        projection = {
+            "deal": {
+                "current_graph": {
+                    "case_positions": [
+                        {
+                            "position_id": "CP-DECISION",
+                            "metric": "Decision input",
+                            "decision_status_at_ic": "PENDING",
+                            "epistemic_status_at_ic": "WEAK",
+                            "model_node_ids": ["MN-INPUT"],
+                            "support_routes": [
+                                {"route_id": "R-1", "source_id": "SRC-1"}
+                            ],
+                        }
+                    ]
+                },
+                "question_spine": [
+                    {
+                        "id": "Q-GAP",
+                        "critical": True,
+                        "coverage": "gap",
+                        "claim_count": 0,
+                        "status": "open",
+                    }
+                ],
+                "rooms": {},
+                "transition_output": {},
+            }
+        }
+        mapping = {
+            "decision_root_ids": ["MN-ROOT"],
+            "directed_model_edges": [
+                {"from_model_node_id": "MN-INPUT", "to_model_node_id": "MN-ROOT"}
+            ],
+        }
+
+        deal = router._apply_decision_intelligence(projection, mapping)["deal"]
+
+        report = deal["decision_criticality"]
+        self.assertEqual(report["schema_version"], "decision-criticality/1.0")
+        self.assertEqual(deal["load_bearing_assumptions"][0]["position_id"], "CP-DECISION")
+        self.assertEqual(deal["next_best_work"]["position_id"], "CP-DECISION")
+        self.assertIsNone(deal["next_best_work"]["question_id"])
+        self.assertIn("factors", deal["next_best_work"])
+
+    def test_runtime_blocker_is_actionable_without_a_question_ranking(self):
+        projection = {
+            "deal": {
+                "current_graph": {},
+                "question_spine": [],
+                "rooms": {},
+                "transition_output": {
+                    "coverage_limits": [
+                        {
+                            "limit_id": "CL-1",
+                            "reason_code": "MISSING_INPUT",
+                            "effect": "Required input is absent",
+                            "resolution": "Admit the missing source",
+                        }
+                    ]
+                },
+            }
+        }
+
+        deal = router._apply_decision_intelligence(
+            projection,
+            {"model_nodes": [{"model_node_id": "MN-1"}]},
+        )["deal"]
+
+        work = deal["next_best_work"]
+        self.assertEqual(work["label"], "Admit the missing source")
+        self.assertEqual(work["ranking_basis"]["method"], "RUNTIME_DECLARATION")
+        self.assertEqual(work["ranking_basis"]["status"], "COVERAGE_LIMIT")
+
 
 if __name__ == "__main__":
     unittest.main()

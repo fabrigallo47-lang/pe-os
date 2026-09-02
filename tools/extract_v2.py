@@ -44,6 +44,7 @@ import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import dataclass, field
+from datetime import date, datetime
 from email import policy as email_policy
 from email.parser import BytesParser
 from email.utils import parsedate_to_datetime
@@ -1226,6 +1227,64 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
     return chunks
 
 
+def _xlsx_merged_ranges(path: Path, sheet_name: str) -> list[tuple[int, int, int, int]]:
+    """Read one worksheet's merge ranges directly from its XML part.
+
+    openpyxl's read_only worksheets -- required here for real models with
+    thousands of cells -- do not expose ``merged_cells`` at all, and a
+    second non-read-only load of the same workbook just to read this would
+    force a full in-memory parse of a file already loaded twice. Merge
+    ranges are a handful of small, well-defined XML elements; read them
+    directly instead. Best-effort: any failure returns no ranges rather
+    than breaking the rest of the parse.
+    """
+    ns = {
+        "m": "http://schemas.openxmlformats.org/spreadsheetml/2006/main",
+        "r": "http://schemas.openxmlformats.org/officeDocument/2006/relationships",
+    }
+    try:
+        from openpyxl.utils import range_boundaries
+        with zipfile.ZipFile(path) as archive:
+            workbook_xml = ElementTree.fromstring(archive.read("xl/workbook.xml"))
+            sheet_rid = next(
+                (
+                    sheet_el.get(f"{{{ns['r']}}}id")
+                    for sheet_el in workbook_xml.findall("m:sheets/m:sheet", ns)
+                    if sheet_el.get("name") == sheet_name
+                ),
+                None,
+            )
+            if sheet_rid is None:
+                return []
+            rels_xml = ElementTree.fromstring(archive.read("xl/_rels/workbook.xml.rels"))
+            target = next(
+                (
+                    rel.get("Target")
+                    for rel in rels_xml
+                    if rel.get("Id") == sheet_rid
+                ),
+                None,
+            )
+            if not target:
+                return []
+            # A relationship Target is either package-root-relative
+            # ("/xl/worksheets/sheet2.xml", the common case for Excel-authored
+            # files) or relative to the xl/ part itself ("worksheets/sheet2.xml").
+            target = target.lstrip("/")
+            sheet_path = target if target.startswith("xl/") else f"xl/{target}"
+            sheet_xml = ElementTree.fromstring(archive.read(sheet_path))
+            ranges = []
+            for merge_cell in sheet_xml.findall("m:mergeCells/m:mergeCell", ns):
+                ref = merge_cell.get("ref") or ""
+                if ":" not in ref:
+                    continue
+                min_col, min_row, max_col, max_row = range_boundaries(ref)
+                ranges.append((min_row, min_col, max_row, max_col))
+            return ranges
+    except (OSError, KeyError, zipfile.BadZipFile, ElementTree.ParseError, ValueError, ImportError):
+        return []
+
+
 def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
                source_record: dict | None = None) -> list[Chunk]:
     """Create reproducible, cell-addressable chunks from an Excel workbook.
@@ -1236,6 +1295,7 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
     """
     try:
         import openpyxl
+        from openpyxl.utils import get_column_letter
     except ImportError as exc:
         raise _reject_source(
             path,
@@ -1275,6 +1335,31 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
             isinstance(cell.value, str) and cell.value.startswith("=")
             for row in ws.iter_rows() for cell in row
         )
+        # Only the top-left cell of a merged range carries a value in
+        # openpyxl; a title or section header merged across a row would
+        # otherwise vanish everywhere except its first column. The
+        # read_only worksheet needed for real models has no random cell
+        # access and no merged_cells at all, so ranges come from
+        # _xlsx_merged_ranges (direct XML) and each top-left value is
+        # captured in sequential order as that row is actually reached.
+        # Formula strings are deliberately excluded from propagation -- a
+        # merged formula cell's cached value belongs to its own
+        # coordinate, not to whichever coordinate propagation reaches, so
+        # propagating it would print a wrong "cached=" pairing. Titles and
+        # section labels are the real, common case and are always plain
+        # text.
+        merges_by_start_row: dict[int, list[tuple[int, int, int, int]]] = {}
+        for (min_row, min_col, max_row, max_col) in _xlsx_merged_ranges(path, sheet_name):
+            merges_by_start_row.setdefault(min_row, []).append((min_row, min_col, max_row, max_col))
+        merged_value_by_coord: dict[tuple[int, int], Any] = {}
+        # Running per-column header state (PAN-102): a row that is mostly
+        # or entirely text with no formula of its own is treated as a
+        # header/title row, and its text becomes the header context
+        # attached to data cells below it, in that column, until a later
+        # header-like row replaces it.  Without this, a bare coordinate
+        # like "C15=42.3" carries no period or line-item context once it
+        # leaves its own chunk.
+        column_header: dict[int, str] = {}
         pending: list[str] = []
         start_row = end_row = None
         def flush() -> None:
@@ -1291,20 +1376,96 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
             ))
             pending, start_row, end_row = [], None, None
         for row_number, (row, cached_row) in enumerate(zip(ws.iter_rows(), value_ws.iter_rows()), start=1):
-            cells: list[str] = []
-            for cell, cached_cell in zip(row, cached_row):
+            # Read-only cells with no value are lightweight EmptyCell
+            # placeholders that carry no .row/.column/.coordinate at all --
+            # position within the row tuple (1-indexed) is used instead of
+            # trusting cell attributes, since both cell types support it.
+            for (min_row, min_col, max_row, max_col) in merges_by_start_row.get(row_number, []):
+                top_left_value = row[min_col - 1].value if min_col - 1 < len(row) else None
+                if not isinstance(top_left_value, str) or top_left_value.startswith("="):
+                    continue
+                for r in range(min_row, max_row + 1):
+                    for c in range(min_col, max_col + 1):
+                        merged_value_by_coord[(r, c)] = top_left_value
+
+            row_entries: list[tuple[Any, Any, Any, int]] = []
+            for col_index, (cell, cached_cell) in enumerate(zip(row, cached_row), start=1):
                 raw = cell.value
                 if raw is None:
+                    merged = merged_value_by_coord.get((row_number, col_index))
+                    if merged is not None:
+                        raw = merged
+                if raw is None:
                     continue
-                if isinstance(raw, str) and raw.startswith("="):
-                    cells.append(f"{cell.coordinate}=FORMULA({raw}); cached={cached_cell.value!r}")
+                row_entries.append((cell, cached_cell, raw, col_index))
+            if not row_entries:
+                continue
+
+            has_formula_in_row = any(
+                isinstance(raw, str) and raw.startswith("=") for _, _, raw, _ in row_entries
+            )
+            text_entries = [
+                (col_index, raw) for _, _, raw, col_index in row_entries
+                if isinstance(raw, str) and not raw.startswith("=")
+            ]
+            # A period-header row ("Line Item | Unit | Q2'26 | Q3'26 | ...")
+            # mixes text labels with date values across most of its width --
+            # it must count as header-like too, not just a uniform-text row,
+            # or it fails the "mostly text" threshold on its own date cells
+            # and gets read as a data row instead.
+            date_entries = [
+                (col_index, raw) for _, _, raw, col_index in row_entries
+                if isinstance(raw, (datetime, date)) and not isinstance(raw, bool)
+            ]
+            numeric_entries = [
+                (col_index, raw) for _, _, raw, col_index in row_entries
+                if isinstance(raw, (int, float)) and not isinstance(raw, bool)
+            ]
+            header_like_entries = text_entries + date_entries
+
+            # A bare numeric row with no text/date label of its own and no
+            # formula, on a sheet that otherwise computes, is exactly the
+            # "thousands of raw rows" case the original filter targeted --
+            # still skipped. But a row carrying ANY text or date (a title, a
+            # section header, a period-header row, or a label next to a
+            # raw historical figure) is never noise and must never be
+            # silently dropped just because it isn't itself a formula.
+            if sheet_has_formulas and not has_formula_in_row and not header_like_entries:
+                continue
+
+            is_header_like = (
+                not has_formula_in_row
+                and not numeric_entries
+                and len(header_like_entries) >= 2
+                and len(header_like_entries) >= len(row_entries) - 1
+            )
+            if is_header_like:
+                for col_index, raw in header_like_entries:
+                    column_header[col_index] = raw
+            row_label = text_entries[0][1] if text_entries else None
+
+            cells: list[str] = []
+            for cell, cached_cell, raw, col_index in row_entries:
+                coordinate = f"{get_column_letter(col_index)}{row_number}"
+                is_formula = isinstance(raw, str) and raw.startswith("=")
+                if is_formula:
+                    piece = f"{coordinate}=FORMULA({raw}); cached={cached_cell.value!r}"
                 else:
-                    cells.append(f"{cell.coordinate}={raw}")
-            if not cells:
-                continue
-            has_formula = any("=FORMULA(" in value for value in cells)
-            if sheet_has_formulas and not has_formula:
-                continue
+                    piece = f"{coordinate}={raw}"
+                if not is_header_like:
+                    context_bits = []
+                    if row_label is not None and row_label != raw:
+                        context_bits.append(str(row_label))
+                    header = column_header.get(col_index)
+                    if header is not None and header != raw:
+                        context_bits.append(str(header))
+                    role = _xlsx_cell_semantic_role(cell, is_formula)
+                    if role:
+                        context_bits.append(f"role={role}")
+                    if context_bits:
+                        piece += f" [{'; '.join(context_bits)}]"
+                cells.append(piece)
+
             line = " | ".join(cells)
             projected = len((" ".join(pending + [line])).split())
             if pending and projected > effective_max_words:
@@ -1315,6 +1476,27 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
             pending.append(line)
         flush()
     return chunks
+
+
+def _xlsx_cell_semantic_role(cell: Any, is_formula: bool) -> str | None:
+    """Classify a cell by the standard IB/LBO-model font-color convention.
+
+    Blue = hardcoded input, black/default = an ordinary same-sheet formula,
+    green = a formula that links to another sheet.  Confirmed against a
+    real Keystone LBO model's actual color usage (not assumed from the
+    convention alone) before trusting it: this file uses exactly
+    0000FF/000000/008000 for input/formula/cross-sheet-link respectively.
+    Any other color is left unclassified rather than guessed -- a wrong
+    label is worse than no label.
+    """
+    color = cell.font.color if cell.font else None
+    rgb = getattr(color, "rgb", None)
+    if not isinstance(rgb, str) or len(rgb) < 6:
+        return None
+    hex6 = rgb[-6:].upper()
+    if is_formula:
+        return "cross_sheet_link" if hex6 == "008000" else None
+    return "input" if hex6 == "0000FF" else None
 
 
 def parse_source(path: Path, max_words: int = CHUNK_WORDS,

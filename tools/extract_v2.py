@@ -1220,6 +1220,161 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
     return chunks
 
 
+_XLSX_COLOR_ROLES = {
+    "0000FF": "input",
+    "008000": "cross_sheet_link",
+    "00B050": "cross_sheet_link",
+    "800080": "external_link",
+    "7030A0": "external_link",
+    "FF0000": "external_link",
+    "C00000": "external_link",
+}
+
+
+def _xlsx_color_hex(color: Any) -> str | None:
+    """Return a six-digit RGB value when an Open XML color is resolvable."""
+    if color is None:
+        return None
+    color_type = str(getattr(color, "type", "") or "")
+    raw: Any = None
+    if color_type == "rgb":
+        raw = getattr(color, "rgb", None)
+    elif color_type == "indexed":
+        indexed = getattr(color, "indexed", None)
+        try:
+            from openpyxl.styles.colors import COLOR_INDEX
+
+            raw = COLOR_INDEX[int(indexed)]
+        except (ImportError, IndexError, TypeError, ValueError):
+            return None
+    if not isinstance(raw, str):
+        return None
+    normalized = raw.strip().lstrip("#").upper()
+    if len(normalized) == 8:
+        normalized = normalized[-6:]
+    return normalized if re.fullmatch(r"[0-9A-F]{6}", normalized) else None
+
+
+def _xlsx_cell_role(cell: Any, raw: Any) -> str:
+    """Classify a cell from formula structure plus declared font/fill color."""
+    formula = isinstance(raw, str) and raw.startswith("=")
+    expression = raw.upper() if formula else ""
+    colors = {
+        value
+        for value in (
+            _xlsx_color_hex(getattr(getattr(cell, "font", None), "color", None)),
+            _xlsx_color_hex(
+                getattr(getattr(cell, "fill", None), "fgColor", None)
+                if getattr(getattr(cell, "fill", None), "patternType", None)
+                else None
+            ),
+        )
+        if value
+    }
+    color_roles = {_XLSX_COLOR_ROLES[color] for color in colors if color in _XLSX_COLOR_ROLES}
+    if formula:
+        if "[" in expression or "external_link" in color_roles:
+            return "external_link"
+        if "!" in expression or "cross_sheet_link" in color_roles:
+            return "cross_sheet_link"
+        return "formula"
+    if "input" in color_roles:
+        return "input"
+    # Non-formula green/red/purple cells are still declared with the workbook's
+    # link convention.  The value is preserved as-is; the role is context, not
+    # a claim that PANTA resolved the target.
+    if "external_link" in color_roles:
+        return "external_link"
+    if "cross_sheet_link" in color_roles:
+        return "cross_sheet_link"
+    return "unclassified"
+
+
+def _xlsx_merged_ranges(path: Path, worksheet_path: str) -> list[tuple[int, int, int, int]]:
+    """Read merged ranges without loading a large worksheet into memory.
+
+    ``ReadOnlyWorksheet`` intentionally omits ``merged_cells``.  The merge
+    declarations are tiny metadata in the worksheet XML, so reading them
+    directly preserves the streaming workbook path used for real LBO models.
+    """
+    try:
+        from openpyxl.utils.cell import range_boundaries
+
+        with zipfile.ZipFile(path) as archive:
+            with archive.open(worksheet_path.lstrip("/")) as worksheet_xml:
+                references = []
+                namespace = "{http://schemas.openxmlformats.org/spreadsheetml/2006/main}mergeCell"
+                for _event, node in ElementTree.iterparse(worksheet_xml, events=("end",)):
+                    if node.tag == namespace and node.attrib.get("ref"):
+                        references.append(node.attrib["ref"])
+                    node.clear()
+        ranges = [tuple(range_boundaries(reference)) for reference in references]
+    except (
+        ImportError,
+        OSError,
+        KeyError,
+        TypeError,
+        ValueError,
+        zipfile.BadZipFile,
+        ElementTree.ParseError,
+    ) as exc:
+        raise _reject_source(
+            path,
+            "WORKBOOK_INVALID",
+            f"Cannot read merged-cell metadata from {path.name}: {exc}.",
+            capability_id="openxml_workbook",
+            action="Open the workbook in Excel and save a valid .xlsx/.xlsm copy.",
+        ) from exc
+    return ranges
+
+
+def _xlsx_header_token(value: Any) -> str | None:
+    if value is None or isinstance(value, bool):
+        return None
+    if isinstance(value, str):
+        token = value.strip()
+        return token if token and not token.startswith("=") else None
+    # Dates are labels in model grids; ordinary numeric values are not.  A
+    # four-digit year is the one useful numeric header that can be identified
+    # without guessing from number format or neighboring economics.
+    if hasattr(value, "isoformat"):
+        return str(value)
+    if isinstance(value, int) and 1900 <= value <= 2200:
+        return str(value)
+    return None
+
+
+def _xlsx_header_path(
+    row_number: int,
+    column_number: int,
+    raw: Any,
+    context_values: dict[tuple[int, int], Any],
+) -> list[str]:
+    """Build a deterministic column-header + row-label path for one cell."""
+    current = _xlsx_header_token(raw)
+    column_headers = []
+    for prior_row in range(row_number - 1, 0, -1):
+        token = _xlsx_header_token(context_values.get((prior_row, column_number)))
+        if token and token != current and token not in column_headers:
+            column_headers.append(token)
+            if len(column_headers) == 3:
+                break
+    column_headers.reverse()
+
+    row_labels = []
+    for prior_column in range(1, column_number):
+        token = _xlsx_header_token(context_values.get((row_number, prior_column)))
+        if token and token != current and token not in row_labels:
+            row_labels.append(token)
+    row_labels = row_labels[-3:]
+
+    path = []
+    for token in column_headers + row_labels:
+        if token not in path:
+            path.append(token)
+    return path
+
+
 def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
                source_record: dict | None = None) -> list[Chunk]:
     """Create reproducible, cell-addressable chunks from an Excel workbook.
@@ -1230,6 +1385,7 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
     """
     try:
         import openpyxl
+        from openpyxl.utils.cell import get_column_letter
     except ImportError as exc:
         raise _reject_source(
             path,
@@ -1257,14 +1413,21 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
     effective_max_words = max(max_words, 1200) if workbook_has_formulas else max_words
     for sheet_name in formulas.sheetnames:
         ws, value_ws = formulas[sheet_name], values[sheet_name]
+        merged_ranges = _xlsx_merged_ranges(path, str(ws._worksheet_path))
+        merged_anchors = {
+            (row_number, column_number): (min_row, min_column)
+            for min_column, min_row, max_column, max_row in merged_ranges
+            for row_number in range(min_row, max_row + 1)
+            for column_number in range(min_column, max_column + 1)
+        }
+        merged_values: dict[tuple[int, int], tuple[Any, Any, str]] = {}
+        context_values: dict[tuple[int, int], Any] = {}
         # Models can contain thousands of raw input/output rows.  Their
         # complete deterministic cell graph is captured separately; L2
-        # should see only the formula-bearing rows needed to name the
-        # economics, not every cell -- but only on sheets that actually
-        # compute (a dedicated Inputs sheet, by definition, has no formulas
-        # of its own; gating this per-workbook instead of per-sheet dropped
-        # every raw-value sheet whenever any other sheet in the file had a
-        # formula).
+        # should see formula-bearing rows plus their labels, headers and stated
+        # inputs, not every bare numeric row.  Previously every formula-free
+        # row on a computing sheet was dropped, including section titles,
+        # period headers and input rows needed to interpret the formulas.
         sheet_has_formulas = any(
             isinstance(cell.value, str) and cell.value.startswith("=")
             for row in ws.iter_rows() for cell in row
@@ -1285,19 +1448,63 @@ def parse_xlsx(path: Path, max_words: int = CHUNK_WORDS,
             ))
             pending, start_row, end_row = [], None, None
         for row_number, (row, cached_row) in enumerate(zip(ws.iter_rows(), value_ws.iter_rows()), start=1):
+            for column_number, (cell, cached_cell) in enumerate(zip(row, cached_row), start=1):
+                anchor = merged_anchors.get((row_number, column_number))
+                if anchor == (row_number, column_number) and cell.value is not None:
+                    merged_values[anchor] = (
+                        cell.value,
+                        cached_cell.value,
+                        _xlsx_cell_role(cell, cell.value),
+                    )
             cells: list[str] = []
-            for cell, cached_cell in zip(row, cached_row):
+            row_roles: list[str] = []
+            row_raw_values: list[Any] = []
+            for column_number, (cell, cached_cell) in enumerate(zip(row, cached_row), start=1):
                 raw = cell.value
+                cached = cached_cell.value
+                role = _xlsx_cell_role(cell, raw)
+                anchor = merged_anchors.get((row_number, column_number))
+                if raw is None and anchor in merged_values:
+                    raw, cached, role = merged_values[anchor]
                 if raw is None:
                     continue
+                context_values[(row_number, column_number)] = raw
+                row_roles.append(role)
+                row_raw_values.append(raw)
+                is_data_cell = (
+                    isinstance(raw, str) and raw.startswith("=")
+                ) or (
+                    not isinstance(raw, str) and not hasattr(raw, "isoformat")
+                )
+                header_path = (
+                    _xlsx_header_path(
+                        row_number,
+                        column_number,
+                        raw,
+                        context_values,
+                    )
+                    if is_data_cell
+                    else []
+                )
+                context = []
+                if header_path:
+                    context.append(f"header_path={' > '.join(header_path)}")
+                context.append(f"role={role}")
+                suffix = f" [{'; '.join(context)}]"
+                coordinate = f"{get_column_letter(column_number)}{row_number}"
                 if isinstance(raw, str) and raw.startswith("="):
-                    cells.append(f"{cell.coordinate}=FORMULA({raw}); cached={cached_cell.value!r}")
+                    cells.append(f"{coordinate}=FORMULA({raw}); cached={cached!r}{suffix}")
                 else:
-                    cells.append(f"{cell.coordinate}={raw}")
+                    cells.append(f"{coordinate}={raw}{suffix}")
             if not cells:
                 continue
-            has_formula = any("=FORMULA(" in value for value in cells)
-            if sheet_has_formulas and not has_formula:
+            has_formula = any(
+                isinstance(value, str) and value.startswith("=")
+                for value in row_raw_values
+            )
+            has_label_or_date = any(_xlsx_header_token(value) for value in row_raw_values)
+            has_declared_input = "input" in row_roles
+            if sheet_has_formulas and not (has_formula or has_label_or_date or has_declared_input):
                 continue
             line = " | ".join(cells)
             projected = len((" ".join(pending + [line])).split())

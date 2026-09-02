@@ -1013,21 +1013,79 @@ def parse_docx(path: Path, max_words: int = CHUNK_WORDS,
     return _chunks_from_numbered_lines(paragraphs, path, max_words, "docx", src, "paragraphs")
 
 
+def _pptx_table_text(table: Any) -> str:
+    """Render a native PPTX table as a structured grid, not flattened text."""
+    lines = [" | ".join(cell.text.strip() for cell in row.cells) for row in table.rows]
+    return "Table:\n" + "\n".join(lines)
+
+
+def _pptx_chart_text(chart: Any) -> str:
+    """Pull real category/series/value data out of a native OOXML chart.
+
+    PE decks' charts are almost always live chart parts (c:chart), not
+    flat pictures -- the cached numCache/strCache in the chart XML holds
+    exact numbers. python-pptx exposes this directly, so a bar chart or
+    revenue bridge becomes checkable data instead of an opaque image with
+    nothing to verify a claim against.
+    """
+    try:
+        plot = chart.plots[0]
+    except (IndexError, ValueError):
+        return ""
+    categories = [str(c) for c in plot.categories]
+    lines = [f"Chart ({chart.chart_type}):"]
+    for series in plot.series:
+        values = list(series.values)
+        if categories and len(categories) == len(values):
+            pairs = ", ".join(f"{cat}={val}" for cat, val in zip(categories, values))
+        else:
+            pairs = ", ".join(str(v) for v in values)
+        lines.append(f"  {series.name}: {pairs}")
+    return "\n".join(lines)
+
+
+def _pptx_shape_text(shape: Any) -> list[str]:
+    """Text, table grid, or chart data for one shape, prefixed by its own
+    name so a claim can trace back to the exact shape on the slide, not
+    just the slide as a whole."""
+    from pptx.enum.shapes import MSO_SHAPE_TYPE
+
+    parts: list[str] = []
+    if getattr(shape, "has_chart", False):
+        chart_text = _pptx_chart_text(shape.chart)
+        if chart_text:
+            parts.append(f"[{shape.name}] {chart_text}")
+    elif getattr(shape, "has_table", False):
+        parts.append(f"[{shape.name}] {_pptx_table_text(shape.table)}")
+    elif getattr(shape, "has_text_frame", False):
+        text = (shape.text_frame.text or "").strip()
+        if text:
+            parts.append(text)
+    if getattr(shape, "shape_type", None) == MSO_SHAPE_TYPE.GROUP:
+        for sub_shape in shape.shapes:
+            parts.extend(_pptx_shape_text(sub_shape))
+    return parts
+
+
 def parse_pptx(path: Path, max_words: int = CHUNK_WORDS,
                source_record: dict | None = None) -> list[Chunk]:
-    """Extract text per slide; speaker notes and embedded objects are not invented."""
-    src = source_record or _source_record(path)
+    """Extract shape text, native table grids, native chart data, and
+    speaker notes per slide. A chart pasted as a flat picture (no native
+    chart XML) has no series data to read here and is not invented; it
+    surfaces later through whatever image/vision path the case has."""
     try:
-        with zipfile.ZipFile(path) as archive:
-            slide_members = sorted(
-                (
-                    name for name in archive.namelist()
-                    if re.fullmatch(r"ppt/slides/slide\d+\.xml", name)
-                ),
-                key=lambda name: int(re.search(r"slide(\d+)\.xml$", name).group(1)),  # type: ignore[union-attr]
-            )
-            payloads = [(name, archive.read(name)) for name in slide_members]
-    except (OSError, zipfile.BadZipFile) as exc:
+        from pptx import Presentation
+        from pptx.exc import PackageNotFoundError
+    except ImportError as exc:
+        raise _reject_source(
+            path,
+            "READER_UNAVAILABLE",
+            "PPTX parsing is unavailable because python-pptx is not installed.",
+            capability_id="pptx",
+        ) from exc
+    try:
+        presentation = Presentation(str(path))
+    except (PackageNotFoundError, OSError, KeyError, ValueError) as exc:
         raise _reject_source(
             path,
             "OPENXML_INVALID",
@@ -1035,19 +1093,18 @@ def parse_pptx(path: Path, max_words: int = CHUNK_WORDS,
             capability_id="pptx",
             action="Open the deck in PowerPoint and save a valid .pptx copy.",
         ) from exc
+
+    src = source_record or _source_record(path)
     chunks: list[Chunk] = []
-    drawing_text = "{http://schemas.openxmlformats.org/drawingml/2006/main}t"
-    for member, payload in payloads:
-        slide_number = int(re.search(r"slide(\d+)\.xml$", member).group(1))  # type: ignore[union-attr]
-        try:
-            root = ElementTree.fromstring(payload)
-        except ElementTree.ParseError as exc:
-            raise _reject_source(
-                path, "OPENXML_INVALID", f"Slide {slide_number} XML is malformed: {exc}.",
-                capability_id="pptx",
-                action="Open the deck in PowerPoint and save a repaired .pptx copy.",
-            ) from exc
-        body = "\n".join(node.text.strip() for node in root.iter(drawing_text) if node.text and node.text.strip())
+    for slide_number, slide in enumerate(presentation.slides, start=1):
+        parts: list[str] = []
+        for shape in slide.shapes:
+            parts.extend(_pptx_shape_text(shape))
+        if slide.has_notes_slide:
+            notes_text = (slide.notes_slide.notes_text_frame.text or "").strip()
+            if notes_text:
+                parts.append(f"Speaker notes: {notes_text}")
+        body = "\n".join(part for part in parts if part)
         if not body:
             continue
         chunks.extend(_split_words(

@@ -3,6 +3,8 @@ httpx
 pyyaml
 python-multipart
 openpyxl
+pdfplumber
+python-pptx
 requests
 jsonschema
 referencing

@@ -56,15 +56,19 @@ def _write_docx(path: Path) -> None:
 
 
 def _write_pptx(path: Path) -> None:
-    slide = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
-       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
-  <p:cSld><p:spTree><p:sp><p:txBody>
-    <a:p><a:r><a:t>FY2026E base case revenue</a:t></a:r></a:p>
-  </p:txBody></p:sp></p:spTree></p:cSld>
-</p:sld>"""
-    with zipfile.ZipFile(path, "w") as package:
-        package.writestr("ppt/slides/slide1.xml", slide)
+    # PAN-102/PAN-101: parse_pptx reads via python-pptx (native chart/table/
+    # notes access), which requires a genuinely valid OOXML package -- a
+    # bare ppt/slides/slide1.xml with no [Content_Types].xml, presentation
+    # part, or relationships (the old raw-XML reader's minimum) no longer
+    # opens. Build a real, minimal deck through python-pptx itself instead
+    # of hand-rolling package structure.
+    from pptx import Presentation
+
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    text_box = slide.shapes.add_textbox(0, 0, 9144000, 685800)
+    text_box.text_frame.text = "FY2026E base case revenue"
+    presentation.save(str(path))
 
 
 class _FakePDF:

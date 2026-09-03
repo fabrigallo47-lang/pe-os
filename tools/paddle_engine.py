@@ -30,10 +30,94 @@ from __future__ import annotations
 import io
 import json
 import os
+import re
 import sys
+from html.parser import HTMLParser
 from pathlib import Path
 
 CHART_RECOGNITION = os.environ.get("PE_OS_PADDLE_CHARTS", "") == "1"
+
+
+class _TableParser(HTMLParser):
+    """Collect a <table> fragment as rows of plain-text cells."""
+
+    def __init__(self) -> None:
+        super().__init__(convert_charrefs=True)
+        self.rows: list[list[str]] = []
+        self._row: list[str] | None = None
+        self._cell: list[str] | None = None
+        self._colspan = 1
+
+    def handle_starttag(self, tag, attrs):
+        if tag == "tr":
+            self._row = []
+        elif tag in ("td", "th"):
+            self._cell = []
+            try:
+                self._colspan = max(1, int(dict(attrs).get("colspan", "1")))
+            except ValueError:
+                self._colspan = 1
+        elif tag == "br" and self._cell is not None:
+            self._cell.append(" ")
+
+    def handle_endtag(self, tag):
+        if tag in ("td", "th") and self._cell is not None and self._row is not None:
+            text = " ".join("".join(self._cell).split())
+            # A colspan cell is repeated across the columns it covers: a
+            # merged header that silently shifts the columns under it turns
+            # a readable table into a misaligned one.
+            self._row.extend([text] * self._colspan)
+            self._cell = None
+        elif tag == "tr" and self._row is not None:
+            self.rows.append(self._row)
+            self._row = None
+
+    def handle_data(self, data):
+        if self._cell is not None:
+            self._cell.append(data)
+
+
+def _one_table_to_markdown(fragment: str) -> str:
+    """Render one <table> fragment as a GitHub-flavoured pipe table.
+
+    Returns the fragment UNCHANGED if nothing parsed. Emitting an empty
+    table would silently drop the numbers a reviewer came to read, and a
+    visible lump of HTML is a better failure than a confident blank.
+    """
+    parser = _TableParser()
+    try:
+        parser.feed(fragment)
+    except Exception:
+        return fragment
+    rows = [r for r in parser.rows if r]
+    if not rows:
+        return fragment
+
+    width = max(len(r) for r in rows)
+    rows = [r + [""] * (width - len(r)) for r in rows]
+    cell = lambda c: c.replace("|", "\\|")           # noqa: E731
+    out = ["| " + " | ".join(cell(c) for c in rows[0]) + " |",
+           "| " + " | ".join("---" for _ in range(width)) + " |"]
+    out += ["| " + " | ".join(cell(c) for c in r) + " |" for r in rows[1:]]
+    return "\n".join(out)
+
+
+_TABLE_RE = re.compile(r"<table\b.*?</table>", re.S | re.I)
+
+
+def _tables_to_markdown(text: str) -> str:
+    """Convert any <table> HTML inside a block to markdown.
+
+    PaddleOCR-VL returns table blocks as HTML while Granite and classic
+    Docling both go through export_to_markdown() and emit pipe tables. The
+    UI escapes chunk bodies and renders them pre-wrap, so the HTML arrived
+    as literal markup a reader cannot read -- and, worse, made the three
+    engines look different where they actually agreed. Converting here
+    keeps the field named "markdown" honest.
+    """
+    if "<table" not in text.lower():
+        return text
+    return _TABLE_RE.sub(lambda m: "\n" + _one_table_to_markdown(m.group(0)) + "\n", text)
 
 
 def _block_field(block, dict_key: str, attr: str):
@@ -72,13 +156,13 @@ def convert(pdf: Path) -> dict:
                     pictures.append(f"{label}{where} [chart-recognition output follows]")
                     parts.append(
                         f"[chart-recognition, MODEL-DERIVED not read text]{where}\n"
-                        f"{str(content).strip()}"
+                        f"{_tables_to_markdown(str(content).strip())}"
                     )
                 else:
                     pictures.append(f"{label}{where}")
                 continue
             if content and str(content).strip():
-                parts.append(str(content).strip())
+                parts.append(_tables_to_markdown(str(content).strip()))
         pages[str(page_index)] = {
             "markdown": "\n\n".join(parts),
             "pictures": pictures,

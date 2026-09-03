@@ -206,6 +206,38 @@ def _unresolved_regions(text: str) -> list[tuple[int, tuple[int, int, int, int]]
     return regions
 
 
+_VISUAL_COMPARISON_RE = re.compile(r"VISUAL COMPARISON:\s*([A-Za-z0-9][A-Za-z0-9 ]{0,20}?)\s+(?:has|is)\b")
+
+
+def _corroborate_chart_value(category: str, source_text: str) -> str | None:
+    """Look for an exact numeric value tied to `category` in the document's
+    OWN text layer -- never in a second vision call, since a second guess
+    at the same pixels is not independent evidence.
+
+    A vision model's categorical judgment ("Q3 looks tallest") is safe to
+    trust; the same model reading a bar's exact height from pixels is not
+    -- chart recognition can be confidently wrong on numbers. So an exact
+    value is only ever asserted when something OTHER than a look at the
+    chart itself says so: a caption, legend, or data label already present
+    in the real extracted text. No such text and the value stays unknown --
+    the categorical judgment still stands on its own.
+    """
+    # Deliberately narrow: only an explicit binding delimiter counts (":",
+    # "=", "-", or parentheses) directly between the category and the
+    # number, never mere proximity in prose -- "Figure 1. ... Q3 ..." must
+    # not be read as pairing "1" with "Q3" just because they are nearby.
+    escaped = re.escape(category)
+    number = r"(-?\d[\d,]*\.?\d*)"
+    for pattern in (rf"\b{escaped}\b\s*[:=-]\s*{number}\b",
+                    rf"\b{number}\s*[:=-]\s*{escaped}\b",
+                    rf"\b{escaped}\b\s*\(\s*{number}\s*\)",
+                    rf"\b{number}\s*\(\s*{escaped}\s*\)"):
+        match = re.search(pattern, source_text, re.IGNORECASE)
+        if match:
+            return match.group(1)
+    return None
+
+
 def _crop_and_transcribe(path: Path, page: int, bbox: tuple[int, int, int, int]) -> str:
     """Render the source locally, crop to bbox, and ask Haiku to read it.
 
@@ -316,7 +348,16 @@ def _apply_region_vision_fallback(extracted: dict[str, str], case: dict) -> None
         for page, bbox in regions:
             transcription = _crop_and_transcribe(ROOT / rel, page, bbox)
             if transcription:
-                got_comparison = got_comparison or "VISUAL COMPARISON:" in transcription
+                comparison = _VISUAL_COMPARISON_RE.search(transcription)
+                if comparison:
+                    got_comparison = True
+                    category = comparison.group(1).strip()
+                    corroborated = _corroborate_chart_value(category, text)
+                    if corroborated:
+                        transcription += (
+                            f"\n[corroborated chart value, confirmed by the "
+                            f"document's own text -- not read from pixels] "
+                            f"{category} = {corroborated}")
                 extracted[input_id] += (
                     f"\n\n[vision-fallback, MODEL-DERIVED transcription of the "
                     f"unresolved region bbox={list(bbox)} on page {page}, not read "
@@ -331,7 +372,15 @@ def _apply_region_vision_fallback(extracted: dict[str, str], case: dict) -> None
         # already shown itself to be wrong for this purpose.
         if regions and not got_comparison and suffix in IMAGE_SUFFIXES:
             whole = _vision_fallback_haiku(ROOT / rel)
-            if "VISUAL COMPARISON:" in whole:
+            comparison = _VISUAL_COMPARISON_RE.search(whole)
+            if comparison:
+                category = comparison.group(1).strip()
+                corroborated = _corroborate_chart_value(category, text)
+                if corroborated:
+                    whole += (
+                        f"\n[corroborated chart value, confirmed by the "
+                        f"document's own text -- not read from pixels] "
+                        f"{category} = {corroborated}")
                 extracted[input_id] += (
                     "\n\n[vision-fallback, MODEL-DERIVED, whole-image visual "
                     "comparison -- the layout model's own region for this chart "
@@ -376,7 +425,12 @@ fields, media, elements, evidence, confidence.
   answer is correct behaviour and is scored as such -- guessing is not.
 - answer: a string for a plain question, or an object when the query asks for
   several named values. Numbers that are numbers should be JSON numbers.
-- fields: [{"name","value","input_id","locator"}] for field extraction.
+- fields: [{"name","value","input_id","locator"}] for field extraction. Add
+  "unit" when the value has one stated (e.g. "EUR", "EUR m") and "subject"
+  when the value is about a specific named thing rather than the document as
+  a whole (e.g. "North" for a region's own revenue figure, "Project Aurora"
+  for a decision made about it) -- both are scored, not decorative, so give
+  them whenever the text actually states them, and omit them otherwise.
 - content: the document's readable text, for parsing tasks.
 - media: [{"media_type","filename","locator","text"}] for images/attachments.
 - evidence: [{"input_id","locator","quote","role"}] citing the blocks you used.
@@ -435,22 +489,29 @@ A line reading exactly "VISUAL COMPARISON: <category> has the ... tallest/larges
 could not read numeric values from -- e.g. "which quarter has the highest
 revenue" when the chart shows unlabeled bars. Treat its named category as a
 usable answer (it is exactly the kind of question it was asked to answer), but
-never treat it as a source for an exact number -- if the query also wants a
-value (a revenue figure, not just which quarter), and no number appears
-anywhere else in the extracted text, that value is genuinely unknown and the
-field should be omitted or the case should abstain, not filled from this line.
+never treat it as a source for an exact number by itself -- a model reading a
+bar's height from pixels can be confidently wrong. If the query also wants a
+value (a revenue figure, not just which quarter), look for a following
+"[corroborated chart value, confirmed by the document's own text -- not read
+from pixels] <category> = <number>" line: that number came from the
+document's own text (a caption, legend, or label), independent of the vision
+guess, and IS safe to report as an exact value. With no such line, the value
+is genuinely unknown and the field should be omitted or the case should
+abstain -- never fill it from the visual comparison alone.
 
-For a parsing task, also populate what the extraction shows:
+With no query -- a parsing task, or a field_extraction task with nothing
+naming a specific value -- also populate what the extraction shows:
 - `fields`: [{"name","value","input_id","locator"}] for any named, addressable
   value the extraction carries -- an email's subject/from/to headers, a
-  document's stated ID/date/owner fields, and similar. A parsing task with no
-  query still has structured facts to report; do not skip this field just
-  because there was no query asking for a specific value by name. This
-  includes numbers inside a table: report each row's values as their own
-  named fields too (e.g. a "Region | Revenue | EBITDA" table with a "North"
-  row becomes fields named "North revenue" and "North EBITDA", not just the
-  table element's raw text) -- a value is no less a fact for having arrived
-  in a table instead of a sentence.
+  document's stated ID/date/owner fields, a "VISUAL COMPARISON" chart
+  judgment (as its own named field, e.g. "highest revenue quarter"), and
+  similar. A task with no query still has structured facts to report; do not
+  skip this field just because there was no query asking for a specific
+  value by name. This includes numbers inside a table: report each row's
+  values as their own named fields too (e.g. a "Region | Revenue | EBITDA"
+  table with a "North" row becomes fields named "North revenue" and "North
+  EBITDA", not just the table element's raw text) -- a value is no less a
+  fact for having arrived in a table instead of a sentence.
 - `elements`: [{"type","text","order","input_id","locator"}] where type is
   "title" / "paragraph" / "table" / "list" / "heading".
 - `media`: [{"media_type","filename","locator","text"}] with media_type
@@ -475,7 +536,7 @@ def answer(case: dict, extracted: dict[str, str]) -> dict:
     blocks = "\n\n".join(
         f"### input_id: {input_id}\n{text or '(nothing extracted)'}"
         for input_id, text in extracted.items())
-    query = case.get("query") or "(no query: return the parsed content itself)"
+    query = case.get("query") or "(no query: report the structured facts and content the extraction supports)"
     prompt = (f"TASK: {case.get('task')}\nQUERY: {query}\n\n"
               f"EXTRACTED DOCUMENT TEXT:\n{blocks}")
 

@@ -23,6 +23,7 @@ sys.path.insert(0, str(ROOT))
 
 from tools.extract_v2 import (  # noqa: E402
     _chunk_markdown_blocks,
+    _is_degenerate_repetition,
     parse_pdf,
 )
 
@@ -113,6 +114,52 @@ class GracefulDegradationTests(unittest.TestCase):
         self.assertEqual(len(chunks), 1)
         self.assertEqual(chunks[0].locator, "p1")
         self.assertIn("Revenue was EUR 20m in FY2025A.", chunks[0].body)
+
+    def test_degenerate_repetition_loop_falls_back_to_text_instead_of_passing_through(self):
+        """Confirmed via direct test on a heavily degraded real scan: the
+        model can run to completion with no exception and produce a short
+        phrase repeated ~80 times, recovering none of the page's real
+        content. Nothing raises in that case, so without an explicit check
+        this garbage would flow through as a normal chunk with no
+        coverage-limit signal -- exactly the "confidently wrong/empty
+        answer" this codebase's philosophy exists to prevent.
+        """
+        with tempfile.TemporaryDirectory() as tmp:
+            path = Path(tmp) / "scan.pdf"
+            path.write_bytes(_minimal_single_page_pdf(b"Revenue was EUR 20m in FY2025A."))
+
+            degenerate_markdown = "creditor customers.\n\n" * 80
+            with patch("tools.extract_v2._granite_docling_available", return_value=True), \
+                 patch("tools.extract_v2._granite_docling_convert_page", return_value=(degenerate_markdown, [])):
+                chunks = parse_pdf(path)
+
+        self.assertEqual(len(chunks), 1)
+        self.assertNotIn("creditor customers.", chunks[0].body)
+        self.assertIn("Revenue was EUR 20m in FY2025A.", chunks[0].body)
+
+
+class DegenerateRepetitionTests(unittest.TestCase):
+    def test_real_document_prose_is_not_flagged(self):
+        markdown = (
+            "## The five EBITDA figures\n\n"
+            "| Economic object | Amount |\n"
+            "| --- | --- |\n"
+            "| Reported EBITDA | $10.2m |\n"
+            "| Covenant EBITDA | $12.2m |\n\n"
+            "These are not five competing answers to one simple question."
+        )
+        self.assertFalse(_is_degenerate_repetition(markdown))
+
+    def test_repeated_short_phrase_is_flagged(self):
+        markdown = "creditor customers.\n\n" * 80
+        self.assertTrue(_is_degenerate_repetition(markdown))
+
+    def test_a_few_repeats_below_threshold_is_not_flagged(self):
+        # A real page can legitimately repeat a short line a handful of
+        # times (e.g. a term appearing in several table rows); only a
+        # clearly degenerate run should trip the guard.
+        markdown = "Revenue\n\n" * 4
+        self.assertFalse(_is_degenerate_repetition(markdown))
 
 
 if __name__ == "__main__":

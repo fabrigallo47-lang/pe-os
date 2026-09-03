@@ -1449,7 +1449,18 @@ def _granite_docling_available() -> bool:
             import torch  # noqa: F401
             import transformers  # noqa: F401
             _granite_docling_availability_cache = True
-        except ImportError:
+        except Exception as exc:  # noqa: BLE001
+            # Not just ImportError: importing transformers reads package
+            # metadata off disk, and with this venv inside an iCloud-synced
+            # folder that raised OSError(89, "Operation canceled") on an
+            # evicted file -- which escaped an ImportError-only guard and
+            # crashed extraction instead of taking the plain-text fallback
+            # this function exists to select. Any failure to load the model
+            # stack means the model is unavailable; that is the whole
+            # question being asked here, so any exception answers it.
+            if not isinstance(exc, ImportError):
+                print(f"  [PDF] model stack unavailable ({type(exc).__name__}: {exc}); "
+                      f"falling back to plain-text PDF extraction", file=sys.stderr)
             _granite_docling_availability_cache = False
     return _granite_docling_availability_cache
 
@@ -1513,6 +1524,28 @@ def _granite_docling_convert_page(image: Any, max_new_tokens: int = 2048) -> tup
     return markdown, picture_classes
 
 
+_DEGENERATE_REPETITION_THRESHOLD = 6
+
+
+def _is_degenerate_repetition(markdown: str) -> bool:
+    """True if the same non-blank line repeats often enough to be a
+    generation repetition-loop rather than real page content.
+
+    Confirmed via direct test on a heavily degraded (skewed, ~70dpi
+    effective, noisy) scan: Granite-Docling ran to completion with no
+    exception and produced a short phrase ~80 times, recovering none of
+    the page's real content. Genuine document text essentially never
+    repeats an identical line this many times within one page.
+    """
+    lines = [line.strip() for line in markdown.splitlines() if line.strip()]
+    if not lines:
+        return False
+    counts: dict[str, int] = {}
+    for line in lines:
+        counts[line] = counts.get(line, 0) + 1
+    return max(counts.values()) >= _DEGENERATE_REPETITION_THRESHOLD
+
+
 def _chunk_markdown_blocks(markdown: str, max_words: int, locator_prefix: str,
                             source_path: str, source_record: dict,
                             page_or_slide_number: int) -> list[Chunk]:
@@ -1561,7 +1594,8 @@ def _chunk_markdown_blocks(markdown: str, max_words: int, locator_prefix: str,
 
 
 def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
-              source_record: dict | None = None) -> list[Chunk]:
+              source_record: dict | None = None,
+              convert_page: Any = None) -> list[Chunk]:
     """Convert each page via Granite-Docling-258M (real table structure,
     reads pixels directly so scanned pages need no separate OCR pass --
     verified against a real 9-page financial-narrative PDF: dense tables
@@ -1589,8 +1623,15 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
         ) from exc
     src = source_record or _source_record(path)
 
-    if not _granite_docling_available():
-        return _pdfplumber_text_only_pdf(path, max_words, src)
+    # `convert_page` swaps ONLY the page-image -> (markdown, picture classes)
+    # step, so an alternative model is compared against Granite through the
+    # identical chunking, locators, degenerate-output check and per-page
+    # fallback. Anything else would compare two pipelines, not two models.
+    # Default None keeps the production path exactly as it was.
+    if convert_page is None:
+        if not _granite_docling_available():
+            return _pdfplumber_text_only_pdf(path, max_words, src)
+        convert_page = lambda image, page_num: _granite_docling_convert_page(image)
 
     chunks: list[Chunk] = []
     try:
@@ -1598,12 +1639,23 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
             for page_num, page in enumerate(pdf.pages, 1):
                 try:
                     image = page.to_image(resolution=200).original
-                    markdown, picture_classes = _granite_docling_convert_page(image)
+                    markdown, picture_classes = convert_page(image, page_num)
+                    if _is_degenerate_repetition(markdown):
+                        # Not an exception -- the model ran to completion and
+                        # produced well-formed-looking markdown, but a badly
+                        # degraded scan can send generation into a repetition
+                        # loop (confirmed via direct test: a heavily skewed,
+                        # low-DPI, noisy page produced the same short phrase
+                        # ~80 times, recovering none of the page's real
+                        # content). Nothing here raises, so without this
+                        # check the garbage would flow through as a normal
+                        # chunk with no coverage-limit signal at all.
+                        raise RuntimeError("degenerate repetition loop in generated output")
                 except Exception as exc:
                     # A single page's model failure must not lose the rest
                     # of the document -- fall back to plain text for just
                     # this page rather than aborting the whole PDF.
-                    print(f"  [PDF] page {page_num}: Granite-Docling failed ({exc}), falling back to text", file=sys.stderr)
+                    print(f"  [PDF] page {page_num}: model failed ({exc}), falling back to text", file=sys.stderr)
                     text = page.extract_text() or ""
                     if not text.strip():
                         continue
@@ -1929,7 +1981,8 @@ def _xlsx_cell_semantic_role(cell: Any, is_formula: bool) -> str | None:
 
 
 def parse_source(path: Path, max_words: int = CHUNK_WORDS,
-                 source_record: dict | None = None) -> list[Chunk]:
+                 source_record: dict | None = None,
+                 convert_page: Any = None) -> list[Chunk]:
     src = source_record or _source_record(path)
     envelope = src.get("source_envelope") or {}
     capability = resolve_source_capability(path, {
@@ -1939,7 +1992,7 @@ def parse_source(path: Path, max_words: int = CHUNK_WORDS,
     capability_id = str(capability["capability_id"])
     suffix = path.suffix.lower()
     if suffix == ".pdf":
-        chunks = parse_pdf(path, max_words, src)
+        chunks = parse_pdf(path, max_words, src, convert_page=convert_page)
     elif suffix in (".md", ".markdown"):
         chunks = parse_markdown(path, max_words, src)
     elif suffix == ".txt" and capability_id == "transcript_export":

@@ -19,5 +19,6 @@
 # as data; a picture on a page becomes a declared IMAGE_NOT_EXTRACTED-style
 # marker naming its detected type, not invented numbers.
 torch
+torchvision
 transformers
 docling_core

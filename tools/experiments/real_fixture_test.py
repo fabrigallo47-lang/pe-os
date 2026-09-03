@@ -93,6 +93,63 @@ Alderstone generated FY2025 reported revenue of $74.0m and reported EBITDA of $1
             "EBITDA of $12.7m, representing a 17.2% margin."
         ),
     },
+    "covenant_ebitda_dispute": {
+        "source_doc": "keystone_monitoring_junecompliance2027.md",
+        "expected_total": 10.80,
+        "expected_label": "Lender-accepted covenant EBITDA (controlling figure)",
+        "text": """\
+June 30, 2027 covenant EBITDA bridge. Lender-accepted basis.
+
+| LTM item | Amount |
+| --- | --- |
+| Reported EBITDA | $9.40m |
+| Permitted integration and remediation | 0.45 |
+| Severance and reorganization | 0.25 |
+| Temporary duplicate systems | 0.20 |
+| Certified cost savings | 0.50 |
+| Lender-accepted covenant EBITDA | $10.80m |
+
+| Management-proposed item | Amount | Lender treatment |
+| --- | --- | --- |
+| Billing disruption / lost margin | $0.45m | Rejected - revenue recovery |
+| Expected pricing recovery | 0.15 | Rejected - prospective |
+| Unimplemented staffing savings | 0.20 | Rejected - not implemented |
+| Management proposed covenant EBITDA | $11.60m | Not accepted |
+
+The lender's $10.8m figure is controlling. The $1.4m bridge from reported to covenant EBITDA is within the amended 15% cap when measured against reported EBITDA.""",
+    },
+    "leverage_covenant_test": {
+        "source_doc": "keystone_monitoring_junecompliance2027.md",
+        "expected_total": 4.70,
+        "expected_label": "Total net leverage (Net debt / Covenant EBITDA, a two-hop ratio)",
+        "text": """\
+June 30 debt, leverage and liquidity. Two covenant breaches.
+
+| Debt / liquidity item | Amount |
+| --- | --- |
+| First-lien term loan | $42.265m |
+| DDTL | 5.955 |
+| Revolver | 4.780 |
+| Gross funded debt | $53.000m |
+| Cash | (2.200) |
+| Net debt | $50.800m |
+| Letters of credit | $2.000m |
+| Undrawn revolver availability | 0.720 |
+| Total liquidity | $2.920m |
+
+Total net leverage: 4.70x. Maximum 4.25x.
+Minimum liquidity: $2.92m. Minimum $3.00m.
+FCCR: 0.85x. Minimum 1.25x.
+Covenant EBITDA: $10.8m. Lender accepted.
+
+Conclusion: the borrower is not in compliance with total net leverage, fixed-charge coverage or minimum liquidity.
+
+| Requirement | Actual | Status |
+| --- | --- | --- |
+| Total net leverage ≤ 4.25x | 4.70x | Breach |
+| FCCR ≥ 1.25x | 0.85x | Breach |
+| Minimum liquidity ≥ $3.0m | $2.92m | Breach |""",
+    },
 }
 
 

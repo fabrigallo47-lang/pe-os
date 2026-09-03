@@ -223,3 +223,75 @@ hardcoded SOURCE line and re-test, find a real fragment where the total is
 genuinely NOT stated (rarer than expected -- none of these three qualified),
 and treat the inconsistent edge-finding and the basis regression as open
 problems, not noise.
+
+### Two more real fragments -- this time it gets worse, not better
+
+Two further fragments from `keystone_monitoring_junecompliance2027.md` (a
+real held-back monitoring document, layer 2), richer and messier than the
+first three:
+
+  covenant_ebitda_dispute   two competing EBITDA bridges from the same
+                            reported figure ($9.40m) -- lender-accepted
+                            ($10.80m, controlling) vs management-proposed
+                            ($11.60m, rejected) -- a genuine live dispute
+                            between two parties, not just one basis.
+  leverage_covenant_test    three concurrent covenant tests (total net
+                            leverage, FCCR, minimum liquidity), each its
+                            own actual/threshold/headroom, sharing one debt
+                            table (three debt instruments -> gross funded
+                            debt -> net debt -> a 4.70x leverage ratio
+                            against covenant EBITDA).
+
+- `covenant_ebitda_dispute` mostly held up: all three modes got the
+  controlling total (10.8) and kept the two bridges apart with zero
+  identity collisions. But the derived "how close to the 15% amendment cap"
+  figure the source text alludes to ("within the amended 15% cap") got
+  computed independently in each mode, correctly as 1.4/9.4 = 14.89% *in
+  content* -- but landed under a DIFFERENT metric name each run: "Covenant
+  Headroom" = 15 in (a), "Covenant Headroom" = 14.89 in (b), and the same
+  14.89 value renamed to "Adjustment Supportability" in (c), with a
+  DIFFERENT quantity (1.4, the raw dollar bridge) now sitting under
+  "Covenant Headroom" instead. Three runs, three different names for
+  overlapping concepts that are not in the source table at all -- exactly
+  the instability risk flagged earlier, now reproduced on a real document
+  for a genuinely novel (not literally stated) derived quantity.
+- `leverage_covenant_test` is the sobering one. All three modes found the
+  right final leverage figure (4.70x), but on the more complex structure
+  (three separate covenant tests sharing one debt table) **all three
+  produced real identity collisions** -- not a synthetic-test artifact:
+  - (a) baseline: "Covenant Threshold" used for BOTH the 4.25x leverage cap
+    and the 1.25x FCCR minimum, same basis, same non-distinguishing
+    `measurement` ("total" both times) -- two different covenants collapsed
+    into one identity. Same problem 3x over for "Covenant Headroom" across
+    the leverage/FCCR/liquidity tests. 2 collision groups.
+  - (b) document-graph extractor: fewer distinct concepts recovered
+    overall, and a worse *semantic* mixup the collision checker cannot
+    even catch -- "DDTL Availability" used once for the $5.955m DDTL debt
+    tranche and again for $2.92m of *total liquidity*, two unrelated
+    concepts that only escaped the checker because their `measurement`
+    strings happened to differ. 1 flagged collision, but arguably a worse
+    underlying confusion than what it flags.
+  - (c) main extractor + document-graph context: **the worst of the
+    three** -- 3 collision groups, more than the unassisted baseline. The
+    graph context did not help here; it measurably hurt, opposite to what
+    the two EBITDA-bridge fragments showed.
+  - None of the three modes attempted the actual derivation chain (gross
+    debt 53.0 − cash 2.2 = net debt 50.8, then 50.8 / covenant EBITDA 10.8
+    = 4.70x) even though every input for it is present in the same table --
+    consistent with every fragment tested so far: real Keystone documents
+    state their conclusions, so `derived` essentially never fires on the
+    final figure, whether or not the graph context is present.
+
+This is the fifth and sixth real fragment tested (five real documents
+total now, six fragments), and the pattern holds without exception: **no
+fragment tested yet required the extractor to recover a genuinely unstated
+final number** -- the one place graph assistance showed clear, repeatable
+value (verifying a stated total's arithmetic, or computing a real but
+unstated derived quantity like the 15% cap check) is also the one place
+identity became unstable across runs. And on the structurally richer
+fragment, the graph-context approach was measurably worse than doing
+nothing at all. This is the strongest evidence yet against wiring this
+into production as currently built -- the failure mode it was meant to
+help with (missed derivation) barely occurs on real documents, while the
+failure mode it does not help with (identity collision across concurrent,
+structurally-similar concepts) got worse with it, not better.

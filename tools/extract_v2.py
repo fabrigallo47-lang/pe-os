@@ -1191,12 +1191,28 @@ def _pptx_reading_order(shapes: Any, slide_height: Any) -> list[Any]:
 
 
 def parse_pptx(path: Path, max_words: int = CHUNK_WORDS,
-               source_record: dict | None = None) -> list[Chunk]:
+               source_record: dict | None = None,
+               pdf_engine: Any = None) -> list[Chunk]:
     """Extract shape text, native table grids, native chart data, and
     speaker notes per slide. A chart pasted as a flat picture (no native
     chart XML) has no series data to read here and is not invented; a
     declared IMAGE_NOT_EXTRACTED marker names the shape so the gap is
-    visible instead of the picture simply never having existed."""
+    visible instead of the picture simply never having existed.
+
+    Native chart/table data (COLUMN_CLUSTERED (51): Q1=10.0, Q2=15.0,
+    Q3=22.0 -- verified against the real revenue-review fixture) is exact:
+    it comes from the chart's own XML, not a model reading rendered pixels.
+    It stays the primary and only path for any slide that has it.
+
+    Only a slide carrying a declared IMAGE_NOT_EXTRACTED or
+    UNSUPPORTED_GRAPHIC_FRAME marker -- meaning python-pptx found nothing
+    to read there at all -- additionally gets a PDF-rendered second look:
+    the whole deck exported once via LibreOffice headless and read through
+    the same convert_page pipeline a PDF page uses. This recovers content
+    for slides with SmartArt, chart-ex charts, or a chart pasted as a flat
+    image; it never overrides a slide that already has native data, so it
+    cannot reintroduce the PAN-100 "confidently wrong chart pixels" failure
+    on a slide that did not need it."""
     try:
         from pptx import Presentation
         from pptx.exc import PackageNotFoundError
@@ -1220,6 +1236,7 @@ def parse_pptx(path: Path, max_words: int = CHUNK_WORDS,
 
     src = source_record or _source_record(path)
     chunks: list[Chunk] = []
+    rendered_slides: dict[int, str] | None = None      # computed lazily, once
     for slide_number, slide in enumerate(presentation.slides, start=1):
         parts: list[str] = []
         for shape in _pptx_reading_order(slide.shapes, presentation.slide_height):
@@ -1228,6 +1245,17 @@ def parse_pptx(path: Path, max_words: int = CHUNK_WORDS,
             notes_text = (slide.notes_slide.notes_text_frame.text or "").strip()
             if notes_text:
                 parts.append(f"Speaker notes: {notes_text}")
+
+        if _slide_needs_pdf_fallback(parts):
+            if rendered_slides is None:
+                rendered_slides = _render_pptx_as_pdf(path, pdf_engine) or {}
+            fallback = rendered_slides.get(slide_number, "").strip()
+            if fallback:
+                parts.append(
+                    f"[pdf-fallback] slide rendered as an image and read because "
+                    f"native extraction found an unreadable shape here:\n{fallback}"
+                )
+
         body = "\n".join(part for part in parts if part)
         if not body:
             continue
@@ -1236,6 +1264,80 @@ def parse_pptx(path: Path, max_words: int = CHUNK_WORDS,
             page_or_slide_number=slide_number,
         ))
     return chunks
+
+
+def _slide_needs_pdf_fallback(parts: list[str]) -> bool:
+    """Whether a slide carries a declared native-reading gap worth a second,
+    PDF-rendered look. The two markers this checks are the only ones
+    _pptx_shape_text emits for "found the shape, could not read it" --
+    IMAGE_NOT_EXTRACTED (a flat picture/chart with no native XML) and
+    UNSUPPORTED_GRAPHIC_FRAME (SmartArt or a chart-ex chart type)."""
+    return any("IMAGE_NOT_EXTRACTED" in part or "UNSUPPORTED_GRAPHIC_FRAME" in part
+              for part in parts)
+
+
+def _render_pptx_as_pdf(path: Path, pdf_engine: Any) -> dict[int, str] | None:
+    """Export a whole deck to PDF via LibreOffice headless, then read every
+    page with the normal PDF page-conversion path. Returns None (never
+    raises) if soffice is missing or the export fails -- a fallback that
+    can itself fail hard would be worse than no fallback.
+
+    `pdf_engine`, if supplied, is a FACTORY: given the exported PDF's path,
+    it returns a bound convert_page(image, page_num) callable -- not a
+    pre-bound callable itself. parse_pdf's convert_page can be bound ahead
+    of time because the caller already knows which file it is converting;
+    here the PDF this function converts does not exist until soffice creates
+    it, so whatever engine reads it has to learn that path too. The eval
+    harness's _paddle_convert is already exactly this shape (Path -> bound
+    callable), so it plugs in directly.
+    """
+    import shutil
+    import subprocess
+    import tempfile
+    import uuid
+
+    if shutil.which("soffice") is None:
+        return None
+
+    with tempfile.TemporaryDirectory() as outdir:
+        profile = Path(tempfile.gettempdir()) / f"lo-profile-{uuid.uuid4().hex}"
+        try:
+            subprocess.run(
+                ["soffice", "--headless", "--norestore",
+                 f"-env:UserInstallation=file://{profile}",
+                 "--convert-to", "pdf", "--outdir", outdir, str(path)],
+                capture_output=True, timeout=120, check=True,
+            )
+        except Exception as exc:
+            print(f"  [PPTX] soffice export failed for {path.name}: {exc}", file=sys.stderr)
+            return None
+        finally:
+            shutil.rmtree(profile, ignore_errors=True)
+
+        exported = Path(outdir) / f"{path.stem}.pdf"
+        if not exported.exists():
+            return None
+
+        convert_page = pdf_engine(exported) if pdf_engine is not None else _default_convert_page()
+        if convert_page is None:
+            return None
+
+        import pdfplumber
+        pages: dict[int, str] = {}
+        try:
+            with pdfplumber.open(exported) as pdf:
+                for page_num, page in enumerate(pdf.pages, start=1):
+                    try:
+                        image = page.to_image(resolution=200).original
+                        markdown, _ = convert_page(image, page_num)
+                        if not _is_degenerate_repetition(markdown):
+                            pages[page_num] = markdown
+                    except Exception as exc:
+                        print(f"  [PPTX] page {page_num} render failed: {exc}", file=sys.stderr)
+        except Exception as exc:
+            print(f"  [PPTX] could not open exported PDF: {exc}", file=sys.stderr)
+            return None
+        return pages
 
 
 def parse_transcript(path: Path, max_words: int = CHUNK_WORDS,
@@ -1428,6 +1530,83 @@ def parse_email(path: Path, max_words: int = CHUNK_WORDS,
             }
         chunks.extend(message_chunks)
     return chunks
+
+
+IMAGE_SUFFIXES = (".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff")
+
+
+def parse_image(path: Path, max_words: int = CHUNK_WORDS,
+                source_record: dict | None = None, convert_page: Any = None,
+                vision_fallback: Any = None) -> list[Chunk]:
+    """Read a standalone image (a screenshot, a chart exported as PNG) with
+    the same model pipeline a PDF page gets, instead of leaving image
+    formats entirely unsupported.
+
+    A raster image has no PDF structure, so it is wrapped as a one-page PDF
+    (a real, if degenerate, PDF -- pdfplumber opens it, page.to_image()
+    just re-renders the embedded raster) and run through the identical
+    per-page conversion parse_pdf uses: same convert_page injection point,
+    same degenerate-repetition check, same declared-gap philosophy for
+    anything the model cannot read.
+
+    `vision_fallback`, if supplied, is called with the ORIGINAL image path
+    when the local model path produced nothing usable -- never by default.
+    This function makes no network call itself and never will: any fallback
+    that leaves this machine is the caller's explicit choice to inject, the
+    same way convert_page already is. Wiring one in as a production default
+    is a policy-table decision (invariant 7), not something to default here.
+    """
+    import tempfile
+
+    from PIL import Image
+
+    convert_page = convert_page or _default_convert_page()
+    src = source_record or _source_record(path)
+
+    markdown, picture_classes = "", []
+    if convert_page is not None:
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as handle:
+            Image.open(path).convert("RGB").save(handle.name, "PDF")
+            wrapped = Path(handle.name)
+        try:
+            import pdfplumber
+            with pdfplumber.open(wrapped) as pdf:
+                image = pdf.pages[0].to_image(resolution=200).original
+                markdown, picture_classes = convert_page(image, 1)
+                if _is_degenerate_repetition(markdown):
+                    markdown = ""
+        except Exception as exc:
+            print(f"  [IMAGE] model failed on {path.name} ({exc})", file=sys.stderr)
+            markdown = ""
+        finally:
+            wrapped.unlink(missing_ok=True)
+
+    if not markdown.strip() and vision_fallback is not None:
+        try:
+            transcription = vision_fallback(path)
+        except Exception as exc:
+            transcription = f"[vision-fallback failed: {exc}]"
+        if transcription and transcription.strip():
+            markdown = (f"[vision-fallback, MODEL-DERIVED transcription, not read text]\n"
+                       f"{transcription.strip()}")
+
+    if not markdown.strip():
+        raise _reject_source(
+            path, "IMAGE_UNREADABLE",
+            "No local model or vision fallback produced content for this image.",
+            capability_id="native_image",
+            action="Install the PDF model stack (see deploy/README.md) or supply a vision_fallback.",
+        )
+
+    body_parts = [markdown.strip()]
+    for picture_class in picture_classes:
+        body_parts.append(
+            f"[picture] IMAGE_NOT_EXTRACTED: a {picture_class} is present in this "
+            "image; its content was not reliably extracted."
+        )
+    return _chunk_markdown_blocks(
+        "\n\n".join(body_parts), max_words, "img", str(path), src, 1,
+    )
 
 
 def _pdfplumber_text_only_pdf(path: Path, max_words: int, src: dict) -> list[Chunk]:
@@ -1880,6 +2059,15 @@ def _chunk_markdown_blocks(markdown: str, max_words: int, locator_prefix: str,
     return chunks
 
 
+def _default_convert_page():
+    """The page-image converter parse_pdf and parse_image fall back to when
+    no caller supplies one: Granite-Docling if the model stack is installed,
+    else None (meaning "no local model available")."""
+    if not _granite_docling_available():
+        return None
+    return lambda image, page_num: _granite_docling_convert_page(image)
+
+
 def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
               source_record: dict | None = None,
               convert_page: Any = None) -> list[Chunk]:
@@ -1916,9 +2104,9 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
     # fallback. Anything else would compare two pipelines, not two models.
     # Default None keeps the production path exactly as it was.
     if convert_page is None:
-        if not _granite_docling_available():
+        convert_page = _default_convert_page()
+        if convert_page is None:
             return _pdfplumber_text_only_pdf(path, max_words, src)
-        convert_page = lambda image, page_num: _granite_docling_convert_page(image)
 
     chunks: list[Chunk] = []
     try:
@@ -2287,7 +2475,9 @@ def _xlsx_cell_semantic_role(cell: Any, is_formula: bool) -> str | None:
 
 def parse_source(path: Path, max_words: int = CHUNK_WORDS,
                  source_record: dict | None = None,
-                 convert_page: Any = None) -> list[Chunk]:
+                 convert_page: Any = None,
+                 vision_fallback: Any = None,
+                 pdf_engine: Any = None) -> list[Chunk]:
     src = source_record or _source_record(path)
     envelope = src.get("source_envelope") or {}
     capability = resolve_source_capability(path, {
@@ -2298,6 +2488,9 @@ def parse_source(path: Path, max_words: int = CHUNK_WORDS,
     suffix = path.suffix.lower()
     if suffix == ".pdf":
         chunks = parse_pdf(path, max_words, src, convert_page=convert_page)
+    elif suffix in IMAGE_SUFFIXES:
+        chunks = parse_image(path, max_words, src, convert_page=convert_page,
+                             vision_fallback=vision_fallback)
     elif suffix in (".md", ".markdown"):
         chunks = parse_markdown(path, max_words, src)
     elif suffix == ".txt" and capability_id == "transcript_export":
@@ -2311,7 +2504,7 @@ def parse_source(path: Path, max_words: int = CHUNK_WORDS,
     elif suffix == ".docx":
         chunks = parse_docx(path, max_words, src)
     elif suffix == ".pptx":
-        chunks = parse_pptx(path, max_words, src)
+        chunks = parse_pptx(path, max_words, src, pdf_engine=pdf_engine)
     elif suffix in (".srt", ".vtt"):
         chunks = parse_transcript(path, max_words, src)
     elif suffix in (".eml", ".mbox"):

@@ -17,6 +17,9 @@
       "items": {"$ref": "#/$defs/input"}
     },
     "query": {"type": ["string", "null"]},
+    "evaluation_profile": {
+      "enum": ["schema_strict", "information_graph", "layout_fidelity", "full"]
+    },
     "gold": {"$ref": "#/$defs/gold"},
     "evidence": {
       "type": "array",
@@ -25,6 +28,11 @@
     "metrics": {
       "type": "array",
       "minItems": 1,
+      "uniqueItems": true,
+      "items": {"type": "string", "minLength": 1}
+    },
+    "diagnostic_metrics": {
+      "type": "array",
       "uniqueItems": true,
       "items": {"type": "string", "minLength": 1}
     },
@@ -93,14 +101,29 @@
       "properties": {
         "field_type": {"type": "string"},
         "name": {"type": "string"},
+        "fact_id": {"type": "string"},
+        "concept_id": {"type": "string"},
+        "subject": {"type": "string"},
+        "predicate": {"type": "string"},
+        "aliases": {
+          "type": "array",
+          "uniqueItems": true,
+          "items": {"type": "string", "minLength": 1}
+        },
         "value": {},
         "text": {"type": ["string", "null"]},
+        "unit": {"type": ["string", "null"]},
+        "qualifiers": {"type": "object", "additionalProperties": true},
         "line_item_id": {"type": ["integer", "string", "null"]},
         "confidence": {"type": "number", "minimum": 0, "maximum": 1},
         "input_id": {"type": "string"},
         "locator": {"$ref": "https://panta.local/evaluation/evidence_locator.schema.json"}
       },
-      "anyOf": [{"required": ["field_type"]}, {"required": ["name"]}]
+      "anyOf": [
+        {"required": ["field_type"]}, {"required": ["name"]},
+        {"required": ["fact_id"]}, {"required": ["concept_id"]},
+        {"required": ["predicate"]}
+      ]
     },
     "element": {
       "type": "object",
@@ -142,6 +165,8 @@
         "answers": {"type": "array", "items": {}},
         "assertions": {"type": "array", "items": {"$ref": "#/$defs/assertion"}},
         "fields": {"type": "array", "items": {"$ref": "#/$defs/field"}},
+        "facts": {"type": "array", "items": {"$ref": "#/$defs/field"}},
+        "coverage": {"enum": ["subset", "exhaustive"]},
         "content": {"type": "string"},
         "elements": {"type": "array", "items": {"$ref": "#/$defs/element"}},
         "structure": {"type": "object", "additionalProperties": true},

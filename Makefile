@@ -1,4 +1,4 @@
-.PHONY: setup index report check state watch dev verify dynamics-test baseline stage2-score stage2-score-test document-eval document-eval-validate
+.PHONY: setup index report check state watch dev verify dynamics-test baseline stage2-score stage2-score-test document-eval document-information-eval document-eval-validate
 
 PY := .venv/bin/python3
 
@@ -75,3 +75,6 @@ document-eval-validate: ## Validate the bundled multimodal gold cases and predic
 
 document-eval: ## Run the bundled multimodal smoke benchmark
 	$(PY) -m evaluation.cli run --cases evaluation/fixtures/cases --predictions evaluation/fixtures/predictions/perfect.ndjson
+
+document-information-eval: ## Run only structure-independent information extraction cases
+	$(PY) -m evaluation.cli run --cases evaluation/fixtures/cases --predictions evaluation/fixtures/predictions/perfect.ndjson --tag information-graph

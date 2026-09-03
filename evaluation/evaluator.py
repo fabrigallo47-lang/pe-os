@@ -66,7 +66,18 @@ def evaluate_case(
         "expected_status": case["gold"].get("expected_status", "success"),
     }
 
-    for metric_name in case["metrics"]:
+    scoring_metrics = list(case["metrics"])
+    diagnostic_metrics = [
+        name for name in case.get("diagnostic_metrics", []) if name not in scoring_metrics
+    ]
+    all_metrics = list(dict.fromkeys(scoring_metrics + diagnostic_metrics))
+    base["details"].update({
+        "evaluation_profile": case.get("evaluation_profile", "schema_strict"),
+        "score_metrics": scoring_metrics,
+        "diagnostic_metrics": diagnostic_metrics,
+    })
+
+    for metric_name in all_metrics:
         value = score_metric(metric_name, case, prediction)
         if value is None:
             if metric_name.startswith("native:"):
@@ -86,8 +97,9 @@ def evaluate_case(
     if missing_required:
         base["errors"].append("Required metrics unavailable: " + ", ".join(missing_required))
 
-    if base["scores"]:
-        base["score"] = round(sum(base["scores"].values()) / len(base["scores"]), 6)
+    scoring_values = [base["scores"][name] for name in scoring_metrics if name in base["scores"]]
+    if scoring_values:
+        base["score"] = round(sum(scoring_values) / len(scoring_values), 6)
     expected_status = case["gold"].get("expected_status", "success")
     status_ok = prediction["status"] == expected_status
     latency_limit = case.get("acceptance", {}).get("max_latency_ms")

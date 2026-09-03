@@ -16,6 +16,13 @@ def normalize_text(value: Any) -> str:
     return " ".join(text.split())
 
 
+def normalize_semantic_label(value: Any) -> str:
+    """Normalize presentation differences without guessing domain synonyms."""
+    text = normalize_text(value).replace("_", " ")
+    text = re.sub(r"[^\w]+", " ", text, flags=re.UNICODE)
+    return " ".join(text.split())
+
+
 def _numeric(value: Any) -> float | None:
     if isinstance(value, bool):
         return None
@@ -325,6 +332,208 @@ def field_f1(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
     return 2 * precision * recall / (precision + recall) if precision + recall else 0.0
 
 
+def _fact_items(container: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    """Use explicit facts when supplied, otherwise project legacy fields to facts."""
+    key = "facts" if "facts" in container else "fields"
+    return [item for item in container.get(key, []) if isinstance(item, Mapping)]
+
+
+def _fact_concepts(fact: Mapping[str, Any]) -> set[str]:
+    raw = [
+        fact.get("fact_id"), fact.get("concept_id"), fact.get("predicate"),
+        fact.get("field_type"), fact.get("name"),
+    ]
+    aliases = fact.get("aliases", [])
+    if isinstance(aliases, Sequence) and not isinstance(aliases, (str, bytes)):
+        raw.extend(aliases)
+    return {normalized for value in raw if value is not None
+            if (normalized := normalize_semantic_label(value))}
+
+
+def _fact_locator_matches(expected: Mapping[str, Any], actual: Mapping[str, Any]) -> bool:
+    expected_locator, actual_locator = expected.get("locator"), actual.get("locator")
+    if not isinstance(expected_locator, Mapping) or not isinstance(actual_locator, Mapping):
+        return False
+    if expected.get("input_id") is not None and actual.get("input_id") != expected.get("input_id"):
+        return False
+    return locator_matches(expected_locator, actual_locator)
+
+
+def _fact_qualifier_pairs(
+    expected: Mapping[str, Any], actual: Mapping[str, Any],
+) -> list[tuple[Any, Any, bool]]:
+    pairs: list[tuple[Any, Any, bool]] = []
+    for key in ("subject", "unit", "line_item_id"):
+        if expected.get(key) is not None:
+            semantic = key in {"subject", "unit"}
+            pairs.append((expected[key], actual.get(key), semantic))
+    expected_qualifiers = expected.get("qualifiers", {})
+    actual_qualifiers = actual.get("qualifiers", {})
+    if isinstance(expected_qualifiers, Mapping):
+        actual_map = actual_qualifiers if isinstance(actual_qualifiers, Mapping) else {}
+        flattened_actual = dict(_flatten(actual_map, "$"))
+        for path, value in _flatten(expected_qualifiers, "$"):
+            pairs.append((value, flattened_actual.get(path), False))
+    return pairs
+
+
+def _fact_qualifier_score(expected: Mapping[str, Any], actual: Mapping[str, Any]) -> float:
+    pairs = _fact_qualifier_pairs(expected, actual)
+    if not pairs:
+        return 1.0
+    correct = 0
+    for expected_value, actual_value, semantic in pairs:
+        if semantic:
+            correct += normalize_semantic_label(expected_value) == normalize_semantic_label(actual_value)
+        else:
+            correct += values_equal(expected_value, actual_value)
+    return correct / len(pairs)
+
+
+def _fact_identity_score(expected: Mapping[str, Any], actual: Mapping[str, Any]) -> float | None:
+    expected_subject = normalize_semantic_label(expected.get("subject"))
+    actual_subject = normalize_semantic_label(actual.get("subject"))
+    subjects_compatible = not expected_subject or not actual_subject or expected_subject == actual_subject
+    concept_match = bool(_fact_concepts(expected) & _fact_concepts(actual)) and subjects_compatible
+    locator_match = _fact_locator_matches(expected, actual)
+    if not concept_match and not locator_match:
+        return None
+
+    # Matching is based on semantic identity or source position. Value and
+    # qualifiers only break ties between repeated concepts; their correctness is
+    # measured separately below.
+    score = 100.0 if concept_match else 60.0
+    if locator_match:
+        score += 30.0
+    if values_equal(_field_value(expected), _field_value(actual)):
+        score += 5.0
+    score += _fact_qualifier_score(expected, actual)
+    return score
+
+
+def _fact_alignment(
+    expected: Sequence[Mapping[str, Any]], actual: Sequence[Mapping[str, Any]],
+) -> dict[int, int]:
+    """Return a deterministic maximum-cardinality semantic alignment."""
+    candidates: dict[int, list[tuple[int, float]]] = {}
+    for expected_index, expected_fact in enumerate(expected):
+        edges = []
+        for actual_index, actual_fact in enumerate(actual):
+            score = _fact_identity_score(expected_fact, actual_fact)
+            if score is not None:
+                edges.append((actual_index, score))
+        candidates[expected_index] = sorted(edges, key=lambda item: (-item[1], item[0]))
+
+    actual_owner: dict[int, int] = {}
+
+    def assign(expected_index: int, seen: set[int]) -> bool:
+        for actual_index, _ in candidates[expected_index]:
+            if actual_index in seen:
+                continue
+            seen.add(actual_index)
+            previous = actual_owner.get(actual_index)
+            if previous is None or assign(previous, seen):
+                actual_owner[actual_index] = expected_index
+                return True
+        return False
+
+    order = sorted(candidates, key=lambda index: (len(candidates[index]), index))
+    for expected_index in order:
+        assign(expected_index, set())
+    return {expected_index: actual_index for actual_index, expected_index in actual_owner.items()}
+
+
+def _aligned_facts(
+    case: Mapping[str, Any], prediction: Mapping[str, Any],
+) -> tuple[list[Mapping[str, Any]], list[Mapping[str, Any]], dict[int, int]]:
+    expected = _fact_items(case["gold"])
+    actual = _fact_items(prediction)
+    return expected, actual, _fact_alignment(expected, actual)
+
+
+def _fact_is_correct(expected: Mapping[str, Any], actual: Mapping[str, Any]) -> bool:
+    return values_equal(_field_value(expected), _field_value(actual)) and math.isclose(
+        _fact_qualifier_score(expected, actual), 1.0
+    )
+
+
+def information_recall(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    """Recall of correctly extracted semantic facts, independent of output shape."""
+    expected, actual, alignment = _aligned_facts(case, prediction)
+    if not expected:
+        return 1.0
+    correct = sum(
+        _fact_is_correct(expected[index], actual[actual_index])
+        for index, actual_index in alignment.items()
+    )
+    return correct / len(expected)
+
+
+def fact_value_accuracy(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    expected, actual, alignment = _aligned_facts(case, prediction)
+    if not expected:
+        return 1.0
+    if not alignment:
+        return 0.0
+    return sum(
+        values_equal(_field_value(expected[index]), _field_value(actual[actual_index]))
+        for index, actual_index in alignment.items()
+    ) / len(alignment)
+
+
+def fact_qualifier_accuracy(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    expected, actual, alignment = _aligned_facts(case, prediction)
+    if not expected:
+        return 1.0
+    if not alignment:
+        return 0.0
+    return sum(
+        _fact_qualifier_score(expected[index], actual[actual_index])
+        for index, actual_index in alignment.items()
+    ) / len(alignment)
+
+
+def fact_grounding_accuracy(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    expected, actual, alignment = _aligned_facts(case, prediction)
+    grounded = [
+        index for index, fact in enumerate(expected)
+        if fact.get("input_id") is not None or isinstance(fact.get("locator"), Mapping)
+    ]
+    if not grounded:
+        return 1.0
+    correct = 0
+    for expected_index in grounded:
+        actual_index = alignment.get(expected_index)
+        if actual_index is None:
+            continue
+        expected_fact, actual_fact = expected[expected_index], actual[actual_index]
+        input_matches = (
+            expected_fact.get("input_id") is None
+            or expected_fact.get("input_id") == actual_fact.get("input_id")
+        )
+        locator = expected_fact.get("locator")
+        locator_ok = not isinstance(locator, Mapping) or _fact_locator_matches(expected_fact, actual_fact)
+        correct += input_matches and locator_ok
+    return correct / len(grounded)
+
+
+def fact_precision(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    expected, actual, alignment = _aligned_facts(case, prediction)
+    correct = sum(
+        _fact_is_correct(expected[index], actual[actual_index])
+        for index, actual_index in alignment.items()
+    )
+    if case["gold"].get("coverage", "exhaustive") == "subset":
+        # Unannotated facts are unknown, not false positives.
+        return correct / len(alignment) if alignment else float(not expected)
+    return correct / len(actual) if actual else float(not expected)
+
+
+def fact_f1(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    precision, recall = fact_precision(case, prediction), information_recall(case, prediction)
+    return 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+
+
 def evidence_f1(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
     expected = [item for item in case.get("evidence", []) if isinstance(item, Mapping)]
     actual = [item for item in prediction.get("evidence", []) if isinstance(item, Mapping)]
@@ -401,6 +610,13 @@ METRICS = {
     "field_precision": field_precision,
     "field_recall": field_recall,
     "field_f1": field_f1,
+    "information_recall": information_recall,
+    "fact_recall": information_recall,
+    "fact_precision": fact_precision,
+    "fact_f1": fact_f1,
+    "fact_value_accuracy": fact_value_accuracy,
+    "fact_qualifier_accuracy": fact_qualifier_accuracy,
+    "fact_grounding_accuracy": fact_grounding_accuracy,
     "evidence_f1": evidence_f1,
     "content_similarity": content_similarity,
     "element_f1": element_f1,

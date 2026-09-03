@@ -38,13 +38,16 @@ def build_summary(results: list[Mapping[str, Any]]) -> dict[str, Any]:
         "family": defaultdict(list),
     }
     metric_values: dict[str, list[float]] = defaultdict(list)
+    diagnostic_values: dict[str, list[float]] = defaultdict(list)
     for result in results:
         groups["benchmark"][str(result["benchmark"])].append(result)
         groups["task"][str(result["task"])].append(result)
         for family in result["families"]:
             groups["family"][str(family)].append(result)
+        diagnostics = set(result.get("details", {}).get("diagnostic_metrics", []))
         for name, value in result.get("scores", {}).items():
-            metric_values[name].append(float(value))
+            target = diagnostic_values if name in diagnostics else metric_values
+            target[name].append(float(value))
     return {
         "overall": _aggregate(results),
         "by_benchmark": {name: _aggregate(rows) for name, rows in sorted(groups["benchmark"].items())},
@@ -53,6 +56,10 @@ def build_summary(results: list[Mapping[str, Any]]) -> dict[str, Any]:
         "metrics": {
             name: {"tests": len(values), "mean": round(sum(values) / len(values), 6)}
             for name, values in sorted(metric_values.items())
+        },
+        "diagnostic_metrics": {
+            name: {"tests": len(values), "mean": round(sum(values) / len(values), 6)}
+            for name, values in sorted(diagnostic_values.items())
         },
         "failures": [
             {"test_id": result["test_id"], "score": result["score"],
@@ -87,6 +94,18 @@ def render_markdown(run: Mapping[str, Any]) -> str:
     for name, values in summary["metrics"].items():
         lines.append(f"| {name} | {values['tests']} | {values['mean']:.1%} |")
     lines.append("")
+    if summary.get("diagnostic_metrics"):
+        lines += [
+            "## Diagnostic metrics",
+            "",
+            "These measurements are reported for analysis and do not affect the gate score.",
+            "",
+            "| Metric | Cases | Mean |",
+            "|---|---:|---:|",
+        ]
+        for name, values in summary["diagnostic_metrics"].items():
+            lines.append(f"| {name} | {values['tests']} | {values['mean']:.1%} |")
+        lines.append("")
     if summary["failures"]:
         lines += ["## Failures", ""]
         for failure in summary["failures"]:

@@ -12,6 +12,7 @@
     "answer": {},
     "content": {"type": "string"},
     "fields": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "facts": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
     "elements": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
     "media": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
     "evidence": {

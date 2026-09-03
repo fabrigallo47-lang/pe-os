@@ -62,6 +62,23 @@ class EvaluationFixtureTests(unittest.TestCase):
         self.assertEqual(run["summary"]["overall"]["tests"], 8)
         self.assertEqual(run["summary"]["overall"]["passed"], 8)
         self.assertEqual(run["summary"]["overall"]["mean_score"], 1.0)
+        self.assertNotIn("field_precision", run["summary"]["metrics"])
+        information_cases = {
+            result["test_id"]: result for result in run["results"]
+            if result["details"].get("evaluation_profile") in {"information_graph", "full"}
+            and "information_recall" in result["scores"]
+        }
+        self.assertEqual(set(information_cases), {
+            "panta-smoke.xlsx.fields-001",
+            "panta-smoke.eml.parse-001",
+            "panta-smoke.png.visual-001",
+        })
+        self.assertTrue(all(result["scores"]["information_recall"] == 1.0
+                            for result in information_cases.values()))
+        self.assertEqual(
+            information_cases["panta-smoke.xlsx.fields-001"]["scores"]["field_precision"],
+            0.111111,
+        )
 
     def test_deliberately_degraded_prediction_fails_the_gate(self) -> None:
         case = read_cases(CASES)[0]

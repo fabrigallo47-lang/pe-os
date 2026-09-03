@@ -41,6 +41,31 @@ class EvaluationSchemaTests(unittest.TestCase):
             "fields": case["gold"]["fields"],
         })
 
+    def test_accepts_information_graph_contract(self) -> None:
+        case = valid_case()
+        case["evaluation_profile"] = "information_graph"
+        case["diagnostic_metrics"] = ["field_f1"]
+        case["metrics"] = ["information_recall", "fact_value_accuracy"]
+        case["gold"] = {
+            "coverage": "subset",
+            "facts": [{
+                "fact_id": "company.revenue.fy2025",
+                "subject": "company",
+                "predicate": "revenue",
+                "aliases": ["Revenue (EUR m)"],
+                "value": 125,
+                "unit": "EUR_m",
+                "qualifiers": {"period": "FY2025"},
+            }],
+        }
+        validate_case(case)
+        validate_prediction({
+            "schema_version": "panta-eval.prediction/1.0",
+            "test_id": case["test_id"],
+            "status": "success",
+            "facts": [{"predicate": "revenue", "value": 125}],
+        })
+
     def test_rejects_unknown_format_and_reports_json_path(self) -> None:
         case = valid_case()
         case["inputs"][0]["format"] = "wordish"

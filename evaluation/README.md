@@ -22,7 +22,7 @@ only test code. Its eight gold cases cover:
 | PDF | text, table, reading order, grounding | embedded image and chart |
 | Word (`.docx`) | semantic QA and abstention | embedded image |
 | PowerPoint (`.pptx`) | visual QA and chart values | native chart |
-| Excel (`.xlsx`) | typed fields and cell grounding | formula plus native chart |
+| Excel (`.xlsx`) | typed fields, semantic facts and cell grounding | formula plus native chart |
 | Outlook-compatible email (`.eml`) | headers, bodies and attachments | PDF and PNG attachments |
 | Image (`.png`) | OCR, field extraction and visual QA | text plus chart |
 | Email + PDF | cross-document mixed QA | attachment evidence from both inputs |
@@ -46,6 +46,7 @@ From the repository root:
 ```bash
 make document-eval-validate
 make document-eval
+make document-information-eval  # only structure-independent information gates
 ```
 
 The validation command checks schemas, unique IDs, fixture existence and every
@@ -115,15 +116,67 @@ It fixes the names and types needed to combine results:
 - `benchmark`: dataset ID, version, original sample ID and optional native track;
 - `inputs`: one or more files/URIs, family, format, role, parent attachment and hash;
 - `task` and `query`: the capability being tested and its instruction;
-- `gold`: answers, assertions, fields, canonical content, layout elements, media,
-  expected status and untouched dataset-specific annotations;
+- `gold`: answers, assertions, fields or semantic facts, canonical content, layout
+  elements, media, expected status and untouched dataset-specific annotations;
 - `evidence`: typed locators for pages, slides, spreadsheet ranges, Word sections,
   email parts, attachments, messages and image regions;
-- `metrics` and `acceptance`: scoring functions, required outputs and pass threshold.
+- `metrics` and `acceptance`: scoring functions, required outputs and pass threshold;
+- `diagnostic_metrics`: additional measurements shown in reports but excluded from
+  the gate score.
 
 The strict JSON Schemas are in `evaluation/schemas`. Unknown top-level properties
 fail validation, while `gold.native` and prediction metadata intentionally remain
 extensible for upstream evaluator details.
+
+### Evaluation profiles
+
+Use `evaluation_profile: "information_graph"` when downstream processing only
+needs the information that will become graph facts. In this profile, gold may use
+explicit `facts` or existing `fields`; fields are projected to facts automatically,
+so old gold data can migrate incrementally. A fact can carry `fact_id`,
+`concept_id`, `subject`, `predicate`, `aliases`, `value`, `unit`, `qualifiers`,
+`input_id` and `locator`.
+
+The matcher aligns facts one-to-one by canonical concept/alias or compatible source
+locator. Labels are normalized for case, whitespace, punctuation and separators,
+so `revenue_eur_m` matches `Revenue (EUR m)`. Values and semantic qualifiers are
+then scored independently; the locator measures grounding and is not part of the
+required output shape. Equal values with unrelated concepts do not match.
+
+Set `gold.coverage` explicitly:
+
+- `subset`: the gold lists only required facts. Additional extracted facts are
+  unlabelled and therefore do not reduce precision;
+- `exhaustive`: the gold is complete, so unmatched predictions count as false
+  positives.
+
+The other declared profiles are `schema_strict`, `layout_fidelity` and `full`.
+Profiles describe evaluation intent; each case's `metrics` remains the explicit,
+reproducible scoring contract. For an information-only gate, use for example:
+
+```json
+{
+  "evaluation_profile": "information_graph",
+  "gold": {"coverage": "subset", "fields": []},
+  "metrics": [
+    "information_recall",
+    "fact_value_accuracy",
+    "fact_grounding_accuracy",
+    "status_accuracy"
+  ],
+  "diagnostic_metrics": ["field_precision", "field_recall", "field_f1"]
+}
+```
+
+This contract is container-independent: the same fact metrics work for PDF, Word,
+PowerPoint, spreadsheets, email, standalone images, embedded images and mixed
+multi-document cases. Layout, media and schema metrics can still be added as gates
+when a use case actually depends on them.
+
+The bundled information-only smoke selection currently exercises spreadsheet,
+email and image extraction, including altered labels and additional valid facts.
+Run it with `make document-information-eval`; the complete smoke command still
+covers PDF, Word, PowerPoint and mixed-document understanding as separate tracks.
 
 ## Metrics
 
@@ -132,14 +185,17 @@ Built-in deterministic metrics are:
 - answer exact match, token F1, ANLS and ROUGE-1/2/L;
 - nested structured-value accuracy with locale-aware numeric comparison;
 - weighted assertion recall;
-- field precision, recall and F1;
+- strict field precision, recall and F1;
+- structure-independent information recall, fact precision/F1, value accuracy,
+  qualifier accuracy and fact grounding accuracy;
 - evidence grounding F1 with locator matching and bounding-box IoU;
 - normalized content similarity;
 - document-element and media F1;
 - success, abstention, unsupported and error status accuracy.
 
-The per-case score is the mean of available requested metrics; aggregate means
-honor the optional case weight. A case passes only
+The per-case score is the mean of available requested `metrics`; diagnostic metrics
+are reported but never enter that mean. Aggregate means honor the optional case
+weight. A case passes only
 when the expected status matches, every required metric is available, latency is
 within any declared limit, and the score reaches its threshold. Reports aggregate
 by benchmark, task, source family and metric; mixed cases appear in each relevant
@@ -183,8 +239,9 @@ licenses or make private gold labels public.
    keep licensed material in `.panta-eval/datasets`.
 2. Add a globally unique `test_id`, upstream `original_id`, exact format and input
    role, plus SHA-256 for stable local fixtures.
-3. Store expected facts separately in `gold`; never insert hidden answers into the
-   source metadata presented to the system.
+3. Store expected facts separately in `gold`; use `coverage: "subset"` when the
+   annotations are intentionally incomplete, and never insert hidden answers into
+   the source metadata presented to the system.
 4. Add the narrowest reliable evidence locator and select task-appropriate metrics.
 5. Validate, run the oracle contract check, then test a deliberately degraded
    prediction so the case is known to fail for the intended reason.

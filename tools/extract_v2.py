@@ -1504,7 +1504,10 @@ _RESIDUAL_STRIP = re.compile(r"[^0-9a-z.%/+-]")
 
 def _residual_norm(token: str) -> str:
     """Normalise a token for presence testing, not for display."""
-    return _RESIDUAL_STRIP.sub("", token.lower())
+    # Trailing punctuation is stripped after the class filter: '.' has to stay
+    # in the keep-set for "35.3", but leaving it on the end made the emitted
+    # "CAGR." fail to match the text layer's "CAGR" and report as missing.
+    return _RESIDUAL_STRIP.sub("", token.lower()).strip(".")
 
 
 _VALUE_STRIP = re.compile(r"[^0-9.%-]")

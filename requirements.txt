@@ -6,3 +6,4 @@ openpyxl
 requests
 jsonschema
 referencing
+mail-parser-reply==1.36

@@ -52,6 +52,8 @@ from pathlib import Path
 from typing import Any
 from xml.etree import ElementTree
 
+from mailparser_reply import EmailReplyParser
+
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
@@ -713,6 +715,10 @@ SYSTEM_PROMPT = textwrap.dedent("""
 
 CHUNK_WORDS = 250
 
+_EMAIL_REPLY_PARSER = EmailReplyParser(languages=[
+    "cs", "da", "de", "en", "es", "fr", "it", "ja", "ko", "nl", "pl", "sv", "zh",
+])
+
 
 @dataclass
 class Chunk:
@@ -815,7 +821,12 @@ def _decorate_chunks(
         specific = dict(chunk.period_context)
         specific.update({
             "effective_date": envelope.get("effective_date") or source_record.get("effective_date") or None,
-            "known_at": envelope.get("known_at") or source_record.get("known_at") or None,
+            "known_at": (
+                specific.get("known_at")
+                or envelope.get("known_at")
+                or source_record.get("known_at")
+                or None
+            ),
             "semantics": "DECLARED_ONLY",
             "content_period_policy": "preserve source label; never infer at L1",
         })
@@ -1095,7 +1106,7 @@ def _email_body(message: Any) -> str:
             continue
         try:
             content = part.get_content()
-        except (LookupError, UnicodeDecodeError):
+        except (AttributeError, LookupError, UnicodeDecodeError):
             payload = part.get_payload(decode=True) or b""
             content = payload.decode("utf-8", errors="replace")
         if content_type == "text/plain":
@@ -1105,6 +1116,12 @@ def _email_body(message: Any) -> str:
             reader.feed(str(content))
             html_parts.append(reader.text())
     return "\n".join(plain or html_parts).strip()
+
+
+def _email_reply_body(message: Any) -> str:
+    """Return only content authored in this message, without quotes/signature."""
+    parsed = _EMAIL_REPLY_PARSER.read(_email_body(message))
+    return parsed.replies[0].body if parsed.replies else ""
 
 
 def _email_date(message: Any) -> str | None:
@@ -1137,27 +1154,38 @@ def parse_email(path: Path, max_words: int = CHUNK_WORDS,
             box.close()
     chunks: list[Chunk] = []
     for message_number, message in enumerate(messages, 1):
-        body = _email_body(message)
+        body = _email_reply_body(message)
         if not body:
             continue
+        document_date = _email_date(message)
+        message_sender = str(message.get("From") or "").strip() or None
+        message_recipients = str(message.get("To") or "").strip() or None
+        message_src = dict(src)
+        if document_date:
+            message_src["known_at"] = document_date
+        if message_sender:
+            message_src["party"] = message_sender
         attachment_count = sum(
             1 for part in message.walk()
             if part.get_content_disposition() == "attachment"
         )
         message_chunks = _split_words(
             body, max_words, f"{path.name}::message:{message_number}:body",
-            str(path), "email", src,
+            str(path), "email", message_src,
             section_heading=str(message.get("Subject") or "(no subject)"),
         )
-        document_date = _email_date(message)
         for chunk in message_chunks:
             chunk.provenance = {
                 "excluded_attachments": attachment_count,
                 "attachment_policy": "SEPARATE_SOURCE_ENVELOPE_REQUIRED",
+                "message_sender": message_sender,
+                "message_recipients": message_recipients,
             }
             chunk.period_context = {
                 "document_date": document_date,
                 "document_date_source": "email-header:Date" if document_date else None,
+                "known_at": document_date,
+                "known_at_source": "email-header:Date" if document_date else None,
             }
         chunks.extend(message_chunks)
     return chunks
@@ -1708,6 +1736,7 @@ def annotate_chunk(
     prompt = (
         f"DEAL: {deal}\n"
         f"SOURCE: {src['source_id']} ({src['name']}) — {src['doc_type']}\n"
+        f"SOURCE PARTY: {src.get('party') or 'not available'}\n"
         f"EFFECTIVE DATE: {src.get('effective_date') or 'not available'}\n"
         f"KNOWN AT: {src['known_at']}\n"
         f"FRAGMENT LOCATOR: {chunk.locator}\n\n"

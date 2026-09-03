@@ -49,6 +49,8 @@ from backend.dynamics import (
     settle_candidate_state,
 )
 from tools.source_envelope import build_source_envelope
+from tools.relation_rules import annotate_edge, audit_relation_outputs, relation_rule
+from tools.decision_criticality import next_position_work, rank_decision_criticality
 from tools.archetype_pack import (
     UNASSIGNED_WORKSTREAM,
     canonical_question_spine,
@@ -682,7 +684,20 @@ def _configure_fund_lens(case_id: str, payload: dict) -> dict:
 
 def _question_registry_records(case_id: str, fund_lens: dict | None = None) -> list[dict]:
     """Merge the canonical archetype spine with optional Lens refinements."""
-    pack_questions = canonical_question_spine(load_pack("buyout"))
+    archetype_id = str((fund_lens or {}).get("archetype") or "buyout").strip().lower()
+    try:
+        pack = load_pack(archetype_id)
+    except ValueError as exc:
+        if "Unknown archetype pack" not in str(exc):
+            raise
+        # A validated case Lens is sufficient to govern its own questions even
+        # when no canonical pack exists for that archetype yet.  Borrowing the
+        # buyout spine here would attach confident but wrong domain semantics.
+        pack_questions = []
+    else:
+        # A known but malformed pack must remain a hard error; only absence of a
+        # pack is safely represented by the Lens-only registry above.
+        pack_questions = canonical_question_spine(pack)
     records: dict[str, dict] = {}
     canonical_ids: dict[str, str] = {}
     order: list[str] = []
@@ -1227,9 +1242,14 @@ def _semantic_graph_from_claims(
         qid = question.get("id")
         if qid and qid not in bound_questions:
             condition_id = f"condition:coverage-{qid}"
-            nodes.append({"id": condition_id, "type": "condition", "label": f"Evidence required for {qid}",
-                          "coverage_status": "missing", "question_id": qid})
-            edges.append({"source": f"q:{qid}", "target": condition_id, "rel": "REQUIRES_EVIDENCE"})
+            nodes.append({
+                "id": condition_id,
+                "type": "condition",
+                "label": f"Evidence required for {qid}",
+                "coverage_status": "missing",
+                "question_id": qid,
+                "condition_kind": "EVIDENCE_COVERAGE",
+            })
     # A Question and evidence that BEARS_ON it do not, by themselves, create a
     # CaseReading.  Readings are projected below only from admitted
     # StatedPositions and a versioned runtime link or Question identity on a
@@ -1333,6 +1353,227 @@ def _build_semantic_current(claims: list[dict], case_id: str) -> dict:
     (pipeline_out / "semantic_current_graph.json").write_text(json.dumps(graph, indent=2, ensure_ascii=False) + "\n")
     return graph
 
+
+def _materialize_coverage_condition_dependencies(
+    semantic_graph: dict,
+    current_graph: dict,
+) -> dict:
+    """Bind semantic coverage gaps to explicit runtime CaseReadings.
+
+    CONDITIONS is directional: the coverage prerequisite is the source and the
+    governed CaseReading is the dependent target.  We never guess a target.  A
+    gap without an explicit Question identity on a CaseReading (or on an
+    attributed StatedPosition already linked to one) remains a visible coverage
+    limit until that binding exists.
+
+    ``current_graph`` is the projection-local graph loaded by the caller.  The
+    function mutates it idempotently so the projected Current carries the same
+    typed edges displayed in the semantic rooms; it does not persist a read.
+    """
+    if not isinstance(current_graph, dict):
+        return {"condition_count": 0, "edge_count": 0, "unbound_count": 0,
+                "targets_by_condition": {}}
+
+    conditions = sorted(
+        (
+            node for node in semantic_graph.get("nodes", [])
+            if isinstance(node, dict)
+            and node.get("type") == "condition"
+            and node.get("coverage_status") == "missing"
+            and node.get("id")
+            and node.get("question_id")
+        ),
+        key=lambda node: str(node["id"]),
+    )
+    if not conditions:
+        return {"condition_count": 0, "edge_count": 0, "unbound_count": 0,
+                "targets_by_condition": {}}
+
+    positions = current_graph.setdefault("case_positions", [])
+    dependencies = current_graph.setdefault("position_dependencies", [])
+    coverage_gaps = current_graph.setdefault("coverage_gaps", [])
+    if not isinstance(positions, list) or not isinstance(dependencies, list):
+        return {"condition_count": 0, "edge_count": 0, "unbound_count": len(conditions),
+                "targets_by_condition": {}}
+    if not isinstance(coverage_gaps, list):
+        coverage_gaps = []
+        current_graph["coverage_gaps"] = coverage_gaps
+
+    position_by_id = {
+        str(position.get("position_id")): position
+        for position in positions
+        if isinstance(position, dict) and position.get("position_id")
+    }
+    all_stated = {
+        str(item.get("stated_position_id")): item
+        for item in current_graph.get("stated_positions", []) or []
+        if isinstance(item, dict) and item.get("stated_position_id")
+    }
+    superseded = {
+        str(item.get("supersedes_stated_position_id"))
+        for item in all_stated.values()
+        if item.get("supersedes_stated_position_id")
+    }
+    operative_stated = {
+        object_id: item for object_id, item in all_stated.items()
+        if object_id not in superseded
+    }
+
+    stated_targets: dict[str, set[str]] = {}
+    for edge in dependencies:
+        if not isinstance(edge, dict):
+            continue
+        source_id = str(
+            edge.get("from_position_id")
+            or edge.get("source_position_id")
+            or edge.get("source")
+            or ""
+        )
+        target_id = str(
+            edge.get("to_position_id")
+            or edge.get("target_position_id")
+            or edge.get("target")
+            or ""
+        )
+        stated = operative_stated.get(source_id)
+        target = position_by_id.get(target_id)
+        if stated is None or target is None:
+            continue
+        if str(target.get("position_kind") or "").upper() == "COVERAGE_CONDITION":
+            continue
+        for question_id in stated.get("question_ids", []) or []:
+            if question_id:
+                stated_targets.setdefault(str(question_id), set()).add(target_id)
+
+    dependency_by_key = {
+        (
+            str(edge.get("from_position_id") or ""),
+            str(edge.get("to_position_id") or ""),
+            str(edge.get("relation_type") or ""),
+        ): edge
+        for edge in dependencies
+        if isinstance(edge, dict)
+    }
+    existing_gap_ids = {
+        str(item.get("gap_id"))
+        for item in coverage_gaps
+        if isinstance(item, dict) and item.get("gap_id")
+    }
+    targets_by_condition: dict[str, list[str]] = {}
+    produced_edges = 0
+
+    for condition in conditions:
+        condition_id = str(condition["id"])
+        question_id = str(condition["question_id"])
+        condition_position = position_by_id.get(condition_id)
+        if condition_position is None:
+            condition_position = {
+                "position_id": condition_id,
+                "statement": str(condition.get("label") or condition_id),
+                "position_kind": "COVERAGE_CONDITION",
+                "question_id": question_id,
+                "condition_status": "MISSING_EVIDENCE",
+                "epistemic_status_at_ic": "UNEXAMINED",
+                "decision_status_at_ic": "PENDING",
+                "freshness_status_at_ic": "CURRENT",
+                "outcome_status_at_ic": "NOT_TESTED",
+                "model_binding_status": "UNMAPPED",
+                "usable": False,
+            }
+            positions.append(condition_position)
+            position_by_id[condition_id] = condition_position
+
+        targets = set(stated_targets.get(question_id, set()))
+        for position_id, position in position_by_id.items():
+            if position_id == condition_id:
+                continue
+            if str(position.get("position_kind") or "").upper() == "COVERAGE_CONDITION":
+                continue
+            question_ids = {
+                str(value) for value in position.get("question_ids", []) or [] if value
+            }
+            if position.get("question_id"):
+                question_ids.add(str(position["question_id"]))
+            if question_id in question_ids:
+                targets.add(position_id)
+
+        ordered_targets = sorted(targets)
+        targets_by_condition[condition_id] = ordered_targets
+        for target_id in ordered_targets:
+            key = (condition_id, target_id, "CONDITIONS")
+            existing = dependency_by_key.get(key)
+            if existing is not None:
+                if not existing.get("relation_rule"):
+                    governed = annotate_edge(
+                        existing,
+                        "DECLARED_POSITION_CONDITION",
+                        evidence={
+                            "question_id": question_id,
+                            "coverage_status": "missing",
+                        },
+                    )
+                    existing.clear()
+                    existing.update(governed)
+                continue
+            edge_id = "PDE-CONDITION-" + hashlib.sha256(
+                f"{condition_id}|{target_id}".encode("utf-8")
+            ).hexdigest()[:16].upper()
+            dependencies.append(annotate_edge(
+                {
+                    "edge_id": edge_id,
+                    "from_position_id": condition_id,
+                    "to_position_id": target_id,
+                    "relation_type": "CONDITIONS",
+                    "semantic_role": "evidence_coverage_prerequisite",
+                    "traversal_rule": (
+                        "prerequisite_to_dependent; unsatisfied prerequisite blocks target"
+                    ),
+                },
+                "DECLARED_POSITION_CONDITION",
+                evidence={
+                    "question_id": question_id,
+                    "coverage_status": "missing",
+                },
+            ))
+            dependency_by_key[key] = dependencies[-1]
+            produced_edges += 1
+
+        if not ordered_targets:
+            gap_id = f"CONDITION_TARGET_UNMAPPED:{condition_id}"
+            if gap_id not in existing_gap_ids:
+                coverage_gaps.append({
+                    "gap_id": gap_id,
+                    "reason_code": "CONDITION_TARGET_UNMAPPED",
+                    "condition_id": condition_id,
+                    "question_id": question_id,
+                    "effect": (
+                        "The coverage prerequisite has no explicitly governed "
+                        "CaseReading target, so no runtime dependency was guessed."
+                    ),
+                    "relation_rule": relation_rule(
+                        "DECLARED_POSITION_CONDITION",
+                        evidence={"question_id": question_id, "coverage_status": "missing"},
+                    ),
+                })
+                existing_gap_ids.add(gap_id)
+
+    relation_edges = [
+        *(
+            edge for edge in current_graph.get("claim_position_edges", []) or []
+            if isinstance(edge, dict)
+        ),
+        *(edge for edge in dependencies if isinstance(edge, dict)),
+    ]
+    current_graph["relation_audit"] = audit_relation_outputs(relation_edges)
+    return {
+        "condition_count": len(conditions),
+        "edge_count": sum(len(value) for value in targets_by_condition.values()),
+        "produced_edge_count": produced_edges,
+        "unbound_count": sum(not value for value in targets_by_condition.values()),
+        "targets_by_condition": targets_by_condition,
+    }
+
+
 def _semantic_rooms(
     graph: dict,
     question_spine: list[dict],
@@ -1347,6 +1588,7 @@ def _semantic_rooms(
     day-zero message required by the semantic contract.
     """
     current = current_graph if isinstance(current_graph, dict) else {}
+    condition_summary = _materialize_coverage_condition_dependencies(graph, current)
     nodes = {
         str(node.get("id")): node
         for node in graph.get("nodes", [])
@@ -1416,7 +1658,9 @@ def _semantic_rooms(
     readings = {
         str(item.get("position_id")): item
         for item in current.get("case_positions", current.get("positions", [])) or []
-        if isinstance(item, dict) and item.get("position_id")
+        if isinstance(item, dict)
+        and item.get("position_id")
+        and str(item.get("position_kind") or "").upper() != "COVERAGE_CONDITION"
     }
     reading_ids_by_stated: dict[str, set[str]] = {}
     relation_by_pair: dict[tuple[str, str], str] = {}
@@ -1680,20 +1924,25 @@ def _semantic_rooms(
                 "closure": closure,
             })
 
-    for edge in graph.get("edges", []):
-        if not isinstance(edge, dict) or edge.get("rel") != "REQUIRES_EVIDENCE":
-            continue
-        condition = nodes.get(str(edge.get("target") or ""), {})
-        if condition.get("type") != "condition":
+    for condition in sorted(
+        (node for node in nodes.values() if node.get("type") == "condition"),
+        key=lambda node: str(node.get("id") or ""),
+    ):
+        condition_id = str(condition.get("id") or "")
+        if not condition_id:
             continue
         foundations.append({
-            "id": condition["id"],
-            "label": condition.get("label", condition["id"]),
+            "id": condition_id,
+            "label": condition.get("label", condition_id),
             "economic": "",
             "strength": "weak",
             "status": "MISSING_EVIDENCE",
             "kind": "condition",
             "question_id": condition.get("question_id"),
+            "relation_type": "CONDITIONS",
+            "dependent_position_ids": condition_summary[
+                "targets_by_condition"
+            ].get(condition_id, []),
             "evidence_options": [],
             "members": [],
         })
@@ -2504,7 +2753,10 @@ def _build_reunderwrite(
         "transition_output": {},
         "reunderwrite": comparison,
     })
-    projection = _apply_decision_intelligence(projection)
+    projection = _apply_decision_intelligence(
+        projection,
+        _load_json_safe(_pipeline_out_for_case(case_id) / "execution_mapping.json"),
+    )
     context = _make_context(
         case_id,
         str(current_meta["state_id"]),
@@ -3249,7 +3501,10 @@ def _build_question_spine(questions: list[dict], claims: list[dict]) -> list[dic
     return spine
 
 
-def _apply_decision_intelligence(projection: dict) -> dict:
+def _apply_decision_intelligence(
+    projection: dict,
+    execution_mapping: dict | None = None,
+) -> dict:
     """Add transparent structural rankings without inventing business weights."""
     deal = projection.get("deal") if isinstance(projection, dict) else None
     if not isinstance(deal, dict):
@@ -3261,6 +3516,11 @@ def _apply_decision_intelligence(projection: dict) -> dict:
     dependencies = graph.get("position_dependencies", []) or []
     load_bearing = []
     for position in positions:
+        if str(position.get("position_kind") or "").upper() == "COVERAGE_CONDITION":
+            # Coverage prerequisites are gates on assumptions, not assumptions
+            # themselves.  Ranking them here would displace the governed
+            # CaseReading they condition and double-count the same risk.
+            continue
         position_id = str(position.get("position_id") or position.get("id") or "")
         if not position_id:
             continue
@@ -3336,6 +3596,33 @@ def _apply_decision_intelligence(projection: dict) -> dict:
             f"dependent_positions={item['ranking_basis']['dependent_position_count']}; "
             f"contested={str(item['contested']).lower()}"
         )
+
+    decision_criticality = None
+    if isinstance(execution_mapping, dict) and execution_mapping:
+        decision_criticality = rank_decision_criticality(
+            graph,
+            execution_mapping,
+            deal.get("transition_output"),
+        )
+        deal["decision_criticality"] = decision_criticality
+        dependencies_by_position: dict[str, list[str]] = {}
+        for item in load_bearing:
+            dependencies_by_position[item["position_id"]] = item["dependent_position_ids"]
+        load_bearing = []
+        for item in decision_criticality["ranking"]:
+            factors = item["factors"]
+            load_bearing.append({
+                **item,
+                "active_model_node_ids": factors["economic_sensitivity_from_mapping"]["bound_model_node_ids"],
+                "dependent_position_ids": dependencies_by_position.get(item["position_id"], []),
+                "gate_relevant": item["decision_status"] in {
+                    "BLOCKED", "PENDING", "CONTESTED", "ACCEPTED_WITH_CONDITIONS",
+                },
+                "contested": item["epistemic_status"] in {
+                    "CONTESTED", "WEAK", "UNKNOWN", "STALE",
+                },
+                "ranking_basis": item["ordering_key"],
+            })
     deal["load_bearing_assumptions"] = load_bearing
 
     spine = deal.get("question_spine", []) or []
@@ -3461,22 +3748,40 @@ def _apply_decision_intelligence(projection: dict) -> dict:
     rooms["unknowns"] = {"items": unknowns}
     rooms.setdefault("shadowIC", {"theses": []})
 
-    if unknowns:
+    position_work = next_position_work(decision_criticality) if decision_criticality else None
+    if position_work:
+        deal["next_best_work"] = position_work
+    elif unknowns:
         first = unknowns[0]
-        basis = first["ranking_basis"]
-        deal["next_best_work"] = {
-            "id": f"NBW-{first['question_id']}",
-            "question_id": first["question_id"],
-            "label": first["closure"],
-            "reason": (
-                f"Ranked first by declared lexicographic policy: critical={str(basis['critical']).lower()}, "
-                f"coverage={basis['coverage']}, admitted_claims={basis['admitted_claim_count']}."
-            ),
-            "owner": first["owner"],
-            "duration": "Not estimated",
-            "unlocks": [first["question_id"]],
-            "ranking_basis": basis,
-        }
+        basis = first.get("ranking_basis")
+        if basis:
+            deal["next_best_work"] = {
+                "id": f"NBW-{first['question_id']}",
+                "question_id": first["question_id"],
+                "label": first["closure"],
+                "reason": (
+                    f"Ranked first by declared lexicographic policy: critical={str(basis['critical']).lower()}, "
+                    f"coverage={basis['coverage']}, admitted_claims={basis['admitted_claim_count']}."
+                ),
+                "owner": first["owner"],
+                "duration": "Not estimated",
+                "unlocks": [first["question_id"]],
+                "ranking_basis": basis,
+            }
+        else:
+            deal["next_best_work"] = {
+                "id": f"NBW-{first['id']}",
+                "question_id": first.get("question_id"),
+                "label": first["closure"],
+                "reason": f"The runtime reported an unresolved {first['status'].lower()}.",
+                "owner": "Unassigned",
+                "duration": "Not estimated",
+                "unlocks": [first["id"]],
+                "ranking_basis": {
+                    "method": "RUNTIME_DECLARATION",
+                    "status": first["status"],
+                },
+            }
     else:
         deal["next_best_work"] = {
             "id": None,
@@ -3543,11 +3848,17 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
     events = _load_projection_events(case_id)
     questions = _load_questions(case_id)
     fund_lens = _active_fund_lens(case_id)
+    archetype_id = str(fund_lens.get("archetype") or "buyout").strip()
+    archetype_label = archetype_id.replace("_", " ").replace("-", " ").title()
+    uses_repository_default_lens = not (
+        VAULT / "deals" / case_id / "fund_lens.json"
+    ).exists()
     question_spine = _build_question_spine(questions, claims)
     semantic_graph = _load_json_safe(pipeline_out / "semantic_current_graph.json")
     current_graph = _load_json_safe(pipeline_out / "current_graph.json")
     candidate_graph = _load_json_safe(pipeline_out / "candidate_graph.json")
     transition_output = _load_json_safe(pipeline_out / "transition_output.json")
+    execution_mapping = _load_json_safe(pipeline_out / "execution_mapping.json")
     graph_versions = _list_graph_versions(case_id)
     foundations, unknowns, semantic_positions = _semantic_rooms(
         semantic_graph,
@@ -3611,7 +3922,9 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
             "case_id": case_id,
             "entity": profile.get("entity", case_id),
             "archetype": {
-                "id": "buyout", "label": "Buyout", "is_default": True,
+                "id": archetype_id,
+                "label": archetype_label,
+                "is_default": uses_repository_default_lens,
                 "fund_lens": fund_lens["lens_id"],
                 "fund_lens_version": fund_lens["version"],
             },
@@ -3722,12 +4035,14 @@ def _build_projection(case_id: str, as_of_date: str | None = None) -> dict:
         result["actor_directory"] = projection["actor_directory"]
         result["disclosure"] = projection["disclosure"]
         return _apply_decision_intelligence(
-            _apply_compiler_reviews(result, case_id)
+            _apply_compiler_reviews(result, case_id),
+            execution_mapping,
         )
     except Exception as exc:
         projection["_adapter_error"] = str(exc)
         return _apply_decision_intelligence(
-            _apply_compiler_reviews(projection, case_id)
+            _apply_compiler_reviews(projection, case_id),
+            execution_mapping,
         )
 
 
@@ -6303,7 +6618,10 @@ def replay(case_id: str, as_of_date: str | None = None, event_id: str | None = N
         },
     })
     proj["events"] = filtered_events
-    proj = _apply_decision_intelligence(proj)
+    proj = _apply_decision_intelligence(
+        proj,
+        _load_json_safe(_pipeline_out_for_case(case_id) / "execution_mapping.json"),
+    )
     stable_hash = _stable_json_hash({
         "case_id": case_id,
         "cutoff": cutoff.isoformat(),

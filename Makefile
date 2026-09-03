@@ -1,10 +1,10 @@
-.PHONY: setup index report check state watch dev verify dynamics-test baseline stage2-score stage2-score-test
+.PHONY: setup index report check state watch dev verify dynamics-test baseline stage2-score stage2-score-test document-eval document-eval-validate
 
 PY := .venv/bin/python3
 
-setup: ## Create venv + install tooling deps (PyYAML)
+setup: ## Create venv + install repository dependencies
 	python3 -m venv .venv
-	.venv/bin/pip install --quiet pyyaml
+	.venv/bin/pip install --quiet -r requirements.txt
 
 index: ## Rebuild the derived index from the vault
 	$(PY) tools/indexer.py
@@ -69,3 +69,9 @@ stage2-score: ## Public Stage-2 score (usage: make stage2-score MANIFEST=... CLA
 
 stage2-score-test: ## Test the public deterministic Stage-2 scorer
 	$(PY) -m unittest tools.test_stage2_scorer -v
+
+document-eval-validate: ## Validate the bundled multimodal gold cases and predictions
+	$(PY) -m evaluation.cli validate --cases evaluation/fixtures/cases --predictions evaluation/fixtures/predictions/perfect.ndjson --require-files
+
+document-eval: ## Run the bundled multimodal smoke benchmark
+	$(PY) -m evaluation.cli run --cases evaluation/fixtures/cases --predictions evaluation/fixtures/predictions/perfect.ndjson

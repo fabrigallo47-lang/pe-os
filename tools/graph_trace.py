@@ -24,6 +24,8 @@ tuple, which of four things occurred, and the running totals after it.
     NEW_IDENTITY   first claim of a quantity — a node, no meaning yet
     CORROBORATES   another source, same identity, same value
     CONTRADICTS    another source, same identity, divergent value
+    SAME_SOURCE_DETAIL  another row/detail from the same source; visible, but
+                        never promoted to independent corroboration/conflict
     UNRESOLVABLE   identity incomplete; a declared coverage limit, never guessed
 
 Usage
@@ -44,7 +46,11 @@ ROOT = Path(__file__).resolve().parent.parent
 if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
-from tools.object_identity import is_resolvable, metric_identity  # noqa: E402
+from tools.object_identity import (  # noqa: E402
+    is_resolvable,
+    metric_identity,
+    values_conflict,
+)
 
 
 def load_claims(path: Path) -> list[dict[str, Any]]:
@@ -80,14 +86,68 @@ def _comparable_value(claim: dict[str, Any]) -> str:
         return str(value).strip().lower()
 
 
+def _trace_identity(claim: dict[str, Any], *, measurement: bool) -> tuple[str, ...]:
+    identity = list(metric_identity(claim))
+    if not measurement:
+        identity[5] = ""
+    return tuple(identity)
+
+
+def _claims_conflict(a: dict[str, Any], b: dict[str, Any], *, bound: bool) -> tuple[bool, str]:
+    if bound:
+        return values_conflict(a, b)
+    left, right = _comparable_value(a), _comparable_value(b)
+    if not left or not right:
+        return False, "almeno un claim non è quantitativo"
+    if left == right:
+        return False, "stesso valore"
+    return True, f"valori trattati come esatti: {left} contro {right}"
+
+
+def _source_identity(claim: dict[str, Any]) -> tuple[str, str]:
+    return (
+        str(claim.get("source_id") or ""),
+        str(claim.get("source_version_id") or ""),
+    )
+
+
+def _contradiction_count(
+    claims: list[dict[str, Any]],
+    *,
+    measurement: bool,
+    bound: bool,
+    independent_sources: bool = False,
+) -> int:
+    groups: dict[tuple[str, ...], list[dict[str, Any]]] = defaultdict(list)
+    contradictions = 0
+    for claim in claims:
+        if not is_resolvable(claim):
+            continue
+        identity = _trace_identity(claim, measurement=measurement)
+        peers = groups[identity]
+        if independent_sources:
+            peers = [
+                peer for peer in peers
+                if _source_identity(peer) != _source_identity(claim)
+            ]
+        if peers and all(_claims_conflict(peer, claim, bound=bound)[0] for peer in peers):
+            contradictions += 1
+        groups[identity].append(claim)
+    return contradictions
+
+
 def build_trace(claims: list[dict[str, Any]], limit: int | None = None) -> dict[str, Any]:
     groups: dict[tuple, list[dict[str, Any]]] = defaultdict(list)
     unresolvable: list[str] = []
     steps: list[dict[str, Any]] = []
     contradictions = 0
     corroborations = 0
+    same_source_details = 0
+    residual_conflicts: list[dict[str, Any]] = []
 
-    for index, claim in enumerate(claims[: limit or len(claims)], start=1):
+    selected = claims[: limit or len(claims)]
+
+    for index, claim in enumerate(selected, start=1):
         claim_id = str(claim.get("claim_id") or f"claim-{index}")
         statement = str(claim.get("statement") or "")[:150]
         value = _comparable_value(claim)
@@ -104,26 +164,61 @@ def build_trace(claims: list[dict[str, Any]], limit: int | None = None) -> dict[
             })
             continue
 
-        identity = metric_identity(claim)
+        identity = _trace_identity(claim, measurement=True)
         key = "|".join(identity)
-        peers = groups[identity]
+        all_peers = groups[identity]
+        peers = [
+            peer for peer in all_peers
+            if _source_identity(peer) != _source_identity(claim)
+        ]
 
-        if not peers:
+        if not all_peers:
             event = "NEW_IDENTITY"
             why = "first claim of this quantity — a node, with no meaning yet"
-        elif any(_comparable_value(p) == value and value for p in peers):
+        elif not peers:
+            event = "SAME_SOURCE_DETAIL"
+            same_source_details += 1
+            why = (
+                "same source/version contributes another row or detail — kept "
+                "visible, but it is not independent corroboration or conflict"
+            )
+        else:
+            relationships = [
+                (peer, *_claims_conflict(peer, claim, bound=True))
+                for peer in peers
+            ]
+
+        if peers and any(not conflict for _, conflict, _ in relationships):
             event = "CORROBORATES"
             corroborations += 1
-            why = ("another source states the same value for the same identity — "
-                   "two claims are kept, never merged; the agreement is the information")
-        else:
+            compatible_reason = next(
+                reason for _, conflict, reason in relationships if not conflict
+            )
+            why = ("another source states a compatible value for the same identity — "
+                   f"{compatible_reason}; two claims are kept, never merged")
+        elif peers:
             event = "CONTRADICTS"
             contradictions += 1
             others = ", ".join(sorted({_comparable_value(p) for p in peers if _comparable_value(p)}))
+            conflict_reason = "; ".join(
+                sorted({reason for _, conflict, reason in relationships if conflict})
+            )
             why = (f"same identity, divergent value ({value} vs {others}) — "
-                   "this is the moment the case gains a conflict")
+                   f"{conflict_reason}")
+            residual_conflicts.append({
+                "claim_id": claim_id,
+                "peer_claim_ids": [str(peer.get("claim_id")) for peer in peers],
+                "identity": list(identity),
+                "measurement": identity[5],
+                "bound": str(claim.get("bound") or "EXACT").upper(),
+                "peer_bounds": sorted({
+                    str(peer.get("bound") or "EXACT").upper() for peer in peers
+                }),
+                "reason": conflict_reason,
+            })
 
-        peer_ids = [str(p.get("claim_id")) for p in peers]
+        relation_peers = all_peers if event == "SAME_SOURCE_DETAIL" else peers
+        peer_ids = [str(p.get("claim_id")) for p in relation_peers]
         groups[identity].append(claim)
 
         steps.append({
@@ -131,18 +226,50 @@ def build_trace(claims: list[dict[str, Any]], limit: int | None = None) -> dict[
             "event": event, "identity": list(identity), "group_key": key,
             "group_size": len(groups[identity]), "value": value,
             "peers": peer_ids, "why": why,
-            "totals": _totals(groups, unresolvable, contradictions, corroborations),
+            "totals": _totals(
+                groups, unresolvable, contradictions, corroborations,
+                same_source_details,
+            ),
         })
+
+    baseline = _contradiction_count(selected, measurement=False, bound=False)
+    after_measurement = _contradiction_count(selected, measurement=True, bound=False)
+    after_bound = _contradiction_count(selected, measurement=True, bound=True)
+    cross_source_residuals = _contradiction_count(
+        selected,
+        measurement=True,
+        bound=True,
+        independent_sources=True,
+    )
 
     return {
         "generated_from": "tools/graph_trace.py",
         "claim_count": len(steps),
         "steps": steps,
-        "final": _totals(groups, unresolvable, contradictions, corroborations),
+        "final": _totals(
+            groups, unresolvable, contradictions, corroborations,
+            same_source_details,
+        ),
+        "conflict_ablation": {
+            "without_measurement_or_bound": baseline,
+            "with_measurement_without_bound": after_measurement,
+            "with_measurement_and_bound": after_bound,
+            "cross_source_residuals": cross_source_residuals,
+            "removed_by_measurement": max(0, baseline - after_measurement),
+            "removed_by_bound": max(0, after_measurement - after_bound),
+            "removed_as_same_source_detail": max(0, after_bound - cross_source_residuals),
+        },
+        "residual_conflicts": residual_conflicts,
     }
 
 
-def _totals(groups, unresolvable, contradictions, corroborations) -> dict[str, int]:
+def _totals(
+    groups,
+    unresolvable,
+    contradictions,
+    corroborations,
+    same_source_details=0,
+) -> dict[str, int]:
     multi = [g for g in groups.values() if len(g) > 1]
     return {
         "identities": len(groups),
@@ -151,6 +278,7 @@ def _totals(groups, unresolvable, contradictions, corroborations) -> dict[str, i
         "comparable_claims": sum(len(g) for g in multi),
         "contradictions": contradictions,
         "corroborations": corroborations,
+        "same_source_details": same_source_details,
         "unresolvable": len(unresolvable),
     }
 
@@ -178,6 +306,10 @@ def main() -> int:
     print(f"with more than one  : {final['identities_with_peers']}  "
           f"({final['comparable_claims']} comparable claims)")
     print(f"contradictions      : {final['contradictions']}")
+    ablation = trace["conflict_ablation"]
+    print(f"removed measurement : {ablation['removed_by_measurement']}")
+    print(f"removed bound       : {ablation['removed_by_bound']}")
+    print(f"same-source details : {ablation['removed_as_same_source_detail']}")
     print(f"corroborations      : {final['corroborations']}")
     print(f"unresolvable        : {final['unresolvable']}")
     print(f"\nwritten: {args.out}")

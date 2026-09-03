@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import importlib
 import json
 import subprocess
 import sys
@@ -342,7 +343,18 @@ class PAN65ModelResolverTests(unittest.TestCase):
 
         self.assertEqual(result["L3_resolution"]["admitted"], 1)
         self.assertEqual(result["L3_resolution"]["coverage_limits"], [])
-        self.assertEqual(result["L3_resolution"]["reachability_status"], "NOT_AVAILABLE")
+        try:
+            importlib.import_module("tools.cell_engine")
+        except ModuleNotFoundError as exc:
+            if exc.name not in {"tools.cell_engine", "cell_engine"}:
+                raise
+            expected_reachability = "NOT_AVAILABLE"
+        else:
+            expected_reachability = "COMPUTED"
+        self.assertEqual(
+            result["L3_resolution"]["reachability_status"],
+            expected_reachability,
+        )
         binding = result["bindings"][0]
         self.assertTrue(binding["model_node_id"].startswith("MN-C-REV-"))
         self.assertIn("CLAIM_LOCATOR_MATCH", binding["reason_codes"])

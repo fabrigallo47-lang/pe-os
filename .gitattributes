@@ -1,0 +1,7 @@
+# Evaluation fixtures are opaque source artifacts, even when their containers include textual bytes.
+evaluation/fixtures/documents/*.docx binary
+evaluation/fixtures/documents/*.eml binary
+evaluation/fixtures/documents/*.pdf binary
+evaluation/fixtures/documents/*.png binary
+evaluation/fixtures/documents/*.pptx binary
+evaluation/fixtures/documents/*.xlsx binary

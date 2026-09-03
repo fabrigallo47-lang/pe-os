@@ -161,6 +161,13 @@ class PAN67ExecutionMappingCompilerTests(unittest.TestCase):
         for edge in result["directed_model_edges"]:
             self.assertEqual(edge["relation_type"], "DRIVES")
             self.assertIn(edge["formula_or_function_ref"], formula_ids)
+            self.assertEqual(
+                edge["relation_rule"]["rule_id"],
+                "FORMULA_PRECEDENT_DRIVES",
+            )
+            self.assertEqual(edge["relation_rule"]["mode"], "DETERMINISTIC")
+        self.assertEqual(result["relation_audit"]["unclassified_edge_count"], 0)
+        self.assertEqual(result["relation_audit"]["deterministic_edge_pct"], 100.0)
         expected = {
             (input_id, formula["output_id"], formula["formula_id"])
             for formula in result["formulas"]
@@ -212,6 +219,31 @@ class PAN67ExecutionMappingCompilerTests(unittest.TestCase):
         compiled_outputs = {item["output_id"] for item in result["formulas"]}
         self.assertNotIn(self.node_id("MODEL!D1"), compiled_outputs)
         self.assertNotIn(self.node_id("MODEL!D2"), compiled_outputs)
+
+    def test_existing_formula_edges_are_migrated_to_governed_drives(self) -> None:
+        mapping = {
+            **self.base,
+            "directed_model_edges": [{
+                "edge_id": "DME-LEGACY",
+                "from_model_node_id": self.node_id("INPUTS!A1"),
+                "to_model_node_id": self.node_id("MODEL!B1"),
+                "formula_or_function_ref": "FORMULA-LEGACY",
+                "control_ids": [],
+            }],
+        }
+
+        result = self.populate(mapping=mapping)
+        migrated = next(
+            edge
+            for edge in result["directed_model_edges"]
+            if edge["edge_id"] == "DME-LEGACY"
+        )
+
+        self.assertEqual(migrated["relation_type"], "DRIVES")
+        self.assertEqual(
+            migrated["relation_rule"]["rule_id"],
+            "FORMULA_PRECEDENT_DRIVES",
+        )
 
     def test_result_is_idempotent_and_schema_conformant(self) -> None:
         first = self.populate()

@@ -1,0 +1,588 @@
+{
+  "schema_version": "panta.identity-audit/1.0",
+  "manifests": [
+    {
+      "path": "pipeline_out/e3/K-IC/e3_claims.json",
+      "manifest_id": "K-IC",
+      "audit": {
+        "claim_count": 1171,
+        "resolvable": 1130,
+        "unresolvable": 41,
+        "resolvable_pct": 96.5,
+        "identity_dimensions": {
+          "entity": {
+            "missing": 0,
+            "classifications": {},
+            "extractor_defect_examples": []
+          },
+          "metric": {
+            "missing": 0,
+            "classifications": {},
+            "extractor_defect_examples": []
+          },
+          "period": {
+            "missing": 41,
+            "classifications": {
+              "extractor_defect": 1,
+              "legitimate_source_omission": 40
+            },
+            "extractor_defect_examples": [
+              {
+                "claim_id": "claim:887bd7b264fb75b6",
+                "locator": "keystone_seller_cim.md::## Executive summary:Executive summary, paragraph 1",
+                "statement": "Alderstone has completed four acquisitions since 2020."
+              }
+            ]
+          },
+          "scope": {
+            "missing": 6,
+            "classifications": {
+              "legitimate_source_omission": 6
+            },
+            "extractor_defect_examples": []
+          },
+          "basis": {
+            "missing": 789,
+            "classifications": {
+              "extractor_defect": 4,
+              "legitimate_source_omission": 785
+            },
+            "extractor_defect_examples": [
+              {
+                "claim_id": "claim:eb1937ad37617a9e",
+                "locator": "keystone_firm_initial_assessment.md::### Customer concentration:section 'Customer concentration'",
+                "statement": "The Firm should complete parent-level aggregation of billing accounts sharing the same parent-company relationship before IC, indicating that billing-account concentration may unde"
+              },
+              {
+                "claim_id": "claim:9455aa81f69b1510",
+                "locator": "keystone_lbo_model_working.xlsx::SB_Down!100:116:SB_Down!A108:V108",
+                "statement": "Minimum liquidity covenant is set at $3.0 million for all periods in the downside scenario."
+              },
+              {
+                "claim_id": "claim:b60144480c2ce327",
+                "locator": "keystone_ic_memo.md::## IC conditions:## IC conditions, item 13",
+                "statement": "IC condition: Monthly ultimate-parent, WIP, DSO, utilization, debt and covenant reporting required."
+              },
+              {
+                "claim_id": "claim:250decd77b60f5b4",
+                "locator": "keystone_ic_memo.md::## Risk debate - customer concentration",
+                "statement": "The IC memo identifies an 18.2% ultimate-parent concentration with Riverton, materially higher than the seller's 7.6% largest-account figure."
+              }
+            ]
+          },
+          "measurement": {
+            "missing": 0,
+            "classifications": {},
+            "extractor_defect_examples": []
+          },
+          "scenario": {
+            "missing": 0,
+            "classifications": {},
+            "extractor_defect_examples": []
+          },
+          "unit": {
+            "missing": 283,
+            "classifications": {
+              "extractor_defect": 30,
+              "legitimate_source_omission": 253
+            },
+            "extractor_defect_examples": [
+              {
+                "claim_id": "claim:827ab2305d3e137b",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "CityWorks Municipal Group Field Inspection project CTY-02-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:5544592732e8dbc8",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "CityWorks Municipal Group Field Inspection project CTY-02-P2 contract term runs from 2024-03-01 to 2026-05-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:0e627fcf8a51bc49",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "Clinica Health Industrial Hygiene project CLN-01-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:f809aa2da360c31d",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "Clinica Health Industrial Hygiene project CLN-01-P2 contract term runs from 2024-03-01 to 2026-05-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:bcc1013b0118ad36",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "Clinica Health EHS Compliance project CLN-02-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:a16a2da1fd724311",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "Precision Components EHS Compliance project PRE-01-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:1dae7fc41a659633",
+                "locator": "keystone_data_room_extract.md::section:w8000-8250",
+                "statement": "Medical EHS Compliance Repeat project SM-014-P1 with Prairie Public Works (Industrial Hygiene, Indianapolis) has contract payment terms of 30-60 days."
+              },
+              {
+                "claim_id": "claim:e68f7b5e859e4627",
+                "locator": "keystone_data_room_extract.md::section:w8000-8250",
+                "statement": "Project SM-014-P2 with Prairie Public Works (Industrial Hygiene, Raleigh) has contract payment terms of 30-60 days."
+              },
+              {
+                "claim_id": "claim:e2c596c4a683b43f",
+                "locator": "keystone_data_room_extract.md::section:w8000-8250",
+                "statement": "Project SM-014-P2 with Prairie Public Works (Industrial Hygiene, Charlotte) has contract payment terms of 30-60 days."
+              },
+              {
+                "claim_id": "claim:5199d3b8b7a27c66",
+                "locator": "keystone_data_room_extract.md::section:w8000-8250",
+                "statement": "Project SM-015-P1 with Atlas Manufacturing (Field Inspection, Raleigh) has contract payment terms of 30-60 days."
+              }
+            ]
+          },
+          "currency": {
+            "missing": 894,
+            "classifications": {
+              "extractor_defect": 7,
+              "legitimate_source_omission": 887
+            },
+            "extractor_defect_examples": [
+              {
+                "claim_id": "claim:e0869b62721d2809",
+                "locator": "keystone_data_room_extract.md::section:w9750-10000:Employee and Utilization Schedule - December 31, 2025; E0001 row",
+                "statement": "Employee E0001 (Chicago, Midwest, Technical, Industrial Hygiene, hired 2016-02-01 from Northstar acquisition, active staff level) has an annual base salary of $77,000 and bonus tar"
+              },
+              {
+                "claim_id": "claim:f860a387eda0ae20",
+                "locator": "keystone_data_room_extract.md::section:w9750-10000:Employee and Utilization Schedule - December 31, 2025; E0002 row",
+                "statement": "Employee E0002 (Detroit, Midwest, Technical, Field Inspection) has an annual base salary of $94,000 and bonus target of 5%."
+              },
+              {
+                "claim_id": "claim:0902f2a347adef09",
+                "locator": "keystone_qoe_report.md::## Working-capital findings",
+                "statement": "The $0.7m difference between seller target and normalized working capital reflects seasonal payroll accruals, aged unbilled WIP, acquired-branch billing delays, deferred-revenue no"
+              },
+              {
+                "claim_id": "claim:42945ca171859ac4",
+                "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 5, column G (Age in days)",
+                "statement": "Invoice INV-0001 (MedCore Health, $0.089 million) is 21 days old as of December 31, 2025."
+              },
+              {
+                "claim_id": "claim:6765c54580330903",
+                "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 6, columns G and I",
+                "statement": "Invoice INV-0002 (Apex Manufacturing, $0.202 million) is 50 days old and falls in the 31–60 day aging bucket as of December 31, 2025."
+              },
+              {
+                "claim_id": "claim:91026e2a7f660fd8",
+                "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 7, columns G and L",
+                "statement": "Invoice INV-0003 (State Infrastructure Authority, $0.125 million) is 126 days old and falls in the 120+ day aging bucket as of December 31, 2025."
+              },
+              {
+                "claim_id": "claim:389ef2df1a582b02",
+                "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 27, column M (Disputed?)",
+                "statement": "One invoice (INV-0023, Riverton Industrial Group, $0.252 million) is marked as disputed as of December 31, 2025."
+              }
+            ]
+          }
+        },
+        "structured_extraction_fields": {
+          "entity": {
+            "present": 1171,
+            "missing": 0
+          },
+          "measurement": {
+            "present": 1171,
+            "missing": 0
+          },
+          "bound": {
+            "present": 1171,
+            "missing": 0
+          }
+        }
+      }
+    },
+    {
+      "path": "pipeline_out/e3/K-PRE/e3_claims.json",
+      "manifest_id": "K-PRE",
+      "audit": {
+        "claim_count": 1127,
+        "resolvable": 1086,
+        "unresolvable": 41,
+        "resolvable_pct": 96.36,
+        "identity_dimensions": {
+          "entity": {
+            "missing": 0,
+            "classifications": {},
+            "extractor_defect_examples": []
+          },
+          "metric": {
+            "missing": 0,
+            "classifications": {},
+            "extractor_defect_examples": []
+          },
+          "period": {
+            "missing": 41,
+            "classifications": {
+              "extractor_defect": 1,
+              "legitimate_source_omission": 40
+            },
+            "extractor_defect_examples": [
+              {
+                "claim_id": "claim:887bd7b264fb75b6",
+                "locator": "keystone_seller_cim.md::## Executive summary:Executive summary, paragraph 1",
+                "statement": "Alderstone has completed four acquisitions since 2020."
+              }
+            ]
+          },
+          "scope": {
+            "missing": 6,
+            "classifications": {
+              "legitimate_source_omission": 6
+            },
+            "extractor_defect_examples": []
+          },
+          "basis": {
+            "missing": 758,
+            "classifications": {
+              "extractor_defect": 2,
+              "legitimate_source_omission": 756
+            },
+            "extractor_defect_examples": [
+              {
+                "claim_id": "claim:eb1937ad37617a9e",
+                "locator": "keystone_firm_initial_assessment.md::### Customer concentration:section 'Customer concentration'",
+                "statement": "The Firm should complete parent-level aggregation of billing accounts sharing the same parent-company relationship before IC, indicating that billing-account concentration may unde"
+              },
+              {
+                "claim_id": "claim:9455aa81f69b1510",
+                "locator": "keystone_lbo_model_working.xlsx::SB_Down!100:116:SB_Down!A108:V108",
+                "statement": "Minimum liquidity covenant is set at $3.0 million for all periods in the downside scenario."
+              }
+            ]
+          },
+          "measurement": {
+            "missing": 0,
+            "classifications": {},
+            "extractor_defect_examples": []
+          },
+          "scenario": {
+            "missing": 0,
+            "classifications": {},
+            "extractor_defect_examples": []
+          },
+          "unit": {
+            "missing": 259,
+            "classifications": {
+              "extractor_defect": 29,
+              "legitimate_source_omission": 230
+            },
+            "extractor_defect_examples": [
+              {
+                "claim_id": "claim:827ab2305d3e137b",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "CityWorks Municipal Group Field Inspection project CTY-02-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:5544592732e8dbc8",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "CityWorks Municipal Group Field Inspection project CTY-02-P2 contract term runs from 2024-03-01 to 2026-05-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:0e627fcf8a51bc49",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "Clinica Health Industrial Hygiene project CLN-01-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:f809aa2da360c31d",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "Clinica Health Industrial Hygiene project CLN-01-P2 contract term runs from 2024-03-01 to 2026-05-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:bcc1013b0118ad36",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "Clinica Health EHS Compliance project CLN-02-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:a16a2da1fd724311",
+                "locator": "keystone_data_room_extract.md::section:w6500-6750",
+                "statement": "Precision Components EHS Compliance project PRE-01-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+              },
+              {
+                "claim_id": "claim:1dae7fc41a659633",
+                "locator": "keystone_data_room_extract.md::section:w8000-8250",
+                "statement": "Medical EHS Compliance Repeat project SM-014-P1 with Prairie Public Works (Industrial Hygiene, Indianapolis) has contract payment terms of 30-60 days."
+              },
+              {
+                "claim_id": "claim:e68f7b5e859e4627",
+                "locator": "keystone_data_room_extract.md::section:w8000-8250",
+                "statement": "Project SM-014-P2 with Prairie Public Works (Industrial Hygiene, Raleigh) has contract payment terms of 30-60 days."
+              },
+              {
+                "claim_id": "claim:e2c596c4a683b43f",
+                "locator": "keystone_data_room_extract.md::section:w8000-8250",
+                "statement": "Project SM-014-P2 with Prairie Public Works (Industrial Hygiene, Charlotte) has contract payment terms of 30-60 days."
+              },
+              {
+                "claim_id": "claim:5199d3b8b7a27c66",
+                "locator": "keystone_data_room_extract.md::section:w8000-8250",
+                "statement": "Project SM-015-P1 with Atlas Manufacturing (Field Inspection, Raleigh) has contract payment terms of 30-60 days."
+              }
+            ]
+          },
+          "currency": {
+            "missing": 864,
+            "classifications": {
+              "extractor_defect": 7,
+              "legitimate_source_omission": 857
+            },
+            "extractor_defect_examples": [
+              {
+                "claim_id": "claim:e0869b62721d2809",
+                "locator": "keystone_data_room_extract.md::section:w9750-10000:Employee and Utilization Schedule - December 31, 2025; E0001 row",
+                "statement": "Employee E0001 (Chicago, Midwest, Technical, Industrial Hygiene, hired 2016-02-01 from Northstar acquisition, active staff level) has an annual base salary of $77,000 and bonus tar"
+              },
+              {
+                "claim_id": "claim:f860a387eda0ae20",
+                "locator": "keystone_data_room_extract.md::section:w9750-10000:Employee and Utilization Schedule - December 31, 2025; E0002 row",
+                "statement": "Employee E0002 (Detroit, Midwest, Technical, Field Inspection) has an annual base salary of $94,000 and bonus target of 5%."
+              },
+              {
+                "claim_id": "claim:0902f2a347adef09",
+                "locator": "keystone_qoe_report.md::## Working-capital findings",
+                "statement": "The $0.7m difference between seller target and normalized working capital reflects seasonal payroll accruals, aged unbilled WIP, acquired-branch billing delays, deferred-revenue no"
+              },
+              {
+                "claim_id": "claim:42945ca171859ac4",
+                "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 5, column G (Age in days)",
+                "statement": "Invoice INV-0001 (MedCore Health, $0.089 million) is 21 days old as of December 31, 2025."
+              },
+              {
+                "claim_id": "claim:6765c54580330903",
+                "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 6, columns G and I",
+                "statement": "Invoice INV-0002 (Apex Manufacturing, $0.202 million) is 50 days old and falls in the 31–60 day aging bucket as of December 31, 2025."
+              },
+              {
+                "claim_id": "claim:91026e2a7f660fd8",
+                "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 7, columns G and L",
+                "statement": "Invoice INV-0003 (State Infrastructure Authority, $0.125 million) is 126 days old and falls in the 120+ day aging bucket as of December 31, 2025."
+              },
+              {
+                "claim_id": "claim:389ef2df1a582b02",
+                "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 27, column M (Disputed?)",
+                "statement": "One invoice (INV-0023, Riverton Industrial Group, $0.252 million) is marked as disputed as of December 31, 2025."
+              }
+            ]
+          }
+        },
+        "structured_extraction_fields": {
+          "entity": {
+            "present": 1127,
+            "missing": 0
+          },
+          "measurement": {
+            "present": 1127,
+            "missing": 0
+          },
+          "bound": {
+            "present": 1127,
+            "missing": 0
+          }
+        }
+      }
+    }
+  ],
+  "unique_corpus": {
+    "claim_count": 1171,
+    "resolvable": 1130,
+    "unresolvable": 41,
+    "resolvable_pct": 96.5,
+    "identity_dimensions": {
+      "entity": {
+        "missing": 0,
+        "classifications": {},
+        "extractor_defect_examples": []
+      },
+      "metric": {
+        "missing": 0,
+        "classifications": {},
+        "extractor_defect_examples": []
+      },
+      "period": {
+        "missing": 41,
+        "classifications": {
+          "extractor_defect": 1,
+          "legitimate_source_omission": 40
+        },
+        "extractor_defect_examples": [
+          {
+            "claim_id": "claim:887bd7b264fb75b6",
+            "locator": "keystone_seller_cim.md::## Executive summary:Executive summary, paragraph 1",
+            "statement": "Alderstone has completed four acquisitions since 2020."
+          }
+        ]
+      },
+      "scope": {
+        "missing": 6,
+        "classifications": {
+          "legitimate_source_omission": 6
+        },
+        "extractor_defect_examples": []
+      },
+      "basis": {
+        "missing": 789,
+        "classifications": {
+          "extractor_defect": 4,
+          "legitimate_source_omission": 785
+        },
+        "extractor_defect_examples": [
+          {
+            "claim_id": "claim:eb1937ad37617a9e",
+            "locator": "keystone_firm_initial_assessment.md::### Customer concentration:section 'Customer concentration'",
+            "statement": "The Firm should complete parent-level aggregation of billing accounts sharing the same parent-company relationship before IC, indicating that billing-account concentration may unde"
+          },
+          {
+            "claim_id": "claim:9455aa81f69b1510",
+            "locator": "keystone_lbo_model_working.xlsx::SB_Down!100:116:SB_Down!A108:V108",
+            "statement": "Minimum liquidity covenant is set at $3.0 million for all periods in the downside scenario."
+          },
+          {
+            "claim_id": "claim:b60144480c2ce327",
+            "locator": "keystone_ic_memo.md::## IC conditions:## IC conditions, item 13",
+            "statement": "IC condition: Monthly ultimate-parent, WIP, DSO, utilization, debt and covenant reporting required."
+          },
+          {
+            "claim_id": "claim:250decd77b60f5b4",
+            "locator": "keystone_ic_memo.md::## Risk debate - customer concentration",
+            "statement": "The IC memo identifies an 18.2% ultimate-parent concentration with Riverton, materially higher than the seller's 7.6% largest-account figure."
+          }
+        ]
+      },
+      "measurement": {
+        "missing": 0,
+        "classifications": {},
+        "extractor_defect_examples": []
+      },
+      "scenario": {
+        "missing": 0,
+        "classifications": {},
+        "extractor_defect_examples": []
+      },
+      "unit": {
+        "missing": 283,
+        "classifications": {
+          "extractor_defect": 30,
+          "legitimate_source_omission": 253
+        },
+        "extractor_defect_examples": [
+          {
+            "claim_id": "claim:827ab2305d3e137b",
+            "locator": "keystone_data_room_extract.md::section:w6500-6750",
+            "statement": "CityWorks Municipal Group Field Inspection project CTY-02-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+          },
+          {
+            "claim_id": "claim:5544592732e8dbc8",
+            "locator": "keystone_data_room_extract.md::section:w6500-6750",
+            "statement": "CityWorks Municipal Group Field Inspection project CTY-02-P2 contract term runs from 2024-03-01 to 2026-05-01 with 30-60 days payment terms."
+          },
+          {
+            "claim_id": "claim:0e627fcf8a51bc49",
+            "locator": "keystone_data_room_extract.md::section:w6500-6750",
+            "statement": "Clinica Health Industrial Hygiene project CLN-01-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+          },
+          {
+            "claim_id": "claim:f809aa2da360c31d",
+            "locator": "keystone_data_room_extract.md::section:w6500-6750",
+            "statement": "Clinica Health Industrial Hygiene project CLN-01-P2 contract term runs from 2024-03-01 to 2026-05-01 with 30-60 days payment terms."
+          },
+          {
+            "claim_id": "claim:bcc1013b0118ad36",
+            "locator": "keystone_data_room_extract.md::section:w6500-6750",
+            "statement": "Clinica Health EHS Compliance project CLN-02-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+          },
+          {
+            "claim_id": "claim:a16a2da1fd724311",
+            "locator": "keystone_data_room_extract.md::section:w6500-6750",
+            "statement": "Precision Components EHS Compliance project PRE-01-P1 contract term runs from 2024-02-01 to 2026-03-01 with 30-60 days payment terms."
+          },
+          {
+            "claim_id": "claim:1dae7fc41a659633",
+            "locator": "keystone_data_room_extract.md::section:w8000-8250",
+            "statement": "Medical EHS Compliance Repeat project SM-014-P1 with Prairie Public Works (Industrial Hygiene, Indianapolis) has contract payment terms of 30-60 days."
+          },
+          {
+            "claim_id": "claim:e68f7b5e859e4627",
+            "locator": "keystone_data_room_extract.md::section:w8000-8250",
+            "statement": "Project SM-014-P2 with Prairie Public Works (Industrial Hygiene, Raleigh) has contract payment terms of 30-60 days."
+          },
+          {
+            "claim_id": "claim:e2c596c4a683b43f",
+            "locator": "keystone_data_room_extract.md::section:w8000-8250",
+            "statement": "Project SM-014-P2 with Prairie Public Works (Industrial Hygiene, Charlotte) has contract payment terms of 30-60 days."
+          },
+          {
+            "claim_id": "claim:5199d3b8b7a27c66",
+            "locator": "keystone_data_room_extract.md::section:w8000-8250",
+            "statement": "Project SM-015-P1 with Atlas Manufacturing (Field Inspection, Raleigh) has contract payment terms of 30-60 days."
+          }
+        ]
+      },
+      "currency": {
+        "missing": 894,
+        "classifications": {
+          "extractor_defect": 7,
+          "legitimate_source_omission": 887
+        },
+        "extractor_defect_examples": [
+          {
+            "claim_id": "claim:e0869b62721d2809",
+            "locator": "keystone_data_room_extract.md::section:w9750-10000:Employee and Utilization Schedule - December 31, 2025; E0001 row",
+            "statement": "Employee E0001 (Chicago, Midwest, Technical, Industrial Hygiene, hired 2016-02-01 from Northstar acquisition, active staff level) has an annual base salary of $77,000 and bonus tar"
+          },
+          {
+            "claim_id": "claim:f860a387eda0ae20",
+            "locator": "keystone_data_room_extract.md::section:w9750-10000:Employee and Utilization Schedule - December 31, 2025; E0002 row",
+            "statement": "Employee E0002 (Detroit, Midwest, Technical, Field Inspection) has an annual base salary of $94,000 and bonus target of 5%."
+          },
+          {
+            "claim_id": "claim:0902f2a347adef09",
+            "locator": "keystone_qoe_report.md::## Working-capital findings",
+            "statement": "The $0.7m difference between seller target and normalized working capital reflects seasonal payroll accruals, aged unbilled WIP, acquired-branch billing delays, deferred-revenue no"
+          },
+          {
+            "claim_id": "claim:42945ca171859ac4",
+            "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 5, column G (Age in days)",
+            "statement": "Invoice INV-0001 (MedCore Health, $0.089 million) is 21 days old as of December 31, 2025."
+          },
+          {
+            "claim_id": "claim:6765c54580330903",
+            "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 6, columns G and I",
+            "statement": "Invoice INV-0002 (Apex Manufacturing, $0.202 million) is 50 days old and falls in the 31–60 day aging bucket as of December 31, 2025."
+          },
+          {
+            "claim_id": "claim:91026e2a7f660fd8",
+            "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 7, columns G and L",
+            "statement": "Invoice INV-0003 (State Infrastructure Authority, $0.125 million) is 126 days old and falls in the 120+ day aging bucket as of December 31, 2025."
+          },
+          {
+            "claim_id": "claim:389ef2df1a582b02",
+            "locator": "keystone_lbo_model_working.xlsx::AR_WIP!1:44:Sheet AR_WIP, row 27, column M (Disputed?)",
+            "statement": "One invoice (INV-0023, Riverton Industrial Group, $0.252 million) is marked as disputed as of December 31, 2025."
+          }
+        ]
+      }
+    },
+    "structured_extraction_fields": {
+      "entity": {
+        "present": 1171,
+        "missing": 0
+      },
+      "measurement": {
+        "present": 1171,
+        "missing": 0
+      },
+      "bound": {
+        "present": 1171,
+        "missing": 0
+      }
+    }
+  }
+}

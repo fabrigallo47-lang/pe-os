@@ -31,6 +31,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tools.formula_compiler import compile_formulas, normalize_locator
+from tools.relation_rules import annotate_edge, audit_relation_outputs
 
 
 SCHEMA_VERSION = "execution-mapping-compilation/1.0"
@@ -445,14 +446,37 @@ def populate_execution_mapping(
         existing_formulas, formulas, "formula_id", "formulas"
     )
 
+    existing_directed_edges = []
+    for raw in _collection(mapping, "directed_model_edges"):
+        edge = copy.deepcopy(raw)
+        if (
+            edge.get("from_model_node_id")
+            and edge.get("to_model_node_id")
+            and edge.get("formula_or_function_ref")
+        ):
+            edge.setdefault("relation_type", "DRIVES")
+        if edge.get("relation_type") == "DRIVES" and not edge.get("relation_rule"):
+            edge = annotate_edge(
+                edge,
+                "FORMULA_PRECEDENT_DRIVES",
+                evidence={"formula_or_function_ref": edge.get("formula_or_function_ref")},
+            )
+        existing_directed_edges.append(edge)
+
     drives_edges = []
     for raw in compilation["directed_model_edges"]:
         edge = copy.deepcopy(raw)
-        edge["relation_type"] = "DRIVES"
+        edge.setdefault("relation_type", "DRIVES")
         edge["source_ref"] = "tools/execution_mapping_compiler.py"
+        if not edge.get("relation_rule"):
+            edge = annotate_edge(
+                edge,
+                "FORMULA_PRECEDENT_DRIVES",
+                evidence={"formula_or_function_ref": edge.get("formula_or_function_ref")},
+            )
         drives_edges.append(edge)
     mapping["directed_model_edges"] = _merge_by_id(
-        _collection(mapping, "directed_model_edges"),
+        existing_directed_edges,
         drives_edges,
         "edge_id",
         "directed_model_edges",
@@ -501,6 +525,9 @@ def populate_execution_mapping(
         "stats": copy.deepcopy(compilation["stats"]),
         "edge_semantics": "DRIVES",
     }
+    mapping["relation_audit"] = audit_relation_outputs(
+        mapping["directed_model_edges"]
+    )
     _validate_population(mapping, generated_formula_ids)
     return mapping
 

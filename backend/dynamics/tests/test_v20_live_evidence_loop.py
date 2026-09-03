@@ -36,14 +36,16 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
                 encoding="utf-8"
             )
         )
-        claim_id = "ks-77418c65e681"
-        self.claim = dict(
-            next(item for item in ic_e3["claims"] if item["claim_id"] == claim_id)
-        )
+        pre_claim_ids = {item["claim_id"] for item in pre_e3["claims"]}
         compiler_metadata = next(
             item
             for item in ic_e3["extraction_metadata"]["compiler_fields_per_claim"]
-            if item["claim_id"] == claim_id
+            if item["metric"] == "Enterprise Value"
+            and item["claim_id"] not in pre_claim_ids
+        )
+        claim_id = compiler_metadata["claim_id"]
+        self.claim = dict(
+            next(item for item in ic_e3["claims"] if item["claim_id"] == claim_id)
         )
         for key, value in compiler_metadata.items():
             if value is not None and not self.claim.get(key):
@@ -152,7 +154,7 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
         )
         mutation = runtime_event["mutations"][0]
         self.assertEqual(mutation["object_id"], self.claim["claim_id"])
-        self.assertEqual(mutation["target_position_id"], "CP-DSO")
+        self.assertEqual(mutation["target_position_id"], "CP-EV")
         self.assertNotEqual(runtime_event.get("event_status"), "SYNTHETIC_TEST_EVENT")
         current_before_dynamics = json.loads(
             (self.bundle / "current_graph.json").read_text(encoding="utf-8")
@@ -165,8 +167,8 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
         transition = candidate["transition"]
         affected_ids = {item["object_id"] for item in transition["affected_set"]}
         self.assertIn(self.claim["claim_id"], affected_ids)
-        self.assertIn("CP-DSO", affected_ids)
-        self.assertIn("MN-BASE-DSO", affected_ids)
+        self.assertIn("CP-EV", affected_ids)
+        self.assertIn("MN-EV", affected_ids)
         recomputed = {
             item["object_id"]: item for item in transition["recomputed_values"]
         }

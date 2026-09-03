@@ -1,0 +1,149 @@
+{
+  "schema_version": "panta.conflict-audit/1.0",
+  "generated_from": "tools/graph_trace.py",
+  "source_claim_count": 1171,
+  "historical_non_reproducible_count": 374,
+  "final": {
+    "identities": 958,
+    "claims_placed": 1130,
+    "identities_with_peers": 79,
+    "comparable_claims": 251,
+    "contradictions": 5,
+    "corroborations": 14,
+    "same_source_details": 153,
+    "unresolvable": 41
+  },
+  "conflict_ablation": {
+    "without_measurement_or_bound": 406,
+    "with_measurement_without_bound": 103,
+    "with_measurement_and_bound": 91,
+    "cross_source_residuals": 5,
+    "removed_by_measurement": 303,
+    "removed_by_bound": 12,
+    "removed_as_same_source_detail": 86
+  },
+  "residual_conflicts": [
+    {
+      "claim_id": "claim:15eb06ceeb33f08e",
+      "peer_claim_ids": [
+        "claim:87841bde1b31a4e2"
+      ],
+      "identity": [
+        "Keystone",
+        "EBITDA",
+        "2025-12-01",
+        "consolidated",
+        "FirmView",
+        "total",
+        "base",
+        "mm",
+        "USD"
+      ],
+      "measurement": "total",
+      "bound": "EXACT",
+      "peer_bounds": [
+        "EXACT"
+      ],
+      "reason": "due valori esatti divergenti: 11.4 contro 0.9486"
+    },
+    {
+      "claim_id": "claim:3e57033a5e0a1e81",
+      "peer_claim_ids": [
+        "claim:f3862e5f5589a072",
+        "claim:f769238bf0f44369"
+      ],
+      "identity": [
+        "Keystone",
+        "EBITDA",
+        "2026-03-05",
+        "consolidated",
+        "FirmView",
+        "total",
+        "base",
+        "mm",
+        "USD"
+      ],
+      "measurement": "total",
+      "bound": "EXACT",
+      "peer_bounds": [
+        "EXACT"
+      ],
+      "reason": "due valori esatti divergenti: 11.4 contro 2.87027"
+    },
+    {
+      "claim_id": "claim:2a67b6294a02a271",
+      "peer_claim_ids": [
+        "claim:49227752986a3a95"
+      ],
+      "identity": [
+        "Keystone",
+        "NetLeverage",
+        "2026-03-05",
+        "consolidated",
+        "FirmView",
+        "total",
+        "base",
+        "x",
+        ""
+      ],
+      "measurement": "total",
+      "bound": "EXACT",
+      "peer_bounds": [
+        "EXACT"
+      ],
+      "reason": "due valori esatti divergenti: 3.49 contro 0.107"
+    },
+    {
+      "claim_id": "claim:2cfbf338ac586aa3",
+      "peer_claim_ids": [
+        "claim:49227752986a3a95"
+      ],
+      "identity": [
+        "Keystone",
+        "NetLeverage",
+        "2026-03-05",
+        "consolidated",
+        "FirmView",
+        "total",
+        "base",
+        "x",
+        ""
+      ],
+      "measurement": "total",
+      "bound": "EXACT",
+      "peer_bounds": [
+        "EXACT"
+      ],
+      "reason": "due valori esatti divergenti: 3.49 contro 3"
+    },
+    {
+      "claim_id": "claim:1883a66094b122a0",
+      "peer_claim_ids": [
+        "claim:49227752986a3a95"
+      ],
+      "identity": [
+        "Keystone",
+        "NetLeverage",
+        "2026-03-05",
+        "consolidated",
+        "FirmView",
+        "total",
+        "base",
+        "x",
+        ""
+      ],
+      "measurement": "total",
+      "bound": "EXACT",
+      "peer_bounds": [
+        "EXACT"
+      ],
+      "reason": "due valori esatti divergenti: 3.49 contro 2.5"
+    }
+  ],
+  "determinism": {
+    "runs": 2,
+    "sha256": "21103406cd794c8665398f1282de92f8b4f2eef1deba818066ef7395aad9de2b",
+    "byte_identical": true
+  },
+  "interpretation": "The historical 374 is replaced, not subtracted from: the fresh temperature-0 corpus contains 1,171 admitted claims. Measurement removes 303 raw candidate contradictions, bound semantics removes 12, and 86 remaining divergent same-source details are not independent conflicts. Five cross-source candidates remain for identity review."
+}

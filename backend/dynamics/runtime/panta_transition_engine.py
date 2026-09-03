@@ -933,6 +933,59 @@ def _build_execution_adjacency(
     return adjacency
 
 
+def _unsatisfied_condition_edges(
+    graph: MutableMapping[str, Any],
+    runtime_flags: Mapping[str, Mapping[str, Any]],
+) -> list[dict[str, str]]:
+    """Return governed prerequisites that currently block their dependents.
+
+    CONDITIONS is not evidence support.  Its source is a prerequisite and its
+    target is valid only while that source is usable.  UNKNOWN is deliberately
+    treated as unsatisfied: an unresolved condition cannot become true merely
+    because no evaluator has adjudicated it.
+    """
+    registry = _object_registry(graph)
+    blocked: list[dict[str, str]] = []
+    for edge in graph.get("position_dependencies", []):
+        if not isinstance(edge, Mapping) or edge.get("relation_type") != "CONDITIONS":
+            continue
+        source_id = str(edge.get("from_position_id") or "")
+        target_id = str(edge.get("to_position_id") or "")
+        if source_id not in registry or target_id not in registry:
+            continue
+        state = _member_usability(source_id, registry, runtime_flags)
+        if state == "TRUE":
+            continue
+        blocked.append({
+            "edge_id": str(edge.get("edge_id") or "POSITION_DEPENDENCY"),
+            "source_id": source_id,
+            "target_id": target_id,
+            "condition_state": state,
+        })
+    return sorted(
+        blocked,
+        key=lambda item: (item["source_id"], item["target_id"], item["edge_id"]),
+    )
+
+
+def _forward_closure(
+    adjacency: Mapping[str, Sequence[tuple[str, str, str]]],
+    seed_ids: Iterable[str],
+    allowed_ids: Iterable[str],
+) -> set[str]:
+    """Return the deterministic downstream closure within ``allowed_ids``."""
+    allowed = set(allowed_ids)
+    visited = set(seed_ids) & allowed
+    queue: deque[str] = deque(sorted(visited))
+    while queue:
+        source = queue.popleft()
+        for target, _relation, _edge_id in adjacency.get(source, []):
+            if target in allowed and target not in visited:
+                visited.add(target)
+                queue.append(target)
+    return visited
+
+
 def compute_affected_set(
     current_graph: Mapping[str, Any],
     trigger_ids: Iterable[str],
@@ -3654,7 +3707,14 @@ def apply_state_transition(
             if isinstance(route, Mapping) and route.get("route_id")
         )
 
-    impact_seed_ids = trigger_ids | conflict_seed_ids
+    unsatisfied_conditions = _unsatisfied_condition_edges(
+        candidate_graph,
+        runtime_flags,
+    )
+    condition_seed_ids = {
+        item["source_id"] for item in unsatisfied_conditions
+    }
+    impact_seed_ids = trigger_ids | conflict_seed_ids | condition_seed_ids
     if impact_seed_ids:
         impact = compute_affected_set(candidate_graph, impact_seed_ids, execution_mapping)
     else:
@@ -3690,15 +3750,12 @@ def apply_state_transition(
         candidate_graph, execution_mapping, solver_scope
     )
 
-    blocked_ids: set[str] = set(conflict_seed_ids)
-    for conflict_seed in conflict_seed_ids:
-        queue = deque([conflict_seed])
-        while queue:
-            source = queue.popleft()
-            for target, _relation, _edge_id in impact["adjacency"].get(source, []):
-                if target in affected_ids and target not in blocked_ids:
-                    blocked_ids.add(target)
-                    queue.append(target)
+    blocking_seed_ids = conflict_seed_ids | condition_seed_ids
+    blocked_ids = _forward_closure(
+        impact["adjacency"],
+        blocking_seed_ids,
+        affected_ids,
+    )
     blocked_ids.update(evaluation["blocked_ids"])
     blocked_ids.update(rule_switch_evaluation["blocked_ids"])
     blocked_ids.update(numerical_evaluation["blocked_ids"])
@@ -4016,6 +4073,30 @@ def apply_state_transition(
                     "downstream_scope": [combination["position_id"]],
                 }
             )
+    for condition in unsatisfied_conditions:
+        downstream_scope = sorted(
+            _forward_closure(
+                impact["adjacency"],
+                [condition["source_id"]],
+                affected_ids,
+            ) - {condition["source_id"]}
+        )
+        human_stops.append(
+            {
+                "stop_id": "STOP-CONDITION-" + hashlib.sha256(
+                    condition["edge_id"].encode("utf-8")
+                ).hexdigest()[:12],
+                "object_or_component_id": condition["source_id"],
+                "reason_code": "UNSATISFIED_CONDITION",
+                "requested_action": (
+                    "Resolve or explicitly accept the governed prerequisite before "
+                    "settling its dependent scope."
+                ),
+                "required_role": "PROFESSIONAL_REVIEWER",
+                "policy_rule_id": "DECLARED_POSITION_CONDITION",
+                "downstream_scope": downstream_scope,
+            }
+        )
     if conflict_seed_ids:
         blocked_components.append(
             {
@@ -4026,6 +4107,26 @@ def apply_state_transition(
                 ),
                 "dependent_ids": sorted(blocked_ids - conflict_seed_ids),
                 "missing_assumption_or_condition": "One admitted value per object field.",
+            }
+        )
+    for condition in unsatisfied_conditions:
+        dependent_ids = sorted(
+            _forward_closure(
+                impact["adjacency"],
+                [condition["source_id"]],
+                affected_ids,
+            ) - {condition["source_id"]}
+        )
+        blocked_components.append(
+            {
+                "component_id": f"component:condition:{condition['edge_id']}",
+                "member_ids": [condition["source_id"]],
+                "reason_code": "UNSATISFIED_CONDITION",
+                "dependent_ids": dependent_ids,
+                "missing_assumption_or_condition": (
+                    f"Condition {condition['source_id']} must be satisfied; current "
+                    f"state is {condition['condition_state']}."
+                ),
             }
         )
     for route_id in evaluation["invalid_route_ids"]:

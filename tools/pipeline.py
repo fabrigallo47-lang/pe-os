@@ -253,16 +253,28 @@ def e3_to_claims(e3: dict) -> list[dict]:
         meta = sidecar.get(c.get("claim_id"), {})
         perimeter = c.get("perimeter") or ""
         out.append({
+            "claim_id":  c.get("claim_id"),
             # subject is the economic scope the claim is about; the extractor
             # records that as the perimeter.
             "subject":    perimeter.split(",")[0].strip() or "unknown",
+            "entity":     meta.get("entity", ""),
             "metric":     meta.get("metric", ""),
             "value":      c.get("value"),
             "unit":       c.get("unit", ""),
+            "currency":   meta.get("currency", ""),
             "as_of":      c.get("period") or "",
             "period":     c.get("period") or "",
+            "period_canonical": meta.get("period_canonical", ""),
             "perimeter":  perimeter,
+            "scope":      meta.get("scope", ""),
+            "basis":      meta.get("basis", ""),
+            "measurement": meta.get("measurement", ""),
+            "scenario":   meta.get("scenario", ""),
+            "bound":      meta.get("bound", "EXACT"),
+            "claim_kind": meta.get("claim_kind", "QUANTITATIVE"),
             "topic":      meta.get("topic", ""),
+            "source_id":  c.get("source_id", ""),
+            "source_version_id": meta.get("source_version_id"),
             "source_doc": c.get("source_id", ""),
             "epistemic":  c.get("epistemic_class", "asserted"),
             "direction":  meta.get("direction", "context"),

@@ -40,6 +40,7 @@ from tools.llm_provider import (
     raw_messages_url,
     request_headers,
 )
+from tools.object_identity import claim_id as canonical_claim_id
 
 API_KEY = configured_api_key()
 # Haiku by default so a test run costs little. This path is the expensive one:
@@ -322,17 +323,7 @@ def parse_json(text: str) -> list:
         return _repair_json_array(raw)
 
 
-def next_claim_id(deal: str) -> str:
-    cdir = VAULT / "deals" / deal / "claims"
-    existing = sorted(cdir.glob("c-*.md")) if cdir.exists() else []
-    if not existing:
-        return f"c-{deal}-001"
-    n = int(existing[-1].stem.split("-")[-1]) + 1
-    return f"c-{deal}-{n:03d}"
-
-
 def write_claim(deal: str, item: dict, artifact_name: str) -> str:
-    cid = next_claim_id(deal)
     ep = item.get("epistemic", "asserted")
     if ep not in EPISTEMIC:
         ep = "asserted"
@@ -347,6 +338,16 @@ def write_claim(deal: str, item: dict, artifact_name: str) -> str:
     statement = str(item.get("statement", "")).replace('"', "'")
     period = str(item.get("period", "")).replace('"', "'")
     perimeter = str(item.get("perimeter", "")).replace('"', "'")
+    cid = canonical_claim_id({
+        **item,
+        "metric": item.get("metric") or item.get("subject"),
+        "source_id": item.get("source_id") or artifact_name,
+        "source_version_id": item.get("source_version_id"),
+        "epistemic_class": ep,
+        "period": period,
+        "perimeter": perimeter,
+        "value": value,
+    })
     content = f"""---
 type: claim
 id: {cid}
@@ -370,7 +371,8 @@ artifact: "vault/inbox/{artifact_name}"
 """
     cdir = VAULT / "deals" / deal / "claims"
     cdir.mkdir(parents=True, exist_ok=True)
-    (cdir / f"{cid}.md").write_text(content, encoding="utf-8")
+    filename = cid.replace(":", "-", 1)
+    (cdir / f"{filename}.md").write_text(content, encoding="utf-8")
     return cid
 
 

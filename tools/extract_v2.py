@@ -1159,6 +1159,37 @@ def _pptx_shape_text(shape: Any) -> list[str]:
     return parts
 
 
+def _pptx_reading_order(shapes: Any, slide_height: Any) -> list[Any]:
+    """Order a slide's shapes as a person reads them, not as PowerPoint stored them.
+
+    `slide.shapes` yields z-order -- the sequence shapes were added to the
+    XML -- which has nothing to do with where they sit. A value box drawn
+    before its label emits before that label, so the text is all present and
+    the relationship between the pieces is gone: content correct, position
+    lost.
+
+    Shapes are banded into rows first, then read left to right within a row.
+    Sorting on `top` alone would interleave two columns of a two-column slide,
+    which is worse than z-order rather than better. The band is a twentieth of
+    the slide, coarse enough that a caption sitting a few points above its
+    neighbour still counts as the same row.
+
+    A shape with no explicit position (a placeholder inheriting from the
+    layout) keeps its original relative order at the end rather than being
+    assigned a position it does not have.
+    """
+    band = max(1, int(slide_height / 20)) if slide_height else 1
+
+    def key(item: tuple[int, Any]) -> tuple:
+        index, shape = item
+        top, left = getattr(shape, "top", None), getattr(shape, "left", None)
+        if top is None or left is None:
+            return (1, 0, 0, index)
+        return (0, int(top) // band, int(left), index)
+
+    return [shape for _, shape in sorted(enumerate(shapes), key=key)]
+
+
 def parse_pptx(path: Path, max_words: int = CHUNK_WORDS,
                source_record: dict | None = None) -> list[Chunk]:
     """Extract shape text, native table grids, native chart data, and
@@ -1191,7 +1222,7 @@ def parse_pptx(path: Path, max_words: int = CHUNK_WORDS,
     chunks: list[Chunk] = []
     for slide_number, slide in enumerate(presentation.slides, start=1):
         parts: list[str] = []
-        for shape in slide.shapes:
+        for shape in _pptx_reading_order(slide.shapes, presentation.slide_height):
             parts.extend(_pptx_shape_text(shape))
         if slide.has_notes_slide:
             notes_text = (slide.notes_slide.notes_text_frame.text or "").strip()
@@ -1498,6 +1529,52 @@ def _page_text_tokens(page: Any) -> list[str]:
         return []                      # never fail a page over a coverage check
 
 
+def _chart_structure_warnings(payload: str) -> list[str]:
+    """Signs the chart table is garbled even though its numbers are real.
+
+    Corroborating values says nothing about their arrangement. On Goldman's
+    page 16 a stacked bar chart came back with its stack components promoted
+    to column headers -- "Year | Total | $1.2 | $1.3" -- and a body that was
+    mostly empty. Every number was genuinely on the page, so the value check
+    passed and printed a word that reads as general reassurance.
+
+    These two signals are deliberately crude. They are meant to catch a table
+    that has visibly collapsed, not to grade layout quality.
+    """
+    rows = []
+    for line in payload.splitlines():
+        if "|" not in line:
+            continue
+        raw = line.strip()
+        cells = [c.strip() for c in raw.split("|")]
+        # Strip ONLY the phantom cells created by a markdown row's edge pipes.
+        # Dropping every trailing blank instead would erase the empty cells
+        # that are the evidence of a collapsed table -- the check would then
+        # under-report exactly the rows it exists to catch.
+        if raw.startswith("|"):
+            cells = cells[1:]
+        if raw.endswith("|") and cells:
+            cells = cells[:-1]
+        if not cells or all(set(c) <= set("-: ") for c in cells if c):
+            continue                   # markdown separator row, not data
+        rows.append(cells)
+    if len(rows) < 2:
+        return []
+
+    warnings: list[str] = []
+    header, body = rows[0], rows[1:]
+    numeric_header = [c for c in header if c and any(ch.isdigit() for ch in c)]
+    if header and len(numeric_header) >= max(2, len(header) // 3):
+        warnings.append(
+            f"{len(numeric_header)} of {len(header)} header cells hold numeric "
+            "values rather than labels")
+    flat = [c for row in body for c in row]
+    empty = [c for c in flat if not c]
+    if flat and len(empty) * 2 >= len(flat):
+        warnings.append(f"{len(empty)} of {len(flat)} body cells are empty")
+    return warnings
+
+
 def _chart_corroboration(page: Any, markdown: str) -> list[str]:
     """Check chart-recognition numbers against the page's own text layer.
 
@@ -1551,12 +1628,24 @@ def _chart_corroboration(page: Any, markdown: str) -> list[str]:
                 "failure mode; treat the whole chart block as unreliable."
             )
         else:
-            notes.append(
-                f"[validation] CORROBORATED: all {len(claimed)} value(s) in the "
-                "chart-recognition output above also appear in this page's PDF text layer "
-                "as read text, so none were invented. The MAPPING of value to chart "
-                "element remains model-asserted and still needs human confirmation."
-            )
+            defects = _chart_structure_warnings(payload)
+            if defects:
+                notes.append(
+                    f"[validation] VALUES CORROBORATED, STRUCTURE SUSPECT: all "
+                    f"{len(claimed)} value(s) appear in this page's PDF text layer, so "
+                    f"none were invented -- but the table above does not read like a "
+                    f"chart: {'; '.join(defects)}. The numbers are real; their "
+                    "arrangement is not. Do not take any pairing from this block "
+                    "without reading the chart region itself."
+                )
+            else:
+                notes.append(
+                    f"[validation] CORROBORATED: all {len(claimed)} value(s) in the "
+                    "chart-recognition output above also appear in this page's PDF text "
+                    "layer as read text, so none were invented. The MAPPING of value to "
+                    "chart element remains model-asserted and still needs human "
+                    "confirmation."
+                )
     return notes
 
 
@@ -1853,12 +1942,18 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
                 if residual:
                     shown = " \u00b7 ".join(residual[:40])
                     more = f" (+{len(residual) - 40} more)" if len(residual) > 40 else ""
+                    numeric = [t for t in residual if any(c.isdigit() for c in t)]
+                    # A page number is a stray token; nine numbers are a region
+                    # the layout model never proposed, so nothing ever read it.
+                    weight = (f" {len(numeric)} of them carry digits, which usually means a "
+                              "data region (a chart, an axis, a callout) was not detected "
+                              "at all rather than merely unread."
+                              if len(numeric) >= 3 else "")
                     body_parts.append(
                         f"[coverage] TEXT_LAYER_RESIDUAL: {len(residual)} text object(s) "
                         f"in this page's PDF text layer do not appear in the extraction "
-                        f"above: {shown}{more}. These are READ TEXT, not inferred -- they "
-                        "most often sit inside a region the layout model classified as a "
-                        "picture. Which chart element each belongs to is NOT resolved here."
+                        f"above: {shown}{more}. These are READ TEXT, not inferred.{weight} "
+                        "Which chart element each belongs to is NOT resolved here."
                     )
                 body = "\n\n".join(body_parts)
                 if not body.strip():

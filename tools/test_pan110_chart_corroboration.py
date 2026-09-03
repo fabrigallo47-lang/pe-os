@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import unittest
 
-from extract_v2 import _chart_corroboration
+from extract_v2 import _chart_corroboration, _chart_structure_warnings
 
 CHART = "[chart-recognition, MODEL-DERIVED not read text] bbox=[174, 339, 456, 708]"
 
@@ -80,6 +80,40 @@ class ChartCorroborationTests(unittest.TestCase):
         marker = ("[picture] IMAGE_NOT_EXTRACTED: a chart bbox=[174, 339, 456, 708] "
                   "[chart-recognition output follows] is present on this page (PAN-100).")
         self.assertEqual(_chart_corroboration(StubPage(REAL), marker), [])
+
+
+class ChartStructureTests(unittest.TestCase):
+    """Real values in a collapsed table must not be reported as simply fine."""
+
+    def test_stacked_bar_flattened_into_headers_is_flagged(self) -> None:
+        """Goldman page 16: stack components promoted to column headers."""
+        payload = ("Year | Total | $1.2 | $1.3 | $1.5 | $1.8\n"
+                   "2019 | $6.1 |   |   |   | $1.2\n"
+                   "2020 | $6.8 |   |   |   | $1.3")
+        defects = _chart_structure_warnings(payload)
+        self.assertTrue(any("header cells hold numeric" in d for d in defects))
+
+    def test_a_clean_chart_table_is_not_flagged(self) -> None:
+        """Goldman page 9: must stay silent, or the warning means nothing."""
+        payload = "Year | Value ($)\n2017-2019 | 35.3\n2020-2022 | 50.4"
+        self.assertEqual(_chart_structure_warnings(payload), [])
+
+    def test_mostly_empty_body_is_flagged(self) -> None:
+        payload = "Year | A | B | C\n2019 |  |  | \n2020 |  |  | "
+        self.assertTrue(any("body cells are empty" in d
+                            for d in _chart_structure_warnings(payload)))
+
+    def test_markdown_separator_row_is_not_data(self) -> None:
+        payload = "| Year | Value |\n| --- | --- |\n| 2019 | 6.1 |\n| 2020 | 6.8 |"
+        self.assertEqual(_chart_structure_warnings(payload), [])
+
+    def test_structure_defect_downgrades_the_corroboration_wording(self) -> None:
+        block = (f"{CHART}\nYear | Total | $1.2 | $1.3 | $1.5 | $1.8\n"
+                 "2019 | $6.1 |   |   |   | $1.2")
+        page = StubPage(["$1.2", "$1.3", "$1.5", "$1.8", "$6.1", "2019", "Total", "Year"])
+        note = _chart_corroboration(page, block)[0]
+        self.assertIn("STRUCTURE SUSPECT", note)
+        self.assertNotIn("[validation] CORROBORATED:", note)
 
 
 if __name__ == "__main__":

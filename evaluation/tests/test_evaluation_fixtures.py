@@ -8,7 +8,7 @@ from pathlib import Path
 from zipfile import ZipFile
 
 from evaluation.evaluator import evaluate_case
-from evaluation.io import read_cases
+from evaluation.io import read_cases, read_records
 from evaluation.runner import EvaluationRunner
 
 
@@ -59,8 +59,8 @@ class EvaluationFixtureTests(unittest.TestCase):
 
     def test_oracle_predictions_are_a_perfect_contract_check(self) -> None:
         run = EvaluationRunner().run(read_cases(CASES), predictions_path=PREDICTIONS)
-        self.assertEqual(run["summary"]["overall"]["tests"], 8)
-        self.assertEqual(run["summary"]["overall"]["passed"], 8)
+        self.assertEqual(run["summary"]["overall"]["tests"], 9)
+        self.assertEqual(run["summary"]["overall"]["passed"], 9)
         self.assertEqual(run["summary"]["overall"]["mean_score"], 1.0)
         self.assertNotIn("field_precision", run["summary"]["metrics"])
         information_cases = {
@@ -69,6 +69,8 @@ class EvaluationFixtureTests(unittest.TestCase):
             and "information_recall" in result["scores"]
         }
         self.assertEqual(set(information_cases), {
+            "panta-smoke.pdf.parse-001",
+            "panta-smoke.pdf.information-001",
             "panta-smoke.xlsx.fields-001",
             "panta-smoke.eml.parse-001",
             "panta-smoke.png.visual-001",
@@ -79,6 +81,29 @@ class EvaluationFixtureTests(unittest.TestCase):
             information_cases["panta-smoke.xlsx.fields-001"]["scores"]["field_precision"],
             0.111111,
         )
+
+    def test_pdf_information_gate_requires_embedded_image_facts(self) -> None:
+        case = next(
+            case for case in read_cases(CASES)
+            if case["test_id"] == "panta-smoke.pdf.information-001"
+        )
+        oracle = next(
+            prediction for prediction in read_records(PREDICTIONS)
+            if prediction["test_id"] == case["test_id"]
+        )
+        prediction = {
+            "schema_version": "panta-eval.prediction/1.0",
+            "test_id": case["test_id"],
+            "status": "success",
+            "facts": [
+                fact for fact in oracle["facts"]
+                if fact["locator"]["type"] == "page"
+            ],
+        }
+        result = evaluate_case(case, prediction)
+        self.assertFalse(result["passed"])
+        self.assertLess(result["scores"]["information_recall"], 1.0)
+        self.assertLess(result["scores"]["fact_grounding_accuracy"], 1.0)
 
     def test_deliberately_degraded_prediction_fails_the_gate(self) -> None:
         case = read_cases(CASES)[0]

@@ -15,7 +15,7 @@ import unittest
 from pathlib import Path
 from unittest import mock
 
-from extract_v2_physical import _render_pptx_as_pdf, _slide_needs_pdf_fallback
+from tools.extract_v2_physical import _render_pptx_as_pdf, _slide_needs_pdf_fallback
 
 
 class SlideNeedsFallbackTests(unittest.TestCase):

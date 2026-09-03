@@ -14,7 +14,7 @@ from __future__ import annotations
 
 import unittest
 
-from extract_v2_physical import _pptx_reading_order
+from tools.extract_v2_physical import _pptx_reading_order
 
 SLIDE_H = 6858000          # EMU, a standard 7.5in slide
 INCH = 914400

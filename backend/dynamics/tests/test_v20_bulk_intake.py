@@ -81,7 +81,7 @@ class V20BulkIntakeTests(unittest.TestCase):
 
     @staticmethod
     def _extractor(command, **_kwargs):
-        source = Path(command[2])
+        source = Path(command[command.index("--source") + 1])
         if "fail" in source.name:
             return SimpleNamespace(returncode=2, stdout="", stderr="synthetic failure")
         if "--out" in command:

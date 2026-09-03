@@ -13,7 +13,7 @@ from __future__ import annotations
 
 import unittest
 
-from paddle_engine import _verify_pairs_geometrically
+from tools.paddle_engine import _verify_pairs_geometrically
 
 CHART_BOX = [174, 339, 456, 708]        # page 9's chart, 282px wide
 

@@ -15,7 +15,7 @@ leaderboard scoring can be supplied as `native:<metric>` rather than approximate
 ## What is included
 
 The repository contains an executable, non-sensitive smoke dataset rather than
-only test code. Its eight gold cases cover:
+only test code. Its nine gold cases cover:
 
 | Source | Extraction/understanding covered | Visual or mixed evidence |
 |---|---|---|
@@ -50,7 +50,7 @@ make document-information-eval  # only structure-independent information gates
 ```
 
 The validation command checks schemas, unique IDs, fixture existence and every
-declared SHA-256 digest. The run command gates on all eight smoke cases and writes
+declared SHA-256 digest. The run command gates on all nine smoke cases and writes
 JSON, NDJSON and Markdown reports below `.panta-eval/runs/`.
 
 Equivalent direct commands are:
@@ -173,8 +173,10 @@ PowerPoint, spreadsheets, email, standalone images, embedded images and mixed
 multi-document cases. Layout, media and schema metrics can still be added as gates
 when a use case actually depends on them.
 
-The bundled information-only smoke selection currently exercises spreadsheet,
+The bundled information-only smoke selection currently exercises PDF, spreadsheet,
 email and image extraction, including altered labels and additional valid facts.
+The PDF information case also requires facts read from an embedded image, while
+remaining independent of field order and document layout.
 Run it with `make document-information-eval`; the complete smoke command still
 covers PDF, Word, PowerPoint and mixed-document understanding as separate tracks.
 

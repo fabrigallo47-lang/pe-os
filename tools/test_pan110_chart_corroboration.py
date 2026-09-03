@@ -15,7 +15,7 @@ from __future__ import annotations
 
 import unittest
 
-from extract_v2_physical import _chart_corroboration, _chart_structure_warnings
+from tools.extract_v2_physical import _chart_corroboration, _chart_structure_warnings
 
 CHART = "[chart-recognition, MODEL-DERIVED not read text] bbox=[174, 339, 456, 708]"
 

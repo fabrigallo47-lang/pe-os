@@ -1,0 +1,46 @@
+
+> panta-frontend-core-v4@4.0.0 validate
+> npm run fixture-check && npm run syntax-check && npm run contract-check && npm run kernel-check && npm run dead-control-check && npm run closed-loop-check && npm run behavior-test && npm run projection-test
+
+
+> panta-frontend-core-v4@4.0.0 fixture-check
+> node scripts/check-fixture-free.mjs
+
+Fixture-free gate PASS
+
+> panta-frontend-core-v4@4.0.0 syntax-check
+> node scripts/syntax-check.mjs
+
+Syntax transpile PASS
+
+> panta-frontend-core-v4@4.0.0 contract-check
+> node scripts/contract-check.mjs
+
+Contract check PASS
+
+> panta-frontend-core-v4@4.0.0 kernel-check
+> node scripts/kernel-alignment-check.mjs
+
+Kernel alignment PASS
+
+> panta-frontend-core-v4@4.0.0 dead-control-check
+> node scripts/no-dead-controls.mjs
+
+Dead-control gate PASS
+
+> panta-frontend-core-v4@4.0.0 closed-loop-check
+> node scripts/closed-loop-check.mjs
+
+Closed-loop static gate PASS
+
+> panta-frontend-core-v4@4.0.0 behavior-test
+> node tests/behavior-test.mjs
+
+Synthetic adapter behavior PASS
+
+> panta-frontend-core-v4@4.0.0 projection-test
+> node --no-warnings=ExperimentalWarning --experimental-strip-types tests/projection-behavior.mjs
+
+Frontend projection behavior PASS
+
+Strict TypeScript source validation (TS 5.8.3 + validation-only React declaration shim): PASS

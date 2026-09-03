@@ -1,0 +1,244 @@
+import type {
+  Actor,
+  Artifact,
+  ArtifactBlock,
+  CaseEvent,
+  Unknown,
+  Id,
+  InspectionPayload,
+  WorkItem,
+  ObjectKind,
+  ObjectRef,
+  PantaCaseSnapshot,
+  HumanPosition,
+  Quantity,
+  CaseReading,
+  Relation,
+  Question,
+  Workstream,
+} from '../types/domain';
+
+export function caseReadingById(snapshot: PantaCaseSnapshot, id?: Id): CaseReading | undefined {
+  return id ? snapshot.caseReadings.find(x => x.id === id) : undefined;
+}
+export function unknownById(snapshot: PantaCaseSnapshot, id?: Id): Unknown | undefined {
+  return id ? snapshot.unknowns.find(x => x.id === id) : undefined;
+}
+export function actorById(snapshot: PantaCaseSnapshot, id?: Id): Actor | undefined {
+  return id ? snapshot.actors.find(x => x.id === id) : undefined;
+}
+export function workItemById(snapshot: PantaCaseSnapshot, id?: Id): WorkItem | undefined {
+  return id ? snapshot.workItems.find(x => x.id === id) : undefined;
+}
+export function eventById(snapshot: PantaCaseSnapshot, id?: Id): CaseEvent | undefined {
+  return id ? snapshot.events.find(x => x.id === id) : undefined;
+}
+export function humanPositionById(snapshot: PantaCaseSnapshot, id?: Id): HumanPosition | undefined {
+  return id ? snapshot.humanPositions.find(x => x.id === id) : undefined;
+}
+export function quantityById(snapshot: PantaCaseSnapshot, id?: Id): Quantity | undefined {
+  return id ? snapshot.quantities.find(x => x.id === id) : undefined;
+}
+export function artifactById(snapshot: PantaCaseSnapshot, id?: Id): Artifact | undefined {
+  return id ? snapshot.artifacts.find(x => x.id === id) : undefined;
+}
+export function blockById(snapshot: PantaCaseSnapshot, id?: Id): ArtifactBlock | undefined {
+  return id ? snapshot.artifactBlocks.find(x => x.id === id) : undefined;
+}
+export function questionById(snapshot: PantaCaseSnapshot, id?: Id): Question | undefined {
+  return id ? snapshot.questions.find(x => x.id === id) : undefined;
+}
+export function workstreamById(snapshot: PantaCaseSnapshot, id?: Id): Workstream | undefined {
+  return id ? snapshot.workstreams.find(x => x.id === id) : undefined;
+}
+
+export function humanPositionsForScope(snapshot: PantaCaseSnapshot, scopeIds: Array<Id | undefined>): HumanPosition[] {
+  const ids = new Set(scopeIds.filter(Boolean) as Id[]);
+  return snapshot.humanPositions.filter(p => ids.has(p.scopeObjectId) && (p.institutionalState === 'CURRENT' || p.institutionalState === 'APPROVED'));
+}
+
+export function relationsFrom(snapshot: PantaCaseSnapshot, id: Id): Relation[] {
+  return snapshot.relations.filter(r => r.sourceObjectId === id);
+}
+export function relationsTo(snapshot: PantaCaseSnapshot, id: Id): Relation[] {
+  return snapshot.relations.filter(r => r.targetObjectId === id);
+}
+
+export function objectKind(snapshot: PantaCaseSnapshot, id: Id): ObjectKind | undefined {
+  if (snapshot.caseRef.id === id) return 'case';
+  if (snapshot.actors.some(x => x.id === id)) return 'actor';
+  if (snapshot.workstreams.some(x => x.id === id)) return 'workstream';
+  if (snapshot.questions.some(x => x.id === id)) return 'question';
+  if (snapshot.caseReadings.some(x => x.id === id)) return 'caseReading';
+  if (snapshot.claims.some(x => x.id === id)) return 'claim';
+  if (snapshot.metricDefinitions.some(x => x.id === id)) return 'metricDefinition';
+  if (snapshot.metricObservations.some(x => x.id === id)) return 'metricObservation';
+  if (snapshot.assumptions.some(x => x.id === id)) return 'assumption';
+  if (snapshot.risks.some(x => x.id === id)) return 'risk';
+  if (snapshot.modelNodes.some(x => x.id === id)) return 'modelNode';
+  if (snapshot.outcomes.some(x => x.id === id)) return 'outcome';
+  if (snapshot.sources.some(x => x.id === id)) return 'source';
+  if (snapshot.sourceVersions.some(x => x.id === id)) return 'sourceVersion';
+  if (snapshot.findings.some(x => x.id === id)) return 'finding';
+  if (snapshot.humanPositions.some(x => x.id === id)) return 'humanPosition';
+  if (snapshot.workItems.some(x => x.id === id)) return 'workItem';
+  if (snapshot.quantities.some(x => x.id === id)) return 'quantity';
+  if (snapshot.artifacts.some(x => x.id === id)) return 'artifact';
+  if (snapshot.artifactBlocks.some(x => x.id === id)) return 'artifactBlock';
+  if (snapshot.events.some(x => x.id === id)) return 'caseEvent';
+  if (snapshot.unknowns.some(x => x.id === id)) return 'unknown';
+  if (snapshot.conditions.some(x => x.id === id)) return 'condition';
+  if (snapshot.decisions.some(x => x.id === id)) return 'decision';
+  return undefined;
+}
+
+export function objectLabel(snapshot: PantaCaseSnapshot, id: Id): string {
+  if (snapshot.caseRef.id === id) return snapshot.caseRef.name;
+  const event = snapshot.events.find(x => x.id === id);
+  return snapshot.workstreams.find(x => x.id === id)?.name
+    ?? snapshot.questions.find(x => x.id === id)?.name
+    ?? snapshot.caseReadings.find(x => x.id === id)?.text
+    ?? snapshot.claims.find(x => x.id === id)?.label
+    ?? snapshot.metricDefinitions.find(x => x.id === id)?.canonicalName
+    ?? snapshot.metricObservations.find(x => x.id === id)?.displayLabel
+    ?? snapshot.assumptions.find(x => x.id === id)?.statementOrValue
+    ?? snapshot.risks.find(x => x.id === id)?.mechanism
+    ?? snapshot.modelNodes.find(x => x.id === id)?.label
+    ?? snapshot.outcomes.find(x => x.id === id)?.displayLabel
+    ?? snapshot.sources.find(x => x.id === id)?.title
+    ?? snapshot.findings.find(x => x.id === id)?.title
+    ?? snapshot.humanPositions.find(x => x.id === id)?.text
+    ?? snapshot.workItems.find(x => x.id === id)?.name
+    ?? snapshot.quantities.find(x => x.id === id)?.label
+    ?? snapshot.artifacts.find(x => x.id === id)?.title
+    ?? snapshot.artifactBlocks.find(x => x.id === id)?.title
+    ?? (event ? eventDisplayLabel(snapshot, event) : undefined)
+    ?? snapshot.conditions.find(x => x.id === id)?.label
+    ?? snapshot.unknowns.find(x => x.id === id)?.title
+    ?? snapshot.actors.find(x => x.id === id)?.displayName
+    ?? snapshot.decisions.find(x => x.id === id)?.rationale
+    ?? id;
+}
+
+export function eventDisplayLabel(snapshot: PantaCaseSnapshot, event: CaseEvent): string {
+  const base: Record<CaseEvent['eventType'], string> = {
+    CASE_CREATED: 'Case created',
+    SOURCE_REGISTERED: 'Source added',
+    SOURCE_VERSION_RECORDED: 'Source updated',
+    CLAIM_RECORDED: 'Claim recorded',
+    METRIC_OBSERVATION_RECORDED: 'Metric recorded',
+    QUESTION_PROPOSED: 'Question proposed',
+    QUESTION_SPINE_CHANGED: 'Case structure changed',
+    UNKNOWN_RECORDED: 'Gap recorded',
+    HUMAN_POSITION_RECORDED: 'Human view recorded',
+    CASE_READING_RECOMPUTED: 'Reading updated',
+    ASSUMPTION_PROPOSED: 'Assumption proposed',
+    ASSUMPTION_ADOPTED: 'Assumption adopted',
+    ASSUMPTION_CHALLENGED: 'Assumption challenged',
+    RISK_RECORDED: 'Risk recorded',
+    MODEL_NODE_BOUND: 'Model binding updated',
+    RELATION_ESTABLISHED: 'Relationship updated',
+    CONDITION_RECORDED: 'Condition recorded',
+    CONDITION_STATE_RECORDED: 'Condition updated',
+    DECISION_RECORDED: 'Decision recorded',
+    WORK_ITEM_RECORDED: 'Work added',
+    WORK_ITEM_STATE_RECORDED: 'Work updated',
+    ARTIFACT_VERSION_RECORDED: 'Output updated',
+    OUTCOME_RECORDED: 'Outcome recorded',
+    PROPOSAL_REJECTED: 'Proposal rejected',
+    OBJECT_SUPERSEDED: 'Object superseded',
+    OBJECT_RETIRED: 'Object retired',
+  };
+  const target = event.objectId && event.objectId !== event.id ? objectLabelWithoutEvent(snapshot, event.objectId) : undefined;
+  return target ? `${base[event.eventType]} · ${target}` : base[event.eventType];
+}
+
+function objectLabelWithoutEvent(snapshot: PantaCaseSnapshot, id: Id): string | undefined {
+  if (snapshot.caseRef.id === id) return snapshot.caseRef.name;
+  return snapshot.workstreams.find(x => x.id === id)?.name
+    ?? snapshot.questions.find(x => x.id === id)?.name
+    ?? snapshot.caseReadings.find(x => x.id === id)?.text
+    ?? snapshot.claims.find(x => x.id === id)?.label
+    ?? snapshot.metricDefinitions.find(x => x.id === id)?.canonicalName
+    ?? snapshot.metricObservations.find(x => x.id === id)?.displayLabel
+    ?? snapshot.assumptions.find(x => x.id === id)?.statementOrValue
+    ?? snapshot.risks.find(x => x.id === id)?.mechanism
+    ?? snapshot.modelNodes.find(x => x.id === id)?.label
+    ?? snapshot.outcomes.find(x => x.id === id)?.displayLabel
+    ?? snapshot.sources.find(x => x.id === id)?.title
+    ?? snapshot.findings.find(x => x.id === id)?.title
+    ?? snapshot.humanPositions.find(x => x.id === id)?.text
+    ?? snapshot.workItems.find(x => x.id === id)?.name
+    ?? snapshot.quantities.find(x => x.id === id)?.label
+    ?? snapshot.artifacts.find(x => x.id === id)?.title
+    ?? snapshot.conditions.find(x => x.id === id)?.label
+    ?? snapshot.unknowns.find(x => x.id === id)?.title
+    ?? snapshot.actors.find(x => x.id === id)?.displayName;
+}
+
+export function objectRef(snapshot: PantaCaseSnapshot, id: Id): ObjectRef {
+  return { id, kind: objectKind(snapshot, id) ?? 'caseEvent', label: objectLabel(snapshot, id) };
+}
+
+export function supportSummary(snapshot: PantaCaseSnapshot, reading: CaseReading): { total: number; independent: number; labels: string[] } {
+  return {
+    total: reading.supportObjectIds.length,
+    independent: reading.independentSupportObjectIds.length,
+    labels: reading.supportObjectIds.slice(0, 3).map(id => objectLabel(snapshot, id)),
+  };
+}
+
+export interface LensViewModel {
+  title: string;
+  kind: string;
+  supportCount: number;
+  independentCount: number;
+  supportRefs: ObjectRef[];
+  unknowns: ObjectRef[];
+  dependents: ObjectRef[];
+  lastChange?: { label: string; date: string };
+  related: ObjectRef[];
+  sourceRefs: ObjectRef[];
+  actions: InspectionPayload['allowedActions'];
+}
+
+export function composeLens(snapshot: PantaCaseSnapshot, inspection: InspectionPayload): LensViewModel {
+  const supportRefs = inspection.supportObjectIds.map(id => objectRef(snapshot, id));
+  const unknowns = inspection.unknownIds.map(id => objectRef(snapshot, id));
+  const dependents = inspection.dependentObjectIds.map(id => objectRef(snapshot, id));
+  const related = inspection.relatedObjectIds.map(id => objectRef(snapshot, id));
+  const sourceRefs = inspection.sourceLocators.map(x => objectRef(snapshot, x.sourceId));
+  const event = eventById(snapshot, inspection.lastChangeEventId);
+  return {
+    title: objectLabel(snapshot, inspection.objectId),
+    kind: objectKind(snapshot, inspection.objectId) ?? 'object',
+    supportCount: supportRefs.length,
+    independentCount: inspection.independentSupportObjectIds.length,
+    supportRefs,
+    unknowns,
+    dependents,
+    lastChange: event ? { label: eventDisplayLabel(snapshot, event), date: event.effectiveAt ?? event.knownAt } : undefined,
+    related,
+    sourceRefs,
+    actions: inspection.allowedActions,
+  };
+}
+
+export function humanState(state?: string): string {
+  if (!state) return '';
+  return state.toLowerCase().replaceAll('_', ' ').replace(/^./, x => x.toUpperCase());
+}
+
+export function quantityDisplayState(quantity: Quantity): string {
+  if (quantity.value == null) return 'Not yet established';
+  if (quantity.freshnessStatus === 'STALE') return 'Stale';
+  if (quantity.freshnessStatus === 'EXPIRED') return 'Expired';
+  if (quantity.institutionalState === 'CANDIDATE') return 'Candidate';
+  return 'Current';
+}
+
+export function workItemDisplayState(item: WorkItem): string {
+  if (item.kind === 'PANTA_PROPOSAL' && item.status === 'PROPOSED') return 'PANTA proposal · not adopted';
+  if (!item.ownerActorId && item.status !== 'COMPLETED' && item.status !== 'CANCELLED') return 'Unassigned';
+  return humanState(item.status);
+}

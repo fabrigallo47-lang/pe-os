@@ -73,3 +73,62 @@ working end to end against one real extraction call; not evaluated against a
 real chunk sample, not wired into `annotate_chunk()`, and the query-graph
 heuristic is a stand-in that would need real validation (or replacing with a
 cheap LLM sketch) before this could be trusted on real documents.
+
+## document_logic_extractor.py
+
+A different, narrower application of the same paper: instead of retrieving
+an external worked example, extract the CURRENT document's own dependency
+graph -- which stated values feed which derived ones -- using the exact same
+categories, enums and fields the production claim extractor already emits
+(`CLAIM_TOOL` copied verbatim: same `METRIC_ENUM`, `TOPIC_ENUM`,
+`epistemic_class`, everything), plus two additional fields (`local_id`,
+`depends_on`) that make the same relationship the `derivation` free-text
+field already states, structured instead of prose.
+
+The question: can that structure, extracted once and rendered as a short
+text summary, then be handed to the MAIN per-claim extractor --
+`annotate_chunk`'s actual `CLAIM_TOOL`/`SYSTEM_PROMPT`, completely
+unmodified -- as extra context, and change what it produces?
+
+Run: `python3 -m tools.experiments.document_logic_extractor` (needs
+`ANTHROPIC_API_KEY`; reuses `TEST_CHUNK` from `graphic_examples.py`).
+
+### What was found, running it
+
+- Yes, on the arithmetic: the unmodified main extractor, alone, still finds
+  the same thing `graphic_examples.py` found -- 0 derived claims, the whole
+  EBITDA bridge missed. Handed the document-graph summary as context (no
+  schema change, no few-shot claims, just a plain-text description of what
+  depends on what), it correctly derives through to the right final value
+  (37.0). The scaffold alone was enough, without ever showing it a worked
+  example's actual claims.
+- No, on naming: the derived claims still collide on the metric name
+  "EBITDA" for two different values at two different derivation depths --
+  the exact gap `graphic_examples.py` flagged. This run went further and
+  explicitly instructed against it (`SYSTEM_PROMPT_GRAPH` names this exact
+  failure mode) on the document-graph extractor itself, and it STILL
+  produced two claims both named "EBITDA" (33.0 and 37.0) in its own
+  output -- so the instruction didn't even hold on the prompt written
+  for it, let alone propagate through to the main extractor via the text
+  summary. This looks like it needs a schema/validation-side fix (e.g.
+  detecting two derived claims at different `depends_on` depths sharing a
+  metric name), not another prompt sentence.
+- A structural quirk worth flagging: rather than recognizing "EBITDA
+  depends on 3 stated values at once" (an aggregate), the document-graph
+  extractor folded it into two sequential pairwise steps through an
+  invented intermediate concept it called "Gross Profit" -- not present or
+  implied in the source text, and a poor label for what is actually
+  revenue minus COGS. The arithmetic stayed correct throughout (52 - 19 =
+  33, matching the aggregate), but the graph SHAPE it discovers is not
+  guaranteed to match the most natural reading of the document, only *a*
+  mathematically consistent one.
+
+### Status
+
+Prototype only, same caveats as `graphic_examples.py`: one test fragment,
+not wired into `annotate_chunk()`. The positive finding (context from a
+document's own extracted structure fixes a missed derivation, without a
+worked example) is worth a real trial on actual deal fragments; the naming
+collision is now confirmed to reproduce across two different prompting
+strategies and should probably be chased as a schema/validation change
+instead of a third prompt attempt.

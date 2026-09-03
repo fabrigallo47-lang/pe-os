@@ -308,7 +308,7 @@ def run_extraction(chunk_text: str, fewshot_example: dict[str, Any] | None,
     )
     resp = client.messages.create(
         model=model,
-        max_tokens=2000,
+        max_tokens=4096,
         system=system_prompt,
         tools=[claim_tool],
         tool_choice={"type": "tool", "name": "emit_claims"},

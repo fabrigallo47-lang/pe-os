@@ -109,7 +109,7 @@ def extract_document_graph(chunk_text: str, client) -> tuple[list[dict], DiGraph
     )
     resp = client.messages.create(
         model=MODEL,
-        max_tokens=2000,
+        max_tokens=4096,
         system=SYSTEM_PROMPT_GRAPH,
         tools=[GRAPH_TOOL],
         tool_choice={"type": "tool", "name": "emit_claim_graph"},
@@ -168,7 +168,7 @@ def run_main_extractor(chunk_text: str, client, extra_context: str | None = None
     )
     resp = client.messages.create(
         model=MODEL,
-        max_tokens=2000,
+        max_tokens=4096,
         system=SYSTEM_PROMPT,          # unmodified production prompt
         tools=[CLAIM_TOOL],            # unmodified production schema
         tool_choice={"type": "tool", "name": "emit_claims"},

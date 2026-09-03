@@ -132,3 +132,94 @@ worked example) is worth a real trial on actual deal fragments; the naming
 collision is now confirmed to reproduce across two different prompting
 strategies and should probably be chased as a schema/validation change
 instead of a third prompt attempt.
+
+## real_fixture_test.py
+
+Everything above used one synthetic fragment, built specifically to force a
+derivation by withholding the final total. This runs the same two
+prototypes against three REAL fragments from
+`sources/keystone-fixture/layer1-ingest/` -- actual Keystone deal documents,
+not a test string -- to see whether the synthetic findings hold up:
+
+  qoe_bridge   `keystone_qoe_report.md`         Reported EBITDA 10.2 + nine
+                                                 QoE adjustments -> Normalized
+                                                 EBITDA 11.9 (QoEView)
+  firm_bridge  `keystone_firm_model_summary.md` Reported EBITDA 10.20 + four
+                                                 Firm adjustments, two of
+                                                 them negative reserves ->
+                                                 Firm-underwritten EBITDA
+                                                 11.40 (FirmView)
+  cim_margin   `keystone_seller_cim.md`         seller-adjusted EBITDA 12.7 /
+                                                 revenue 74.0 -> 17.2% margin
+                                                 (SellerView), one hop
+
+Run: `python3 -m tools.experiments.real_fixture_test` (needs
+`ANTHROPIC_API_KEY`).
+
+### What was found, running it -- this changes the picture from the
+### synthetic test, not just confirms it
+
+- **The unmodified baseline already handles real documents well.** All
+  three fragments: correct final total, correct `basis` per source-type
+  (ReportedView / QoEView / FirmView / SellerView), and -- this is the
+  important one -- the nine "EBITDA Adjustment" claims in `qoe_bridge`,
+  which all share the same `metric` and `basis`, are each given a distinct
+  `measurement` matching their real table row ("Founder / executive
+  compensation", "Transaction-readiness and professional fees", etc). Zero
+  identity collisions in any of the nine runs (3 fragments x 3 modes).
+  `measurement` is exactly the schema's own designed answer to this, and on
+  these real documents it already works without any graph assistance.
+- **This means the synthetic test's "naming collision" framing does not
+  transfer as-is.** That test only checked `derived` claims for distinct
+  names; on real documents almost nothing needs deriving, because real
+  bridges STATE their own total ("normalized FY2025 EBITDA is $11.9m") --
+  the model can correctly extract it as `attested`/`asserted` and copy it,
+  never triggering the derived-naming problem at all. The real disambiguator
+  in play here is `measurement` across same-metric-same-basis siblings, and
+  it held up.
+- **The document-graph extractor's genuine incremental value, where it
+  showed up: independent arithmetic verification of a stated total**, not
+  recovery of a missing one. On `firm_bridge` it produced an explicit
+  6-input derivation ($10.20 + $1.70 − $0.20 − $0.15 − $0.10 − $0.05 =
+  $11.40) proving the document's own printed total is internally
+  consistent, where the baseline had just copied "$11.40m" as a stated
+  fact without checking it against its own components. That is a real,
+  distinct capability -- catching a document whose own math doesn't add up
+  -- worth taking seriously given this session's own PAN-100 history of
+  chart values that were confidently wrong.
+- **But it did not do this consistently.** On `qoe_bridge` -- a clearer
+  table, headed "Normalized EBITDA schedule", 9 line items instead of 5 --
+  the graph extractor produced 0 dependency edges: every claim independent,
+  no verification attempted, functionally identical to the baseline. Same
+  mechanism, same kind of table, opposite behaviour. Not explained by
+  anything found so far.
+- **A real regression, not a synthetic-test artifact: the graph extractor
+  got `basis` wrong on `qoe_bridge`** -- `FirmView` instead of the correct
+  `QoEView` -- while the baseline and the assisted run, given the exact
+  same fragment text, both got it right. The only difference is the longer
+  `SYSTEM_PROMPT_GRAPH` (production `SYSTEM_PROMPT` plus the local_id/
+  depends_on instructions). This is concrete evidence that appending
+  instructions for the new capability can measurably degrade an unrelated,
+  already-working part of the same prompt -- a real cost of this approach,
+  not just a hypothetical one.
+- Test harness caveat, not swept under the rug: all three fragments were
+  sent with the same hardcoded `SOURCE: ... management presentation` line
+  regardless of the fragment's real document type (QoE report, internal
+  firm model, CIM) -- unlike production, which reads the real `doc_type`.
+  The model still got `basis` right in 8 of 9 runs despite this, but the
+  one miss above should be re-checked with the correct source line before
+  concluding anything stronger about it.
+
+### Status
+
+Real documents change the conclusion, not just add color: on these three
+fragments the CURRENT production extractor needs no help to get the totals
+and the identities right, because real bridges state their own conclusion.
+The one demonstrated value-add is arithmetic self-verification of a stated
+total, which only fired on one of two structurally similar bridges, and
+came with a real, measured accuracy cost on a field (`basis`) it had no
+business touching. Before this goes anywhere near production: fix the
+hardcoded SOURCE line and re-test, find a real fragment where the total is
+genuinely NOT stated (rarer than expected -- none of these three qualified),
+and treat the inconsistent edge-finding and the basis regression as open
+problems, not noise.

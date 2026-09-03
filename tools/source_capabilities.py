@@ -65,6 +65,14 @@ _CAPABILITIES: tuple[dict[str, Any], ...] = (
         action="Run OCR outside PANTA, verify the page mapping, then upload a searchable PDF or UTF-8 text export.",
     ),
     _capability(
+        "native_image", [".png", ".jpg", ".jpeg", ".webp", ".bmp", ".tif", ".tiff"],
+        "SUPPORTED_IF_READER_AVAILABLE", "parse_image",
+        "single image, page 1; a caller-supplied vision_fallback is a separate, "
+        "explicitly injected capability, not part of this contract",
+        dependency="a local PDF-page model (Granite-Docling or an injected convert_page)",
+        action="Install the PDF model stack (see deploy/README.md) or supply convert_page.",
+    ),
+    _capability(
         "docx", [".docx"], "SUPPORTED", "parse_docx",
         "document paragraph range in XML document order",
     ),

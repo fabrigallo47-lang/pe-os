@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 
 import app.v20_router as router  # noqa: E402
 from tools.excel_formula_graph import compile_workbook  # noqa: E402
-from tools.extract_v2 import (  # noqa: E402
+from tools.extract_v2_physical import (  # noqa: E402
     UnsupportedSourceError,
     _capture_workbook_graphs,
     parse_source,
@@ -44,27 +44,34 @@ def _record(path: Path, document_type: str = "Diligence source") -> dict:
 
 
 def _write_docx(path: Path) -> None:
-    document = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<w:document xmlns:w="http://schemas.openxmlformats.org/wordprocessingml/2006/main">
-  <w:body>
-    <w:p><w:r><w:t>Revenue was EUR 20m in FY2025A.</w:t></w:r></w:p>
-    <w:p><w:r><w:t>Management expects growth in FY2026E.</w:t></w:r></w:p>
-  </w:body>
-</w:document>"""
-    with zipfile.ZipFile(path, "w") as package:
-        package.writestr("word/document.xml", document)
+    # PAN-103: parse_docx reads via docx2python (native table-grid access),
+    # which requires a genuinely valid OOXML package -- a bare
+    # word/document.xml with no [Content_Types].xml or relationships (the
+    # old raw-XML reader's minimum) no longer opens. Build a real, minimal
+    # document through python-docx itself instead of hand-rolling package
+    # structure (same fix already applied to _write_pptx for PAN-101).
+    from docx import Document
+
+    document = Document()
+    document.add_paragraph("Revenue was EUR 20m in FY2025A.")
+    document.add_paragraph("Management expects growth in FY2026E.")
+    document.save(str(path))
 
 
 def _write_pptx(path: Path) -> None:
-    slide = """<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
-<p:sld xmlns:p="http://schemas.openxmlformats.org/presentationml/2006/main"
-       xmlns:a="http://schemas.openxmlformats.org/drawingml/2006/main">
-  <p:cSld><p:spTree><p:sp><p:txBody>
-    <a:p><a:r><a:t>FY2026E base case revenue</a:t></a:r></a:p>
-  </p:txBody></p:sp></p:spTree></p:cSld>
-</p:sld>"""
-    with zipfile.ZipFile(path, "w") as package:
-        package.writestr("ppt/slides/slide1.xml", slide)
+    # PAN-102/PAN-101: parse_pptx reads via python-pptx (native chart/table/
+    # notes access), which requires a genuinely valid OOXML package -- a
+    # bare ppt/slides/slide1.xml with no [Content_Types].xml, presentation
+    # part, or relationships (the old raw-XML reader's minimum) no longer
+    # opens. Build a real, minimal deck through python-pptx itself instead
+    # of hand-rolling package structure.
+    from pptx import Presentation
+
+    presentation = Presentation()
+    slide = presentation.slides.add_slide(presentation.slide_layouts[6])
+    text_box = slide.shapes.add_textbox(0, 0, 9144000, 685800)
+    text_box.text_frame.text = "FY2026E base case revenue"
+    presentation.save(str(path))
 
 
 class _FakePDF:
@@ -121,7 +128,10 @@ class PAN56CapabilityContractTests(unittest.TestCase):
             document_chunks = parse_source(docx, source_record=_record(docx))
             slide_chunks = parse_source(pptx, source_record=_record(pptx, "Management deck"))
         self.assertEqual(document_chunks[0].source_type, "docx")
-        self.assertRegex(document_chunks[0].locator, r"report\.docx::paragraphs:1-2")
+        # PAN-103: locator label is "blocks" now, not "paragraphs" --
+        # docx2python-derived chunks may carry paragraphs or real tables,
+        # and the old label stopped being accurate.
+        self.assertRegex(document_chunks[0].locator, r"report\.docx::blocks:\d+-\d+")
         self.assertIn("FY2025A", document_chunks[0].body)
         self.assertEqual(slide_chunks[0].source_type, "pptx")
         self.assertIn("deck.pptx::slide:1", slide_chunks[0].locator)

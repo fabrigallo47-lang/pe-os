@@ -1,7 +1,7 @@
 #!/usr/bin/env python3
 """Canonical object identity — one place that owns normalization and ID computation.
 
-Every writer (extract.py, extract_v2.py, the V20 router, the ledger) must import
+Every writer (extract.py, extract_v2_physical.py, the V20 router, the ledger) must import
 identity from here.  Today each computes its own, which is why the same fact can
 land twice under two IDs.
 

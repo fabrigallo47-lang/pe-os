@@ -20,7 +20,7 @@ sys.path.insert(0, str(PROJECT_ROOT))
 import app.v20_router as router  # noqa: E402
 from runtime import apply_state_transition, compute_operative_claims  # noqa: E402
 from tools.execution_mapping_compiler import populate_execution_mapping  # noqa: E402
-from tools.extract_v2 import RawClaim, assemble, validate  # noqa: E402
+from tools.extract_v2_physical import RawClaim, assemble, validate  # noqa: E402
 from tools.identity_resolver import score_pair  # noqa: E402
 from tools.object_identity import is_resolvable  # noqa: E402
 

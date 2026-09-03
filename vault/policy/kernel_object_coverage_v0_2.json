@@ -120,8 +120,8 @@
       "current_representation": "transcript and email parsers retain source locators but do not create a durable Interaction object",
       "dynamic_mutation_type": null,
       "evidence": [
-        {"path": "tools/extract_v2.py", "anchor": "def parse_transcript"},
-        {"path": "tools/extract_v2.py", "anchor": "def parse_email"}
+        {"path": "tools/extract_v2_physical.py", "anchor": "def parse_transcript"},
+        {"path": "tools/extract_v2_physical.py", "anchor": "def parse_email"}
       ],
       "next_step": "Introduce only in the semantic ledger when conversation-level identity is needed; never add it to Dynamic solely for vocabulary parity."
     },

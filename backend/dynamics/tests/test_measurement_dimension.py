@@ -58,7 +58,7 @@ class MeasurementDimensionTests(unittest.TestCase):
         self.assertEqual(metric_identity(a), metric_identity(b))
 
     def test_extractor_requires_the_field(self):
-        from tools.extract_v2 import CLAIM_TOOL
+        from tools.extract_v2_physical import CLAIM_TOOL
         required = CLAIM_TOOL["input_schema"]["properties"]["claims"]["items"]["required"]
         self.assertIn("measurement", required,
                       "the extractor must ask for the slice, or it is always empty")

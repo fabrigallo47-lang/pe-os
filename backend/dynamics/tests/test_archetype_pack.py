@@ -9,7 +9,7 @@ PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools import archetype_pack  # noqa: E402
-from tools.extract_v2 import TOPIC_ENUM  # noqa: E402
+from tools.extract_v2_physical import TOPIC_ENUM  # noqa: E402
 
 
 class ArchetypePackTests(unittest.TestCase):

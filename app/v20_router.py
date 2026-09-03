@@ -4786,7 +4786,7 @@ def _extraction_command(
             run_dir = pipeline_out / "runs" / job_id
             command = [
                 sys.executable,
-                str(ROOT / "tools" / "extract_v2.py"),
+                str(ROOT / "tools" / "extract_v2_physical.py"),
                 "--source",
                 str(source_path),
                 "--deal",

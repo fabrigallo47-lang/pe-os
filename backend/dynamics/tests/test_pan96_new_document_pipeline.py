@@ -166,7 +166,7 @@ class PAN96NewDocumentPipelineTests(unittest.TestCase):
         validate()/assemble()/_w() functions the CLI itself calls, just
         without the LLM chunking/extraction stage ahead of them.
         """
-        from tools.extract_v2 import RawClaim, assemble, validate, _w
+        from tools.extract_v2_physical import RawClaim, assemble, validate, _w
 
         seller_adjective = validate(RawClaim(
             metric="EBITDA",

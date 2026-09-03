@@ -1465,6 +1465,55 @@ def _granite_docling_available() -> bool:
     return _granite_docling_availability_cache
 
 
+_TEXT_RESIDUAL_ENABLED = os.environ.get("PE_OS_TEXT_RESIDUAL", "1") != "0"
+_RESIDUAL_STRIP = re.compile(r"[^0-9a-z.%$/+-]")
+
+
+def _residual_norm(token: str) -> str:
+    """Normalise a token for presence testing, not for display."""
+    return _RESIDUAL_STRIP.sub("", token.lower())
+
+
+def _text_layer_residual(page: Any, emitted: str) -> list[str]:
+    """Text objects in the page's PDF text layer that the model did not emit.
+
+    The layout models classify a chart region as a picture and drop the text
+    inside it -- but in a vector PDF those axis labels and data values are
+    real text objects, not pixels. On a Goldman investor-day page the entire
+    loss was $50.4, $35.3, 2017-2019, 2020-2022: numbers sitting in the file,
+    discarded because they fell inside a box labelled "chart".
+
+    Recovering them by bbox was the obvious approach and it does not work.
+    Page rotation (270 deg on that deck) leaves pdfplumber reporting word
+    boxes in unrotated space, degenerate -- five tokens all claiming the same
+    0.8pt-tall line -- so no scale maps the layout model's box onto them. A
+    set difference needs no geometry at all, and it covers Granite and
+    classic Docling too, neither of which reports a box.
+
+    This is READ TEXT, epistemically `observed`. What it deliberately does
+    NOT do is say which bar a value belongs to: that association is the part
+    a model would have to infer, and inferring it here is exactly the
+    confidently-wrong failure PAN-100 recorded.
+    """
+    if not _TEXT_RESIDUAL_ENABLED:
+        return []
+    try:
+        words = page.extract_words()
+    except Exception:
+        return []                      # never fail a page over a coverage check
+    seen = {_residual_norm(t) for t in re.findall(r"\S+", emitted)}
+    seen.discard("")
+    residual, reported = [], set()
+    for word in words:
+        text = (word.get("text") or "").strip()
+        key = _residual_norm(text)
+        if not key or key in seen or key in reported:
+            continue
+        reported.add(key)
+        residual.append(text)
+    return residual
+
+
 def _granite_device() -> str:
     """Pick the device for Granite-Docling: CUDA if present, else CPU.
 
@@ -1717,6 +1766,17 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
                         "page; its content was not reliably extracted. Chart pixel data is "
                         "not converted to numbers here -- a real waterfall/bridge chart test "
                         "showed this can produce confidently wrong values (PAN-100)."
+                    )
+                residual = _text_layer_residual(page, "\n\n".join(body_parts))
+                if residual:
+                    shown = " \u00b7 ".join(residual[:40])
+                    more = f" (+{len(residual) - 40} more)" if len(residual) > 40 else ""
+                    body_parts.append(
+                        f"[coverage] TEXT_LAYER_RESIDUAL: {len(residual)} text object(s) "
+                        f"in this page's PDF text layer do not appear in the extraction "
+                        f"above: {shown}{more}. These are READ TEXT, not inferred -- they "
+                        "most often sit inside a region the layout model classified as a "
+                        "picture. Which chart element each belongs to is NOT resolved here."
                     )
                 body = "\n\n".join(body_parts)
                 if not body.strip():

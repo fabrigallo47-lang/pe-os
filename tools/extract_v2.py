@@ -1346,6 +1346,35 @@ def _email_date(message: Any) -> str | None:
         return None
 
 
+def _email_headers(message: Any) -> dict[str, str]:
+    """The header fields a claim about "who sent this" needs to point at.
+
+    Subject previously only reached section_heading, and From/To/Message-Id
+    were not surfaced anywhere on the chunk -- so a caller had the body but
+    no way to answer "who is this from" without re-parsing the raw file
+    itself. These are message metadata, not attachment content, so exposing
+    them does not touch invariant 6 (artifacts are never copied into the
+    vault); a header is not the artifact.
+    """
+    headers = {}
+    for name in ("Subject", "From", "To", "Cc", "Message-Id"):
+        value = message.get(name)
+        if value:
+            headers[name.lower().replace("-", "_")] = str(value)
+    return headers
+
+
+def _email_attachments(message: Any) -> list[str]:
+    """Attachment filenames only -- never their content (invariant 6)."""
+    names = []
+    for part in message.walk():
+        if part.get_content_disposition() == "attachment":
+            name = part.get_filename()
+            if name:
+                names.append(name)
+    return names
+
+
 def parse_email(path: Path, max_words: int = CHUNK_WORDS,
                 source_record: dict | None = None) -> list[Chunk]:
     src = source_record or _source_record(path)
@@ -1377,10 +1406,8 @@ def parse_email(path: Path, max_words: int = CHUNK_WORDS,
         body, quoted_history_stripped = _strip_quoted_reply_history(body)
         if not body:
             continue
-        attachment_count = sum(
-            1 for part in message.walk()
-            if part.get_content_disposition() == "attachment"
-        )
+        attachment_names = _email_attachments(message)
+        headers = _email_headers(message)
         message_chunks = _split_words(
             body, max_words, f"{path.name}::message:{message_number}:body",
             str(path), "email", src,
@@ -1389,7 +1416,9 @@ def parse_email(path: Path, max_words: int = CHUNK_WORDS,
         document_date = _email_date(message)
         for chunk in message_chunks:
             chunk.provenance = {
-                "excluded_attachments": attachment_count,
+                "headers": headers,
+                "excluded_attachments": len(attachment_names),
+                "attachment_filenames": attachment_names,
                 "attachment_policy": "SEPARATE_SOURCE_ENVELOPE_REQUIRED",
                 "quoted_reply_history_stripped": quoted_history_stripped,
             }

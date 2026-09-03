@@ -126,6 +126,8 @@ def make_case(
     inputs: list[dict[str, Any]],
     gold: dict[str, Any],
     metrics: list[str],
+    diagnostic_metrics: list[str] | None = None,
+    evaluation_profile: str | None = None,
     query: str | None = None,
     evidence: list[dict[str, Any]] | None = None,
     track: str | None = None,
@@ -155,6 +157,10 @@ def make_case(
         "metrics": metrics,
         "tags": sorted(set(tags or [])),
     }
+    if diagnostic_metrics:
+        case["diagnostic_metrics"] = diagnostic_metrics
+    if evaluation_profile:
+        case["evaluation_profile"] = evaluation_profile
     if license_name:
         case["license"] = license_name
     return case

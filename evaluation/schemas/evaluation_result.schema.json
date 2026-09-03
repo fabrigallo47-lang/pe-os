@@ -1,0 +1,28 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/evaluation/evaluation_result.schema.json",
+  "title": "PANTA Evaluation Result",
+  "type": "object",
+  "additionalProperties": false,
+  "required": ["schema_version", "run_id", "test_id", "benchmark", "task", "families", "weight", "status", "passed", "score", "scores", "errors", "warnings"],
+  "properties": {
+    "schema_version": {"const": "panta-eval.result/1.0"},
+    "run_id": {"type": "string"},
+    "test_id": {"type": "string"},
+    "benchmark": {"type": "string"},
+    "task": {"type": "string"},
+    "families": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "weight": {"type": "number", "exclusiveMinimum": 0},
+    "status": {"enum": ["evaluated", "missing_prediction", "invalid_prediction", "execution_error"]},
+    "passed": {"type": "boolean"},
+    "score": {"type": "number", "minimum": 0, "maximum": 1},
+    "scores": {"type": "object", "additionalProperties": {"type": "number", "minimum": 0, "maximum": 1}},
+    "native_scores": {"type": "object", "additionalProperties": {"type": "number"}},
+    "threshold": {"type": "number", "minimum": 0, "maximum": 1},
+    "latency_ms": {"type": ["number", "null"], "minimum": 0},
+    "cost": {"type": ["object", "null"], "additionalProperties": true},
+    "errors": {"type": "array", "items": {"type": "string"}},
+    "warnings": {"type": "array", "items": {"type": "string"}},
+    "details": {"type": "object", "additionalProperties": true}
+  }
+}

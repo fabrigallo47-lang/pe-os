@@ -22,7 +22,7 @@ from pptx.chart.data import CategoryChartData  # noqa: E402
 from pptx.enum.chart import XL_CHART_TYPE  # noqa: E402
 from pptx.util import Inches  # noqa: E402
 
-from tools.extract_v2 import parse_pptx  # noqa: E402
+from tools.extract_v2_physical import parse_pptx  # noqa: E402
 
 
 class PAN101PptxNativeContentTests(unittest.TestCase):
@@ -163,7 +163,7 @@ class PAN101PptxNativeContentTests(unittest.TestCase):
         self.assertIn("All other customers=81.8", body)
 
     def test_invalid_pptx_is_a_declared_rejection_not_a_crash(self):
-        from tools.extract_v2 import UnsupportedSourceError
+        from tools.extract_v2_physical import UnsupportedSourceError
 
         bad = Path(self.temporary.name) / "not_a_deck.pptx"
         bad.write_bytes(b"not a real zip")

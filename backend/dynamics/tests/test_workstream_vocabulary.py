@@ -21,7 +21,7 @@ from tools.archetype_pack import (  # noqa: E402
     normalize_workstream,
     workstream_ids,
 )
-from tools.extract_v2 import TOPIC_ENUM  # noqa: E402
+from tools.extract_v2_physical import TOPIC_ENUM  # noqa: E402
 
 
 class WorkstreamVocabularyTests(unittest.TestCase):

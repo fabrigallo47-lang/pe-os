@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """Side-by-side extraction test UI -- the original document on the left,
-exactly what tools/extract_v2.py::parse_source produced from it on the
+exactly what tools/extract_v2_physical.py::parse_source produced from it on the
 right, linked so clicking a chunk jumps the original to the place it came
 from.
 
@@ -48,7 +48,7 @@ sys.path.insert(0, str(ROOT))
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from urllib.parse import parse_qs, urlparse
 
-from tools.extract_v2 import (
+from tools.extract_v2_physical import (
     UnsupportedSourceError,
     _granite_docling_available,
     parse_source,

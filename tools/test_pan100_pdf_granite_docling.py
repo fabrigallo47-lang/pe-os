@@ -21,7 +21,7 @@ from unittest.mock import patch
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from tools.extract_v2 import (  # noqa: E402
+from tools.extract_v2_physical import (  # noqa: E402
     _chunk_markdown_blocks,
     _is_degenerate_repetition,
     parse_pdf,
@@ -108,7 +108,7 @@ class GracefulDegradationTests(unittest.TestCase):
             path = Path(tmp) / "memo.pdf"
             path.write_bytes(_minimal_single_page_pdf(b"Revenue was EUR 20m in FY2025A."))
 
-            with patch("tools.extract_v2._granite_docling_available", return_value=False):
+            with patch("tools.extract_v2_physical._granite_docling_available", return_value=False):
                 chunks = parse_pdf(path)
 
         self.assertEqual(len(chunks), 1)
@@ -129,8 +129,8 @@ class GracefulDegradationTests(unittest.TestCase):
             path.write_bytes(_minimal_single_page_pdf(b"Revenue was EUR 20m in FY2025A."))
 
             degenerate_markdown = "creditor customers.\n\n" * 80
-            with patch("tools.extract_v2._granite_docling_available", return_value=True), \
-                 patch("tools.extract_v2._granite_docling_convert_page", return_value=(degenerate_markdown, [])):
+            with patch("tools.extract_v2_physical._granite_docling_available", return_value=True), \
+                 patch("tools.extract_v2_physical._granite_docling_convert_page", return_value=(degenerate_markdown, [])):
                 chunks = parse_pdf(path)
 
         self.assertEqual(len(chunks), 1)

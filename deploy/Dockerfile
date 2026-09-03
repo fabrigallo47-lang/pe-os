@@ -23,7 +23,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
 
 WORKDIR /app
 
-# --- granite venv: the VLM path used by tools/extract_v2.py -------------
+# --- granite venv: the VLM path used by tools/extract_v2_physical.py -------------
 RUN python3.13 -m venv /venvs/granite \
  && /venvs/granite/bin/pip install --no-cache-dir -U pip \
  && /venvs/granite/bin/pip install --no-cache-dir \

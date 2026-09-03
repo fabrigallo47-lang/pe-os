@@ -92,7 +92,7 @@ def _relation_report(claim: dict[str, Any], identity_key: str) -> dict[str, Any]
 
 def run_pipeline(text: str, filename: str = "incolla.md",
                  raw: bytes | None = None) -> dict[str, Any]:
-    from tools.extract_v2 import (CHUNK_WORDS, annotate_chunk, parse_source,
+    from tools.extract_v2_physical import (CHUNK_WORDS, annotate_chunk, parse_source,
                                   validate, MODEL)
     from tools.llm_provider import configured_api_key
 
@@ -154,7 +154,7 @@ def run_pipeline(text: str, filename: str = "incolla.md",
 
 
 def _client():
-    from tools.extract_v2 import MODEL  # noqa: F401
+    from tools.extract_v2_physical import MODEL  # noqa: F401
     from tools.llm_provider import anthropic_client_kwargs, configured_api_key
     import anthropic
     return anthropic.Anthropic(**anthropic_client_kwargs(configured_api_key()))

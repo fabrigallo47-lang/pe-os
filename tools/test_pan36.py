@@ -22,7 +22,7 @@ from tools.adapter_alpha import (
     compile_e3_runtime_bundle,
     e3_to_extraction_graph,
 )
-from tools.extract_v2 import (
+from tools.extract_v2_physical import (
     CLAIM_TOOL,
     Chunk,
     RawClaim,
@@ -342,7 +342,7 @@ class WorkbookV2ContractTests(unittest.TestCase):
                 result = subprocess.run(
                     [
                         sys.executable,
-                        str(ROOT / "tools" / "extract_v2.py"),
+                        str(ROOT / "tools" / "extract_v2_physical.py"),
                         "--source",
                         str(source),
                         "--deal",
@@ -424,7 +424,7 @@ class WorkbookV2ContractTests(unittest.TestCase):
             result = subprocess.run(
                 [
                     sys.executable,
-                    str(ROOT / "tools" / "extract_v2.py"),
+                    str(ROOT / "tools" / "extract_v2_physical.py"),
                     "--source",
                     str(source),
                     "--deal",

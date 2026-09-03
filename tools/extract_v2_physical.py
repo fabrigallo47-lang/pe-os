@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
 """
-extract_v2.py — E3 extraction pipeline for PANTA.
+extract_v2_physical.py — E3 extraction pipeline for PANTA.
 
 Architecture:
   L1  Document parser    → deterministic chunks with stable locators
@@ -17,16 +17,16 @@ Manifest modes prevent temporal leakage between knowledge snapshots:
   K-LIVE  K-IC + board packs     — post-close, event-by-event
 
 Usage:
-  python3 tools/extract_v2.py --manifest K-IC --deal keystone --dry-run
+  python3 tools/extract_v2_physical.py --manifest K-IC --deal keystone --dry-run
 
   export ANTHROPIC_API_KEY=sk-...  # or OPENROUTER_API_KEY with PEOS_LLM_PROVIDER=openrouter
-  python3 tools/extract_v2.py --manifest K-PRE --deal keystone \\
+  python3 tools/extract_v2_physical.py --manifest K-PRE --deal keystone \\
       --output pipeline_out/e3/k_pre
 
-  python3 tools/extract_v2.py --source vault/inbox/keystone_ic_memo.md \\
+  python3 tools/extract_v2_physical.py --source vault/inbox/keystone_ic_memo.md \\
       --deal keystone --output pipeline_out/e3/single
 
-  python3 tools/extract_v2.py --manifest K-IC --deal keystone \\
+  python3 tools/extract_v2_physical.py --manifest K-IC --deal keystone \\
       --compare pipeline_out/keystone_full_story/graph.json
 """
 from __future__ import annotations

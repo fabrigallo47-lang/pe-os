@@ -21,7 +21,7 @@ class PipelineEntrypointTests(unittest.TestCase):
                     Path("/tmp") / f"synthetic{suffix}", "keystone", "job-36"
                 )
                 self.assertEqual(label, "SINGLE_V2")
-                self.assertIn("extract_v2.py", " ".join(command))
+                self.assertIn("extract_v2_physical.py", " ".join(command))
                 self.assertIn(f"synthetic{suffix}", " ".join(command))
 
         with self.assertRaisesRegex(UnsupportedUploadFormat, r"convert.*\.xlsx"):
@@ -41,7 +41,7 @@ class PipelineEntrypointTests(unittest.TestCase):
             output = root / "out"
             result = subprocess.run(
                 [
-                    sys.executable, str(REPO_ROOT / "tools" / "extract_v2.py"),
+                    sys.executable, str(REPO_ROOT / "tools" / "extract_v2_physical.py"),
                     "--source", str(source), "--deal", "scout", "--output", str(output),
                     "--source-envelope", str(envelope_path), "--dry-run",
                 ],

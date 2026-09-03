@@ -20,7 +20,7 @@ from openpyxl.styles import Font
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from tools.extract_v2 import parse_xlsx  # noqa: E402
+from tools.extract_v2_physical import parse_xlsx  # noqa: E402
 
 
 class PAN102XlsxSemanticContextTests(unittest.TestCase):

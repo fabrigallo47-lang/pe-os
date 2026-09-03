@@ -18,7 +18,7 @@ sys.path.insert(0, str(ROOT))
 
 import app.v20_router as router  # noqa: E402
 from tools.excel_formula_graph import compile_workbook  # noqa: E402
-from tools.extract_v2 import UnsupportedSourceError, parse_source  # noqa: E402
+from tools.extract_v2_physical import UnsupportedSourceError, parse_source  # noqa: E402
 from tools.source_graph import capture  # noqa: E402
 
 

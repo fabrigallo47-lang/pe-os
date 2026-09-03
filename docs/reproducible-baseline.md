@@ -57,7 +57,7 @@ present.
 
 1. Run `make baseline` and retain the JSON output with the test evidence.
 2. Run `make verify`; no skipped core package may be represented as executed.
-3. For a fresh extraction, point `extract_v2.py --input-dir` at the approved
+3. For a fresh extraction, point `extract_v2_physical.py --input-dir` at the approved
    external source directory. Do not copy sensitive sources into `vault/inbox`
    merely to satisfy a test.
 4. Compare hashes and manifests before admitting evidence into Current.

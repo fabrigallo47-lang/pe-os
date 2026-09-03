@@ -21,7 +21,7 @@ sys.path.insert(0, str(ROOT))
 
 from docx import Document  # noqa: E402
 
-from tools.extract_v2 import parse_docx  # noqa: E402
+from tools.extract_v2_physical import parse_docx  # noqa: E402
 
 
 class PAN103DocxTableTests(unittest.TestCase):

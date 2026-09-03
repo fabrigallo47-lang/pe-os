@@ -91,7 +91,7 @@ def add_document(case_id: str, source: Path) -> dict[str, Any]:
     unchanged file is a no-op and an edited one replaces its own chunks without
     disturbing anything else.
     """
-    from tools.extract_v2 import CHUNK_WORDS, parse_source
+    from tools.extract_v2_physical import CHUNK_WORDS, parse_source
 
     raw = source.read_bytes()
     version = _digest(raw.decode("utf-8", "replace")[:2_000_000])

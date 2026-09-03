@@ -66,7 +66,7 @@ def extract(path: Path) -> str:
     pre-bound to a file it doesn't have yet -- and _paddle_convert is
     already exactly that shape.
     """
-    from extract_v2 import parse_source
+    from extract_v2_physical import parse_source
 
     suffix = path.suffix.lower()
     convert_page = _paddle_convert(path) if suffix in (".pdf", *IMAGE_SUFFIXES) else None

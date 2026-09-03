@@ -6,7 +6,7 @@ contract in evaluation/README.md.
 
 Two stages, in that order, because that order is the point:
 
-1. EXTRACT with the real pipeline -- tools/extract_v2.parse_source, with
+1. EXTRACT with the real pipeline -- tools/extract_v2_physical.parse_source, with
    PDFs routed through the PaddleOCR-VL engine and everything it now
    carries: markdown tables, undetected-region recovery, chart-value
    corroboration and geometric pair checking, slide reading order.
@@ -23,6 +23,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -49,7 +50,7 @@ def _paddle_convert(pdf: Path):
     which doubles as the pdf_engine factory parse_pptx's PDF-fallback tier
     needs (it does not know the exported PDF's path until soffice creates
     it, so it cannot receive a pre-bound convert_page)."""
-    from extract_v2 import ROOT as _  # noqa: F401  (import guard)
+    from extract_v2_physical import ROOT as _  # noqa: F401  (import guard)
 
     out_json = pdf.with_suffix(".eval.paddle.json")
     proc = subprocess.run(
@@ -82,7 +83,7 @@ def extract(path: Path) -> str:
     pre-bound to a file it doesn't have yet -- and _paddle_convert is
     already exactly that shape.
     """
-    from extract_v2 import parse_source
+    from extract_v2_physical import parse_source
 
     suffix = path.suffix.lower()
     convert_page = _paddle_convert(path) if suffix in (".pdf", *IMAGE_SUFFIXES) else None
@@ -136,7 +137,7 @@ def _vision_fallback_haiku(path: Path) -> str:
     the local model pipeline (Granite/Paddle, run on the GPU pod, no
     Anthropic call) produced nothing usable.
 
-    Lives here, not in tools/extract_v2.py, on purpose: this is the only
+    Lives here, not in tools/extract_v2_physical.py, on purpose: this is the only
     place in the whole pipeline that already holds the Anthropic API key
     and already makes a cloud call (the answering stage). Wiring a live
     Anthropic call into the core extractor would be new cloud egress on a
@@ -151,31 +152,191 @@ def _vision_fallback_haiku(path: Path) -> str:
     read or model-derived; this one is model-derived by construction (a
     model looked at pixels), so it is always tagged that way.
     """
+    media_type = {".pdf": "application/pdf"}.get(
+        path.suffix.lower(), f"image/{path.suffix.lower().lstrip('.')}")
+    return _vision_transcribe_bytes(path.read_bytes(), media_type)
+
+
+_LOCATOR_RE = re.compile(r"<<locator: p(\d+)[^>]*>>")
+_BBOX_RE = re.compile(r"bbox=\[(\d+),\s*(\d+),\s*(\d+),\s*(\d+)\]")
+
+
+def _unresolved_regions(text: str) -> list[tuple[int, tuple[int, int, int, int]]]:
+    """Every (page, bbox) in a PDF extraction that local recovery could not
+    corroborate -- worth a second, cropped look, not a full re-read.
+
+    A document can be excellent everywhere except one embedded chart: the
+    Goldman-style PDF fixture reads 1844 correct characters and still never
+    recovers "Risk: LOW" from its embedded visual, because chart recognition
+    dropped the annotation and the fallback OCR pass did not fully cover it.
+    The whole-document _looks_degenerate() check is blind to this -- the
+    document is long, just not complete -- so a region-level check is the
+    only way to find it.
+
+    A bbox counts as resolved only when its block carries a clean
+    "[validation] CORROBORATED:" (not the STRUCTURE SUSPECT or UNCORROBORATED
+    variants, and not merely "IMAGE_NOT_EXTRACTED" with no validation at
+    all). Anything else -- unread, uncorroborated, structurally suspect --
+    is still a declared gap and gets tried.
+    """
+    page = 1
+    regions: list[tuple[int, tuple[int, int, int, int]]] = []
+    seen: set[tuple[int, tuple[int, int, int, int]]] = set()
+    cursor = 0
+    markers = sorted(
+        [(m.start(), "locator", m) for m in _LOCATOR_RE.finditer(text)]
+        + [(m.start(), "bbox", m) for m in _BBOX_RE.finditer(text)],
+        key=lambda item: item[0],
+    )
+    for start, kind, match in markers:
+        if kind == "locator":
+            page = int(match.group(1))
+            continue
+        bbox = tuple(int(g) for g in match.groups())
+        key = (page, bbox)
+        if key in seen:
+            continue
+        # Look at the surrounding text (this block plus a little after) for
+        # a clean corroboration -- resolved bboxes are skipped entirely.
+        window = text[max(0, start - 400):start + 400]
+        if re.search(r"\[validation\] CORROBORATED:", window):
+            continue
+        seen.add(key)
+        regions.append(key)
+    return regions
+
+
+def _crop_and_transcribe(path: Path, page: int, bbox: tuple[int, int, int, int]) -> str:
+    """Render the source locally, crop to bbox, and ask Haiku to read it.
+
+    bbox is in the scale-2 render space every engine in this pipeline
+    already uses (paddle_engine.py, the chart-corroboration checks) -- so
+    no coordinate transform is needed here, only reproducing that same
+    render locally, which is cheap (pypdfium2/PIL, no model).
+
+    Two source shapes, because a PDF has real pages and an image does not.
+    A .pdf is rendered page-by-page via pypdfium2, matching PaddleOCR-VL's
+    own render exactly. A standalone image was itself wrapped as a one-page
+    PDF before extraction (see extract_v2_physical.parse_image) at whatever DPI PIL
+    read from the file -- confirmed empirically to be 1 image pixel = 1
+    wrapped-PDF point for a 72dpi source, which is the common case for a
+    screenshot or a synthetic chart export. Re-wrapping it the same way here
+    reproduces the identical coordinate space rather than assuming it.
+    """
+    import io
+    from PIL import Image
+
+    if path.suffix.lower() == ".pdf":
+        import pypdfium2 as pdfium
+        document = pdfium.PdfDocument(str(path))
+        if not (1 <= page <= len(document)):
+            return ""
+        image = document[page - 1].render(scale=2).to_pil()
+    else:
+        import tempfile
+        import pypdfium2 as pdfium
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as handle:
+            Image.open(path).convert("RGB").save(handle.name, "PDF")
+            image = pdfium.PdfDocument(handle.name)[0].render(scale=2).to_pil()
+
+    pad = 6
+    x0, y0, x1, y1 = bbox
+    crop = image.crop((max(0, x0 - pad), max(0, y0 - pad),
+                       min(image.width, x1 + pad), min(image.height, y1 + pad)))
+    if crop.width < 16 or crop.height < 16:
+        return ""
+
+    buf = io.BytesIO()
+    crop.save(buf, "PNG")
+    return _vision_transcribe_bytes(buf.getvalue(), "image/png")
+
+
+def _vision_transcribe_bytes(data: bytes, media_type: str) -> str:
+    """The actual Haiku call, factored out so both the whole-file fallback
+    and the region-crop fallback share one prompt and one place to change it."""
     import base64
     import anthropic
 
-    media_type = {".pdf": "application/pdf"}.get(
-        path.suffix.lower(), f"image/{path.suffix.lower().lstrip('.')}")
-    data = base64.standard_b64encode(path.read_bytes()).decode("ascii")
+    encoded = base64.standard_b64encode(data).decode("ascii")
     block_type = "document" if media_type == "application/pdf" else "image"
-
     client = anthropic.Anthropic()
     response = client.messages.create(
         model="claude-haiku-4-5",
         max_tokens=4000,
         messages=[{"role": "user", "content": [
             {"type": block_type, "source": {"type": "base64", "media_type": media_type,
-                                            "data": data}},
+                                            "data": encoded}},
             {"type": "text", "text": (
                 "Transcribe every piece of text and every numeric value visible in "
                 "this file, exactly as shown. Do not infer, complete, or explain "
-                "anything not literally present. Plain text output, no commentary."
+                "anything not literally present.\n\n"
+                "If this shows a bar/column chart whose categories are labeled but "
+                "whose bars carry no printed numeric value -- so there is nothing to "
+                "transcribe about their relative size -- you may ALSO state which "
+                "labeled category has the visually tallest/largest bar, as a separate "
+                "line starting exactly with 'VISUAL COMPARISON: '. Only if it is "
+                "visually unambiguous (one bar clearly exceeds the others); say "
+                "nothing on this line if it is close or unclear. This is a judgment "
+                "about relative size, not a reading of an exact value -- never invent "
+                "a number for the bar's height.\n\n"
+                "Plain text output, no other commentary."
             )},
         ]}],
     )
     if response.stop_reason == "refusal":
         return ""
     return "".join(b.text for b in response.content if b.type == "text").strip()
+
+
+def _apply_region_vision_fallback(extracted: dict[str, str], case: dict) -> None:
+    """For PDF and image inputs that are NOT degenerate overall, additionally
+    recover any still-unresolved embedded visual, region by region.
+
+    This is separate from _apply_vision_fallback on purpose: that one
+    replaces a whole failed extraction, this one AUGMENTS a good one that
+    has a specific gap. Running both against the same input would be
+    redundant -- a whole-document fallback already re-reads everything.
+
+    Images are included alongside PDFs (not scoped to .pdf only) because the
+    same "declared unresolved region" markers appear in both -- a standalone
+    chart PNG can leave a value unread just as an embedded PDF chart can, and
+    _crop_and_transcribe already reproduces the correct coordinate space for
+    either source.
+    """
+    inputs_by_id = {i.get("input_id"): i for i in case.get("inputs", [])}
+    for input_id, text in list(extracted.items()):
+        item = inputs_by_id.get(input_id) or {}
+        rel = item.get("path") or item.get("uri")
+        suffix = Path(rel).suffix.lower() if rel else ""
+        if not rel or suffix not in (".pdf", *IMAGE_SUFFIXES) or _looks_degenerate(text, suffix):
+            continue
+
+        regions = _unresolved_regions(text)
+        got_comparison = False
+        for page, bbox in regions:
+            transcription = _crop_and_transcribe(ROOT / rel, page, bbox)
+            if transcription:
+                got_comparison = got_comparison or "VISUAL COMPARISON:" in transcription
+                extracted[input_id] += (
+                    f"\n\n[vision-fallback, MODEL-DERIVED transcription of the "
+                    f"unresolved region bbox={list(bbox)} on page {page}, not read "
+                    f"text]\n{transcription}")
+
+        # A region the layout model FLAGGED as an unread chart is not
+        # necessarily where the chart actually is -- on this image's own
+        # fixture, the declared bbox landed squarely on a text block
+        # instead of the bars, so the crop had nothing to compare. When a
+        # gap was declared but no crop answered the comparison, fall back
+        # once to the whole file rather than trust a bounding box that has
+        # already shown itself to be wrong for this purpose.
+        if regions and not got_comparison and suffix in IMAGE_SUFFIXES:
+            whole = _vision_fallback_haiku(ROOT / rel)
+            if "VISUAL COMPARISON:" in whole:
+                extracted[input_id] += (
+                    "\n\n[vision-fallback, MODEL-DERIVED, whole-image visual "
+                    "comparison -- the layout model's own region for this chart "
+                    "did not contain it, so this looked at the full image instead]"
+                    f"\n{whole}")
 
 
 def _apply_vision_fallback(extracted: dict[str, str], case: dict) -> None:
@@ -198,6 +359,7 @@ def _apply_vision_fallback(extracted: dict[str, str], case: dict) -> None:
             extracted[input_id] = (
                 "[vision-fallback, MODEL-DERIVED transcription, not read text -- "
                 f"the local model pipeline returned nothing usable]\n{transcription}")
+    _apply_region_vision_fallback(extracted, case)
 
 
 SYSTEM = """You convert an already-extracted document into one evaluation prediction.
@@ -233,6 +395,11 @@ Use "answer" for the block the answer came from. No other value validates --
   {"type":"attachment","attachment_name":"x.pdf"}
   {"type":"image_region","bbox":[x0,y0,x1,y1]} (bbox is REQUIRED; optional
       page, slide, image_id)
+When the input itself IS an image file (not a picture embedded in a PDF/slide),
+image_region locators for it MUST also include "image_id" set to that input's
+own input_id -- e.g. input_id "approval-visual" means every image_region
+locator for it carries "image_id":"approval-visual". Omitting image_id there
+is a scored miss even when everything else about the locator is right.
 Any id you copy into a locator (message_id, image_id, and similar) MUST be
 copied byte-for-byte from where it appears in the extracted text -- including
 surrounding punctuation like the angle brackets on an email Message-Id
@@ -245,7 +412,26 @@ you no coordinates -- except for image_region, where it is required, so use the
 region's coordinates if the extraction reports any and the full image extent
 otherwise.
 
+Every `bbox=[x0,y0,x1,y1]` you see in the extracted text is in PIXEL space
+from a page rendered at 2x its real size (a fixed rendering convention of the
+local model, confirmed exactly 2.0 for every page in this pipeline). Locators
+are scored in the PDF's own POINT space. DIVIDE each of the four numbers by 2
+before writing a bbox into any locator you emit -- e.g. an extracted
+bbox=[292, 789, 896, 1153] becomes bbox=[146, 394.5, 448, 576.5] in your
+output. Do this even though the source text still shows the doubled numbers;
+copying them unconverted is a scored miss, not a safe default.
+
 `confidence`, if given, MUST be a number between 0 and 1 -- not "high"/"low".
+
+A line reading exactly "VISUAL COMPARISON: <category> has the ... tallest/largest
+..." is a vision model's judgment of relative size on a chart the main pipeline
+could not read numeric values from -- e.g. "which quarter has the highest
+revenue" when the chart shows unlabeled bars. Treat its named category as a
+usable answer (it is exactly the kind of question it was asked to answer), but
+never treat it as a source for an exact number -- if the query also wants a
+value (a revenue figure, not just which quarter), and no number appears
+anywhere else in the extracted text, that value is genuinely unknown and the
+field should be omitted or the case should abstain, not filled from this line.
 
 For a parsing task, also populate what the extraction shows:
 - `elements`: [{"type","text","order","input_id","locator"}] where type is
@@ -255,6 +441,13 @@ For a parsing task, also populate what the extraction shows:
   [picture] / IMAGE_NOT_EXTRACTED / [chart] markers, and email attachments by
   filename -- report each one you can see, since an unreported attachment
   scores the same as one that was never found.
+- `evidence` too, even though there is no query: cite the block(s) the
+  `content` field was built from. Role is usually "supporting" here (there
+  is no single question this is "the answer" to) unless one block is
+  unmistakably the core fact of the document, in which case use "answer".
+  A parsing task with no evidence scores identically to one that cited
+  nothing at all -- do not skip this field just because it was not asked
+  for by name in the query.
 
 Report only what the extracted text supports."""
 

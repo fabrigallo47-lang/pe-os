@@ -13,7 +13,7 @@ import io
 import unittest
 from pathlib import Path
 
-from extract_v2 import IMAGE_SUFFIXES, parse_image, parse_source
+from extract_v2_physical import IMAGE_SUFFIXES, parse_image, parse_source
 
 
 def _tiny_png(path: Path) -> None:
@@ -49,7 +49,7 @@ class NativeImageTests(unittest.TestCase):
 
     def test_no_model_and_no_fallback_raises_a_declared_rejection(self):
         """Silence is not an acceptable outcome for an image nobody could read."""
-        from extract_v2 import UnsupportedSourceError
+        from extract_v2_physical import UnsupportedSourceError
         with self.assertRaises(UnsupportedSourceError):
             parse_image(self.png, convert_page=lambda image, page_num: ("", []))
 

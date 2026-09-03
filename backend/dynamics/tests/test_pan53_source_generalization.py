@@ -18,7 +18,7 @@ from pathlib import Path
 PROJECT_ROOT = Path(__file__).resolve().parents[3]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from tools.extract_v2 import UnsupportedSourceError, _source_record, parse_source  # noqa: E402
+from tools.extract_v2_physical import UnsupportedSourceError, _source_record, parse_source  # noqa: E402
 from tools.source_envelope import build_source_envelope, extractor_source_record  # noqa: E402
 
 

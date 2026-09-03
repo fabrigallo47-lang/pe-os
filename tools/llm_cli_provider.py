@@ -10,7 +10,7 @@ rewrite of the extractor.
 
 What it is
 ----------
-A shim exposing the one method ``tools/extract_v2.py`` actually uses —
+A shim exposing the one method ``tools/extract_v2_physical.py`` actually uses —
 ``client.messages.create(**request)`` — and returning an object shaped like the
 Anthropic SDK's response, so ``resp.content[i].type / .name / .input`` keeps
 working untouched.

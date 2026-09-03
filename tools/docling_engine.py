@@ -32,9 +32,22 @@ from pathlib import Path
 
 
 def convert(pdf: Path) -> dict:
-    from docling.document_converter import DocumentConverter
+    from docling.datamodel.base_models import InputFormat
+    from docling.datamodel.pipeline_options import PdfPipelineOptions
+    from docling.document_converter import DocumentConverter, PdfFormatOption
 
-    result = DocumentConverter().convert(str(pdf))
+    # do_picture_classification defaults to False, which makes a chart
+    # vanish from the output entirely. The Granite path declares one as
+    # IMAGE_NOT_EXTRACTED naming its type, so leaving this off would not
+    # make docling look cleaner -- it would make it silently lossy, and
+    # would compare "declares a chart" against "drops a chart" while
+    # appearing to compare two table extractors.
+    options = PdfPipelineOptions()
+    options.do_picture_classification = True
+    converter = DocumentConverter(
+        format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
+    )
+    result = converter.convert(str(pdf))
     doc = result.document
 
     # Page count is needed up front so a page that yields nothing still
@@ -53,10 +66,23 @@ def convert(pdf: Path) -> dict:
             page_no = pic.prov[0].page_no
         except Exception:
             continue
-        for ann in getattr(getattr(pic, "meta", None), "classification", []) or []:
-            label = getattr(ann, "class_name", None) or getattr(ann, "label", None)
-            if label:
-                pictures.setdefault(page_no, []).append(str(label))
+        # meta.classification is an object holding ranked `.predictions`,
+        # not an iterable of labels -- iterating it directly yields nothing
+        # and silently reports every page as picture-free.
+        classification = getattr(getattr(pic, "meta", None), "classification", None)
+        predictions = list(getattr(classification, "predictions", []) or [])
+        if not predictions:
+            pictures.setdefault(page_no, []).append("unclassified")
+            continue
+        # Only the top prediction is reported: the classifier ranks all 26
+        # classes every time, so the tail is noise at ~1e-7 confidence.
+        # The confidence rides along because "pie_chart (0.62)" and
+        # "pie_chart (0.9998)" mean different things to a human deciding
+        # whether to open the page.
+        best = max(predictions, key=lambda p: getattr(p, "confidence", 0.0))
+        pictures.setdefault(page_no, []).append(
+            f"{best.class_name} ({getattr(best, 'confidence', 0.0):.2f})"
+        )
 
     pages: dict[str, dict] = {}
     for page_no in range(1, total + 1):

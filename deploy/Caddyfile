@@ -1,0 +1,9 @@
+# Automatic Let's Encrypt certificate for SITE_ADDRESS.
+{$SITE_ADDRESS} {
+	encode gzip
+	# Deal documents are uploaded here; keep bodies large but bounded.
+	request_body {
+		max_size 200MB
+	}
+	reverse_proxy extraction-ui:4192
+}

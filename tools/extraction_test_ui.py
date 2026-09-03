@@ -27,6 +27,7 @@ Run:  .venv/bin/python tools/extraction_test_ui.py [port]   (default 4192)
 from __future__ import annotations
 
 import atexit
+import hmac
 import html
 import json
 import os
@@ -415,6 +416,31 @@ def _pdf_mode() -> dict[str, str]:
     return _MODE
 
 
+# Shared-secret gate. Deliberately minimal -- this is a dev/QA tool, not a
+# product surface -- but it is the difference between "reachable only by
+# the person at this machine" and "reachable by the internet", which is
+# the difference that matters once real deal documents are uploaded.
+AUTH_TOKEN = os.environ.get("PE_OS_UI_TOKEN", "")
+
+
+def _authorised(handler: BaseHTTPRequestHandler) -> bool:
+    if not AUTH_TOKEN:
+        return True     # loopback-only mode; main() enforces that pairing
+    supplied = ""
+    query = parse_qs(urlparse(handler.path).query).get("token")
+    if query:
+        supplied = query[0]
+    else:
+        cookie = handler.headers.get("Cookie") or ""
+        for part in cookie.split(";"):
+            name, _, value = part.strip().partition("=")
+            if name == "pe_os_ui_token":
+                supplied = value
+                break
+    # constant-time: a timing oracle on a shared secret is cheap to avoid
+    return hmac.compare_digest(supplied, AUTH_TOKEN)
+
+
 CONTENT_TYPES = {
     ".pdf": "application/pdf", ".html": "text/html", ".htm": "text/html",
     ".csv": "text/csv", ".txt": "text/plain",
@@ -426,9 +452,18 @@ CONTENT_TYPES = {
 DOCLING_PYTHON = Path(
     os.environ.get("PE_OS_DOCLING_PYTHON", Path.home() / "venvs/pe-os-docling/bin/python")
 )
+PADDLE_PYTHON = Path(
+    os.environ.get("PE_OS_PADDLE_PYTHON", Path.home() / "venvs/pe-os-paddle13/bin/python")
+)
 ENGINES = {
     "granite": "Granite-Docling-258M (VLM, reads the page image)",
     "docling": "Docling classic (layout model + TableFormer)",
+    "paddle": "PaddleOCR-VL (PP-DocLayoutV3 + 0.9B VLM)",
+}
+# engine -> (interpreter, engine script)
+SUBPROCESS_ENGINES = {
+    "docling": (lambda: DOCLING_PYTHON, "docling_engine.py"),
+    "paddle": (lambda: PADDLE_PYTHON, "paddle_engine.py"),
 }
 
 
@@ -436,7 +471,11 @@ def _docling_available() -> bool:
     return DOCLING_PYTHON.exists()
 
 
-def _docling_convert_page(pdf: Path):
+def _paddle_available() -> bool:
+    return PADDLE_PYTHON.exists()
+
+
+def _subprocess_convert_page(pdf: Path, engine: str):
     """Run the classic pipeline once for the whole PDF, then hand parse_pdf a
     per-page lookup shaped like the Granite converter.
 
@@ -446,18 +485,19 @@ def _docling_convert_page(pdf: Path):
     """
     # The result comes back through a file: TableFormer writes warnings to
     # stdout, so stdout cannot carry JSON (see tools/docling_engine.py).
-    out_json = pdf.with_suffix(".docling.json")
+    interpreter, script = SUBPROCESS_ENGINES[engine]
+    out_json = pdf.with_suffix(f".{engine}.json")
     proc = subprocess.run(
-        [str(DOCLING_PYTHON), str(ROOT / "tools" / "docling_engine.py"),
+        [str(interpreter()), str(ROOT / "tools" / script),
          str(pdf), str(out_json)],
         capture_output=True, timeout=3600,
     )
     if not out_json.exists():
         tail = proc.stderr.decode("utf-8", errors="replace")[-500:]
-        raise RuntimeError(f"docling engine wrote no result (exit {proc.returncode}); stderr: {tail}")
+        raise RuntimeError(f"{engine} engine wrote no result (exit {proc.returncode}); stderr: {tail}")
     payload = json.loads(out_json.read_text())
     if "error" in payload:
-        raise RuntimeError(f"docling engine failed: {payload['error']}")
+        raise RuntimeError(f"{engine} engine failed: {payload['error']}")
 
     pages = payload.get("pages", {})
 
@@ -555,18 +595,18 @@ def _extract_payload(name: str, data: bytes, page_spec: str = "",
     started = time.perf_counter()
 
     convert_page = None
-    if engine == "docling" and path.suffix.lower() == ".pdf":
-        if not _docling_available():
+    if engine in SUBPROCESS_ENGINES and path.suffix.lower() == ".pdf":
+        interpreter = SUBPROCESS_ENGINES[engine][0]()
+        if not interpreter.exists():
             payload["status"] = "error"
             payload["error"] = (
-                f"Docling engine not installed: no interpreter at {DOCLING_PYTHON}. "
-                "Create it with:  python3 -m venv ~/venvs/pe-os-docling && "
-                "~/venvs/pe-os-docling/bin/pip install docling"
+                f"{engine} engine not installed: no interpreter at {interpreter}. "
+                "See deploy/README.md for the environment it needs."
             )
             payload["elapsed_s"] = round(time.perf_counter() - started, 2)
             return payload
         try:
-            convert_page = _docling_convert_page(target)
+            convert_page = _subprocess_convert_page(target, engine)
             payload["engine_warnings"] = getattr(convert_page, "warnings", [])
         except Exception as exc:  # noqa: BLE001
             payload["status"] = "error"
@@ -628,12 +668,29 @@ class Handler(BaseHTTPRequestHandler):
 
     # -- routes -----------------------------------------------------------
     def do_GET(self) -> None:
+        if not _authorised(self):
+            return self._html("<h1>401</h1><p>append ?token=... to the URL</p>", 401)
         route = urlparse(self.path).path
         if route == "/":
+            token = parse_qs(urlparse(self.path).query).get("token")
+            if token and AUTH_TOKEN:
+                # Store it once so later fetches (which carry no query
+                # string) authenticate without the secret in every URL.
+                body = index().encode("utf-8")
+                self.send_response(200)
+                self.send_header("Content-Type", "text/html; charset=utf-8")
+                self.send_header("Content-Length", str(len(body)))
+                self.send_header(
+                    "Set-Cookie",
+                    f"pe_os_ui_token={token[0]}; Path=/; HttpOnly; SameSite=Strict",
+                )
+                self.end_headers()
+                return self.wfile.write(body)
             return self._html(index())
         if route == "/mode":
             return self._json({**_pdf_mode(),
-                               "docling_available": _docling_available()})
+                               "docling_available": _docling_available(),
+                               "paddle_available": _paddle_available()})
         if route.startswith("/original/"):
             session = self._session(route.split("/original/", 1)[1])
             if not session:
@@ -651,6 +708,8 @@ class Handler(BaseHTTPRequestHandler):
         self._html("<p>not found</p>", 404)
 
     def do_POST(self) -> None:
+        if not _authorised(self):
+            return self._json({"status": "error", "error": "unauthorised"}, 401)
         parsed = urlparse(self.path)
         if parsed.path != "/extract":
             return self._html("<p>not found</p>", 404)
@@ -751,6 +810,7 @@ INDEX_HTML = r"""<!doctype html>
   <select id="engine" class="pages" title="Which PDF model converts each page to markdown. Everything after that step — chunking, locators, fallback — is identical, so this compares models, not pipelines.">
     <option value="granite">Granite-Docling-258M</option>
     <option value="docling">Docling classic (TableFormer)</option>
+    <option value="paddle">PaddleOCR-VL</option>
   </select>
   <input type="text" id="pages" class="pages" placeholder="pages e.g. 12-14"
          title="PDF only. Blank = whole document. At ~49s/page on CPU, a range is how you iterate on a long deck.">
@@ -852,7 +912,7 @@ function render(d) {
   const scope = d.page_map
     ? ' · pages ' + d.page_map.join(',') + ' of ' + d.total_pages
     : '';
-  $('stats').textContent = (d.engine === 'docling' ? 'docling' : 'granite') + ' · ' +
+  $('stats').textContent = (d.engine || 'granite') + ' · ' +
                            d.chunks.length + ' chunks · ' + words + ' words · ' +
                            d.elapsed_s + 's' + scope;
   $('rightcount').textContent = (d.engine_label || '') + ' · ' + d.chunks.length + ' chunks';
@@ -925,11 +985,13 @@ function focusOriginal(c) {
     badge.className = 'badge ' + m.level;
     badge.textContent = 'PDF: ' + m.label;
     badge.title = m.detail;
-    if (m.docling_available === false) {
-      const opt = document.querySelector('#engine option[value="docling"]');
-      opt.disabled = true;
-      opt.textContent = 'Docling classic (not installed)';
-    }
+    [['docling', m.docling_available, 'Docling classic'],
+     ['paddle', m.paddle_available, 'PaddleOCR-VL']].forEach(([k, ok, label]) => {
+      if (ok === false) {
+        const opt = document.querySelector('#engine option[value="' + k + '"]');
+        if (opt) { opt.disabled = true; opt.textContent = label + ' (not installed)'; }
+      }
+    });
     if (m.level === 'pending') setTimeout(pollMode, 2000);
   }).catch(() => setTimeout(pollMode, 4000));
 })();
@@ -964,10 +1026,29 @@ def index() -> str:
 
 
 def main(port: int = 4192) -> None:
-    server = ThreadingHTTPServer(("127.0.0.1", port), Handler)
+    host = os.environ.get("PE_OS_UI_HOST", "127.0.0.1")
+
+    # Binding beyond loopback puts an unauthenticated file-upload form on a
+    # network. On a laptop this tool is reachable only by its user; on a
+    # server it would accept any document from anyone who finds the port,
+    # and hand back the extracted text. Refuse rather than default to
+    # something the operator did not ask for.
+    if host != "127.0.0.1" and not AUTH_TOKEN:
+        raise SystemExit(
+            f"refusing to bind {host} without auth.\n"
+            "Set PE_OS_UI_TOKEN to a long random secret, e.g.\n"
+            "  export PE_OS_UI_TOKEN=$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')\n"
+            "and put TLS in front of it (see deploy/README.md) -- uploads and\n"
+            "extracted text travel in cleartext otherwise."
+        )
+
+    server = ThreadingHTTPServer((host, port), Handler)
     threading.Thread(target=_resolve_pdf_mode, daemon=True).start()
     print("resolving PDF model availability in the background...")
-    print(f"extraction test UI → http://127.0.0.1:{port}   (ctrl-c to stop)")
+    shown = "127.0.0.1" if host in ("127.0.0.1", "0.0.0.0") else host
+    print(f"extraction test UI → http://{shown}:{port}   (ctrl-c to stop)")
+    if AUTH_TOKEN:
+        print("auth: ON (send ?token=... once; it is stored in a cookie)")
     try:
         server.serve_forever()
     except KeyboardInterrupt:

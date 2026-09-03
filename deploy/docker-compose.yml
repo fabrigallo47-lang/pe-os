@@ -1,0 +1,46 @@
+services:
+  extraction-ui:
+    build:
+      context: ..
+      dockerfile: deploy/Dockerfile
+    image: pe-os/extraction-ui:latest
+    restart: unless-stopped
+    environment:
+      # Required. The UI refuses to bind 0.0.0.0 without it.
+      #   export PE_OS_UI_TOKEN=$(python3 -c 'import secrets;print(secrets.token_urlsafe(32))')
+      PE_OS_UI_TOKEN: ${PE_OS_UI_TOKEN:?set PE_OS_UI_TOKEN before running}
+      PE_OS_UI_HOST: 0.0.0.0
+      PE_OS_DOCLING_PYTHON: /venvs/docling/bin/python
+      PE_OS_PADDLE_PYTHON: /venvs/paddle/bin/python
+      # Chart-to-table is opt-in: its output is model-derived, not read
+      # text, and must stay a proposal for human confirmation.
+      PE_OS_PADDLE_CHARTS: ${PE_OS_PADDLE_CHARTS:-0}
+    volumes:
+      - models:/models          # ~4GB of weights, downloaded once
+    # Bound to loopback ON THE HOST: the only way in is the TLS proxy
+    # below. Publishing 4192 directly would put an upload form holding
+    # deal documents straight on the public internet.
+    ports:
+      - "127.0.0.1:4192:4192"
+    gpus: all
+    shm_size: "2gb"
+
+  # Terminates TLS and is the only container with a public port. Uploads
+  # and extracted text are cleartext over plain HTTP; with real deal
+  # documents that is the difference between private and published.
+  proxy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    depends_on: [extraction-ui]
+    environment:
+      SITE_ADDRESS: ${SITE_ADDRESS:?set SITE_ADDRESS to your domain, e.g. extract.example.com}
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+    ports:
+      - "80:80"
+      - "443:443"
+
+volumes:
+  models:
+  caddy_data:

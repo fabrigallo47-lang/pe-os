@@ -1466,12 +1466,98 @@ def _granite_docling_available() -> bool:
 
 
 _TEXT_RESIDUAL_ENABLED = os.environ.get("PE_OS_TEXT_RESIDUAL", "1") != "0"
-_RESIDUAL_STRIP = re.compile(r"[^0-9a-z.%$/+-]")
+# '$' and ',' are dropped so "$50.4" and "50.4" test as the same token:
+# a chart model writes the bare number where the page carries the currency.
+_RESIDUAL_STRIP = re.compile(r"[^0-9a-z.%/+-]")
 
 
 def _residual_norm(token: str) -> str:
     """Normalise a token for presence testing, not for display."""
     return _RESIDUAL_STRIP.sub("", token.lower())
+
+
+_VALUE_STRIP = re.compile(r"[^0-9.%-]")
+
+
+def _value_norm(token: str) -> str:
+    """Reduce a token to its numeric identity: '$35.3' and '35.3' must match.
+
+    Currency marks, commas and stray punctuation differ between what a chart
+    model writes and how the same number sits in the text layer, and treating
+    those as different values would fail every corroboration for cosmetic
+    reasons.
+    """
+    return _VALUE_STRIP.sub("", token).strip(".-")
+
+
+def _page_text_tokens(page: Any) -> list[str]:
+    """The page's PDF text-layer tokens, or [] if it cannot be read."""
+    try:
+        return [(w.get("text") or "").strip() for w in page.extract_words()]
+    except Exception:
+        return []                      # never fail a page over a coverage check
+
+
+def _chart_corroboration(page: Any, markdown: str) -> list[str]:
+    """Check chart-recognition numbers against the page's own text layer.
+
+    PAN-100 found chart recognition produces "structurally confident but
+    factually wrong" values, which is why it is opt-in. The finding stands,
+    but it is now testable: in a vector PDF the chart's data labels are real
+    text objects, so any number the model reports should already be present
+    as read text. A value that is NOT in the text layer was not read off the
+    page -- it was invented, and that is exactly PAN-100's failure caught
+    mechanically instead of trusted.
+
+    Corroboration raises confidence in the VALUES only. Which value belongs
+    to which bar stays model-asserted: two numbers can both be real and still
+    be mapped to the wrong bars. So this never promotes the output past a
+    proposal for human confirmation, and under invariant 3 it cannot be
+    `derived` -- "a model looked at pixels" is not an inspectable derivation.
+    """
+    # startswith, not "in": the IMAGE_NOT_EXTRACTED marker mentions
+    # "[chart-recognition output follows]" and is not itself chart output.
+    blocks = [b for b in markdown.split("\n\n")
+              if b.lstrip().startswith("[chart-recognition,")]
+    if not blocks:
+        return []
+    known = {_value_norm(t) for t in _page_text_tokens(page)}
+    known.discard("")
+    if not known:
+        return []                      # no text layer: nothing to check against
+
+    notes: list[str] = []
+    for block in blocks:
+        # Drop the header line: it carries bbox=[174, 339, ...], whose pixel
+        # coordinates are metadata about where the chart is, not values read
+        # off it. Validating them against the text layer flags every chart.
+        payload = "\n".join(block.splitlines()[1:])
+        claimed, seen = [], set()
+        for token in re.findall(r"[^\s|]+", payload):
+            key = _value_norm(token)
+            if not key or not any(c.isdigit() for c in key) or key in seen:
+                continue
+            seen.add(key)
+            claimed.append((token, key))
+        if not claimed:
+            continue
+        missing = [tok for tok, key in claimed if key not in known]
+        if missing:
+            notes.append(
+                f"[validation] UNCORROBORATED: {len(missing)} of {len(claimed)} value(s) "
+                f"in the chart-recognition output above do NOT appear in this page's PDF "
+                f"text layer: {' \u00b7 '.join(missing)}. Nothing on the page reads that "
+                "way, so these were not read -- they were inferred. This is the PAN-100 "
+                "failure mode; treat the whole chart block as unreliable."
+            )
+        else:
+            notes.append(
+                f"[validation] CORROBORATED: all {len(claimed)} value(s) in the "
+                "chart-recognition output above also appear in this page's PDF text layer "
+                "as read text, so none were invented. The MAPPING of value to chart "
+                "element remains model-asserted and still needs human confirmation."
+            )
+    return notes
 
 
 def _text_layer_residual(page: Any, emitted: str) -> list[str]:
@@ -1497,15 +1583,10 @@ def _text_layer_residual(page: Any, emitted: str) -> list[str]:
     """
     if not _TEXT_RESIDUAL_ENABLED:
         return []
-    try:
-        words = page.extract_words()
-    except Exception:
-        return []                      # never fail a page over a coverage check
     seen = {_residual_norm(t) for t in re.findall(r"\S+", emitted)}
     seen.discard("")
     residual, reported = [], set()
-    for word in words:
-        text = (word.get("text") or "").strip()
+    for text in _page_text_tokens(page):
         key = _residual_norm(text)
         if not key or key in seen or key in reported:
             continue
@@ -1767,6 +1848,7 @@ def parse_pdf(path: Path, max_words: int = CHUNK_WORDS,
                         "not converted to numbers here -- a real waterfall/bridge chart test "
                         "showed this can produce confidently wrong values (PAN-100)."
                     )
+                body_parts.extend(_chart_corroboration(page, "\n\n".join(body_parts)))
                 residual = _text_layer_residual(page, "\n\n".join(body_parts))
                 if residual:
                     shown = " \u00b7 ".join(residual[:40])

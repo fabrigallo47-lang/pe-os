@@ -7,7 +7,7 @@ DYNAMICS_ROOT = Path(__file__).resolve().parents[1]
 PROJECT_ROOT = DYNAMICS_ROOT.parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
-from tools.extract_v2 import METRIC_ENUM, RawClaim, assemble, validate  # noqa: E402
+from tools.extract_v2_physical import METRIC_ENUM, RawClaim, assemble, validate  # noqa: E402
 from tools.object_identity import METRIC_VOCABULARY, claim_id  # noqa: E402
 from vercel.api._claim_graph import claims_to_graph  # noqa: E402
 

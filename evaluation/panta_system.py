@@ -400,6 +400,13 @@ image_region locators for it MUST also include "image_id" set to that input's
 own input_id -- e.g. input_id "approval-visual" means every image_region
 locator for it carries "image_id":"approval-visual". Omitting image_id there
 is a scored miss even when everything else about the locator is right.
+
+Likewise, every email_part locator MUST include "message_id" whenever the
+extraction gives you one (look for it in a [headers] line -- it is the
+message_id=<...> value there). Copy it byte-for-byte, angle brackets
+included, the same way as any other id above. Omitting message_id when the
+extraction had one is a scored miss even when "part" and everything else is
+right.
 Any id you copy into a locator (message_id, image_id, and similar) MUST be
 copied byte-for-byte from where it appears in the extracted text -- including
 surrounding punctuation like the angle brackets on an email Message-Id
@@ -434,6 +441,16 @@ anywhere else in the extracted text, that value is genuinely unknown and the
 field should be omitted or the case should abstain, not filled from this line.
 
 For a parsing task, also populate what the extraction shows:
+- `fields`: [{"name","value","input_id","locator"}] for any named, addressable
+  value the extraction carries -- an email's subject/from/to headers, a
+  document's stated ID/date/owner fields, and similar. A parsing task with no
+  query still has structured facts to report; do not skip this field just
+  because there was no query asking for a specific value by name. This
+  includes numbers inside a table: report each row's values as their own
+  named fields too (e.g. a "Region | Revenue | EBITDA" table with a "North"
+  row becomes fields named "North revenue" and "North EBITDA", not just the
+  table element's raw text) -- a value is no less a fact for having arrived
+  in a table instead of a sentence.
 - `elements`: [{"type","text","order","input_id","locator"}] where type is
   "title" / "paragraph" / "table" / "list" / "heading".
 - `media`: [{"media_type","filename","locator","text"}] with media_type

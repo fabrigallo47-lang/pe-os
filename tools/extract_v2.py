@@ -1465,14 +1465,39 @@ def _granite_docling_available() -> bool:
     return _granite_docling_availability_cache
 
 
+def _granite_device() -> str:
+    """Pick the device for Granite-Docling: CUDA if present, else CPU.
+
+    MPS is deliberately never returned. PAN-99 found generate() hangs
+    indefinitely on Apple GPU for this model, and a hang is worse than a
+    slow CPU run because it never surfaces as an error. Set
+    PE_OS_GRANITE_DEVICE to force a choice (including "mps", if someone
+    later wants to retest that).
+    """
+    forced = os.environ.get("PE_OS_GRANITE_DEVICE", "").strip()
+    if forced:
+        return forced
+    try:
+        import torch
+        if torch.cuda.is_available():
+            return "cuda"
+    except Exception:
+        pass
+    return "cpu"
+
+
 def _granite_docling_pipeline() -> tuple[Any, Any, Any]:
     """Lazily load and cache the Granite-Docling processor/model/torch module.
 
     Loaded once per process, not once per page or per document -- load time
-    is a few seconds and is wasted if repeated. MPS (Apple GPU) was found to
-    hang indefinitely on generate() for this model (PAN-99 research); CPU
-    with float32 and an explicit use_cache=True is the confirmed-working
-    configuration, not a guess.
+    is a few seconds and is wasted if repeated. `use_cache=True` on generate()
+    is part of the confirmed-working configuration, not a guess.
+
+    Device is resolved by _granite_device(): CUDA when present, CPU
+    otherwise, and never MPS -- Apple GPU was found to hang indefinitely on
+    generate() for this model (PAN-99 research). CPU+float32 was the local
+    Mac answer to that hang; it is not a property of the model, so pinning
+    it here would make a GPU deployment buy nothing for this engine.
     """
     if "model" in _granite_docling_pipeline_cache:
         cached = _granite_docling_pipeline_cache
@@ -1480,12 +1505,22 @@ def _granite_docling_pipeline() -> tuple[Any, Any, Any]:
     import torch
     from transformers import AutoModelForImageTextToText, AutoProcessor
 
+    device = _granite_device()
+    # bfloat16 on CUDA: this is a 258M model, so the win is bandwidth, not
+    # capacity. float32 stays the CPU default because CPU bf16 is slower,
+    # not faster. Override either with PE_OS_GRANITE_DTYPE.
+    dtype_name = os.environ.get(
+        "PE_OS_GRANITE_DTYPE", "bfloat16" if device == "cuda" else "float32")
+    dtype = getattr(torch, dtype_name)
+
     processor = AutoProcessor.from_pretrained(_GRANITE_DOCLING_MODEL_ID)
     model = AutoModelForImageTextToText.from_pretrained(
-        _GRANITE_DOCLING_MODEL_ID, dtype=torch.float32, _attn_implementation="sdpa",
-    ).to("cpu")
+        _GRANITE_DOCLING_MODEL_ID, dtype=dtype, _attn_implementation="sdpa",
+    ).to(device)
     model.eval()
-    _granite_docling_pipeline_cache.update(torch=torch, processor=processor, model=model)
+    print(f"  [PDF] Granite-Docling on {device} ({dtype_name})", file=sys.stderr)
+    _granite_docling_pipeline_cache.update(
+        torch=torch, processor=processor, model=model, device=device)
     return torch, processor, model
 
 
@@ -1503,7 +1538,8 @@ def _granite_docling_convert_page(image: Any, max_new_tokens: int = 2048) -> tup
     torch, processor, model = _granite_docling_pipeline()
     messages = [{"role": "user", "content": [{"type": "image"}, {"type": "text", "text": "Convert this page to docling."}]}]
     prompt = processor.apply_chat_template(messages, add_generation_prompt=True)
-    inputs = processor(text=prompt, images=[image], return_tensors="pt").to("cpu")
+    device = _granite_docling_pipeline_cache.get("device", "cpu")
+    inputs = processor(text=prompt, images=[image], return_tensors="pt").to(device)
     with torch.no_grad():
         generated_ids = model.generate(**inputs, max_new_tokens=max_new_tokens, do_sample=False, use_cache=True)
     trimmed_ids = generated_ids[:, inputs.input_ids.shape[1]:]

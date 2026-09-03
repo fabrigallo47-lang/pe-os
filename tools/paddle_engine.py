@@ -36,6 +36,20 @@ from pathlib import Path
 CHART_RECOGNITION = os.environ.get("PE_OS_PADDLE_CHARTS", "") == "1"
 
 
+def _block_field(block, dict_key: str, attr: str):
+    """Read one field from a parsing block, whichever shape it arrives in.
+
+    paddleocr <= 3.6 yielded plain dicts keyed block_label/block_content/
+    block_bbox. paddleocr 3.7.0 on paddlex 3.7.2 yields PaddleOCRVLBlock
+    objects exposing .label/.content/.bbox instead, and dict access raises
+    AttributeError. Reading both shapes keeps this engine tied to the model
+    rather than to the wrapper class that happens to carry it.
+    """
+    if isinstance(block, dict):
+        return block.get(dict_key)
+    return getattr(block, attr, None)
+
+
 def convert(pdf: Path) -> dict:
     from paddleocr import PaddleOCRVL
 
@@ -47,9 +61,9 @@ def convert(pdf: Path) -> dict:
         parts: list[str] = []
         pictures: list[str] = []
         for block in blocks:
-            label = str(block.get("block_label") or "")
-            content = block.get("block_content")
-            box = block.get("block_bbox")
+            label = str(_block_field(block, "block_label", "label") or "")
+            content = _block_field(block, "block_content", "content")
+            box = _block_field(block, "block_bbox", "bbox")
             if label in ("chart", "image", "figure"):
                 # The box is the locator a reviewer opens; keep it.
                 where = f" bbox={list(box)}" if box else ""

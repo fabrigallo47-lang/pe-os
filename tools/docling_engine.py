@@ -31,6 +31,30 @@ import sys
 from pathlib import Path
 
 
+def _accelerator_device():
+    """Build AcceleratorOptions for PE_OS_DOCLING_DEVICE (auto|cuda|cpu|mps).
+
+    Returns None when this docling build exposes no accelerator options, so
+    an older/newer layout degrades to the library default instead of
+    crashing the whole engine over a config knob.
+    """
+    import os
+    name = os.environ.get("PE_OS_DOCLING_DEVICE", "auto").strip().lower()
+    try:                                    # docling >= 2.26 moved these out
+        from docling.datamodel.accelerator_options import (
+            AcceleratorDevice, AcceleratorOptions)
+    except ImportError:
+        try:
+            from docling.datamodel.pipeline_options import (
+                AcceleratorDevice, AcceleratorOptions)
+        except ImportError:
+            return None
+    try:
+        return AcceleratorOptions(device=AcceleratorDevice(name))
+    except ValueError:
+        return AcceleratorOptions(device=AcceleratorDevice.AUTO)
+
+
 def convert(pdf: Path) -> dict:
     from docling.datamodel.base_models import InputFormat
     from docling.datamodel.pipeline_options import PdfPipelineOptions
@@ -44,6 +68,16 @@ def convert(pdf: Path) -> dict:
     # appearing to compare two table extractors.
     options = PdfPipelineOptions()
     options.do_picture_classification = True
+
+    # Accelerator is set explicitly rather than left on AUTO. AUTO does find
+    # CUDA, but silently: if the GPU wheel is missing on a GPU box this path
+    # falls back to CPU and the only symptom is that it is slow, which is
+    # indistinguishable from the thing we deployed a GPU to fix. Naming the
+    # device makes that failure loud, and puts it in the report.
+    device = _accelerator_device()
+    if device is not None:
+        options.accelerator_options = device
+
     converter = DocumentConverter(
         format_options={InputFormat.PDF: PdfFormatOption(pipeline_options=options)}
     )
@@ -101,7 +135,9 @@ def convert(pdf: Path) -> dict:
             "markdown": markdown,
             "pictures": pictures.get(page_no, []),
         }
-    return {"pages": pages, "page_count": total}
+    return {"pages": pages, "page_count": total,
+            "device": str(getattr(getattr(options, "accelerator_options", None),
+                                  "device", "default"))}
 
 
 def main() -> int:

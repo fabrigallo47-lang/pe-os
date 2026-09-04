@@ -114,7 +114,24 @@ class RuntimeCoreTests(unittest.TestCase):
         deltas = result["transition_output"]["candidate_current_approved_delta"]
         self.assertEqual(
             {item["object_id"] for item in deltas["candidate"]},
-            {"CL-028", "MN-FIRM-EBITDA"},
+            {
+                "CL-028",
+                "MN-FIRM-EBITDA",
+                "CP-001",
+                "CP-018",
+                "CP-019",
+                "CP-020",
+            },
+        )
+        self.assertEqual(
+            {
+                item["object_id"]
+                for item in deltas["candidate"]
+                if item["field"] == "freshness_status"
+                and item["reason_code"]
+                == "UPSTREAM_BASIS_CHANGED_NOT_RECOMPUTED"
+            },
+            {"CP-001", "CP-018", "CP-019", "CP-020"},
         )
         self.assertEqual(deltas["current"], [])
         self.assertEqual(deltas["approved"], [])

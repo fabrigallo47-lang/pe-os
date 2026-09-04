@@ -52,7 +52,7 @@ from runtime.consequence_reasoning import (
 )
 
 
-ENGINE_VERSION = "0.9.0-conformance"
+ENGINE_VERSION = "0.10.0-conformance"
 OUTPUT_SCHEMA_VERSION = "transition-output-1.0"
 RUNTIME_STATE_VERSION = "runtime-state-1.0"
 
@@ -2980,6 +2980,7 @@ def _member_usability(
     object_id: str,
     registry: Mapping[str, Any],
     runtime_flags: Mapping[str, Mapping[str, Any]],
+    freshly_recomputed_ids: set[str] | frozenset[str] = frozenset(),
 ) -> str:
     entry = registry.get(object_id)
     if entry is None:
@@ -2991,17 +2992,20 @@ def _member_usability(
         return "FALSE"
     if item.get("usable") is False:
         return "FALSE"
+    freshness_status = item.get(
+        "freshness_status", item.get("freshness_status_at_ic", "CURRENT")
+    )
+    if freshness_status == "STALE" and object_id not in freshly_recomputed_ids:
+        # Staleness means that the stored value cannot currently prove or
+        # refute a downstream proposition.  It is absence of usable evidence,
+        # not negative evidence.
+        return "UNKNOWN"
     if item.get("usable") is True:
         return "TRUE"
     if entry["object_type"] == "CLAIM":
         return "TRUE"
     if entry["object_type"] == "POSITION":
         decision_status = item.get("decision_status", item.get("decision_status_at_ic"))
-        freshness_status = item.get(
-            "freshness_status", item.get("freshness_status_at_ic", "CURRENT")
-        )
-        if freshness_status == "STALE":
-            return "FALSE"
         if decision_status in {"ACCEPTED", "ACCEPTED_WITH_CONDITIONS"}:
             return "TRUE"
         if decision_status in {"REJECTED"}:
@@ -4339,6 +4343,353 @@ def _evaluate_routes_and_formulas(
     }
 
 
+def _reconcile_output_freshness(
+    affected_set: Sequence[Mapping[str, Any]],
+    invalidated_scope_ids: set[str],
+    registry: Mapping[str, Any],
+    runtime_flags: Mapping[str, Mapping[str, Any]],
+    evaluation: MutableMapping[str, Any],
+    execution_mapping: Mapping[str, Any],
+    numerical_evaluation: Mapping[str, Any],
+    inverse_evaluation: Mapping[str, Any],
+) -> list[dict[str, Any]]:
+    """Propagate output invalidation without changing institutional decisions.
+
+    Affected Position and Model Node outputs reached from an upstream basis are
+    initially considered stale.  A model output becomes current only after a
+    successful formula/solver recomputation; a position becomes current only
+    when its support routes yield an exact TRUE or FALSE using current inputs.
+    The latter is solved as a least fixed point so a clean independent route
+    can validate a target while stale alternatives remain explicitly unknown.
+    """
+
+    affected_by_id = {
+        str(item.get("object_id")): item
+        for item in affected_set
+        if item.get("object_id")
+    }
+    output_ids = {
+        object_id
+        for object_id, affected in affected_by_id.items()
+        if object_id in invalidated_scope_ids
+        and str(affected.get("object_type")) in {"POSITION", "MODEL_NODE"}
+    }
+    if not output_ids:
+        return []
+
+    position_ids = {
+        object_id
+        for object_id in output_ids
+        if affected_by_id[object_id].get("object_type") == "POSITION"
+    }
+    model_ids = output_ids - position_ids
+    successful_formula_output_ids = {
+        str(item["object_id"])
+        for item in evaluation.get("formula_updates", [])
+        if item.get("object_id")
+    }
+    formula_inputs_by_output = {
+        str(formula.get("output_id")): {
+            str(item) for item in formula.get("input_ids", [])
+        }
+        for formula in execution_mapping.get("formulas", [])
+        if isinstance(formula, Mapping)
+        and formula.get("output_id") in successful_formula_output_ids
+    }
+    successful_solver_groups: list[tuple[set[str], set[str]]] = []
+    numerical_settled_ids = {
+        str(item) for item in numerical_evaluation.get("settled_ids", set())
+    }
+    for config in execution_mapping.get("cyclic_component_solver_configs", []):
+        if not isinstance(config, Mapping):
+            continue
+        members = {
+            str(item) for item in config.get("member_ids", [])
+        } & numerical_settled_ids
+        if members:
+            successful_solver_groups.append(
+                (
+                    members,
+                    {str(item) for item in config.get("activation_input_ids", [])},
+                )
+            )
+    inverse_settled_ids = {
+        str(item) for item in inverse_evaluation.get("settled_ids", set())
+    }
+    for config in execution_mapping.get("inverse_solver_configs", []):
+        if not isinstance(config, Mapping):
+            continue
+        objective = config.get("objective", {})
+        decision_ids = [
+            str(item) for item in config.get("decision_variable_ids", [])
+        ]
+        variable_id = str(
+            objective.get("variable_id")
+            or (decision_ids[0] if decision_ids else "")
+        )
+        if variable_id in inverse_settled_ids:
+            successful_solver_groups.append(
+                (
+                    {variable_id},
+                    {str(item) for item in config.get("activation_input_ids", [])},
+                )
+            )
+
+    # A technically successful recomputation is semantically current only when
+    # every invalidated upstream output it consumed is already current.  This
+    # fixed point also handles topologically ordered formula chains and solver
+    # groups without treating a stale stored value as a valid input.
+    fresh_ids: set[str] = set()
+
+    def upstreams_are_current(upstream_ids: set[str]) -> bool:
+        for upstream_id in upstream_ids:
+            if upstream_id in output_ids and upstream_id not in fresh_ids:
+                return False
+            if (
+                _member_usability(
+                    upstream_id,
+                    registry,
+                    runtime_flags,
+                    freshly_recomputed_ids=fresh_ids,
+                )
+                != "TRUE"
+            ):
+                return False
+        return True
+
+    while True:
+        newly_fresh = {
+            output_id
+            for output_id, input_ids in formula_inputs_by_output.items()
+            if output_id in model_ids
+            and upstreams_are_current(input_ids)
+        }
+        for member_ids, activation_ids in successful_solver_groups:
+            if upstreams_are_current(activation_ids):
+                newly_fresh.update(member_ids & model_ids)
+        newly_fresh -= fresh_ids
+        if not newly_fresh:
+            break
+        fresh_ids.update(newly_fresh)
+
+    formulas_by_route = {
+        str(formula["route_id"]): formula
+        for formula in execution_mapping.get("formulas", [])
+        if isinstance(formula, Mapping) and formula.get("route_id")
+    }
+    route_results = [
+        item
+        for item in evaluation.get("route_results", [])
+        if isinstance(item, MutableMapping)
+    ]
+    routes_by_target: dict[str, list[MutableMapping[str, Any]]] = defaultdict(list)
+    for result in route_results:
+        routes_by_target[str(result.get("target_position_id", ""))].append(result)
+
+    def effective_member_state(member_id: str) -> EvidenceState:
+        if member_id in output_ids and member_id not in fresh_ids:
+            return EvidenceState.NEITHER
+        return EvidenceState.from_public(
+            _member_usability(
+                member_id,
+                registry,
+                runtime_flags,
+                freshly_recomputed_ids=fresh_ids,
+            )
+        )
+
+    def route_evidence(
+        result: Mapping[str, Any],
+    ) -> tuple[EvidenceState, EvidenceState, EvidenceState, bool]:
+        member_ids = sorted(str(item) for item in result.get("member_states", {}))
+        counter_ids = sorted(
+            str(item) for item in result.get("counter_member_states", {})
+        )
+        support = evidence_and(
+            [effective_member_state(member_id) for member_id in member_ids]
+        )
+        counter = evidence_or(
+            [effective_member_state(member_id) for member_id in counter_ids]
+        )
+        unresolved_dependency = any(
+            member_id in output_ids and member_id not in fresh_ids
+            for member_id in member_ids + counter_ids
+        )
+        if result.get("invalid") is True:
+            return EvidenceState.NEITHER, support, counter, unresolved_dependency
+
+        logic = str(result.get("logic", ""))
+        if logic == "AND_WITH_COUNTEREVIDENCE":
+            state = EvidenceState(
+                (
+                    support.supports,
+                    support.refutes or counter.supports,
+                )
+            )
+        elif logic in {"AND", "INDEPENDENT"}:
+            state = support
+        elif logic == "FORMULA":
+            formula = formulas_by_route.get(str(result.get("route_id", "")))
+            output_id = str(formula.get("output_id", "")) if formula else ""
+            output_unresolved = bool(
+                output_id and output_id in output_ids and output_id not in fresh_ids
+            )
+            unresolved_dependency = unresolved_dependency or output_unresolved
+            if support.refutes:
+                state = support
+            elif (
+                not support.supports
+                or output_unresolved
+                or result.get("candidate_value") is None
+            ):
+                state = EvidenceState.NEITHER
+            else:
+                state = support
+        else:
+            state = EvidenceState.NEITHER
+        return state, support, counter, unresolved_dependency
+
+    final_route_evidence: dict[
+        str, tuple[EvidenceState, EvidenceState, EvidenceState, bool]
+    ] = {}
+    final_combined_evidence: dict[str, EvidenceState] = {}
+    while True:
+        final_route_evidence = {
+            str(result.get("route_id", "")): route_evidence(result)
+            for result in route_results
+        }
+        final_combined_evidence = {}
+        newly_fresh: set[str] = set()
+        for position_id in sorted(position_ids):
+            valid_routes = [
+                result
+                for result in routes_by_target.get(position_id, [])
+                if result.get("invalid") is not True
+            ]
+            combined = evidence_or(
+                [
+                    final_route_evidence[str(result.get("route_id", ""))][0]
+                    for result in valid_routes
+                ]
+            )
+            final_combined_evidence[position_id] = combined
+            if combined in {EvidenceState.TRUE, EvidenceState.FALSE}:
+                newly_fresh.add(position_id)
+        newly_fresh -= fresh_ids
+        if not newly_fresh:
+            break
+        fresh_ids.update(newly_fresh)
+
+    old_conflicted_route_ids = set(evaluation.get("conflicted_route_ids", set()))
+    old_conflicted_position_ids = set(
+        evaluation.get("conflicted_position_ids", set())
+    )
+    affected_route_ids = {
+        str(result.get("route_id", ""))
+        for result in route_results
+        if str(result.get("target_position_id", "")) in position_ids
+    }
+    conflicted_route_ids = old_conflicted_route_ids - affected_route_ids
+    conflicted_position_ids = old_conflicted_position_ids - position_ids
+    settled_ids = set(evaluation.get("settled_ids", set()))
+    settled_ids -= affected_route_ids | position_ids
+    blocked_ids = set(evaluation.get("blocked_ids", set()))
+    blocked_ids -= old_conflicted_route_ids & affected_route_ids
+    blocked_ids -= old_conflicted_position_ids & position_ids
+
+    for result in route_results:
+        target_id = str(result.get("target_position_id", ""))
+        if target_id not in position_ids:
+            continue
+        route_id = str(result.get("route_id", ""))
+        state, support, counter, unresolved_dependency = final_route_evidence[route_id]
+        result["member_states"] = {
+            member_id: effective_member_state(member_id).public_state
+            for member_id in sorted(str(item) for item in result.get("member_states", {}))
+        }
+        if "counter_member_states" in result:
+            result["counter_member_states"] = {
+                member_id: effective_member_state(member_id).public_state
+                for member_id in sorted(
+                    str(item) for item in result.get("counter_member_states", {})
+                )
+            }
+            result["counterevidence_present"] = counter.public_state
+        result["support_satisfied"] = support.public_state
+        result["state"] = state.public_state
+        reason_codes = [
+            str(item)
+            for item in result.get("reason_codes", [])
+            if item
+            not in {"CONFLICTING_SUPPORT_EVIDENCE", "STALE_UPSTREAM_BASIS"}
+        ]
+        if state is EvidenceState.BOTH:
+            reason_codes.append("CONFLICTING_SUPPORT_EVIDENCE")
+            conflicted_route_ids.add(route_id)
+            blocked_ids.add(route_id)
+        elif state is EvidenceState.NEITHER and unresolved_dependency:
+            reason_codes.append("STALE_UPSTREAM_BASIS")
+        result["reason_codes"] = sorted(set(reason_codes))
+        if state in {EvidenceState.TRUE, EvidenceState.FALSE}:
+            settled_ids.add(route_id)
+
+    for combination in evaluation.get("combination_results", []):
+        position_id = str(combination.get("position_id", ""))
+        if position_id not in position_ids:
+            continue
+        combined = final_combined_evidence.get(position_id, EvidenceState.NEITHER)
+        combination["state"] = combined.public_state
+        if combined is EvidenceState.BOTH:
+            conflicted_position_ids.add(position_id)
+            blocked_ids.add(position_id)
+        elif combined is EvidenceState.NEITHER and any(
+            final_route_evidence[str(result.get("route_id", ""))][3]
+            for result in routes_by_target.get(position_id, [])
+            if result.get("invalid") is not True
+        ):
+            combination["reason_codes"] = ["STALE_UPSTREAM_BASIS"]
+        else:
+            combination.pop("reason_codes", None)
+
+    settled_ids.update(fresh_ids & position_ids)
+    evaluation["settled_ids"] = settled_ids
+    evaluation["blocked_ids"] = blocked_ids
+    evaluation["conflicted_route_ids"] = conflicted_route_ids
+    evaluation["conflicted_position_ids"] = conflicted_position_ids
+
+    updates: list[dict[str, Any]] = []
+    for object_id in sorted(
+        output_ids,
+        key=lambda item: (str(affected_by_id[item].get("object_type")), item),
+    ):
+        entry = registry.get(object_id)
+        if not entry:
+            continue
+        item = entry["object"]
+        old_status = item.get(
+            "freshness_status", item.get("freshness_status_at_ic", "CURRENT")
+        )
+        new_status = "CURRENT" if object_id in fresh_ids else "STALE"
+        if old_status == new_status:
+            continue
+        item["freshness_status"] = new_status
+        updates.append(
+            {
+                "object_type": str(entry["object_type"]),
+                "object_id": object_id,
+                "field": "freshness_status",
+                "from": copy.deepcopy(old_status),
+                "to": new_status,
+                "reason_code": (
+                    "SUCCESSFUL_RECOMPUTATION"
+                    if new_status == "CURRENT"
+                    else "UPSTREAM_BASIS_CHANGED_NOT_RECOMPUTED"
+                ),
+            }
+        )
+    return updates
+
+
 def apply_state_transition(
     prior_state: Mapping[str, Any],
     event_batch: Sequence[Mapping[str, Any]],
@@ -4935,6 +5286,29 @@ def apply_state_transition(
     inverse_evaluation = _evaluate_inverse_solvers(
         candidate_graph, execution_mapping, solver_scope
     )
+    invalidation_seed_ids = {
+        str(mutation["object_id"])
+        for mutation in admitted_mutations
+        # Attributed human views remain separate, append-only evidence. Their
+        # addition requeues the reading perimeter but does not mechanically
+        # rewrite the computed CaseReading (PAN-74 boundary).
+        if mutation.get("object_type") != "STATED_POSITION"
+    }
+    invalidated_scope_ids = _forward_closure(
+        impact["adjacency"],
+        invalidation_seed_ids,
+        affected_ids,
+    ) - invalidation_seed_ids
+    freshness_updates = _reconcile_output_freshness(
+        impact["affected_set"],
+        invalidated_scope_ids,
+        registry,
+        runtime_flags,
+        evaluation,
+        execution_mapping,
+        numerical_evaluation,
+        inverse_evaluation,
+    )
 
     blocking_seed_ids = conflict_seed_ids | condition_seed_ids
     blocked_ids = _forward_closure(
@@ -5062,6 +5436,13 @@ def apply_state_transition(
         }
         for update in numerical_evaluation["updates"]
         if not _equivalent(update["from"], update["to"])
+    )
+    candidate_deltas.extend(
+        {
+            **copy.deepcopy(update),
+            "status": "PROPOSED",
+        }
+        for update in freshness_updates
     )
     candidate_deltas.extend(copy.deepcopy(epistemic_candidate_deltas))
     candidate_deltas.sort(
@@ -5193,6 +5574,9 @@ def apply_state_transition(
     } | {update["object_id"] for update in numerical_evaluation["updates"]}
     directly_changed_ids.update(
         update["object_id"] for update in inverse_evaluation["updates"]
+    )
+    directly_changed_ids.update(
+        update["object_id"] for update in freshness_updates
     )
     unchanged_objects = []
     for affected in impact["affected_set"]:

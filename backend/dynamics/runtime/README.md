@@ -79,6 +79,7 @@ Implemented:
 - circular-support invalidation without invoking a numerical solver;
 - deterministic Decimal formula recomputation in the Candidate;
 - deterministic topological recomputation of large acyclic formula graphs;
+- fixed-point staleness propagation across affected model and position outputs;
 - typed dated-cash-flow construction and deterministic XIRR evaluation;
 - applicable/material contradiction handling without changing decision status;
 - materiality classification from versioned M0-M3 policy inputs;
@@ -99,6 +100,17 @@ boundary, four integration tests cover the real Financial Gold mapping and two
 tests cover typed dated cash flows/XIRR.
 Unmapped residual scope is always reported explicitly in
 `coverage_limits`; it is never guessed.
+
+When an admitted upstream basis changes, every affected model or position
+output is invalidated in the Candidate until its executable formula, solver or
+support route settles again. Invalidated outputs receive
+`freshness_status: "STALE"` and a
+`UPSTREAM_BASIS_CHANGED_NOT_RECOMPUTED` Candidate delta. Successful
+recomputation restores `CURRENT` with `SUCCESSFUL_RECOMPUTATION`. A stale
+support member maps to the existing public `UNKNOWN` state (never to `FALSE`),
+and a current independent route can still keep the target position current.
+The engine never changes `decision_status`; institutional decisions remain
+human-governed. No input or output schema shape is added by this behavior.
 
 The optional additive `classification_coverage` policy object defines the
 fallback for unmatched deltas and explicit, conditional M0 safe harbors.

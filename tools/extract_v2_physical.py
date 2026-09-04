@@ -75,7 +75,14 @@ from tools.source_capabilities import (  # noqa: E402
 
 VAULT_INBOX = ROOT / "vault" / "inbox"
 MODEL = configured_model("claude-haiku-4-5-20251001")
-MAX_TOKENS = int(os.environ.get("PEOS_EXTRACT_V2_MAX_TOKENS", "4096"))
+# A merged markdown chunk (parse_markdown folds adjacent short sections
+# together, see its docstring) can legitimately need up to CLAIM_TOOL's own
+# cap of 20 claims in one tool call. Measured directly: a 202-word, 16-claim
+# chunk hit stop_reason=max_tokens at 4096 and returned zero claims -- not
+# occasionally, 3/3 attempts -- because a truncated tool_use block parses to
+# no claims at all, silently, with no exception to catch. 8192 leaves real
+# headroom under that same load.
+MAX_TOKENS = int(os.environ.get("PEOS_EXTRACT_V2_MAX_TOKENS", "8192"))
 MAX_PROVIDER_RETRIES = int(os.environ.get("PEOS_LLM_CHUNK_RETRIES", "3"))
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -570,7 +577,13 @@ CLAIM_TOOL = {
                                 "SellerView=seller/management adjusted; QoEView=independent "
                                 "quality-of-earnings; FirmView=our own underwriting basis; "
                                 "CovenantView=credit-agreement definition; ReportedView=statutory "
-                                "or unadjusted; unspecified=the source does not say."
+                                "or unadjusted; unspecified=the source does not say. "
+                                "A plain figure pulled straight from the entity's own books or a "
+                                "reporting schedule (a billing-account table, an AR ledger, a "
+                                "revenue-by-customer breakdown) with no adjustment view mentioned "
+                                "is ReportedView, not unspecified — reserve unspecified for when "
+                                "even the unadjusted/statutory reading is unclear, not merely "
+                                "because no basis word appears in the row."
                             ),
                         },
                         "scenario": {
@@ -719,6 +732,24 @@ SYSTEM_PROMPT = textwrap.dedent("""
       Seller CIM / IM → asserted  (seller's marketing claims)
       Management presentation → asserted
       Computed by you → derived
+
+    EXPLICIT DERIVATIONS — when the source hands you the method and the operands:
+    - "Never infer or interpolate" governs facts, not arithmetic the source itself
+      asks for. If a fragment states both a computation method and every value it
+      needs (e.g. "concentration is calculated by dividing that total by revenue,
+      rounded to one decimal place" with the total and the revenue both stated),
+      PERFORM that arithmetic and emit the numeric result — do not emit only a
+      DEFINITION claim describing the method with a null value.
+    - A sentence stating HOW something is calculated is a DEFINITION claim by the
+      claim_kind rule below — emit that one, AND SEPARATELY emit a second,
+      QUANTITATIVE claim carrying the actual computed number. The DEFINITION
+      claim documents the method; it does not substitute for doing the division.
+    - Mark the quantitative one epistemic_class=derived, put the numeric result in
+      value, and state the computation in derivation (e.g. "13.468 / 74.0 * 100,
+      rounded to 1dp").
+    - Only refuse the quantitative claim when an operand is genuinely missing from
+      the fragment, not when the fragment gives you everything and simply expects
+      you to do the division.
 
     PERIOD EXTRACTION — mandatory for every emitted claim:
     - Never leave period blank. Read the workbook column header, table header,
@@ -964,33 +995,82 @@ def _chunks_from_numbered_lines(
 
 def parse_markdown(path: Path, max_words: int = CHUNK_WORDS,
                    source_record: dict | None = None) -> list[Chunk]:
+    """Split a markdown file into chunks on ``##``/``###`` headings, merging
+    adjacent SHORT sections up to ``max_words`` instead of giving every
+    heading its own chunk regardless of size.
+
+    A "packet" that bundles several short excerpts under separate headings
+    (a reported-accounts line, a QoE line, a customer schedule) used to
+    become one chunk per heading even when the whole document was a
+    fraction of the word budget. annotate_chunk has no cross-chunk memory,
+    so a claim whose operands sit in two of those headings -- "concentration
+    is total divided by revenue" where the total is in one section and the
+    revenue in another -- was unresolvable by any single call: not because
+    the model couldn't do the arithmetic, but because it never saw both
+    numbers at once. Merging keeps that context together whenever it fits.
+    """
     src = source_record or _source_record(path)
     text = path.read_text(encoding="utf-8")
     parts = re.split(r"(?=^#{2,3} )", text, flags=re.MULTILINE)
     chunks: list[Chunk] = []
+    pending: list[str] = []
+    pending_words = 0
+    # Every REAL heading folded into the pending chunk, not just the first --
+    # a headerless intro paragraph ahead of the first "##" must never blank
+    # out the actual section name once something real merges in behind it.
+    # annotate_chunk puts this straight into the model's prompt as
+    # "SECTION HEADING: ...", so losing it back to a generic "section" label
+    # is a real information loss to the model, not a cosmetic one.
+    pending_headings: list[str] = []
+
+    def _combined_label() -> str:
+        if not pending_headings:
+            return "section"
+        if len(pending_headings) <= 3:
+            return " + ".join(pending_headings)
+        return " + ".join(pending_headings[:3]) + f" (+{len(pending_headings) - 3} more)"
+
+    def flush() -> None:
+        nonlocal pending, pending_words, pending_headings
+        if not pending:
+            return
+        body = "\n".join(pending).strip()
+        if body:
+            label = _combined_label()
+            chunks.append(Chunk(
+                chunk_id=_chunk_hash(body),
+                locator=f"{path.name}::{label}",
+                body=body,
+                source_path=str(path),
+                source_type="markdown",
+                source_record=src,
+                word_count=pending_words,
+                section_heading=label,
+            ))
+        pending, pending_words, pending_headings = [], 0, []
+
     for part in parts:
         if not part.strip():
             continue
         header_match = re.match(r"^(#{2,3} .+)", part)
         section_label = header_match.group(1)[:50].strip() if header_match else "section"
         words = part.split()
-        if len(words) <= max_words:
-            body = part.strip()
-            chunks.append(Chunk(
-                chunk_id=_chunk_hash(body),
-                locator=f"{path.name}::{section_label}",
-                body=body,
-                source_path=str(path),
-                source_type="markdown",
-                source_record=src,
-                word_count=len(words),
-                section_heading=section_label,
-            ))
-        else:
+        if len(words) > max_words:
+            # Too big to merge with anything -- flush whatever is pending,
+            # unchanged from before: split this one section on its own.
+            flush()
             sub = _split_words(part, max_words, f"{path.name}::{section_label}",
                                str(path), "markdown", src,
                                section_heading=section_label)
             chunks.extend(sub)
+            continue
+        if pending and pending_words + len(words) > max_words:
+            flush()
+        if header_match:
+            pending_headings.append(section_label)
+        pending.append(part.strip())
+        pending_words += len(words)
+    flush()
     return chunks
 
 

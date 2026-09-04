@@ -36,6 +36,7 @@ def build_summary(results: list[Mapping[str, Any]]) -> dict[str, Any]:
         "benchmark": defaultdict(list),
         "task": defaultdict(list),
         "family": defaultdict(list),
+        "tag": defaultdict(list),
     }
     metric_values: dict[str, list[float]] = defaultdict(list)
     diagnostic_values: dict[str, list[float]] = defaultdict(list)
@@ -44,6 +45,8 @@ def build_summary(results: list[Mapping[str, Any]]) -> dict[str, Any]:
         groups["task"][str(result["task"])].append(result)
         for family in result["families"]:
             groups["family"][str(family)].append(result)
+        for tag in result.get("tags", []):
+            groups["tag"][str(tag)].append(result)
         diagnostics = set(result.get("details", {}).get("diagnostic_metrics", []))
         for name, value in result.get("scores", {}).items():
             target = diagnostic_values if name in diagnostics else metric_values
@@ -53,6 +56,7 @@ def build_summary(results: list[Mapping[str, Any]]) -> dict[str, Any]:
         "by_benchmark": {name: _aggregate(rows) for name, rows in sorted(groups["benchmark"].items())},
         "by_task": {name: _aggregate(rows) for name, rows in sorted(groups["task"].items())},
         "by_family": {name: _aggregate(rows) for name, rows in sorted(groups["family"].items())},
+        "by_tag": {name: _aggregate(rows) for name, rows in sorted(groups["tag"].items())},
         "metrics": {
             name: {"tests": len(values), "mean": round(sum(values) / len(values), 6)}
             for name, values in sorted(metric_values.items())
@@ -81,7 +85,7 @@ def render_markdown(run: Mapping[str, Any]) -> str:
         "",
     ]
     for title, key in (("By family", "by_family"), ("By task", "by_task"),
-                       ("By benchmark", "by_benchmark")):
+                       ("By benchmark", "by_benchmark"), ("By failure-mode tag", "by_tag")):
         lines += [f"## {title}", "", "| Group | Tests | Passed | Pass rate | Mean score |",
                   "|---|---:|---:|---:|---:|"]
         for name, values in summary[key].items():

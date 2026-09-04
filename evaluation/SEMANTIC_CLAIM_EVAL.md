@@ -6,17 +6,27 @@ economic basis is scored as a semantic error.
 
 ## What is executable now
 
-The smoke dataset contains three raw-document cases:
+The smoke dataset contains eleven raw-document cases and 49 gold claims:
 
 1. a Keystone packet with 16 claims, five distinct EBITDA bases, customer rows,
    an explicitly requested concentration derivation and graph edges;
 2. a marketing-only document where the correct output is no claims;
 3. an as-of case where a later document must not leak into the answer.
+4. original accounts plus a later restatement, including conflict, supersession
+   and confirmation edges;
+5. operative covenant thresholds with maximum/minimum bounds and a non-operative
+   numerical drafting example;
+6. base, downside and upside forecasts that must remain separate;
+7. an ultimate-parent concentration schedule with deliberately similar customer
+   names that must not be combined;
+8. currencies, percentages, approximation, maximum bounds and numeric ranges.
+9. consolidated, standalone and segment revenue perimeters;
+10. fiscal-year, quarter-only and trailing-twelve-month periods;
+11. competing management, QoE and firm-underwriting views of the same metric.
 
 Gold labels live separately in `fixtures/semantic_cases`. The fixture sources are
-hash locked. Perfect predictions in `fixtures/semantic_predictions/perfect.json`
-use different claim IDs from gold, proving that the scorer does not match on
-hidden identifiers.
+hash locked. Perfect predictions in `fixtures/semantic_predictions` use different
+claim IDs from gold, proving that the scorer does not match on hidden identifiers.
 
 Run the contract and degradation tests:
 
@@ -48,6 +58,9 @@ The evaluator removes gold, metrics and thresholds before invoking the adapter.
 | `semantic_grounding_accuracy` | wrong input or source locator |
 | `semantic_relation_f1` | missing or invented graph edges |
 | `semantic_derivation_accuracy` | wrong or missing derivation operands |
+| `semantic_scalar_accuracy` | wrong scalar or range endpoints |
+| `semantic_unit_accuracy` | wrong economic unit after safe alias normalization |
+| `semantic_bound_accuracy` | exact/range/approximate/minimum/maximum confusion |
 | `semantic_abstention_accuracy` | marketing language converted into facts |
 | `semantic_no_temporal_leakage` | use of evidence not knowable at the requested as-of time |
 

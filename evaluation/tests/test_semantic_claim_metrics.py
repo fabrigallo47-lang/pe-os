@@ -10,11 +10,12 @@ from evaluation.io import read_cases, read_records
 from evaluation.metrics import score_metric
 from evaluation.runner import EvaluationRunner
 from evaluation.schema import validate_case, validate_prediction
+from evaluation.semantic_validation import validate_semantic_integrity
 
 
 ROOT = Path(__file__).resolve().parents[2]
 CASES = ROOT / "evaluation" / "fixtures" / "semantic_cases"
-PREDICTIONS = ROOT / "evaluation" / "fixtures" / "semantic_predictions" / "perfect.json"
+PREDICTIONS = ROOT / "evaluation" / "fixtures" / "semantic_predictions" / "oracle.ndjson"
 
 
 class SemanticClaimMetricTests(unittest.TestCase):
@@ -30,7 +31,7 @@ class SemanticClaimMetricTests(unittest.TestCase):
         return copy.deepcopy(self.cases[test_id]), copy.deepcopy(self.predictions[test_id])
 
     def test_semantic_fixtures_validate_and_are_hash_locked(self) -> None:
-        self.assertEqual(len(self.cases), 3)
+        self.assertEqual(len(self.cases), 11)
         for case in self.cases.values():
             validate_case(case)
             validate_prediction(self.predictions[case["test_id"]])
@@ -38,12 +39,30 @@ class SemanticClaimMetricTests(unittest.TestCase):
                 path = ROOT / item["path"]
                 self.assertTrue(path.is_file(), f"missing fixture: {path}")
                 self.assertEqual(hashlib.sha256(path.read_bytes()).hexdigest(), item["sha256"])
+            self.assertEqual(validate_semantic_integrity(case, asset_root=ROOT, inspect_files=True), [])
+
+    def test_semantic_gold_integrity_detects_broken_graph_quote_and_arithmetic(self) -> None:
+        case, _prediction = self.case_and_prediction("entity-resolution.concentration-002")
+        derived = next(
+            claim for claim in case["gold"]["claims"]
+            if claim["claim_id"] == "G-ACME-CONCENTRATION"
+        )
+        derived["source_quote"] = "This sentence does not occur in the document."
+        derived["derivation"]["expression"] = "7.0 / 70.0 * 10"
+        derived["derivation"]["operand_claim_ids"] = ["G-DOES-NOT-EXIST"]
+        findings = validate_semantic_integrity(case, asset_root=ROOT, inspect_files=True)
+        self.assertTrue(any("quote is not present" in finding for finding in findings))
+        self.assertTrue(any("unknown derivation operands" in finding for finding in findings))
+        self.assertTrue(any("do not match DERIVED_FROM" in finding for finding in findings))
+        self.assertTrue(any("derivation evaluates" in finding for finding in findings))
 
     def test_oracle_contract_scores_one_without_reusing_gold_claim_ids(self) -> None:
         run = EvaluationRunner().run(list(self.cases.values()), predictions_path=PREDICTIONS)
-        self.assertEqual(run["summary"]["overall"]["tests"], 3)
-        self.assertEqual(run["summary"]["overall"]["passed"], 3)
+        self.assertEqual(run["summary"]["overall"]["tests"], 11)
+        self.assertEqual(run["summary"]["overall"]["passed"], 11)
         self.assertEqual(run["summary"]["overall"]["mean_score"], 1.0)
+        self.assertEqual(run["summary"]["by_tag"]["restatement"]["tests"], 1)
+        self.assertEqual(run["summary"]["by_tag"]["derivation"]["tests"], 2)
         case, prediction = self.case_and_prediction("identity-and-derivation-001")
         self.assertNotEqual(case["gold"]["claims"][0]["claim_id"], prediction["claims"][0]["claim_id"])
         self.assertEqual(score_metric("semantic_relation_f1", case, prediction), 1.0)
@@ -145,6 +164,100 @@ class SemanticClaimMetricTests(unittest.TestCase):
         future.pop("known_at", None)
         prediction["claims"].append(future)
         self.assertEqual(score_metric("semantic_no_temporal_leakage", case, prediction), 0.5)
+
+    def test_restatement_edges_are_not_implied_by_equal_concepts(self) -> None:
+        case, prediction = self.case_and_prediction("conflict.restatement-002")
+        prediction["relations"] = [
+            relation for relation in prediction["relations"]
+            if relation["relation"] != "CONTRADICTS"
+        ]
+        self.assertEqual(score_metric("semantic_claim_f1", case, prediction), 1.0)
+        self.assertLess(score_metric("semantic_relation_f1", case, prediction), 1.0)
+
+    def test_covenant_threshold_requires_bound_and_rejects_drafting_example(self) -> None:
+        case, prediction = self.case_and_prediction("covenant.bounds-002")
+        leverage = next(
+            claim for claim in prediction["claims"] if claim["claim_id"] == "P-HARBOR-LEVERAGE"
+        )
+        leverage["bound"] = "EXACT"
+        self.assertEqual(score_metric("semantic_claim_f1", case, prediction), 1.0)
+        self.assertEqual(score_metric("semantic_bound_accuracy", case, prediction), 2 / 3)
+        self.assertEqual(score_metric("semantic_exact_match", case, prediction), 2 / 3)
+
+        illustrative = copy.deepcopy(leverage)
+        illustrative.update({
+            "claim_id": "P-HARBOR-ILLUSTRATIVE",
+            "statement": "Project Harbor has a 6.00x covenant.",
+            "source_quote": "The 6.00x ratio shown in the drafting example is illustrative only and is not an operative covenant.",
+            "value": 6.0,
+        })
+        prediction["claims"].append(illustrative)
+        self.assertEqual(score_metric("semantic_claim_precision", case, prediction), 3 / 4)
+
+    def test_forecast_scenarios_cannot_be_collapsed(self) -> None:
+        case, prediction = self.case_and_prediction("forecast.scenarios-002")
+        for claim in prediction["claims"]:
+            if claim["metric"] == "Revenue":
+                claim["scenario"] = "base"
+        self.assertEqual(score_metric("semantic_claim_f1", case, prediction), 1.0)
+        self.assertEqual(score_metric("semantic_scenario_accuracy", case, prediction), 2 / 4)
+        self.assertEqual(score_metric("semantic_exact_match", case, prediction), 2 / 4)
+
+    def test_similar_customer_name_does_not_override_ultimate_parent(self) -> None:
+        case, prediction = self.case_and_prediction("entity-resolution.concentration-002")
+        europa = next(claim for claim in prediction["claims"] if claim["claim_id"] == "P-EUROPA-201")
+        europa["entity"] = "Acme Holdings"
+        self.assertEqual(score_metric("semantic_claim_f1", case, prediction), 1.0)
+        self.assertEqual(score_metric("semantic_entity_accuracy", case, prediction), 7 / 8)
+        self.assertEqual(score_metric("semantic_exact_match", case, prediction), 7 / 8)
+
+    def test_units_ranges_and_bounds_are_scored_independently(self) -> None:
+        case, prediction = self.case_and_prediction("values.units-and-ranges-002")
+        aliases = copy.deepcopy(prediction)
+        for claim in aliases["claims"]:
+            if claim["unit"] == "EURm":
+                claim["unit"] = "€m"
+            elif claim["unit"] == "%":
+                claim["unit"] = "percent"
+        self.assertEqual(score_metric("semantic_unit_accuracy", case, aliases), 1.0)
+        self.assertEqual(score_metric("semantic_exact_match", case, aliases), 1.0)
+
+        margin = next(claim for claim in prediction["claims"] if claim["claim_id"] == "P-VALE-MARGIN")
+        debt = next(claim for claim in prediction["claims"] if claim["claim_id"] == "P-VALE-NET-DEBT")
+        revenue = next(claim for claim in prediction["claims"] if claim["claim_id"] == "P-VALE-REVENUE")
+        margin["value"] = [31.0, 34.0]
+        debt["bound"] = "EXACT"
+        revenue["unit"] = "USDm"
+        self.assertEqual(score_metric("semantic_scalar_accuracy", case, prediction), 3 / 4)
+        self.assertEqual(score_metric("semantic_bound_accuracy", case, prediction), 3 / 4)
+        self.assertEqual(score_metric("semantic_unit_accuracy", case, prediction), 3 / 4)
+        self.assertEqual(score_metric("semantic_exact_match", case, prediction), 1 / 4)
+
+    def test_consolidated_standalone_and_segment_perimeters_cannot_be_collapsed(self) -> None:
+        case, prediction = self.case_and_prediction("identity.perimeters-003")
+        for claim in prediction["claims"]:
+            claim["scope"] = "consolidated"
+        self.assertEqual(score_metric("semantic_claim_f1", case, prediction), 1.0)
+        self.assertEqual(score_metric("semantic_scope_accuracy", case, prediction), 1 / 3)
+        self.assertEqual(score_metric("semantic_exact_match", case, prediction), 1 / 3)
+
+    def test_fiscal_quarter_and_ltm_periods_cannot_be_collapsed(self) -> None:
+        case, prediction = self.case_and_prediction("identity.periods-003")
+        for claim in prediction["claims"]:
+            claim["period_canonical"] = "FY2025A"
+        self.assertEqual(score_metric("semantic_claim_f1", case, prediction), 1.0)
+        self.assertEqual(score_metric("semantic_period_accuracy", case, prediction), 1 / 3)
+        self.assertEqual(score_metric("semantic_exact_match", case, prediction), 1 / 3)
+
+    def test_competing_views_require_basis_and_epistemic_attribution(self) -> None:
+        case, prediction = self.case_and_prediction("attribution.competing-views-003")
+        for claim in prediction["claims"]:
+            claim["basis"] = "SellerView"
+            claim["epistemic_class"] = "asserted"
+        self.assertEqual(score_metric("semantic_claim_f1", case, prediction), 1.0)
+        self.assertEqual(score_metric("semantic_basis_accuracy", case, prediction), 1 / 3)
+        self.assertEqual(score_metric("semantic_epistemic_accuracy", case, prediction), 1 / 3)
+        self.assertEqual(score_metric("semantic_exact_match", case, prediction), 1 / 3)
 
 
 if __name__ == "__main__":

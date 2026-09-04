@@ -12,6 +12,7 @@
     "benchmark": {"type": "string"},
     "task": {"type": "string"},
     "families": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
+    "tags": {"type": "array", "items": {"type": "string"}, "uniqueItems": true},
     "weight": {"type": "number", "exclusiveMinimum": 0},
     "status": {"enum": ["evaluated", "missing_prediction", "invalid_prediction", "execution_error"]},
     "passed": {"type": "boolean"},

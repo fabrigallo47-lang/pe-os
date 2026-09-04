@@ -24,6 +24,7 @@ def evaluate_case(
         "benchmark": case["benchmark"]["id"],
         "task": case["task"],
         "families": families,
+        "tags": sorted(str(tag) for tag in case.get("tags", [])),
         "weight": float(case.get("weight", 1.0)),
         "status": "evaluated",
         "passed": False,

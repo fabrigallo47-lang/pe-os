@@ -560,8 +560,9 @@ def _semantic_unit(value: Any) -> str:
         return ""
     raw = normalize_text(value).replace(" ", "")
     raw_aliases = {
-        "$m": "usd_m", "%": "percent", "usd_m": "usd_m",
-        "eur_m": "eur_m",
+        "$m": "usd_m", "€m": "eur_m", "%": "percent",
+        "usd_m": "usd_m", "eur_m": "eur_m", "x": "multiple",
+        "turns": "multiple",
     }
     if raw in raw_aliases:
         return raw_aliases[raw]
@@ -576,9 +577,19 @@ def _semantic_unit(value: Any) -> str:
     return aliases.get(compact, normalized)
 
 
+def _semantic_values_equal(expected: Any, actual: Any) -> bool:
+    if isinstance(expected, (list, tuple)) or isinstance(actual, (list, tuple)):
+        if not isinstance(expected, (list, tuple)) or not isinstance(actual, (list, tuple)):
+            return False
+        return len(expected) == len(actual) and all(
+            values_equal(left, right) for left, right in zip(expected, actual)
+        )
+    return values_equal(expected, actual)
+
+
 def _semantic_field_correct(field: str, expected: Mapping[str, Any], actual: Mapping[str, Any]) -> bool:
     if field == "value":
-        return values_equal(expected.get(field), actual.get(field))
+        return _semantic_values_equal(expected.get(field), actual.get(field))
     if field == "unit":
         return _semantic_unit(expected.get(field)) == _semantic_unit(actual.get(field))
     if field == "locator":
@@ -629,7 +640,7 @@ def _semantic_claim_match_score(
     score += 35.0 if same_entity else 0.0
     score += 20.0 if same_measurement else 0.0
     score += 10.0 if statement_match else 0.0
-    score += 5.0 if values_equal(expected.get("value"), actual.get("value")) else 0.0
+    score += 5.0 if _semantic_values_equal(expected.get("value"), actual.get("value")) else 0.0
     return score
 
 
@@ -950,6 +961,9 @@ METRICS = {
     "semantic_claim_f1": semantic_claim_f1,
     "semantic_identity_accuracy": semantic_identity_accuracy,
     "semantic_value_accuracy": semantic_value_accuracy,
+    "semantic_scalar_accuracy": _semantic_single_field_metric("value"),
+    "semantic_unit_accuracy": _semantic_single_field_metric("unit"),
+    "semantic_bound_accuracy": _semantic_single_field_metric("bound"),
     "semantic_grounding_accuracy": semantic_grounding_accuracy,
     "semantic_exact_match": semantic_exact_match,
     "semantic_critical_exact_match": semantic_critical_exact_match,
@@ -962,6 +976,8 @@ METRICS = {
     "semantic_scenario_accuracy": _semantic_single_field_metric("scenario"),
     "semantic_epistemic_accuracy": _semantic_single_field_metric("epistemic_class"),
     "semantic_claim_kind_accuracy": _semantic_single_field_metric("claim_kind"),
+    "semantic_definition_accuracy": _semantic_single_field_metric("definition_id"),
+    "semantic_direction_accuracy": _semantic_single_field_metric("direction"),
     "semantic_relation_precision": semantic_relation_precision,
     "semantic_relation_recall": semantic_relation_recall,
     "semantic_relation_f1": semantic_relation_f1,

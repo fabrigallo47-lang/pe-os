@@ -32,7 +32,15 @@ CLAIM_PROPERTIES: dict[str, Any] = {
     "entity": {"type": "string", "minLength": 1},
     "metric": {"type": "string", "minLength": 1},
     "measurement": {"type": "string", "minLength": 1},
-    "value": {"type": ["string", "number", "boolean", "null"]},
+    "value": {
+        "anyOf": [
+            {"type": ["string", "number", "boolean", "null"]},
+            {
+                "type": "array", "minItems": 2, "maxItems": 2,
+                "items": {"type": ["string", "number"]},
+            },
+        ]
+    },
     "unit": {"type": ["string", "null"]},
     "bound": {"enum": ["EXACT", "AT_LEAST", "AT_MOST", "APPROXIMATE", "RANGE", "NONE"]},
     "period": {"type": ["string", "null"]},
@@ -108,6 +116,9 @@ as separate claims even when their metric names match. Produce row claims as wel
 as stated totals. Calculate only derivations explicitly requested by the source
 or query, and list the exact operand claim IDs. Relations must use IDs emitted in
 the same response. Respect any as-of boundary in the query and input known_at.
+Represent an explicit numeric range as a two-item `[lower, upper]` value with
+`bound=RANGE`; do not collapse conditions such as at-least or no-more-than to an
+unqualified exact value.
 
 Use short extractor-local IDs; they need not match any hidden evaluator IDs.
 source_quote must be verbatim. locator_value must be exactly the locator supplied

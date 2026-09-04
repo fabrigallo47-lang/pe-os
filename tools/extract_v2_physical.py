@@ -520,11 +520,14 @@ CLAIM_TOOL = {
                             "minLength": 1,
                             "description": (
                                 "The bare proper name of the company or counterparty this claim "
-                                "measures — nothing else. 'Keystone', 'Riverton', 'Apex'. "
-                                "NOT a sentence, NOT the metric, NOT the perimeter. If the text "
-                                "says 'the Company' or 'the Target', resolve it to the deal's "
-                                "proper name when the document makes it unambiguous, otherwise "
-                                "write 'unspecified'.\n"
+                                "measures — nothing else. NOT a sentence, NOT the metric, NOT the "
+                                "perimeter. 'Bare' means no surrounding sentence, not a shortened "
+                                "name: write it exactly as the source spells it, full legal-form "
+                                "words included ('Orion Group', 'Acme Holdings', 'Orion Services "
+                                "Ltd') — 'Group', 'Holdings', 'Ltd' are part of the proper name "
+                                "here, not boilerplate to strip. If the text says 'the Company' "
+                                "or 'the Target', resolve it to the deal's proper name when the "
+                                "document makes it unambiguous, otherwise write 'unspecified'.\n"
                                 "A customer/billing-account row is about the CUSTOMER, not the "
                                 "reporting company: on a schedule breaking the deal company's "
                                 "revenue down by customer, entity is that row's customer or "
@@ -568,7 +571,16 @@ CLAIM_TOOL = {
                             "enum": SCOPE_ENUM,
                             "description": (
                                 "Economic boundary: consolidated=whole group; standalone=one "
-                                "entity; customer=one customer/account; segment=a division."
+                                "entity; customer=one customer/account; segment=a division.\n"
+                                "A figure explicitly framed as one division's or one segment's "
+                                "contribution is segment, even when the same sentence also says "
+                                "it sits 'within' or 'as part of' the consolidated result — that "
+                                "phrase describes the relationship between two DIFFERENT claims "
+                                "(the segment figure and the whole-group figure), it does not "
+                                "make the segment figure itself a consolidated one. 'The North "
+                                "America segment contributed $40.0m within the consolidated "
+                                "group result' is scope=segment, value=40.0 — a separate claim "
+                                "from the group's own consolidated total, not a restatement of it."
                             ),
                         },
                         "measurement": {

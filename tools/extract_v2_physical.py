@@ -778,6 +778,17 @@ SYSTEM_PROMPT = textwrap.dedent("""
     Extract only claims explicitly stated in the fragment. Never infer or interpolate.
     Return an empty list when the fragment contains no financial claims.
 
+    EXHAUSTIVENESS — a computed total does not replace the rows it came from:
+    - When a fragment gives you a table or schedule of individual rows AND asks
+      you to total or otherwise compute across them, extract BOTH: every
+      individual row as its own claim, AND the computed result(s). Do not stop
+      at only the final computed figure because it is what the fragment's
+      instruction was building toward -- a reader who only sees "10.0%
+      concentration" cannot check that number without the rows it came from.
+    - A table with 7 rows and a stated or computed total describes 8 facts,
+      not 1. Skipping the rows in favor of the summary is not a shorter,
+      cleaner extraction; it is a lossy one.
+
     METRIC CHOICE — an honest gap beats a near-miss:
     - The metric enum is shaped for buyout underwriting. When a quantity has no
       entry that genuinely names it, emit metric "Other" and put its real name

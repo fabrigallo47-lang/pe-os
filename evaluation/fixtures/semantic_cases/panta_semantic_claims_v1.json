@@ -390,7 +390,7 @@
           "locator": {"type": "generic", "value": "panta_semantic_keystone_packet.md::## Customer schedule"},
           "source_quote": "The seven accounts total $13.468 million. Ultimate-parent concentration is calculated by dividing that total by reported FY2025A revenue and rounding to one decimal place.",
           "entity": "Riverton Industrial Group",
-          "metric": "CustomerConcentration",
+          "metric": "Customer Concentration",
           "measurement": "ultimate-parent share of total revenue",
           "value": 18.2,
           "unit": "%",

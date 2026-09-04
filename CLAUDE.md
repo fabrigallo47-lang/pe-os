@@ -10,7 +10,7 @@ We own the container: the ontology through which intelligence flows and leaves b
 
 1. **Zero-maintenance:** exactly one structured input ever — the 20-minute thesis decomposition at deal open (`/open-deal`), plus the decision ritual (`/ic-record`). If any other flow requires a human to update a field, the product has failed.
 2. **Evidence attaches to questions, never to deals.** Claims carry `bears-on` links; retrieval is by what evidence bears on.
-3. **Every claim is epistemically typed** (`asserted | derived | observed | attested`); `derived` requires an inspectable `derivation` and `rests-on` chain.
+3. **Every claim is epistemically typed** (`asserted | derived | observed | attested | institutional_act`); `derived` requires an inspectable `derivation` and `rests-on` chain. `attested` is an independent third party certifying someone else's numbers (QoE, an auditor); `institutional_act` is a body's own formal decision or action (an IC vote, a lender's own covenant term, an audit committee's own restatement) — not the same claim wearing two names.
 4. **`accepted-unresolved` transitions and decision records are human-only** (policy rows 7–8). Decision records and outcomes are append-only — supersede, never edit.
 5. **Vault is canonical; `.index/` is derived and disposable.** Never treat the SQLite index as truth; rebuild with `make index`.
 6. **Artifacts are never copied into the vault** — claims point into them (`source.artifact` + `source.locator`).

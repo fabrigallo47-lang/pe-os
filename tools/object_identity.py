@@ -223,6 +223,7 @@ PERIOD_NORMALIZE: dict[str, str] = {
     "exit ltm": "ExitLTM",
     "opening": "Opening", "entry basis": "Opening", "entry": "Opening",
     "entry to exit": "EntryToExit", "cross-period": "CrossPeriod",
+    "recurring": "Recurring",
 }
 
 # Period values that are NOT periods.  These are extraction artefacts: an ingest
@@ -235,7 +236,7 @@ _EXTRACTION_DATE_RE = re.compile(r"^as of \d{4}-\d{2}-\d{2}$", re.I)
 # Tokens this module itself emits — they must survive a second normalization
 # pass unchanged, or a re-normalized claim silently loses its period.
 PERIOD_CANONICAL = frozenset(
-    {"LTM", "ExitLTM", "Opening", "EntryToExit", "CrossPeriod"}
+    {"LTM", "ExitLTM", "Opening", "EntryToExit", "CrossPeriod", "Recurring"}
 )
 
 
@@ -281,6 +282,14 @@ def normalize_period(raw: Any) -> str:
         return s                                    # ISO date is already canonical
     if re.match(r"^\d{4}-\d{2}-\d{2} to \d{4}-\d{2}-\d{2}$", s):
         return s                                    # explicit range
+    # LTM without a stated end date is genuinely ambiguous -- two "LTM"
+    # claims months apart would otherwise collide onto the same identity.
+    # Dated form is canonical as-is; bare "LTM" already matched above via
+    # PERIOD_CANONICAL and keeps meaning "date not given by the source".
+    if re.match(r"^LTM-\d{4}-\d{2}-\d{2}$", s):
+        return s
+    if re.match(r"^\d{4}-Q[1-4]$", s):
+        return s                                    # single-quarter period
     m = re.search(r"\bFY\s*(\d{4})\s*([AE])?\b", s, re.I)
     if m:
         return f"FY{m.group(1)}{(m.group(2) or '').upper()}"

@@ -291,12 +291,17 @@ METRIC_ENUM: list[str] = [
     "Capex", "Working Capital", "DSO", "DPO", "Inventory Days",
     "Earnings Quality Risk", "Revenue Quality", "Adjustment Supportability",
     "Customer Concentration", "Customer Count", "Active Billing Accounts",
-    "Customer Retention", "Contract Terms", "Market Position", "Market Size",
+    "Customer Retention", "Customer Churn", "Contract Terms", "Market Position", "Market Size",
     "Enterprise Value", "Equity Value", "Entry Multiple", "Exit Multiple", "Exit EV",
     "Net Debt", "Gross Debt", "Leverage", "Interest Coverage",
     "Sponsor Equity", "Seller Rollover", "First-Lien Debt",
     "Revolver Capacity", "DDTL Availability", "Covenant EBITDA",
     "Covenant Threshold", "Covenant Headroom",
+    # Credit-agreement-defined variants, distinct from the general "Leverage"
+    # entry the same way "Covenant EBITDA" is distinct from plain "EBITDA":
+    # a defined term with its own add-back/measurement conventions, not the
+    # same fact wearing a longer name.
+    "Total Net Leverage Ratio", "Minimum Liquidity",
     "MOIC", "IRR", "Exit Horizon", "Supported Price",
     "Net Working Capital", "Net Working Capital Target", "Net Working Capital Adjustment",
     "Headcount", "Team Tenure", "Acquisition Count",
@@ -342,7 +347,7 @@ PERIOD_MAP: dict[str, str] = {
 # Period is now free-text — no enum constraint.
 # PERIOD_MAP is kept for period_iso normalization only (not for constraining the field).
 
-EPISTEMIC_CLASS_ENUM = ["asserted", "observed", "derived", "attested"]
+EPISTEMIC_CLASS_ENUM = ["asserted", "observed", "derived", "attested", "institutional_act"]
 DIRECTION_ENUM = ["supports", "contradicts", "context"]
 
 # What kind of assertion a claim is. The distinction that matters is the last
@@ -407,8 +412,8 @@ SCENARIO_ENUM = ["base", "management", "seller", "upside", "downside", "unspecif
 # an extraction timestamp masquerading as a period (the failure that put
 # "as of <ingest date>" on 227 vault claims).
 PERIOD_CANONICAL_PATTERN = (
-    r"^(FY\d{4}[AE]?|LTM|ExitLTM|Opening|EntryToExit|CrossPeriod"
-    r"|\d{4}-\d{2}-\d{2}|none)$"
+    r"^(FY\d{4}[AE]?|LTM(-\d{4}-\d{2}-\d{2})?|ExitLTM|Opening|EntryToExit"
+    r"|CrossPeriod|Recurring|\d{4}-Q[1-4]|\d{4}-\d{2}-\d{2}|none)$"
 )
 
 # Known definition IDs — if LLM flags a claim as definition-linked, map to DEF-xxx.
@@ -528,10 +533,25 @@ CLAIM_TOOL = {
                             "description": (
                                 "The same period as the `period` field, reduced to one canonical "
                                 "token: FY2025A, FY2025E, FY2024A, LTM, ExitLTM, Opening, "
-                                "EntryToExit, CrossPeriod, an ISO date (2026-03-31), or exactly "
-                                "'none'. Write 'none' when the source states no period — never "
-                                "substitute today's date, and never guess a fiscal year the "
-                                "document does not give."
+                                "EntryToExit, CrossPeriod, Recurring, a single quarter as "
+                                "YYYY-Q# (2026-Q2), an ISO date (2026-03-31), or exactly 'none'. "
+                                "Write 'none' when the source states no period — never substitute "
+                                "today's date, and never guess a fiscal year the document does "
+                                "not give.\n"
+                                "CrossPeriod and Recurring are NOT the same thing. CrossPeriod is "
+                                "one static, time-invariant fact ('incorporated in Delaware'). "
+                                "Recurring is a condition re-tested every time its trigger recurs "
+                                "— a covenant checked every quarter end, a condition that applies "
+                                "'at all times' or 'on each measurement date', or a condition "
+                                "re-applied on every occurrence of an event ('immediately after "
+                                "each acquisition'). A covenant is not timeless just because it "
+                                "has no single stated date: it recurs, whether the trigger is a "
+                                "calendar date or an event.\n"
+                                "LTM needs its end date when the source states one: write "
+                                "LTM-2026-06-30, not bare LTM. Two different LTM figures months "
+                                "apart are two different periods, and bare LTM cannot tell them "
+                                "apart. Use bare LTM only when the source truly never states which "
+                                "date the trailing twelve months ends on."
                             ),
                         },
                         "scope": {
@@ -559,12 +579,21 @@ CLAIM_TOOL = {
                                 "'field inspection', 'Riverton account', 'engineering headcount'.\n"
                                 "When the metric is inherently ABOUT another metric — a "
                                 "threshold, headroom, cap or covenant test FOR something — "
-                                "this field must name that something, never 'total'. A "
-                                "compliance page carrying a 4.25x leverage cap, a 1.25x "
-                                "FCCR minimum and a $3.0m liquidity floor holds three "
-                                "Covenant Threshold claims; writing 'total' on each "
-                                "collapses three different covenants into one identity. "
-                                "Write 'total net leverage', 'FCCR', 'minimum liquidity'."
+                                "this field must name that something, never 'total'. Use "
+                                "generic 'Covenant Threshold' as the metric ONLY when no "
+                                "more specific, credit-agreement-defined metric entry exists "
+                                "(e.g. an FCCR minimum, which has no entry of its own) — "
+                                "then this field carries the specificity: 'FCCR'. When a "
+                                "specific defined-term entry DOES exist (Total Net Leverage "
+                                "Ratio, Minimum Liquidity), use THAT as the metric instead of "
+                                "the generic one, even inside a covenant/compliance context — "
+                                "the specific entry is more identity-correct, not a fallback. "
+                                "A compliance page with a 4.25x leverage cap, a 1.25x FCCR "
+                                "minimum and a $3.0m liquidity floor holds a Total Net "
+                                "Leverage Ratio claim, a Covenant Threshold/'FCCR' claim, and "
+                                "a Minimum Liquidity claim — three different metrics, not "
+                                "three Covenant Threshold claims distinguished only by this "
+                                "field."
                             ),
                         },
                         "basis": {
@@ -646,7 +675,12 @@ CLAIM_TOOL = {
                             "enum": EPISTEMIC_CLASS_ENUM,
                             "description": (
                                 "asserted=seller/management; observed=third-party real-time; "
-                                "attested=QoE conclusion or IC decision; derived=computed by you"
+                                "attested=an independent third party's formal certification "
+                                "(QoE conclusion, auditor opinion); institutional_act=a body's own "
+                                "formal decision or action, not a third party certifying someone "
+                                "else's numbers — an audit committee restating accounts, an IC "
+                                "adopting an assumption, a lender's own credit-agreement covenant "
+                                "term; derived=computed by you"
                             ),
                         },
                         "direction": {
@@ -710,10 +744,16 @@ SYSTEM_PROMPT = textwrap.dedent("""
       is not a Capex claim, a Free Cash Flow claim, or any other claim.
 
     EPISTEMIC CLASS — apply strictly by document source and claim type:
-    - attested: ANY claim from the IC memo, QoE report conclusion, firm underwriting, or
-      formal buyer analysis. This includes the firm's EBITDA view, QoE findings,
-      covenant analysis, and any value the buyer's team formally concluded.
-      When in doubt for IC memo or QoE document fragments → use attested.
+    - attested: an INDEPENDENT THIRD PARTY formally certifies someone else's
+      numbers — QoE conclusion, auditor opinion. The certifier is not the
+      party whose figures are being certified, and is not the firm itself.
+    - institutional_act: a body's OWN formal decision or action, not a third
+      party certifying anything — the IC's own vote or adopted assumption,
+      the firm's own underwriting conclusion, a lender's own credit-agreement
+      covenant term, an audit committee's own decision to restate. When in
+      doubt for an IC memo or the firm's own underwriting fragment → use
+      institutional_act, not attested: the firm attesting to its own
+      conclusion is not third-party certification.
     - asserted: seller or management stated claims with no third-party verification.
       CIM numbers, management presentations, seller-deck projections → asserted.
     - observed: a third-party measured or witnessed something directly in real time
@@ -722,10 +762,12 @@ SYSTEM_PROMPT = textwrap.dedent("""
       Only use when you performed arithmetic (ratio, sum, subtraction).
 
     Source → class mapping (use this every time):
-      IC memo         → attested  (the firm's own formal conclusion)
-      QoE report      → attested  (third-party certifies)
-      Auditor opinion → attested  (formally certified conclusion)
-      Initial assessment → attested  (firm's own preliminary underwriting)
+      IC memo (the firm's own vote/assumption) → institutional_act
+      Firm underwriting / initial assessment  → institutional_act
+      Credit agreement covenant term (lender's own defined condition) → institutional_act
+      Audit committee restatement decision    → institutional_act
+      QoE report conclusion  → attested  (independent third party certifies)
+      Auditor opinion         → attested  (independent third party certifies)
       Data room management documents → asserted
       Data room transactional/workpaper observations → observed
       Meeting notes / call transcript / DDQ → observed
@@ -759,6 +801,12 @@ SYSTEM_PROMPT = textwrap.dedent("""
     - If the only available time reference is the source effective date, use
       'as of {source effective date}' rather than leaving period blank.
     - Use 'cross-period' only for an explicitly time-invariant fact.
+    - Use 'recurring' for a condition re-tested every time its trigger
+      recurs — a covenant checked at each quarter end, a requirement stated
+      to apply 'at all times' or 'on each measurement date', or a condition
+      re-applied on every occurrence of an event ('immediately after each
+      acquisition'). This is not cross-period: a recurring test has a
+      cadence (calendar or event-triggered), a time-invariant fact does not.
 
     PERIMETER INFERENCE — mandatory when the source determines scope:
     - Use exactly one canonical evidence-view label from document type:
@@ -792,6 +840,16 @@ SYSTEM_PROMPT = textwrap.dedent("""
     - Firm EBITDA ≠ QoE EBITDA ≠ Covenant EBITDA ≠ Seller EBITDA
     - account-level concentration ≠ parent-level concentration
     - FY2025A ≠ LTM ≠ FY2026E
+
+    A number the source itself disclaims is not a claim about the world, even
+    though a number appears in the sentence. "Illustrative only", "for
+    drafting purposes", "hypothetical example", "not an operative covenant",
+    "not currently in effect" — when the source explicitly says a figure does
+    not describe an actual, current state of affairs, do not emit it as a
+    claim at all. This is not the same as omitting an ambiguous claim: the
+    source is not silent here, it is affirmatively telling you the number is
+    not real. Extracting it as a covenant, threshold, or fact anyway is
+    inventing the exact thing the sentence just told you isn't true.
 
     No source statement may be invented. If the fragment is ambiguous, omit the claim.
 """).strip()

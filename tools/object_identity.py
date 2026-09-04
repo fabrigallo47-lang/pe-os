@@ -113,6 +113,16 @@ MEASUREMENT_ALIASES: dict[str, str] = {
 # not a hand-written table — is the authority on which metrics exist.  Mirrored
 # here to keep this module importable on its own; _audit_vault() fails loudly if
 # the two drift apart.
+#
+# One deliberate exception: METRIC_ENUM's "Other" escape hatch is NOT a metric
+# and must never appear below.  An entry here becomes an alias mapping to a
+# canonical token, which is what makes a claim resolvable and therefore
+# comparable to other claims sharing it.  "Other" names the absence of a
+# metric — a pre-money valuation and a paid-site count both arrive as "Other",
+# and treating them as one quantity is precisely the false match the escape
+# hatch exists to prevent.  Left out, normalize_metric() returns "" for them and
+# is_resolvable() reports False: a declared coverage limit, visible in the
+# ledger, never silently matched.  See METRIC_ESCAPE_HATCH below.
 METRIC_VOCABULARY: tuple[str, ...] = (
     "Revenue", "Revenue Growth", "EBITDA", "EBITDA Margin", "EBITDA Adjustment",
     "Gross Profit", "Gross Margin", "EBIT", "Net Income", "Free Cash Flow",
@@ -134,6 +144,12 @@ METRIC_VOCABULARY: tuple[str, ...] = (
     "IC Conditions", "IC Vote", "Decision Coherence",
     "EBITDA Add-back",
 )
+
+
+# The one METRIC_ENUM entry that is deliberately absent from METRIC_VOCABULARY.
+# Named here so the drift guard can assert the exception instead of tolerating
+# a silent gap.
+METRIC_ESCAPE_HATCH: str = "Other"
 
 
 def _canon_token(name: str) -> str:

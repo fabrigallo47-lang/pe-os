@@ -296,6 +296,18 @@ METRIC_ENUM: list[str] = [
     "Key Person Risk", "Regulatory Risk", "Competition Risk",
     "IC Conditions", "IC Vote", "Decision Coherence",
     "Customer Contract Terms",
+    # Escape hatch. This enum is LBO/buyout-shaped, and a closed enum with no
+    # exit forces a wrong pick on anything outside that shape: measured on a
+    # venture term-sheet fragment, a EUR 6.0m primary round became "Sponsor
+    # Equity" (a buyout sponsor's own cheque — a different thing), a EUR 24.0m
+    # pre-money became "Enterprise Value", and "eighteen to twenty-four months
+    # of runway" became "Exit Horizon" = 21, a number stated nowhere in the
+    # source. Naming the gap is strictly better than filling it wrongly:
+    # metric "Other" carries the real concept in `metric_label`, and
+    # normalize_metric() maps it to "" — so the claim is *unresolvable* by
+    # design, stays visible in the ledger, and is never silently matched
+    # against a claim it only superficially resembles.
+    "Other",
 ]
 _seen: set[str] = set()
 METRIC_ENUM = [m for m in METRIC_ENUM if not (m in _seen or _seen.add(m))]  # type: ignore
@@ -437,6 +449,23 @@ CLAIM_TOOL = {
                         "metric": {
                             "type": "string",
                             "enum": METRIC_ENUM,
+                            "description": (
+                                "Pick the entry that genuinely names this quantity. "
+                                "If none does, pick 'Other' and name the real concept "
+                                "in metric_label — never the closest-sounding entry. "
+                                "A near-miss label is worse than an honest gap: it "
+                                "silently merges this claim with unrelated ones."
+                            ),
+                        },
+                        "metric_label": {
+                            "type": ["string", "null"],
+                            "maxLength": 60,
+                            "description": (
+                                "REQUIRED when metric is 'Other': the concept's real "
+                                "name, in the source's own words (e.g. 'Pre-money "
+                                "valuation', 'Post-money valuation', 'Runway months', "
+                                "'Paid site count'). Leave null for every other metric."
+                            ),
                         },
                         "value": {
                             "type": ["number", "string", "null"],
@@ -519,7 +548,15 @@ CLAIM_TOOL = {
                                 "if each names its slice. Leaving this blank on a component "
                                 "makes it collide with the total and with its siblings.\n"
                                 "Examples: 'total', 'EHS compliance service line', "
-                                "'field inspection', 'Riverton account', 'engineering headcount'."
+                                "'field inspection', 'Riverton account', 'engineering headcount'.\n"
+                                "When the metric is inherently ABOUT another metric — a "
+                                "threshold, headroom, cap or covenant test FOR something — "
+                                "this field must name that something, never 'total'. A "
+                                "compliance page carrying a 4.25x leverage cap, a 1.25x "
+                                "FCCR minimum and a $3.0m liquidity floor holds three "
+                                "Covenant Threshold claims; writing 'total' on each "
+                                "collapses three different covenants into one identity. "
+                                "Write 'total net leverage', 'FCCR', 'minimum liquidity'."
                             ),
                         },
                         "basis": {
@@ -644,6 +681,19 @@ SYSTEM_PROMPT = textwrap.dedent("""
     You are a financial claim extractor for a private equity firm (PANTA system).
     Extract only claims explicitly stated in the fragment. Never infer or interpolate.
     Return an empty list when the fragment contains no financial claims.
+
+    METRIC CHOICE — an honest gap beats a near-miss:
+    - The metric enum is shaped for buyout underwriting. When a quantity has no
+      entry that genuinely names it, emit metric "Other" and put its real name
+      in metric_label. Do NOT reach for the closest-sounding entry: a venture
+      round is not "Sponsor Equity", a pre-money valuation is not "Enterprise
+      Value", and runway months are not an "Exit Horizon". A wrong label is
+      worse than "Other" — it silently merges this claim with unrelated ones
+      and the mistake becomes invisible.
+    - A sentence with no quantity and no checkable content is not a claim at
+      all. Do not emit a claim with a null value just to have something to
+      return: "use of funds is product, field operations and certification"
+      is not a Capex claim, a Free Cash Flow claim, or any other claim.
 
     EPISTEMIC CLASS — apply strictly by document source and claim type:
     - attested: ANY claim from the IC memo, QoE report conclusion, firm underwriting, or
@@ -2609,6 +2659,9 @@ class RawClaim:
     basis: str = "unspecified"
     scenario: str = "unspecified"
     source_version_id: str | None = None
+    # The real concept name when `metric` is "Other" — the enum's escape hatch.
+    # Defaulted so a cached raw_claims run predating the field still loads.
+    metric_label: str | None = None
 
 
 def _is_fatal_provider_error(exc: Exception) -> bool:
@@ -2760,6 +2813,7 @@ def annotate_chunk(
                     locator = chunk.locator
                 raw_claims.append(RawClaim(
                     metric=c["metric"],
+                    metric_label=_non_empty_l2_text(c.get("metric_label")),
                     value=c.get("value"),
                     unit=c.get("unit"),
                     period=period,
@@ -2857,6 +2911,10 @@ class CanonicalClaim:
     basis: str = "unspecified"
     scenario: str = "unspecified"
     source_version_id: str | None = None
+    # Real concept name when metric == "Other". Kept out of the identity on
+    # purpose: normalize_metric() maps "Other" to "", so the claim is
+    # unresolvable by design — visible, never silently matched.
+    metric_label: str | None = None
     validation_errors: list[str] = field(default_factory=list)
 
 
@@ -2864,6 +2922,16 @@ def validate(raw: RawClaim) -> CanonicalClaim:
     errors: list[str] = []
     if raw.metric not in METRIC_ENUM:
         errors.append(f"unknown metric: '{raw.metric}'")
+    metric_label = (raw.metric_label or "").strip() or None
+    if raw.metric == "Other" and not metric_label:
+        # "Other" without a name is the failure it exists to prevent: an
+        # unlabelled hole tells a reader nothing, where "Other / Pre-money
+        # valuation" tells them exactly which concept the ontology is missing.
+        errors.append("metric 'Other' requires metric_label naming the real concept")
+    if raw.metric != "Other" and metric_label:
+        errors.append(
+            f"metric_label '{metric_label}' set on non-Other metric '{raw.metric}'"
+        )
     value = _parse_float(raw.value)
     period_iso = _normalize_period(raw.period)
     # RAW: prefix means period didn't match PERIOD_MAP — store as-is, no longer reject.
@@ -2946,6 +3014,7 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         bound=raw.bound or "EXACT",
         basis=raw.basis or "unspecified",
         scenario=raw.scenario or "unspecified",
+        metric_label=metric_label,
         validation_errors=errors,
     )
 
@@ -3049,6 +3118,7 @@ def _to_e3_manifest(graph: SubGraph, deal: str, manifest: str,
                 {
                     "claim_id": c.claim_id,
                     "metric": c.metric,
+                    "metric_label": c.metric_label,
                     "known_at": c.known_at,
                     "direction": c.direction,
                     "topic": c.topic,

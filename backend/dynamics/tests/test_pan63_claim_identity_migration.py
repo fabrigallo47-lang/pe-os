@@ -8,7 +8,10 @@ PROJECT_ROOT = DYNAMICS_ROOT.parents[1]
 sys.path.insert(0, str(PROJECT_ROOT))
 
 from tools.extract_v2_physical import METRIC_ENUM, RawClaim, assemble, validate  # noqa: E402
-from tools.object_identity import METRIC_VOCABULARY, claim_id  # noqa: E402
+from tools.object_identity import (  # noqa: E402
+    METRIC_ESCAPE_HATCH, METRIC_VOCABULARY, claim_id, is_resolvable,
+    normalize_metric,
+)
 from vercel.api._claim_graph import claims_to_graph  # noqa: E402
 
 
@@ -74,7 +77,25 @@ def graph_claim(*, subject="Keystone", claim_id_value=None):
 
 class Pan63ClaimIdentityMigrationTests(unittest.TestCase):
     def test_identity_metric_vocabulary_cannot_drift_from_extractor_enum(self):
-        self.assertEqual(set(METRIC_VOCABULARY), set(METRIC_ENUM))
+        """Every metric the extractor can emit must be identity vocabulary —
+        except the one entry that deliberately is not a metric."""
+        self.assertEqual(
+            set(METRIC_VOCABULARY), set(METRIC_ENUM) - {METRIC_ESCAPE_HATCH}
+        )
+
+    def test_the_escape_hatch_is_deliberately_not_identity_vocabulary(self):
+        """PAN-117. 'Other' names the absence of a metric, so it must not
+        become a token two unrelated claims can share. A pre-money valuation
+        and a paid-site count both arrive as 'Other'; making that resolvable
+        would match them to each other — the exact false merge the escape
+        hatch exists to prevent."""
+        self.assertIn(METRIC_ESCAPE_HATCH, METRIC_ENUM)
+        self.assertNotIn(METRIC_ESCAPE_HATCH, METRIC_VOCABULARY)
+        self.assertEqual(normalize_metric(METRIC_ESCAPE_HATCH), "")
+        self.assertFalse(is_resolvable({
+            "entity": "Silexara", "metric": METRIC_ESCAPE_HATCH,
+            "period": "2026", "value": 24.0,
+        }))
 
     def test_source_and_source_version_are_part_of_claim_identity(self):
         base = validate(raw_claim())

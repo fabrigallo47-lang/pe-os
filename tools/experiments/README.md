@@ -427,3 +427,67 @@ this investigation.
 - The `derived` epistemic class is therefore nearly unexercised on real
   documents. Worth knowing before anyone builds on the assumption that it
   fires.
+
+---
+
+## CORRECTION: the headline finding above was a methodology artifact
+
+Everything above was measured by hand-cutting fragments out of source files
+into Python string literals and calling the model directly with
+`CLAIM_TOOL`/`SYSTEM_PROMPT`. That is NOT the pipeline. It skipped L1
+(`parse_source` + the real chunker), L3 (`validate`) and L4 (`assemble`),
+and fed a fabricated source record (`SOURCE: ... management presentation`)
+in place of the real one from `SOURCE_REGISTRY`.
+
+Running the real thing changes the conclusion:
+
+    .venv/bin/python3 tools/extract_v2_physical.py \
+      --source sources/keystone-fixture/layer1-ingest/keystone_qoe_report.md \
+      --deal keystone --output pipeline_out/e3_pan117_test
+
+- **The chunker splits by heading, and that separates a total from its
+  components.** `## Executive findings` (29w) carries "normalized FY2025
+  EBITDA is $11.9m"; `## Normalized EBITDA schedule` (152w) carries the
+  reported figure and all nine adjustments and NO total. My hand-cut
+  fragment had pasted the two together, which is exactly why I concluded
+  "real documents always state their total, so derivation never fires".
+  The real pipeline creates the unstated-total condition routinely.
+- **Derivation fires, and chains.** That run produced six `derived` claims
+  with correct, inspectable arithmetic, including a three-hop chain:
+  funded-debt subtotal 10.75 (= 8.60+1.50+0.10+0.55), debt-like subtotal
+  3.65 (= 1.10+0.85+0.90+0.55+0.25), gross debt 14.40 (= 10.75+3.65, both
+  inputs themselves derived), net debt 10.20 (= 14.40-4.20). Plus normalized
+  EBITDA 11.9 = 10.2 + nine adjustments, verified independently.
+  **No graph, no retrieved example, no GraphIC anything.**
+- **`basis` was right.** QoEView on the adjustments and the derived total,
+  ReportedView on the reported figure — with the real `SRC-QOE` record. The
+  basis error I attributed earlier to the longer graph prompt was at least
+  partly my fabricated source record.
+- L3/L4 ran clean: 40 raw claims, 40 admitted, 0 rejected, 0 conflicts.
+
+### What this means for the verdict
+
+It makes the verdict *stronger*, not weaker: the production baseline is
+better than anything measured above, so the case for adding a graph layer
+on top of it is weaker still. The two PAN-117 fixes stand, and are now
+validated in the real pipeline rather than in a harness:
+
+- Ten claims came back as `Other` on this real Keystone QoE report, every
+  one of them a debt-like schedule line with no `METRIC_ENUM` name --
+  accrued interest, finance-lease obligations, deferred acquisition
+  consideration, transaction bonuses, unpaid seller transaction expenses,
+  pre-closing taxes, insurance and legal-tail liabilities. Before the fix
+  these were being force-fit onto Net Debt / Gross Debt and silently merged
+  with the real debt claims. This is an in-domain LBO gap, found by
+  accident -- not the venture-domain gap the fix was written for.
+- `measurement` came back distinct per adjustment line ("founder /
+  executive compensation", "revenue cut-off", ...), which is the fix
+  holding in the real pipeline.
+
+### The lesson worth keeping
+
+Hand-cut fragments plus a fabricated source record produced a confidently
+wrong conclusion about the system's core capability, and it took running
+the actual entry point to catch it. Any future claim about extractor
+behaviour should come from `tools/extract_v2_physical.py` itself, with
+`--dry-run` first to see what the chunker actually hands the model.

@@ -811,6 +811,15 @@ SYSTEM_PROMPT = textwrap.dedent("""
       individual row and every computed total or ratio the schedule
       actually contains is still a real claim in its own right and must
       still be extracted.
+    - A sentence stating the RELATIONSHIP between two figures you are
+      already extracting elsewhere — "the restated revenue supersedes the
+      original", "this confirms the prior figure", "this corrects a cut-off
+      error" — restates a value or explains a change, it does not assert a
+      new one. Do not emit a third claim for "$48.0m supersedes $50.0m";
+      you already have the $48.0m claim and the $50.0m claim as their own
+      entries. Extract the two figures themselves, once each, from where
+      each is originally stated; the sentence connecting them is not a
+      third fact.
 
     EPISTEMIC CLASS — apply strictly by document source and claim type:
     - attested: an INDEPENDENT THIRD PARTY formally certifies someone else's
@@ -837,6 +846,10 @@ SYSTEM_PROMPT = textwrap.dedent("""
       Audit committee restatement decision    → institutional_act
       QoE report conclusion  → attested  (independent third party certifies)
       Auditor opinion         → attested  (independent third party certifies)
+      Signed / audited / statutory accounts → attested  (formally certified,
+        not a bare management claim, even when the fragment never says the
+        word "auditor" — "the signed FY2024 accounts reported..." IS the
+        certification event, distinct from an unsigned management deck)
       Data room management documents → asserted
       Data room transactional/workpaper observations → observed
       Meeting notes / call transcript / DDQ → observed

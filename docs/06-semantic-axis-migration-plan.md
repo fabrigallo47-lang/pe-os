@@ -5,6 +5,27 @@
 **Companion:** `vault/policy/archetypes/semantic_handoff_v0_2/10_legacy_to_v0_2_mapping.yaml`
 already maps *entities* (`NON_BINDING_MIGRATION_AID`). §3 is the missing *field* half.
 
+## Half the target is already frozen in this repo
+
+`semantic_handoff_v0_2/04_semantic_extraction_contract_v0_2.schema.json` defines
+`$defs.content` with three of the axes as real JSON Schema enums, matching §3's
+table value-for-value:
+
+| Axis | Status | Values |
+|---|---|---|
+| `modality` | **frozen in contract** | OBSERVED · ASSERTED · REPORTED · ESTIMATED · FORECAST · HYPOTHETICAL · CONDITIONAL · DECIDED · COMMITTED |
+| `polarity` | **frozen in contract** | POSITIVE · NEGATIVE · NEUTRAL · MIXED · NOT_APPLICABLE |
+| `direction` | **frozen in contract** | SUPPORTIVE · ADVERSE · MIXED · NEUTRAL · UNRESOLVED · NOT_APPLICABLE |
+| `observed_speech_act` | in contract | — |
+| `attestation_type` | **dictionary only** | not present in the v0.2 contract |
+| `evidence_origin_role` | **dictionary only** | not present in the v0.2 contract |
+| `derivation_mode` | **dictionary only** | not present in the v0.2 contract |
+
+So implementers target the schema, not the prose: for the first three axes there is
+nothing to design, only to populate. Note also that today's `direction` values
+(`supports`/`contradicts`/`context`) match **neither** vocabulary — they are a
+third, undocumented set that has to be projected either way.
+
 ## What the migration is
 
 Today one enum answers several unrelated questions at once. `epistemic_class` is
@@ -84,6 +105,13 @@ Anto's call, not a side effect of a refactor.
   only 12 of 69 metric labels resolve to a concept. §4.1 forbids hand-rolling the
   bridge ("il codice non deve mantenere una seconda lista piatta divergente"), so
   this is genuinely blocked on the file, not on effort.
+- **[DECIDE] Contract or dictionary, where they disagree.** The v0.2 extraction
+  contract freezes four axes; the dictionary proposes seven. `attestation_type`,
+  `evidence_origin_role` and `derivation_mode` exist only in the prose. Building
+  to the dictionary means diverging from a frozen contract; building to the
+  contract means the `attested` vs `institutional_act` collision this migration
+  is supposed to dissolve stays unsolved, because that distinction lives
+  precisely in `attestation_type` + `evidence_origin_role`. Anto's call.
 - **[DECIDE] Archetype scope.** Only the buyout pack (40 seeds) is in the repo.
   The dictionary cites venture (49) and growth (53). Migrating the axes without
   those packs means designing against a third of the evidence.

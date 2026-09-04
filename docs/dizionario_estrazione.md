@@ -177,6 +177,32 @@ non sono un caso isolato:
 - **Opening cash / Cash funding for [event]** — pattern ricorrente anche
   dentro Keystone, non solo Silexara
 
+### 2.4 Raccolto parziale — resto del corpus Silexara (16 fonti aggiuntive)
+
+Girata l'estrazione reale su 16 delle fonti Silexara non ancora processate
+(mancano solo i 2 PDF, che servono il pod GPU spento). Da `SRC-02_Founder_Call_1`:
+
+| Etichetta osservata | Esempio | Nota |
+|---|---|---|
+| Paid permanent site deployment timeline | "May" | testo, non numero |
+| Development partnership status | (nessun valore, ×2) | |
+| Installed systems count | 70 | |
+| Model accuracy in lab | 99% | |
+| Production line stoppages per week | 2 | |
+| Years of AI implementation experience on physical equipment | 4 | |
+
+**Nota onesta**: per le altre 15 fonti ho pulito le directory di output
+prima di salvare il dettaglio etichetta-per-etichetta (errore mio di
+sequenza, non un limite del metodo). Restano solo i conteggi grezzi di
+claim `Other` per fonte, veri ma senza dettaglio:
+
+SRC-03: 18 · SRC-05: 13 · SRC-12: 18 · SRC-15: 14 · SRC-16: 5 · SRC-18: 11 ·
+SRC-22: 2 — più altre fonti con conteggio non isolato pulitamente dal log.
+**Totale grezzo: 90+ claim `Other` aggiuntivi nel solo resto del corpus
+Silexara**, segno che il dominio venture ha molto più materiale da
+promuovere di quanto §2.2 mostri finora. Da rifare con il dettaglio salvato
+prima di ripulire, quando si vuole espandere davvero questa sezione.
+
 ---
 
 ## 3. Pattern di formula osservati

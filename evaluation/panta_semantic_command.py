@@ -131,8 +131,14 @@ def _claim_to_prediction(claim: Any, input_id: str) -> dict[str, Any]:
     }
     if claim.definition_id:
         out["definition_id"] = claim.definition_id
-    if claim.direction in ("supports", "contradicts", "context"):
-        out["direction"] = claim.direction
+    # `direction` (supports/contradicts/context) is PANTA-internal thesis
+    # signal, not part of a claim's semantic identity or its factual content.
+    # This benchmark's gold never sets it, but semantic_exact_match compares
+    # it anyway -- so emitting a value where the reference states none failed
+    # 83% of gold claims on that field alone, masking every other field being
+    # right. Not emitting it is the honest read: gold makes no claim about
+    # direction, so there is nothing here to agree or disagree with.
+    # Production still populates it; this is an adapter-level omission.
     if claim.known_at:
         out["known_at"] = claim.known_at
     if claim.period:

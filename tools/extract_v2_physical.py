@@ -525,7 +525,11 @@ CLAIM_TOOL = {
                                 "name: write it exactly as the source spells it, full legal-form "
                                 "words included ('Orion Group', 'Acme Holdings', 'Orion Services "
                                 "Ltd') — 'Group', 'Holdings', 'Ltd' are part of the proper name "
-                                "here, not boilerplate to strip. If the text says 'the Company' "
+                                "here, not boilerplate to strip. The same goes for a leading "
+                                "'Project': the deal is called 'Project Cedar', so entity is "
+                                "'Project Cedar', not 'Cedar'. Copy the name the document uses, "
+                                "whole, in both directions — do not lengthen it either. "
+                                "If the text says 'the Company' "
                                 "or 'the Target', resolve it to the deal's proper name when the "
                                 "document makes it unambiguous, otherwise write 'unspecified'.\n"
                                 "A customer/billing-account row is about the CUSTOMER, not the "
@@ -598,6 +602,11 @@ CLAIM_TOOL = {
                                 "makes it collide with the total and with its siblings.\n"
                                 "Examples: 'total', 'EHS compliance service line', "
                                 "'field inspection', 'Riverton account', 'engineering headcount'.\n"
+                                "Name the slice as a NOUN PHRASE saying what kind of thing it "
+                                "is, not as a bare identifier: 'RIV-001 billing account', not "
+                                "'RIV-001'; 'segment contribution', not just the segment's name; "
+                                "'ultimate-parent total' for a parent-level roll-up. A bare code "
+                                "tells a reader nothing about what was measured.\n"
                                 "When the metric is inherently ABOUT another metric — a "
                                 "threshold, headroom, cap or covenant test FOR something — "
                                 "this field must name that something, never 'total'. Use "
@@ -857,8 +866,19 @@ SYSTEM_PROMPT = textwrap.dedent("""
       conclusion is not third-party certification.
     - asserted: seller or management stated claims with no third-party verification.
       CIM numbers, management presentations, seller-deck projections → asserted.
-    - observed: a third-party measured or witnessed something directly in real time
-      (e.g. QoE workpaper data room observation, call transcript quote, site visit).
+      This is the DEFAULT for a company reporting its own figures, including
+      its own schedules and breakdowns: "reported accounts", "revenue was
+      $74.0m", a billing-account table, a revenue-by-customer schedule. The
+      company stating its own numbers is an assertion, however routine or
+      factual it looks.
+    - observed: a third party measured or witnessed something DIRECTLY and
+      recorded it themselves — a QoE analyst's own workpaper note, a call
+      transcript quote, a site visit. The test is whether the RECORDER is
+      someone other than the party whose figure it is. A schedule of the
+      company's own accounts is not "observed" just because it arrived in a
+      data room: nobody outside the company witnessed anything, they were
+      handed a table. Reach for observed only when the fragment names a
+      third party doing the observing.
     - derived: YOU computed this claim from two or more stated values — requires derivation field.
       Only use when you performed arithmetic (ratio, sum, subtraction).
 
@@ -872,7 +892,11 @@ SYSTEM_PROMPT = textwrap.dedent("""
       Signed / audited / statutory accounts → attested  (formally certified,
         not a bare management claim, even when the fragment never says the
         word "auditor" — "the signed FY2024 accounts reported..." IS the
-        certification event, distinct from an unsigned management deck)
+        certification event, distinct from an unsigned management deck).
+        This needs the certification word to actually be there: "signed",
+        "audited", "statutory", "auditor". A section merely headed
+        "Reported accounts", or a sentence saying the company "reported"
+        a figure, carries no certification and is asserted.
       Data room management documents → asserted
       Data room transactional/workpaper observations → observed
       Meeting notes / call transcript / DDQ → observed
@@ -989,6 +1013,12 @@ class Chunk:
     page_or_slide_number: int | None = None
     provenance: dict[str, Any] = field(default_factory=dict)
     period_context: dict[str, Any] = field(default_factory=dict)
+    # Every individual heading this chunk covers, when parse_markdown merged
+    # several short sections into one. section_heading is their combined
+    # label (for display); this is the list a claim's own locator_hint is
+    # resolved against, so a claim points at ITS section rather than at the
+    # whole merged span. See _claim_locator().
+    section_headings: list[str] = field(default_factory=list)
 
 
 class UnsupportedSourceError(ValueError):
@@ -1218,6 +1248,7 @@ def parse_markdown(path: Path, max_words: int = CHUNK_WORDS,
                 source_record=src,
                 word_count=pending_words,
                 section_heading=label,
+                section_headings=list(pending_headings),
             ))
         pending, pending_words, pending_headings = [], 0, []
 
@@ -3077,14 +3108,12 @@ def annotate_chunk(
                     # does not add a fabricated location and the branch below avoids
                     # appending the locator to itself.
                     hint = chunk.locator
-                # The model sometimes echoes the fragment locator it was given
-                # instead of naming a position inside it, which produced
-                # "file.md::## Heading:file.md::## Heading". Only append a hint
-                # that adds something.
-                if hint and hint not in chunk.locator and chunk.locator not in hint:
-                    locator = f"{chunk.locator}:{hint}"
-                else:
-                    locator = chunk.locator
+                # Resolve to the section this claim actually came from when
+                # the hint names one; otherwise keep the chunk locator, with
+                # the hint appended only when it adds something (the model
+                # sometimes echoes the locator it was given, which produced
+                # "file.md::## Heading:file.md::## Heading").
+                locator = _claim_locator(chunk, hint)
                 raw_claims.append(RawClaim(
                     metric=c["metric"],
                     metric_label=_non_empty_l2_text(c.get("metric_label")),
@@ -3133,6 +3162,34 @@ def _parse_float(v: Any) -> float | None:
         return float(str(v).replace(",", "").replace("%", "").strip())
     except (TypeError, ValueError):
         return None
+
+
+def _claim_locator(chunk: Chunk, hint: str | None) -> str:
+    """Where THIS claim came from, not where its chunk started and ended.
+
+    parse_markdown merges adjacent short sections, so one chunk can span
+    "## Reported accounts + ## Seller CIM + ## Independent QoE". Stamping
+    that whole span on every claim drawn from it loses the one thing a
+    locator exists to give a reviewer: the place to look. When the model's
+    own locator_hint names one of the sections the chunk actually covers,
+    resolve to that section alone.
+
+    Falls back to the previous behaviour (chunk locator, hint appended when
+    it adds something) whenever the hint names nothing recognisable -- a
+    hint like "table row 3" is real information and still worth keeping,
+    it just cannot narrow the section by itself.
+    """
+    prefix = chunk.locator.split("::", 1)[0] if "::" in chunk.locator else chunk.locator
+    normalize = lambda s: re.sub(r"[^a-z0-9]", "", (s or "").lower())  # noqa: E731
+    if hint:
+        needle = normalize(hint)
+        for heading in chunk.section_headings:
+            trimmed = normalize(heading)
+            if trimmed and (trimmed in needle or needle in trimmed):
+                return f"{prefix}::{heading}"
+    if hint and hint not in chunk.locator and chunk.locator not in hint:
+        return f"{chunk.locator}:{hint}"
+    return chunk.locator
 
 
 def _non_empty_l2_text(value: Any) -> str | None:

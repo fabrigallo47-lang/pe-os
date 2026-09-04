@@ -16,6 +16,7 @@ from evaluation.registry import BenchmarkRegistry, DatasetManager, DEFAULT_DATA_
 from evaluation.report import render_markdown
 from evaluation.runner import EvaluationRunError, EvaluationRunner
 from evaluation.schema import SchemaValidationError, validate_case, validate_prediction
+from evaluation.semantic_validation import validate_semantic_integrity
 
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -52,6 +53,12 @@ def cmd_validate(args: argparse.Namespace) -> int:
         if case["test_id"] in ids:
             errors.append(f"duplicate test_id: {case['test_id']}")
         ids.add(case["test_id"])
+        errors.extend(
+            f"{case['test_id']}: {finding}"
+            for finding in validate_semantic_integrity(
+                case, asset_root=args.asset_root, inspect_files=args.require_files,
+            )
+        )
         if args.require_files:
             for item in case["inputs"]:
                 if "path" not in item:
@@ -71,13 +78,26 @@ def cmd_validate(args: argparse.Namespace) -> int:
                             f"(expected {expected_hash}, got {actual_hash})"
                         )
     prediction_count = 0
+    prediction_ids: list[str] = []
     if args.predictions:
         for index, prediction in enumerate(read_records(args.predictions)):
             try:
                 validate_prediction(prediction)
             except SchemaValidationError as exc:
                 errors.extend(f"prediction[{index}] {message}" for message in exc.errors)
+            prediction_ids.append(str(prediction.get("test_id", "")))
             prediction_count += 1
+        duplicate_prediction_ids = sorted({
+            test_id for test_id in prediction_ids if prediction_ids.count(test_id) > 1
+        })
+        if duplicate_prediction_ids:
+            errors.append("duplicate prediction test_id(s): " + ", ".join(duplicate_prediction_ids))
+        missing_predictions = sorted(ids - set(prediction_ids))
+        extra_predictions = sorted(set(prediction_ids) - ids)
+        if missing_predictions:
+            errors.append("missing predictions: " + ", ".join(missing_predictions))
+        if extra_predictions:
+            errors.append("predictions without cases: " + ", ".join(extra_predictions))
     if errors:
         print(f"INVALID: {len(errors)} finding(s)", file=sys.stderr)
         for error in errors:

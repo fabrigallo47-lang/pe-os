@@ -80,10 +80,10 @@ document-information-eval: ## Run only structure-independent information extract
 	$(PY) -m evaluation.cli run --cases evaluation/fixtures/cases --predictions evaluation/fixtures/predictions/perfect.ndjson --tag information-graph
 
 semantic-claim-eval-validate: ## Validate semantic cases, oracle predictions and source hashes
-	$(PY) -m evaluation.cli validate --cases evaluation/fixtures/semantic_cases --predictions evaluation/fixtures/semantic_predictions/perfect.json --require-files
+	$(PY) -m evaluation.cli validate --cases evaluation/fixtures/semantic_cases --predictions evaluation/fixtures/semantic_predictions/oracle.ndjson --require-files
 
 semantic-claim-eval-oracle: ## Check semantic metric plumbing against perfect predictions
-	$(PY) -m evaluation.cli run --cases evaluation/fixtures/semantic_cases --predictions evaluation/fixtures/semantic_predictions/perfect.json
+	$(PY) -m evaluation.cli run --cases evaluation/fixtures/semantic_cases --predictions evaluation/fixtures/semantic_predictions/oracle.ndjson
 
 semantic-claim-eval-test: ## Run semantic metric degradation tests
 	$(PY) -m unittest evaluation.tests.test_semantic_claim_metrics -v

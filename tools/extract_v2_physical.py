@@ -524,7 +524,16 @@ CLAIM_TOOL = {
                                 "NOT a sentence, NOT the metric, NOT the perimeter. If the text "
                                 "says 'the Company' or 'the Target', resolve it to the deal's "
                                 "proper name when the document makes it unambiguous, otherwise "
-                                "write 'unspecified'."
+                                "write 'unspecified'.\n"
+                                "A customer/billing-account row is about the CUSTOMER, not the "
+                                "reporting company: on a schedule breaking the deal company's "
+                                "revenue down by customer, entity is that row's customer or "
+                                "ultimate parent (e.g. 'Acme Holdings'), never the deal company's "
+                                "own name, even though the deal company is whose revenue is being "
+                                "sliced. The deal company's name belongs in the perimeter/"
+                                "measurement instead ('Meridian customer revenue — Acme Holdings "
+                                "account'). Getting this backwards on a schedule with multiple "
+                                "distinct customers collapses every row onto one identity."
                             ),
                         },
                         "period_canonical": {
@@ -651,7 +660,19 @@ CLAIM_TOOL = {
                                 "whether the view itself is correct. A named party's stated "
                                 "position, objection or vote is ATTRIBUTION; CHARACTERISATION "
                                 "is for un-attributed narrative color with no party to check it "
-                                "against."
+                                "against.\n"
+                                "An instruction telling the reader HOW TO ANALYSE the data in "
+                                "this fragment ('aggregate accounts only when the ultimate-"
+                                "parent field is identical', 'similar names alone do not "
+                                "establish common ownership') is not a claim about the company "
+                                "at all, DEFINITION or otherwise — do not emit it as one. It "
+                                "carries no fact someone could confirm or refute about the "
+                                "business; it is a methodology note for the reader, and its "
+                                "content only matters for how YOU apply it to the real claims "
+                                "in this fragment. DEFINITION is for the source stating what a "
+                                "financial TERM means or how a stated figure was itself "
+                                "calculated ('Covenant EBITDA excludes X'), not for aggregation "
+                                "or analysis instructions aimed at you."
                             ),
                         },
                         "bound": {
@@ -742,6 +763,16 @@ SYSTEM_PROMPT = textwrap.dedent("""
       all. Do not emit a claim with a null value just to have something to
       return: "use of funds is product, field operations and certification"
       is not a Capex claim, a Free Cash Flow claim, or any other claim.
+    - An instruction telling YOU how to analyse the fragment's data is not a
+      claim about the company, even though it reads like a rule and sits
+      right next to real numbers. "Aggregate accounts only when their
+      ultimate-parent field is identical; similar customer names alone do
+      not establish common ownership" is not a DEFINITION claim, not any
+      claim — it is telling you how to read the schedule, not stating a fact
+      about the business. Skip only that one instruction sentence; every
+      individual row and every computed total or ratio the schedule
+      actually contains is still a real claim in its own right and must
+      still be extracted.
 
     EPISTEMIC CLASS — apply strictly by document source and claim type:
     - attested: an INDEPENDENT THIRD PARTY formally certifies someone else's

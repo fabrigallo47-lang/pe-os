@@ -152,6 +152,17 @@ def main() -> int:
         _claim_to_prediction(c, path_to_input.get(c.source_path, "unknown-input"))
         for c in graph.claims
     ]
+    # The per-claim eval schema has additionalProperties:false, so a real
+    # PAN-125 derivation-disagreement flag (the model's own stated arithmetic
+    # not matching its own stated value) has nowhere to live on the claim
+    # object itself. Surface it in metadata instead of silently dropping
+    # it -- the UI shows the same flag with a ⚑; a prediction that hides it
+    # would look more trustworthy than the pipeline actually claims to be.
+    derivation_warnings = [
+        {"claim_id": c.claim_id, "errors": c.nonblocking_validation_errors}
+        for c in graph.claims
+        if c.nonblocking_validation_errors
+    ]
     prediction = {
         "schema_version": "panta-eval.prediction/1.0",
         "test_id": case["test_id"],
@@ -164,6 +175,7 @@ def main() -> int:
             "chunk_count": len(chunks),
             "rejected_count": graph.rejected_count,
             "chunk_errors": chunk_errors,
+            "derivation_warnings": derivation_warnings,
         },
     }
     print(json.dumps(prediction, ensure_ascii=False))

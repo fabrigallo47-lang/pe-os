@@ -37,13 +37,15 @@ Portare il default a `tools/model_evaluator.py`, così un deal senza Python dedi
 Cambia il contratto che il validatore indipendente e la dinamica si aspettano — va fatto dopo G1/G2 e verificato con `make verify` + il validatore.
 
 **Fatto quando**
-Un deal senza `runtime_module` nel profilo produce un mapping eseguibile dal motore generico, e `make verify` resta al baseline.",Todo,2,"model,architecture",5
+Un deal senza `runtime_module` nel profilo produce un mapping eseguibile dal motore generico, e `make verify` resta al baseline.
+
+**AGGIORNATO dopo aver provato lo swap su Keystone (vedi G7)**: non è ancora sicuro farlo per Keystone. `compile_workbook_formula_graphs` sul workbook reale produce 13.909 nodi/10.700 formule a livello di CELLA (`MN-...-ACQ-BASE-C10`), non i 75 concetti istituzionali (`MN-SPONSOR-EQUITY`) che il resto della pipeline si aspetta. Manca il passaggio di *binding* cella→concetto (G7). Questo task resta valido come default per un deal NUOVO senza workbook o già bindato; su Keystone va dopo G7.",Todo,2,"model,architecture",5
 [G4] Modello per deal come DATI: importato dal workbook o proposto e ammesso,"**Perché**
 Non si può scrivere un modello Python per ogni deal, e non esiste un ""modello unico"" che copra LBO, venture, infrastrutture e immobiliare — parametrizzandolo si finisce per reinventare un foglio di calcolo. Il livello giusto da generalizzare è il **motore**; la parte specifica del deal devono essere **dati**.
 
 Due sorgenti, un solo formato:
-1. **Deal con workbook** → si compila meccanicamente il suo formula graph. Esiste già: `workbook_model_compiler.py` (""non assegna deliberatamente nessun significato finanziario alle celle""), parser xlsx al 100% di recall, `workbook_formula_graphs.json` già in output dalla pipeline.
-2. **Deal senza workbook** (Silexara oggi) → nodi dichiarati come dati e **proposti**, ammessi da un umano. Il corpus Silexara lo modella già così: `SRC-21_MODEL_NODES.csv` con `admission_status: proposed` e la nota ""analyst-prepared change set; not admitted case state"".
+1. **Deal con workbook** → si compila meccanicamente il suo formula graph. Esiste già: `workbook_model_compiler.py` (""non assegna deliberatamente nessun significato finanziario alle celle""), parser xlsx al 100% di recall, `workbook_formula_graphs.json` già in output dalla pipeline. **MA**: senza binding (G7) produce solo il grafo grezzo a livello di cella, non concetti istituzionali — vedi G7.
+2. **Deal senza workbook** (Silexara) → nodi dichiarati come dati e **proposti**, ammessi da un umano. **FATTO**: `tools/model_nodes_to_mapping.py` (PAN-122), verificato sul corpus reale Silexara — 8 righe, 7 ammesse, 1 esclusa (ipotesi non ammessa) con motivo.
 
 **Cosa NON fare**
 Generare codice eseguibile per deal. Codice generato che produce numeri su cui un partner decide, senza nessuna fonte contro cui verificarli, è il caso peggiore: sembra un fatto, ha un id, e nessuno l'ha mai detto. Si propone un grafo dichiarativo, non una routine.
@@ -52,7 +54,26 @@ Generare codice eseguibile per deal. Codice generato che produce numeri su cui u
 Se il sistema calcola con un modello suo, i suoi numeri divergeranno da quelli del foglio del deal team — e il team crederà al foglio. Se calcola con il loro workbook, non può divergere, e ogni divergenza trovata è un risultato vero.
 
 **Fatto quando**
-Un deal nuovo con workbook produce un mapping eseguibile senza scrivere Python; un deal senza workbook accetta nodi proposti nello stesso formato.",Todo,2,"model,architecture,ontology",8
+Ramo 2 (senza workbook): FATTO, PAN-122. Ramo 1 (con workbook): dipende da G7.",Todo,2,"model,architecture,ontology",8
+[G7] Binder cella-di-workbook → concetto istituzionale (il pezzo mancante reale),"**Perché**
+Provando lo swap generico su Keystone (G3) si è misurato il vero collo di bottiglia. `compile_workbook_formula_graphs` sul workbook reale (`keystone_lbo_model_working.xlsx`, cattura già presente in `pipeline_out/e3/K-IC/adapter_alpha/workbook_formula_graphs.json`, 23MB) produce **13.909 nodi, 10.700 formule** — un nodo per ogni cella Excel, formula in sintassi Excel grezza (`='Scenario_Drivers'!C109`), nessun significato finanziario assegnato (per design, dal suo stesso docstring).
+
+Il resto della pipeline (materiality, authority, MOIC/IRR istituzionali, il validatore indipendente) si aspetta i **75 concetti curati** che `compiler_v7.py` scrive a mano (`MN-SPONSOR-EQUITY`, `MN-EV`, `MN-NET-LEVERAGE`...). Tra il grafo grezzo e quello curato manca un passaggio: quale cella corrisponde a quale concetto.
+
+Il codice sa già che questo passaggio dovrebbe esistere: `_compile_resolved_workbook_formula_graph()` accetta un parametro `binding_resolution` e chiama `execution_mapping_compiler.populate_execution_mapping(source, binding_resolution)` — che produce ESATTAMENTE la forma eseguibile (ARITHMETIC + variable_binding) che il valutatore generico (PAN-119) già consuma.
+
+**Verificato che NON esiste**: `tools/binding_proposer.py` e `tools/identity_resolver.py` legano CLAIM a DOMANDE (il sistema vault question↔evidence), un sottosistema diverso. Non c'è nessun tool che leghi celle di workbook a concetti di modello. `compiler_v7.py` (2424 righe a mano) sta sostituendo esattamente questo passaggio mai automatizzato — non è pigrizia, è un buco reale.
+
+**Cosa fare**
+Costruire il binder cella→concetto. Due strade possibili, da valutare:
+- euristica su etichette adiacenti (il compiler meccanico legge già `_adjacent_text_label` per altri scopi — vedi se riusabile) + conferma umana sulle prime N celle candidate per concetto
+- proposta assistita da LLM sul foglio (etichette di riga/colonna + intestazioni) con **umano che ammette**, stesso pattern già validato per Silexara (`proposed` → ammesso)
+
+**Cosa NON fare**
+Indovinare il binding senza revisione umana. Legare male una cella a un concetto istituzionale produce un numero sbagliato con l'aspetto di uno vero — esattamente il rischio che l'intero impianto epistemico esiste per evitare.
+
+**Fatto quando**
+`populate_execution_mapping()` gira sul workbook reale di Keystone con un binding reale e produce formule che passano il contratto (`formula_contract.py`) in percentuale comparabile o migliore delle 2/22 attuali di `compiler_v7.py` — poi, solo allora, G3 può essere applicato a Keystone.",Todo,1,"model,architecture,ontology",8
 "[G5] Dizionario metriche per tipo di deal (sostituire il menù, non allungarlo)","**Perché**
 `METRIC_ENUM` è modellato sul buyout. PAN-117 ha aggiunto la valvola `Other` + `metric_label`, e sul QoE reale di Keystone ha catturato onestamente 10 voci senza nome (accrued interest, finance-lease obligations, deferred consideration, transaction bonuses, pre-closing taxes...) che prima venivano schiacciate su Net Debt/Gross Debt e fuse con i claim di debito veri.
 

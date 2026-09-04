@@ -433,6 +433,38 @@ class V20GovernedSettlementHTTPTests(unittest.IsolatedAsyncioTestCase):
         self.assertEqual(self._current_graph(), current_before)
         self.assertFalse((self.bundle / "settlement_journal.json").exists())
 
+    async def test_settlement_reference_arrays_require_unique_nonempty_strings(self):
+        run_id = "RUN-STRICT-REFERENCE-ARRAYS"
+        self._seed_run(run_id)
+        prepared = await self._prepare(run_id)
+        self.assertEqual(prepared.status_code, 200, prepared.text)
+        current_before = self._current_graph()
+
+        for field in (
+            "authority_record_ids",
+            "human_stop_ids",
+            "execution_package_ids",
+        ):
+            with self.subTest(field=field):
+                payload = self._settlement_payload(run_id)
+                payload[field] = [None]
+                response = await self.client.post(
+                    f"/api/v20/runs/{run_id}/settle", json=payload
+                )
+                self.assertEqual(response.status_code, 400, response.text)
+
+            with self.subTest(field=field, case="duplicate"):
+                payload = self._settlement_payload(run_id)
+                payload[field] = ["DUPLICATE-ID", "DUPLICATE-ID"]
+                response = await self.client.post(
+                    f"/api/v20/runs/{run_id}/settle", json=payload
+                )
+                self.assertEqual(response.status_code, 409, response.text)
+
+        self.assertEqual(router._runs[run_id]["status"], "PREPARED")
+        self.assertEqual(self._current_graph(), current_before)
+        self.assertEqual(self._settlement_files(), [])
+
     async def test_settlement_rejects_candidate_and_prepared_scope_mismatch(self):
         candidate_run_id = "RUN-CANDIDATE-MISMATCH"
         self._seed_run(candidate_run_id)

@@ -81,6 +81,10 @@ class V20DynamicsIntegrationTests(unittest.TestCase):
         run_id = admitted["run"]["run_id"]
         transition = admitted["transition"]
         self.assertEqual(transition["replay_hash"], router._runs[run_id]["transition_output"]["replay_hash"])
+        self.assertEqual(
+            transition["authority_resolution"],
+            router._runs[run_id]["transition_output"]["authority_resolution"],
+        )
         self.assertTrue((self.bundle / "candidate_state.json").exists())
         self.assertTrue(router.RUNS_LOG.exists())
         selected_change_ids = [
@@ -138,6 +142,9 @@ class V20DynamicsIntegrationTests(unittest.TestCase):
 
         record_ids = []
         package_ids = []
+        authority_session_id, _ = router._issue_authenticated_session(
+            "keystone", "partner-001"
+        )
         for stop_id in stop_ids:
             attestation = asyncio.run(
                 router.attest(
@@ -149,10 +156,17 @@ class V20DynamicsIntegrationTests(unittest.TestCase):
                         "actor_id": "partner-001",
                         "artifact_hash": transition["replay_hash"],
                     },
+                    session_id=authority_session_id,
                 )
             )
             record_ids.append(
                 attestation["authority_record"]["authority_record_id"]
+            )
+            self.assertEqual(
+                attestation["authority_record"]["record_hash"],
+                router._authority_record_payload_hash(
+                    attestation["authority_record"]
+                ),
             )
             if attestation.get("execution_package"):
                 package_ids.append(

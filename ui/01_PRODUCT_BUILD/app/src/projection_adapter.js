@@ -5,7 +5,7 @@
   const required=(obj,path)=>path.split('.').reduce((value,key)=>value&&value[key],obj);
   const FROZEN_REQUIRED=['schema_version','engine_version','run_id','case_id','prior_state_id','policy_refs','affected_set','ordered_transitions','rule_switches','recomputed_values','unchanged_objects','human_stops','blocked_components','coverage_limits','invariant_checks','candidate_current_approved_delta','partial_settlement_status','replay_hash'];
   const INTEGRATION_REQUIRED=[...FROZEN_REQUIRED,'source_event_id'];
-  const NON_ATTESTABLE_REASONS=new Set(['BATCH_VALUE_CONFLICT','CIRCULAR_SUPPORT','MISSING_RULE_PROVENANCE','NON_WAIVABLE_AXIOM','UPSTREAM_INPUT_BLOCKED']);
+  const NON_ATTESTABLE_REASONS=new Set(['AUTHORITY_POLICY_UNRESOLVED','BATCH_VALUE_CONFLICT','CIRCULAR_SUPPORT','IMMUTABLE_HISTORICAL_FIELD','MISSING_RULE_PROVENANCE','NON_WAIVABLE_AXIOM','OBJECT_TYPE_MISMATCH','PRIOR_VALUE_MISMATCH','UNKNOWN_OBJECT_ID','UNKNOWN_TARGET_POSITION_ID','UPSTREAM_INPUT_BLOCKED']);
 
   function validateProjection(p){
     const errors=[];

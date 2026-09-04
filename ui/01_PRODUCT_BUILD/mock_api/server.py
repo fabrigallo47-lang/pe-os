@@ -12,6 +12,7 @@ import argparse
 import base64
 import copy
 import hashlib
+import hmac
 import io
 import json
 import os
@@ -19,7 +20,7 @@ import re
 import secrets
 import threading
 import zipfile
-from datetime import date, datetime, time, timezone
+from datetime import date, datetime, time, timedelta, timezone
 from http.server import ThreadingHTTPServer, SimpleHTTPRequestHandler
 from pathlib import Path
 from urllib.parse import parse_qs, unquote, urlparse
@@ -33,6 +34,28 @@ LOCK = threading.RLock()
 API = "/api/v20"
 LEGACY_API = "/api/v19"
 BINDINGS_ROUTE = API + "/cases/{case_id}/bindings"
+AUTHORITY_LEDGER_ID = "PANTA-AUTHORITY-LEDGER-V1"
+AUTHORITY_RECORD_VERSION = "authority-record/2.0"
+MOCK_SIGNATURE_ALGORITHM = "SYNTHETIC-HMAC-SHA256"
+NON_ATTESTABLE_HUMAN_STOP_REASONS = frozenset(
+    {
+        "AUTHORITY_POLICY_UNRESOLVED",
+        "BATCH_VALUE_CONFLICT",
+        "CIRCULAR_SUPPORT",
+        "IMMUTABLE_HISTORICAL_FIELD",
+        "MISSING_RULE_PROVENANCE",
+        "NON_WAIVABLE_AXIOM",
+        "OBJECT_TYPE_MISMATCH",
+        "PRIOR_VALUE_MISMATCH",
+        "UNKNOWN_OBJECT_ID",
+        "UNKNOWN_TARGET_POSITION_ID",
+        "UPSTREAM_INPUT_BLOCKED",
+    }
+)
+
+
+class SessionAuthenticationError(ValueError):
+    pass
 
 
 def utcnow() -> str:
@@ -47,6 +70,116 @@ def sha(value) -> str:
     return "sha256:" + hashlib.sha256(
         json.dumps(value, sort_keys=True, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
     ).hexdigest()
+
+
+def normalized_human_stop(stop: dict) -> dict:
+    result = clone(stop)
+    reason_code = str(result.get("reason_code") or "")
+    required_role = str(
+        result.get("required_role")
+        or result.get("required_authority_level")
+        or "PROFESSIONAL_REVIEWER"
+    )
+    result["required_role"] = required_role
+    result.setdefault("required_authority_level", required_role)
+    attestable = bool(
+        stop.get("attestable") is not False
+        and required_role != "PREPARER"
+        and reason_code not in NON_ATTESTABLE_HUMAN_STOP_REASONS
+    )
+    result["attestable"] = attestable
+    if reason_code == "NON_WAIVABLE_AXIOM":
+        result["resolution_kind"] = "NON_WAIVABLE_BLOCK"
+    elif reason_code == "AUTHORITY_POLICY_UNRESOLVED":
+        result["resolution_kind"] = "POLICY_CORRECTION"
+    elif attestable:
+        result["resolution_kind"] = "AUTHORITY_ATTESTATION"
+    else:
+        result["resolution_kind"] = "INPUT_OR_MODEL_CORRECTION"
+    result.setdefault("downstream_scope", [])
+    return result
+
+
+def authority_record_payload_hash(record: dict) -> str:
+    return sha(
+        {
+            key: value
+            for key, value in record.items()
+            if key not in {"record_hash", "record_signature"}
+        }
+    )
+
+
+def mock_authority_signing_key() -> bytes:
+    path = SESSION_DIR / ".authority_signing_hmac.key"
+    try:
+        return path.read_bytes()
+    except FileNotFoundError:
+        key = secrets.token_bytes(32)
+        try:
+            descriptor = os.open(
+                path, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600
+            )
+        except FileExistsError:
+            return path.read_bytes()
+        with os.fdopen(descriptor, "wb") as handle:
+            handle.write(key)
+            handle.flush()
+            os.fsync(handle.fileno())
+        return key
+
+
+def mock_sign_authority_record(record: dict) -> dict:
+    key = mock_authority_signing_key()
+    signed = clone(record)
+    signed["signature_algorithm"] = MOCK_SIGNATURE_ALGORITHM
+    signed["signing_key_id"] = "sha256:" + hashlib.sha256(key).hexdigest()
+    signed["record_hash"] = authority_record_payload_hash(signed)
+    signature = hmac.new(
+        key, signed["record_hash"].encode("ascii"), hashlib.sha256
+    ).digest()
+    signed["record_signature"] = base64.urlsafe_b64encode(signature).decode(
+        "ascii"
+    ).rstrip("=")
+    return signed
+
+
+def verify_mock_authority_signature(record: dict) -> None:
+    key = mock_authority_signing_key()
+    if record.get("signature_algorithm") != MOCK_SIGNATURE_ALGORITHM:
+        raise ValueError("Authority record signature algorithm is unsupported")
+    if record.get("signing_key_id") != "sha256:" + hashlib.sha256(key).hexdigest():
+        raise ValueError("Authority record signing key is not trusted")
+    if record.get("record_hash") != authority_record_payload_hash(record):
+        raise ValueError("Authority record immutable payload hash mismatch")
+    expected = hmac.new(
+        key, record["record_hash"].encode("ascii"), hashlib.sha256
+    ).digest()
+    try:
+        encoded = str(record.get("record_signature") or "")
+        supplied = base64.urlsafe_b64decode(
+            (encoded + "=" * (-len(encoded) % 4)).encode("ascii")
+        )
+    except (ValueError, UnicodeEncodeError) as exc:
+        raise ValueError("Authority record signature is malformed") from exc
+    if not hmac.compare_digest(expected, supplied):
+        raise ValueError("Authority record signature verification failed")
+
+
+def normalize_reference_ids(value, field: str) -> list[str]:
+    if not isinstance(value, list):
+        raise ValueError(f"{field} must be an array")
+    normalized = []
+    seen = set()
+    for raw in value:
+        if not isinstance(raw, str) or not raw.strip():
+            raise ValueError(f"{field} must contain non-empty strings")
+        reference_id = raw.strip()
+        if reference_id in seen:
+            raise ValueError(f"Duplicate {field} entry: {reference_id}")
+        normalized.append(reference_id)
+        seen.add(reference_id)
+    return normalized
 
 
 def read_json(path):
@@ -110,6 +243,8 @@ def load_pack(case_id):
 
 
 def session_path(session_id):
+    if not re.fullmatch(r"SESSION-[A-Za-z0-9_-]{32,128}", str(session_id)):
+        raise SessionAuthenticationError("PANTA session token is malformed")
     return SESSION_DIR / f"{session_id}.json"
 
 
@@ -137,9 +272,13 @@ def new_session(case_id=None, actor="partner", mode="MOCK_CONNECTED"):
         raise RuntimeError("CONNECTED_BACKEND_NOT_CONFIGURED")
     case_id = case_id or default_case()
     pack = load_pack(case_id)
-    session_id = uid("SESSION")
+    session_id = "SESSION-" + secrets.token_urlsafe(32)
     projection = clone(pack["projection"])
     projection["deal"]["projection_id"] = uid("PROJ")
+    created_at = utcnow()
+    expires_at = (
+        parse_iso(created_at) + timedelta(hours=8)
+    ).isoformat().replace("+00:00", "Z")
     session = {
         "session_id": session_id,
         "case_id": case_id,
@@ -157,17 +296,24 @@ def new_session(case_id=None, actor="partner", mode="MOCK_CONNECTED"):
         "proposal_reviews": {},
         "mission_runs": {},
         "active_lens_id": projection.get("deal", {}).get("default_lens_id"),
-        "created_at": utcnow(),
+        "created_at": created_at,
+        "expires_at": expires_at,
     }
     save(session)
     return session
 
 
 def load_session(session_id="", case_id=None, actor="partner", mode="MOCK_CONNECTED"):
-    if session_id and session_path(session_id).exists():
-        session = read_json(session_path(session_id))
+    if session_id:
+        path = session_path(session_id)
+        if not path.exists():
+            raise SessionAuthenticationError("PANTA session is unknown or expired")
+        session = read_json(path)
+        expires_at = parse_iso(session.get("expires_at", ""))
+        if expires_at <= datetime.now(timezone.utc):
+            raise SessionAuthenticationError("PANTA session is unknown or expired")
         if case_id and session.get("case_id") != case_id:
-            raise ValueError("Session does not belong to the requested case")
+            raise SessionAuthenticationError("Session does not belong to the requested case")
         return session
     return new_session(case_id or default_case(), actor, mode)
 
@@ -194,6 +340,13 @@ def context(session, projection=None, **overrides):
         "as_of_state_id": deal.get("as_of_state_id"),
         "as_of_date": deal.get("as_of_date") or latest_known_date(session),
         "authenticated_actor": actor,
+        "authentication": {
+            "principal_id": actor["actor_id"],
+            "case_id": session["case_id"],
+            "authentication_method": "SYNTHETIC_SERVER_SESSION",
+            "session_issued_at": session["created_at"],
+            "session_expires_at": session["expires_at"],
+        },
         "viewer_projection": "associate",
         "authority_assignments": [
             {
@@ -977,11 +1130,176 @@ def valid_change_ids(transition):
     }
 
 
+def authority_record_binding(transition: dict, stop: dict) -> dict:
+    authority_resolution = transition.get("authority_resolution", {})
+    if not isinstance(authority_resolution, dict):
+        authority_resolution = {}
+    normalized_stop = normalized_human_stop(stop)
+    return {
+        "human_stop_hash": sha(normalized_stop),
+        "policy_refs_hash": sha(transition.get("policy_refs", {})),
+        "authority_resolution_hash": sha(authority_resolution),
+        "policy_rule_id": normalized_stop.get("policy_rule_id"),
+        "authority_resolution_rule_id": authority_resolution.get("selected_rule_id"),
+    }
+
+
+def mock_authority_assignment_snapshot(
+    actor: dict, required_role: str, captured_at: str
+) -> dict:
+    actor_id = str(actor.get("actor_id") or "")
+    actor_role = str(actor.get("role") or "")
+    granted_roles = sorted(
+        {
+            actor_role,
+            required_role,
+            *(str(item) for item in actor.get("authority_roles", []) if item),
+        }
+        - {""}
+    )
+    authority_verbs = sorted(
+        {str(item) for item in actor.get("authority_verbs", []) if item}
+    )
+    declared_effective_from = actor.get("effective_from") or actor.get("effective_date")
+    declared_known_at = actor.get("known_at")
+    assignment_identity = {
+        "actor_id": actor_id,
+        "actor_role": actor_role,
+        "granted_roles": granted_roles,
+        "authority_verbs": authority_verbs,
+        "declared_effective_from": declared_effective_from,
+        "declared_effective_to": actor.get("effective_to") or actor.get("expires_at"),
+        "declared_known_at": declared_known_at,
+        "assignment_version": str(actor.get("authority_assignment_version") or actor.get("version") or "1"),
+    }
+    return {
+        "assignment_id": str(
+            actor.get("authority_assignment_id")
+            or actor.get("assignment_id")
+            or "ASSIGN-" + sha(assignment_identity).removeprefix("sha256:")[:20].upper()
+        ),
+        "assignment_version": assignment_identity["assignment_version"],
+        "actor_id": actor_id,
+        "actor_role": actor_role,
+        "granted_roles": granted_roles,
+        "authority_verbs": authority_verbs,
+        "effective_from": declared_effective_from or captured_at,
+        "effective_to": assignment_identity["declared_effective_to"],
+        "known_at": declared_known_at or captured_at,
+        "assignment_status": "ACTIVE",
+        "revoked_effective_at": actor.get("revoked_effective_at"),
+        "revocation_known_at": actor.get("revocation_known_at"),
+        "temporal_basis": (
+            "DECLARED_ASSIGNMENT"
+            if declared_effective_from and declared_known_at
+            else "ATTESTATION_TIME_FALLBACK"
+        ),
+        "captured_at": captured_at,
+    }
+
+
+def validate_mock_authority_ledger(session: dict) -> None:
+    previous_hash = None
+    records = sorted(
+        session.get("authority_records", {}).values(),
+        key=lambda item: item.get("ledger_sequence", 0),
+    )
+    for expected_sequence, record in enumerate(records, start=1):
+        if (
+            record.get("ledger_id") != AUTHORITY_LEDGER_ID
+            or record.get("ledger_sequence") != expected_sequence
+            or record.get("previous_record_hash") != previous_hash
+        ):
+            raise ValueError("Authority ledger hash chain is discontinuous")
+        verify_mock_authority_signature(record)
+        previous_hash = record["record_hash"]
+
+
+def validate_authority_record(session: dict, run: dict, record: dict) -> None:
+    transition = run["transition"]
+    stop = next(
+        (
+            item
+            for item in transition.get("human_stops", [])
+            if item.get("stop_id") == record.get("human_stop_id")
+        ),
+        None,
+    )
+    if not stop or normalized_human_stop(stop)["attestable"] is not True:
+        raise ValueError("Authority record references a non-attestable Human Stop")
+    required_role = normalized_human_stop(stop)["required_role"]
+    verb = stop.get("authority_verb") or session["projection"]["deal"]["decisionRoom"].get("verb")
+    expected = {
+        "authority_record_version": AUTHORITY_RECORD_VERSION,
+        "case_id": session.get("case_id"),
+        "run_id": run.get("run_id"),
+        "candidate_state_id": run.get("candidate_state_id"),
+        "human_stop_id": stop.get("stop_id"),
+        "artifact_hash": transition.get("replay_hash"),
+        "prepared_selection_hash": run.get("prepared_selection_hash"),
+        "required_role": required_role,
+        "authority_verb": verb,
+        "status": "ATTESTED",
+        **authority_record_binding(transition, stop),
+    }
+    if any(record.get(key) != value for key, value in expected.items()):
+        raise ValueError("Authority record is not scoped to this prepared Candidate")
+    if record.get("record_hash") != authority_record_payload_hash(record):
+        raise ValueError("Authority record immutable payload hash mismatch")
+    snapshot = record.get("authority_assignment")
+    if not isinstance(snapshot, dict):
+        raise ValueError("Authority assignment snapshot is missing")
+    if record.get("authority_assignment_hash") != sha(snapshot):
+        raise ValueError("Authority assignment snapshot hash mismatch")
+    if (
+        snapshot.get("actor_id") != record.get("actor_id")
+        or snapshot.get("actor_role") != record.get("actor_role")
+        or snapshot.get("captured_at") != record.get("timestamp")
+        or required_role not in snapshot.get("granted_roles", [])
+        or verb not in snapshot.get("authority_verbs", [])
+    ):
+        raise ValueError("Authority assignment snapshot does not authorize the act")
+    authentication = record.get("authentication_context")
+    if not isinstance(authentication, dict):
+        raise ValueError("Authority authentication context is missing")
+    if record.get("authentication_context_hash") != sha(authentication):
+        raise ValueError("Authority authentication context hash mismatch")
+    if (
+        authentication.get("principal_id") != record.get("actor_id")
+        or authentication.get("case_id") != session.get("case_id")
+        or authentication.get("authentication_method") != "SYNTHETIC_SERVER_SESSION"
+        or authentication.get("authenticated_at") != record.get("timestamp")
+        or not re.fullmatch(
+            r"sha256:[0-9a-f]{64}",
+            str(authentication.get("session_id_hash") or ""),
+        )
+    ):
+        raise ValueError("Authority authentication context does not authorize the act")
+    issued_at = parse_iso(authentication.get("session_issued_at", ""))
+    expires_at = parse_iso(authentication.get("session_expires_at", ""))
+    authenticated_at = parse_iso(authentication.get("authenticated_at", ""))
+    if not issued_at <= authenticated_at <= expires_at:
+        raise ValueError("Authority act falls outside its authenticated session interval")
+    verify_mock_authority_signature(record)
+    course = next(
+        (
+            item
+            for item in session["projection"]["deal"]["decisionRoom"].get("courses", [])
+            if item.get("id") == record.get("course_id")
+        ),
+        None,
+    )
+    if not course or record.get("effect_type") != course.get("effect_type", "INTERNAL"):
+        raise ValueError("Authority record course is no longer admissible")
+
+
 def settle(session, body):
     for field in ("run_id", "candidate_state_id", "selected_change_ids", "as_of_state_id"):
         if body.get(field) in (None, ""):
             raise ValueError(f"Missing settlement field: {field}")
-    selected = list(dict.fromkeys(body.get("selected_change_ids") or []))
+    selected = normalize_reference_ids(
+        body.get("selected_change_ids", []), "selected_change_ids"
+    )
     if not selected:
         raise ValueError("At least one selected change is required")
     run = session["runs"].get(body["run_id"])
@@ -994,17 +1312,25 @@ def settle(session, body):
     if body.get("as_of_state_id") != session["projection"]["deal"].get("as_of_state_id"):
         raise ValueError("As-of state is stale")
     transition = run["transition"]
+    validate_mock_authority_ledger(session)
     allowed = valid_change_ids(transition)
     if not set(selected).issubset(allowed):
         raise ValueError("Settlement references a change outside the calculated affected set")
     if set(selected) != set(run.get("selected_change_ids", [])):
         raise ValueError("Settlement selection differs from the prepared change set")
 
-    authority_ids = list(body.get("authority_record_ids", []) or [])
+    normalize_reference_ids(body.get("human_stop_ids", []), "human_stop_ids")
+    authority_ids = normalize_reference_ids(
+        body.get("authority_record_ids", []), "authority_record_ids"
+    )
     if body.get("authority_record_id"):
+        if body["authority_record_id"] in authority_ids:
+            raise ValueError("Duplicate authority_record_ids entry")
         authority_ids.append(body["authority_record_id"])
-    authority_ids = list(dict.fromkeys(item for item in authority_ids if item))
     records = [session["authority_records"].get(item) for item in authority_ids]
+    for record in records:
+        if record and record.get("run_id") == run["run_id"]:
+            validate_authority_record(session, run, record)
     stops = transition.get("human_stops", [])
     for stop in stops:
         matching = [
@@ -1019,10 +1345,13 @@ def settle(session, body):
         if not matching:
             raise ValueError(f"Human Stop {stop.get('stop_id')} requires a scoped authority record")
 
-    package_ids = list(body.get("execution_package_ids", []) or [])
+    package_ids = normalize_reference_ids(
+        body.get("execution_package_ids", []), "execution_package_ids"
+    )
     if body.get("execution_package_id"):
+        if body["execution_package_id"] in package_ids:
+            raise ValueError("Duplicate execution_package_ids entry")
         package_ids.append(body["execution_package_id"])
-    package_ids = list(dict.fromkeys(item for item in package_ids if item))
     for record in records:
         if record and record.get("effect_type") == "EXTERNAL_PACKAGE":
             packages = [session["packages"].get(item) for item in package_ids]
@@ -1129,7 +1458,11 @@ class Handler(SimpleHTTPRequestHandler):
             raise ValueError("Invalid JSON body") from exc
 
     def session(self, query, case_id=None, actor="partner", mode="MOCK_CONNECTED"):
-        session_id = (query.get("session_id") or [self.headers.get("X-Panta-Session", "")])[0]
+        query_session = (query.get("session_id") or [""])[0].strip()
+        header_session = self.headers.get("X-Panta-Session", "").strip()
+        if query_session and header_session and not secrets.compare_digest(query_session, header_session):
+            raise SessionAuthenticationError("Session header and query token do not match")
+        session_id = header_session or query_session
         return load_session(session_id, case_id, actor, mode)
 
     def do_GET(self):
@@ -1141,6 +1474,8 @@ class Handler(SimpleHTTPRequestHandler):
             self.get_api(path, parse_qs(parsed.query))
         except FileNotFoundError as exc:
             self.json_response(404, {"error": {"code": "NOT_FOUND", "message": str(exc)}})
+        except SessionAuthenticationError as exc:
+            self.json_response(401, {"error": {"code": "AUTHENTICATION_REQUIRED", "message": str(exc)}})
         except ValueError as exc:
             self.json_response(400, {"error": {"code": "INVALID_TEMPORAL_QUERY", "message": str(exc)}})
         except Exception as exc:
@@ -1153,6 +1488,8 @@ class Handler(SimpleHTTPRequestHandler):
         try:
             path = API + parsed.path[len(LEGACY_API):] if parsed.path.startswith(LEGACY_API) else parsed.path
             self.post_api(path, parse_qs(parsed.query), self.body())
+        except SessionAuthenticationError as exc:
+            self.json_response(401, {"error": {"code": "AUTHENTICATION_REQUIRED", "message": str(exc)}})
         except ValueError as exc:
             self.json_response(400, {"error": {"code": "INVALID_REQUEST", "message": str(exc)}})
         except Exception as exc:
@@ -1173,9 +1510,10 @@ class Handler(SimpleHTTPRequestHandler):
                         }
                     },
                 )
-            session = self.session(query, case_id, actor, mode)
-            session["actor_key"] = actor
-            session["mode"] = mode
+            try:
+                session = self.session(query, case_id, actor, mode)
+            except SessionAuthenticationError:
+                session = new_session(case_id, actor, mode)
             save(session)
             projection, _ = projection_as_of(session, latest_known_date(session), query.get("lens_id", [""])[0] or None)
             return self.json_response(
@@ -1557,14 +1895,34 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.json_response(404, {"error": {"code": "RUN_NOT_FOUND", "message": "Run not found"}})
             if run.get("status") not in {"CANDIDATE", "PREPARED"}:
                 return self.json_response(409, {"error": {"code": "RUN_NOT_PREPARABLE", "message": "Only a Candidate run may be prepared"}})
-            selected = list(dict.fromkeys(body.get("selected_change_ids") or []))
+            raw_selected = body.get("selected_change_ids", [])
+            if not isinstance(raw_selected, list) or any(
+                not isinstance(item, str) or not item.strip()
+                for item in raw_selected
+            ):
+                return self.json_response(400, {"error": {"code": "INVALID_CHANGE_IDS", "message": "selected_change_ids must contain non-empty strings"}})
+            selected = [item.strip() for item in raw_selected]
             if not selected:
                 return self.json_response(409, {"error": {"code": "NO_CHANGES_SELECTED", "message": "Select at least one change explicitly."}})
+            if len(selected) != len(set(selected)):
+                return self.json_response(409, {"error": {"code": "DUPLICATE_CHANGE_ID", "message": "Duplicate selected change IDs are not allowed"}})
             allowed = valid_change_ids(run["transition"])
             unknown = sorted(set(selected) - allowed)
             if unknown:
                 return self.json_response(409, {"error": {"code": "UNKNOWN_CHANGE_ID", "message": "Prepared change is outside the transition output", "details": {"unknown_change_ids": unknown}}})
+            selection_hash = sha(
+                {
+                    "run_id": run_id,
+                    "candidate_state_id": run.get("candidate_state_id"),
+                    "selected_change_ids": sorted(selected),
+                }
+            )
+            if run.get("status") == "PREPARED":
+                if run.get("prepared_selection_hash") != selection_hash:
+                    return self.json_response(409, {"error": {"code": "PREPARED_SELECTION_CONFLICT", "message": "Run is already PREPARED with another selection"}})
+                return self.json_response(200, {"run": run})
             run["selected_change_ids"] = selected
+            run["prepared_selection_hash"] = selection_hash
             run["status"] = "PREPARED"
             run["prepared_at"] = utcnow()
             append_registry(session, "PREPARATION", "Explicit change set prepared", ", ".join(selected), actor_for(session["projection"], session.get("actor_key", "partner"))["actor_id"], run["candidate_state_id"], run_id, effective_date=run["transition"].get("effective_date"), known_at=run["prepared_at"])
@@ -1581,6 +1939,8 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.json_response(404, {"error": {"code": "RUN_NOT_FOUND", "message": "Run not found"}})
             if run.get("status") != "PREPARED":
                 return self.json_response(409, {"error": {"code": "RUN_NOT_PREPARED", "message": "Authority requires an explicitly prepared change set"}})
+            if not run.get("prepared_selection_hash"):
+                return self.json_response(409, {"error": {"code": "PREPARED_SELECTION_MISSING", "message": "Authority requires a durably prepared selection hash"}})
             if body.get("run_id") and body.get("run_id") != run_id:
                 return self.json_response(409, {"error": {"code": "RUN_CONTEXT_MISMATCH", "message": "Authority request run_id does not match the route"}})
             if body.get("candidate_state_id") != run.get("candidate_state_id"):
@@ -1589,7 +1949,14 @@ class Handler(SimpleHTTPRequestHandler):
             stop = next((item for item in transition.get("human_stops", []) if item.get("stop_id") == body.get("human_stop_id")), None)
             if not stop or stop.get("status") not in {"OPEN", None}:
                 return self.json_response(409, {"error": {"code": "HUMAN_STOP_NOT_OPEN", "message": "Human Stop is not open for this run"}})
+            normalized_stop = normalized_human_stop(stop)
+            if normalized_stop["attestable"] is not True:
+                return self.json_response(409, {"error": {"code": "HUMAN_STOP_NOT_ATTESTABLE", "message": "Human Stop requires correction or replay and cannot be authority-attested"}})
             actor = actor_for(session["projection"], session.get("actor_key", "partner"))
+            if not isinstance(body.get("actor_id"), str) or not body.get("actor_id", "").strip():
+                return self.json_response(400, {"error": {"code": "ACTOR_ID_REQUIRED", "message": "actor_id is required for authority attestation"}})
+            if body["actor_id"].strip() != actor.get("actor_id"):
+                return self.json_response(403, {"error": {"code": "ACTOR_CONTEXT_MISMATCH", "message": "actor_id does not match the authenticated session actor"}})
             verb = stop.get("authority_verb") or session["projection"]["deal"]["decisionRoom"].get("verb")
             if verb not in actor.get("authority_verbs", []):
                 return self.json_response(403, {"error": {"code": "INSUFFICIENT_AUTHORITY", "message": f"{actor['actor_id']} lacks {verb}"}})
@@ -1601,11 +1968,33 @@ class Handler(SimpleHTTPRequestHandler):
                 return self.json_response(409, {"error": {"code": "CONFLICTING_ATTESTATION", "message": "An incompatible course is already attested for this Human Stop"}})
             if not body.get("artifact_hash"):
                 return self.json_response(400, {"error": {"code": "ARTIFACT_HASH_REQUIRED", "message": "Authority record requires the prepared artifact hash"}})
+            if body.get("artifact_hash") != transition.get("replay_hash"):
+                return self.json_response(409, {"error": {"code": "ARTIFACT_HASH_MISMATCH", "message": "Authority artifact hash does not match this Candidate replay"}})
 
             def operation():
                 known_at = utcnow()
+                assignment = mock_authority_assignment_snapshot(
+                    actor, normalized_stop["required_role"], known_at
+                )
+                authentication_context = {
+                    "principal_id": actor["actor_id"],
+                    "case_id": session["case_id"],
+                    "authentication_method": "SYNTHETIC_SERVER_SESSION",
+                    "session_id_hash": "sha256:" + hashlib.sha256(
+                        session["session_id"].encode("utf-8")
+                    ).hexdigest(),
+                    "session_issued_at": session["created_at"],
+                    "session_expires_at": session["expires_at"],
+                    "authenticated_at": known_at,
+                }
+                existing_records = sorted(
+                    session["authority_records"].values(),
+                    key=lambda item: item.get("ledger_sequence", 0),
+                )
                 record = {
+                    "authority_record_version": AUTHORITY_RECORD_VERSION,
                     "authority_record_id": uid("AUTH"),
+                    "case_id": session["case_id"],
                     "run_id": run_id,
                     "candidate_state_id": run["candidate_state_id"],
                     "human_stop_id": stop["stop_id"],
@@ -1617,13 +2006,26 @@ class Handler(SimpleHTTPRequestHandler):
                     "known_at": known_at,
                     "artifact_hash": body["artifact_hash"],
                     "authority_verb": verb,
+                    "required_role": normalized_stop["required_role"],
+                    "prepared_selection_hash": run["prepared_selection_hash"],
+                    "authority_assignment": assignment,
+                    "authority_assignment_hash": sha(assignment),
+                    "authentication_context": authentication_context,
+                    "authentication_context_hash": sha(authentication_context),
+                    "ledger_id": AUTHORITY_LEDGER_ID,
+                    "ledger_sequence": len(existing_records) + 1,
+                    "previous_record_hash": (
+                        existing_records[-1]["record_hash"]
+                        if existing_records
+                        else None
+                    ),
                     "effect_type": course.get("effect_type", "INTERNAL"),
                     "status": "ATTESTED",
                     "synthetic": True,
+                    **authority_record_binding(transition, stop),
                 }
+                record = mock_sign_authority_record(record)
                 session["authority_records"][record["authority_record_id"]] = record
-                stop["status"] = "CLOSED"
-                stop["authority_record_id"] = record["authority_record_id"]
                 append_registry(session, "AUTHORITY", "Authority decision attested", course["label"], actor["actor_id"], record["authority_record_id"], run_id, effective_date=record["effective_date"], known_at=known_at, epistemic_class="institutional_act")
                 package = build_package(session, course, record) if course.get("effect_type") == "EXTERNAL_PACKAGE" else None
                 return {"authority_record": record, "execution_package": package, "registry": session["registry"]}

@@ -260,6 +260,7 @@ class RuntimeCumulationAndRuleSwitchTests(unittest.TestCase):
                 "source_ref": fixture["rule_source_ref"],
                 "dependent_ids": ["M-FINANCING-CAPACITY"],
                 "minimum_materiality_class": "M2_GATE_AUTHORITY",
+                "authority_change_types": ["LEVERAGE"],
                 "numeric_delta_at_switch_detection": "0",
             }
         ]
@@ -279,6 +280,9 @@ class RuntimeCumulationAndRuleSwitchTests(unittest.TestCase):
         self.assertEqual(switch["reason_code"], "RULE_SWITCH_MATERIAL_BY_DEFINITION")
         self.assertTrue(switch["dependent_financing_component_requeued"])
         self.assertEqual(output["materiality_assessment"]["overall_class"], "M2_GATE_AUTHORITY")
+        self.assertEqual(
+            output["authority_resolution"]["selected_rule_id"], "AUTH-040"
+        )
         self.assertIn(
             "M-FINANCING-CAPACITY",
             {item["object_id"] for item in output["affected_set"]},

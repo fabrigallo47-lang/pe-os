@@ -361,6 +361,9 @@ class V20ScoutBackendSmokeTests(unittest.TestCase):
                     or actor.get("participant_id")
                     or actor["id"]
                 )
+                authority_session_id, _ = router._issue_authenticated_session(
+                    self.case_id, actor_id
+                )
                 attested = asyncio.run(
                     router.attest(
                         run_id,
@@ -371,6 +374,7 @@ class V20ScoutBackendSmokeTests(unittest.TestCase):
                             "course_id": course["id"],
                             "artifact_hash": transition["replay_hash"],
                         },
+                        session_id=authority_session_id,
                     )
                 )
                 authority_record_ids.append(

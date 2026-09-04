@@ -1,0 +1,64 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.local/contracts/authority_keyring.schema.json",
+  "title": "PANTA Authority Trusted-Key Ring",
+  "type": "object",
+  "additionalProperties": false,
+  "properties": {
+    "keyring_version": {
+      "const": "authority-keyring/1.0"
+    },
+    "active_signing_key_id": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "keys": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "additionalProperties": false,
+        "properties": {
+          "key_id": {
+            "type": "string",
+            "pattern": "^sha256:[0-9a-f]{64}$"
+          },
+          "algorithm": {"const": "ED25519"},
+          "public_key": {
+            "type": "string",
+            "pattern": "^[A-Za-z0-9_-]{43}$"
+          },
+          "status": {
+            "enum": ["ACTIVE", "RETIRED", "REVOKED", "TRUSTED"]
+          },
+          "registered_at": {"type": ["string", "null"], "format": "date-time"},
+          "activated_at": {"type": ["string", "null"], "format": "date-time"},
+          "retired_at": {"type": ["string", "null"], "format": "date-time"},
+          "revoked_effective_at": {"type": ["string", "null"], "format": "date-time"},
+          "revocation_known_at": {"type": ["string", "null"], "format": "date-time"},
+          "source": {
+            "enum": ["ACTIVE_SIGNING_KEY", "ENVIRONMENT_TRUST_ROOT"]
+          }
+        },
+        "required": [
+          "key_id",
+          "algorithm",
+          "public_key",
+          "status",
+          "registered_at",
+          "activated_at",
+          "retired_at",
+          "revoked_effective_at",
+          "revocation_known_at",
+          "source"
+        ]
+      }
+    },
+    "updated_at": {"type": ["string", "null"], "format": "date-time"}
+  },
+  "required": [
+    "keyring_version",
+    "active_signing_key_id",
+    "keys",
+    "updated_at"
+  ]
+}

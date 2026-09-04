@@ -11,6 +11,7 @@ only provides a transparent, deterministic materialization of mutations.
 from __future__ import annotations
 
 import copy
+import fcntl
 import hashlib
 import json
 import os
@@ -85,7 +86,55 @@ def _read_all(case_id: str) -> list[dict[str, Any]]:
                     f"ledger event for case {case_id!r}, line {line_number} must be an object"
                 )
             events.append(event)
+    _validate_ledger_chain(case_id, events)
     return events
+
+
+def _ledger_hash(event: Mapping[str, Any]) -> str:
+    payload = {key: value for key, value in event.items() if key != "ledger_hash"}
+    return _sha256(payload)
+
+
+def _previous_hash(event: Mapping[str, Any]) -> str:
+    """Return the chain identity of a protected or pre-chain legacy row."""
+
+    value = event.get("ledger_hash")
+    return str(value) if value else _sha256(event)
+
+
+def _validate_ledger_chain(case_id: str, events: list[dict[str, Any]]) -> None:
+    """Fail closed when any hash-chained row was altered or reordered.
+
+    Rows written before ``journal-ledger/1.0`` remain readable.  The first new
+    row anchors itself to the canonical hash of the last legacy row, after
+    which every row must carry a continuous sequence and hash.
+    """
+
+    protected_started = False
+    prior_hash: str | None = None
+    for index, event in enumerate(events, start=1):
+        ledger_hash = event.get("ledger_hash")
+        if ledger_hash is None:
+            if protected_started:
+                raise ValueError(
+                    f"ledger chain for case {case_id!r} contains an unprotected row after protected history"
+                )
+            prior_hash = _previous_hash(event)
+            continue
+        protected_started = True
+        if event.get("ledger_sequence") != index:
+            raise ValueError(
+                f"ledger chain for case {case_id!r} has an invalid sequence at row {index}"
+            )
+        if event.get("previous_ledger_hash") != prior_hash:
+            raise ValueError(
+                f"ledger chain for case {case_id!r} is discontinuous at row {index}"
+            )
+        if ledger_hash != _ledger_hash(event):
+            raise ValueError(
+                f"ledger chain for case {case_id!r} failed integrity at row {index}"
+            )
+        prior_hash = str(ledger_hash)
 
 
 def compute_event_id(source_version_id: Any, extractor_version: Any, manifest_hash: Any) -> str:
@@ -129,31 +178,55 @@ def append_event(case_id: str, event: Mapping[str, Any]) -> dict[str, Any]:
     if admission_mode is not None:
         validate_admission_mode(admission_mode)
 
-    if any(existing.get("event_id") == event_id for existing in _read_all(case_id)):
-        return {"appended": False, "event_id": event_id, "reason": "event_id already present"}
-
-    # The kernel's third temporal field. effective_at is when the fact held,
-    # known_at when the institution learned it, recorded_at when the ledger
-    # actually took it. They diverge: a claim known on Monday and appended on
-    # Friday reads as Monday's knowledge, which is right for replay — but only
-    # recorded_at can answer "was this backdated, and by how long".
-    #
-    # Stamped here rather than accepted from the caller: a caller-supplied
-    # recorded_at could claim a write happened at a time it did not.
-    stored = dict(event)
-    stored["recorded_at"] = datetime.now(timezone.utc).isoformat()
-
-    # Serialize before opening the file: a failure to encode never changes the ledger.
-    line = (_canonical_json(stored) + "\n").encode("utf-8")
     ledger_path = _case_path(case_id)
     ledger_path.parent.mkdir(parents=True, exist_ok=True)
-    descriptor = os.open(ledger_path, os.O_WRONLY | os.O_APPEND | os.O_CREAT, 0o644)
+    descriptor = os.open(ledger_path, os.O_RDWR | os.O_APPEND | os.O_CREAT, 0o644)
     try:
-        written = os.write(descriptor, line)
-        if written != len(line):
-            raise OSError("ledger append wrote an incomplete event line")
+        # The duplicate check and append form one inter-process critical
+        # section. Without the advisory file lock, two workers can both observe
+        # absence and append the same event id.
+        fcntl.flock(descriptor, fcntl.LOCK_EX)
+        existing_events = _read_all(case_id)
+        if any(existing.get("event_id") == event_id for existing in existing_events):
+            return {
+                "appended": False,
+                "event_id": event_id,
+                "reason": "event_id already present",
+            }
+
+        # The kernel's third temporal field. effective_at is when the fact held,
+        # known_at when the institution learned it, recorded_at when the ledger
+        # actually took it. Server-owned chain fields make later editing or
+        # reordering detectable and cannot be spoofed by a caller.
+        stored = {
+            key: value
+            for key, value in dict(event).items()
+            if key not in {
+                "recorded_at",
+                "ledger_sequence",
+                "previous_ledger_hash",
+                "ledger_hash",
+            }
+        }
+        stored["recorded_at"] = datetime.now(timezone.utc).isoformat()
+        stored["ledger_sequence"] = len(existing_events) + 1
+        stored["previous_ledger_hash"] = (
+            _previous_hash(existing_events[-1]) if existing_events else None
+        )
+        stored["ledger_hash"] = _ledger_hash(stored)
+
+        # Serialize while holding the lock but before changing the file: a
+        # failure to encode never leaves a partial row.
+        line = (_canonical_json(stored) + "\n").encode("utf-8")
+        written = 0
+        while written < len(line):
+            count = os.write(descriptor, line[written:])
+            if count <= 0:
+                raise OSError("ledger append wrote an incomplete event line")
+            written += count
         os.fsync(descriptor)
     finally:
+        fcntl.flock(descriptor, fcntl.LOCK_UN)
         os.close(descriptor)
     return {"appended": True, "event_id": event_id, "reason": None}
 

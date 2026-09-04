@@ -7,6 +7,7 @@ import json
 import sys
 import tempfile
 import unittest
+from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
 
 
@@ -58,7 +59,12 @@ class LedgerStoreTests(unittest.TestCase):
         self.assertEqual(first, {"appended": True, "event_id": "event-1", "reason": None})
         self.assertFalse(second["appended"])
         self.assertIsNotNone(second["reason"])
-        self.assertEqual(len(ledger_store.read_ledger(self.case_id)), 1)
+        stored = ledger_store.read_ledger(self.case_id)
+        self.assertEqual(len(stored), 1)
+        self.assertEqual(stored[0]["ledger_sequence"], 1)
+        self.assertIsNone(stored[0]["previous_ledger_hash"])
+        self.assertTrue(stored[0]["recorded_at"])
+        self.assertTrue(stored[0]["ledger_hash"].startswith("sha256:"))
 
     def test_identical_claim_content_from_different_sources_both_persist(self) -> None:
         ledger_store.append_event(
@@ -125,6 +131,46 @@ class LedgerStoreTests(unittest.TestCase):
         self.assertEqual(
             replayed["objects"]["CLAIM"]["claim-1"]["value"], "10"
         )
+
+    def test_hash_chain_detects_tampering(self) -> None:
+        ledger_store.append_event(
+            self.case_id, event("event-1", "source-1", "2026-04-01T09:00:00Z")
+        )
+        path = ledger_store.PIPELINE_OUT / "cases" / self.case_id / "ledger.jsonl"
+        stored = json.loads(path.read_text(encoding="utf-8"))
+        stored["known_at"] = "2026-04-02T09:00:00Z"
+        path.write_text(json.dumps(stored) + "\n", encoding="utf-8")
+
+        with self.assertRaisesRegex(ValueError, "failed integrity"):
+            ledger_store.read_ledger(self.case_id)
+
+    def test_first_protected_row_anchors_legacy_history(self) -> None:
+        legacy = event("legacy", "source-1", "2026-04-01T09:00:00Z")
+        path = ledger_store.PIPELINE_OUT / "cases" / self.case_id / "ledger.jsonl"
+        path.parent.mkdir(parents=True)
+        path.write_text(json.dumps(legacy) + "\n", encoding="utf-8")
+
+        ledger_store.append_event(
+            self.case_id, event("protected", "source-2", "2026-04-01T09:00:01Z")
+        )
+        rows = ledger_store.read_ledger(self.case_id)
+
+        self.assertNotIn("ledger_hash", rows[0])
+        self.assertEqual(rows[1]["ledger_sequence"], 2)
+        self.assertEqual(rows[1]["previous_ledger_hash"], ledger_store._sha256(rows[0]))
+
+    def test_concurrent_duplicate_append_remains_exactly_once(self) -> None:
+        candidate = event("same-event", "source-1", "2026-04-01T09:00:00Z")
+        with ThreadPoolExecutor(max_workers=12) as executor:
+            outcomes = list(
+                executor.map(
+                    lambda _: ledger_store.append_event(self.case_id, candidate),
+                    range(24),
+                )
+            )
+
+        self.assertEqual(sum(item["appended"] for item in outcomes), 1)
+        self.assertEqual(len(ledger_store.read_ledger(self.case_id)), 1)
 
 
 if __name__ == "__main__":

@@ -232,6 +232,9 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
 
         authority_record_ids = []
         execution_package_ids = []
+        authority_session_id, _ = router._issue_authenticated_session(
+            "keystone", "partner-001"
+        )
         for stop_id in stop_ids:
             attested = asyncio.run(
                 router.attest(
@@ -243,6 +246,7 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
                         "actor_id": "partner-001",
                         "artifact_hash": transition["replay_hash"],
                     },
+                    session_id=authority_session_id,
                 )
             )
             authority_record_ids.append(

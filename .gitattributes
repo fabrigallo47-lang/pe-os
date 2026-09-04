@@ -5,3 +5,6 @@ evaluation/fixtures/documents/*.pdf binary
 evaluation/fixtures/documents/*.png binary
 evaluation/fixtures/documents/*.pptx binary
 evaluation/fixtures/documents/*.xlsx binary
+
+# Generated package inventory is intentionally emitted with CSV-standard CRLF.
+ui/00_START_HERE/PACKAGE_INVENTORY.csv whitespace=cr-at-eol

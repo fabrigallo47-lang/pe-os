@@ -1,0 +1,347 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.example/schemas/materiality-policy-1.0.json",
+  "title": "PANTA Runtime Materiality Policy",
+  "description": "Versioned materiality-policy input contract for the State Transition Engine. Classification coverage is additive and fail-closed.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "policy_id",
+    "version",
+    "kernel_invariants",
+    "economic_thresholds",
+    "epistemic_rules",
+    "gate_and_blocker_rules",
+    "m0_auto_reconciliation_guards"
+  ],
+  "properties": {
+    "schema_version": {
+      "const": "runtime-policy-1.0"
+    },
+    "policy_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "version": {
+      "type": "string",
+      "minLength": 1
+    },
+    "kernel_invariants": {
+      "type": "object"
+    },
+    "economic_thresholds": {
+      "type": "array",
+      "items": {
+        "$ref": "#/$defs/economic_threshold_rule"
+      }
+    },
+    "epistemic_rules": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "gate_and_blocker_rules": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
+    "m0_auto_reconciliation_guards": {
+      "$ref": "#/$defs/m0_auto_reconciliation_guards"
+    },
+    "classification_coverage": {
+      "$ref": "#/$defs/classification_coverage"
+    }
+  },
+  "$defs": {
+    "nonempty_unique_string_array": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "selectors": {
+      "type": "object",
+      "minProperties": 1,
+      "properties": {
+        "object_ids": {
+          "$ref": "#/$defs/nonempty_unique_string_array"
+        },
+        "model_node_ids": {
+          "$ref": "#/$defs/nonempty_unique_string_array"
+        },
+        "position_ids": {
+          "$ref": "#/$defs/nonempty_unique_string_array"
+        },
+        "definition_ids": {
+          "$ref": "#/$defs/nonempty_unique_string_array"
+        },
+        "model_node_id_patterns": {
+          "$ref": "#/$defs/nonempty_unique_string_array"
+        },
+        "metric_name_patterns": {
+          "$ref": "#/$defs/nonempty_unique_string_array"
+        }
+      },
+      "additionalProperties": false
+    },
+    "threshold_test": {
+      "type": "object",
+      "required": [
+        "basis",
+        "operator"
+      ],
+      "properties": {
+        "basis": {
+          "enum": [
+            "ABSOLUTE_CHANGE",
+            "RELATIVE_CHANGE_TO_LAST_CURRENT",
+            "LIMIT_CROSSING"
+          ]
+        },
+        "operator": {
+          "type": "string",
+          "minLength": 1
+        },
+        "value": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        },
+        "limit_types": {
+          "$ref": "#/$defs/nonempty_unique_string_array"
+        },
+        "limits": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/materiality_limit"
+          }
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "basis": {
+                "const": "LIMIT_CROSSING"
+              }
+            },
+            "required": [
+              "basis"
+            ]
+          },
+          "then": {
+            "required": [
+              "limit_types",
+              "unit"
+            ]
+          },
+          "else": {
+            "required": [
+              "value"
+            ]
+          }
+        }
+      ],
+      "additionalProperties": true
+    },
+    "materiality_limit": {
+      "type": "object",
+      "required": [
+        "limit_id",
+        "limit_type",
+        "operator",
+        "value",
+        "unit",
+        "source_ref"
+      ],
+      "properties": {
+        "limit_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "limit_type": {
+          "type": "string",
+          "minLength": 1
+        },
+        "operator": {
+          "enum": [
+            "lte",
+            "lt",
+            "gte",
+            "gt"
+          ]
+        },
+        "value": {
+          "type": [
+            "string",
+            "number"
+          ]
+        },
+        "unit": {
+          "type": "string"
+        },
+        "source_ref": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": true
+    },
+    "economic_threshold_rule": {
+      "type": "object",
+      "required": [
+        "rule_id",
+        "metric",
+        "selectors",
+        "aggregation",
+        "tests",
+        "minimum_class_when_triggered"
+      ],
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "metric": {
+          "type": "string",
+          "minLength": 1
+        },
+        "selectors": {
+          "$ref": "#/$defs/selectors"
+        },
+        "aggregation": {
+          "const": "ANY"
+        },
+        "authority_change_types": {
+          "$ref": "#/$defs/nonempty_unique_string_array"
+        },
+        "tests": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "$ref": "#/$defs/threshold_test"
+          }
+        },
+        "minimum_class_when_triggered": {
+          "enum": [
+            "M1_PROFESSIONAL_REVIEW",
+            "M2_GATE_AUTHORITY",
+            "M3_HARD_BLOCKER"
+          ]
+        }
+      },
+      "additionalProperties": true
+    },
+    "m0_safe_harbor": {
+      "type": "object",
+      "required": [
+        "rule_id",
+        "selectors",
+        "fields",
+        "conditions"
+      ],
+      "properties": {
+        "rule_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "selectors": {
+          "$ref": "#/$defs/selectors"
+        },
+        "fields": {
+          "$ref": "#/$defs/nonempty_unique_string_array"
+        },
+        "delta_reason_codes": {
+          "$ref": "#/$defs/nonempty_unique_string_array"
+        },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "DETERMINISTIC_DERIVED_CHANGE",
+              "TARGET_REMAINS_SUPPORTED_BY_ALTERNATIVE_ROUTE"
+            ]
+          },
+          "uniqueItems": true
+        }
+      },
+      "additionalProperties": false
+    },
+    "m0_auto_reconciliation_guards": {
+      "type": "object",
+      "required": [
+        "all_required",
+        "conditions",
+        "otherwise_minimum_class"
+      ],
+      "properties": {
+        "all_required": {
+          "const": true
+        },
+        "conditions": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "enum": [
+              "DETERMINISTIC_DERIVED_CHANGE",
+              "NO_CASE_POSITION_DECISION_CHANGE",
+              "NO_ACCEPTED_ASSUMPTION_CHANGE",
+              "NO_RESERVED_DECISION_CHANGE",
+              "NO_EXTERNAL_ARTIFACT_COMMITMENT_CHANGE",
+              "ALL_INVARIANTS_PASS"
+            ]
+          },
+          "uniqueItems": true
+        },
+        "otherwise_minimum_class": {
+          "enum": [
+            "M1_PROFESSIONAL_REVIEW",
+            "M2_GATE_AUTHORITY",
+            "M3_HARD_BLOCKER"
+          ]
+        }
+      },
+      "additionalProperties": false
+    },
+    "classification_coverage": {
+      "type": "object",
+      "required": [
+        "unmatched_delta_class",
+        "unmatched_rule_id",
+        "m0_safe_harbors"
+      ],
+      "properties": {
+        "unmatched_delta_class": {
+          "enum": [
+            "M1_PROFESSIONAL_REVIEW",
+            "M2_GATE_AUTHORITY",
+            "M3_HARD_BLOCKER"
+          ]
+        },
+        "unmatched_rule_id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "m0_safe_harbors": {
+          "type": "array",
+          "items": {
+            "$ref": "#/$defs/m0_safe_harbor"
+          }
+        }
+      },
+      "additionalProperties": false
+    }
+  },
+  "additionalProperties": true
+}

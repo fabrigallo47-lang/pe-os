@@ -896,6 +896,36 @@ def main() -> int:
             return {"status": status, "error_code": out["error"]["code"]}
         suite.test("Authority rejects a mismatched Candidate", "AUTHORITY", wrong_candidate_refused)
 
+        def authenticated_identity_binding():
+            unknown = "SESSION-" + "A" * 43
+            status, denied = api.call(
+                "POST",
+                f"/runs/RUN-UNKNOWN/authority/attest?session_id={unknown}",
+                {"actor_id": "USR-PARTNER"},
+            )
+            req(
+                status == 401 and denied["error"]["code"] == "AUTHENTICATION_REQUIRED",
+                f"unknown session was not rejected: {denied}",
+            )
+
+            boot = api.bootstrap(V20_CASE, actor="partner")
+            session = boot["session_id"]
+            _, payload = api.projection(V20_CASE, session)
+            _, _, admitted = admit(api, V20_CASE, session, payload, "coverage_restatement", "V20-AUTH-BIND-ADMIT")
+            transition, run = admitted["transition"], admitted["run"]
+            selected = [transition["artifact_change_sets"][0]["artifact_id"]]
+            api.call("POST", f"/runs/{run['run_id']}/prepare?session_id={session}", {"selected_change_ids": selected})
+            stop = transition["human_stops"][0]
+            course = next(c for c in payload["projection"]["deal"]["decisionRoom"]["courses"] if c["effect_type"] == "EXTERNAL_PACKAGE")
+            body = {"run_id": run["run_id"], "candidate_state_id": run["candidate_state_id"], "human_stop_id": stop["stop_id"], "course_id": course["id"], "actor_id": "USR-ASSOCIATE", "artifact_hash": transition["replay_hash"], "idempotency_key": "V20-AUTH-BIND"}
+            status, mismatch = api.call("POST", f"/runs/{run['run_id']}/authority/attest?session_id={session}", body, {"Idempotency-Key": body["idempotency_key"]})
+            req(
+                status == 403 and mismatch["error"]["code"] == "ACTOR_CONTEXT_MISMATCH",
+                f"actor/session mismatch was accepted: {mismatch}",
+            )
+            return {"unknown_session_status": 401, "actor_mismatch_status": 403}
+        suite.test("Authority is bound to the authenticated server session", "AUTHORITY", authenticated_identity_binding)
+
         def unknown_change_refused():
             boot = api.bootstrap(V20_CASE)
             session = boot["session_id"]
@@ -918,10 +948,14 @@ def main() -> int:
             req(status == 200, "prepare failed")
             stop = transition["human_stops"][0]
             course = next(c for c in payload["projection"]["deal"]["decisionRoom"]["courses"] if c["effect_type"] == "EXTERNAL_PACKAGE")
-            auth_body = {"run_id": run["run_id"], "candidate_state_id": run["candidate_state_id"], "human_stop_id": stop["stop_id"], "course_id": course["id"], "artifact_hash": transition["replay_hash"], "idempotency_key": "V20-FULL-AUTH"}
+            auth_body = {"run_id": run["run_id"], "candidate_state_id": run["candidate_state_id"], "human_stop_id": stop["stop_id"], "course_id": course["id"], "actor_id": payload["context"]["authenticated_actor"]["actor_id"], "artifact_hash": transition["replay_hash"], "idempotency_key": "V20-FULL-AUTH"}
             status, attested = api.call("POST", f"/runs/{run['run_id']}/authority/attest?session_id={session}", auth_body, {"Idempotency-Key": auth_body["idempotency_key"]})
             req(status == 200 and attested.get("execution_package"), f"authority/package failed: {attested}")
             assert_zero_schema_errors("authority_record", attested["authority_record"])
+            auth_context = attested["authority_record"]["authentication_context"]
+            req(auth_context["principal_id"] == auth_body["actor_id"], "signed principal does not match actor_id")
+            req(auth_context["authentication_method"] == "SYNTHETIC_SERVER_SESSION", "mock authentication method is not explicit")
+            req(session not in canonical_json(attested["authority_record"]), "raw bearer session leaked into the authority record")
             assert_zero_schema_errors("execution_package", attested["execution_package"])
             package = attested["execution_package"]
             status, sent = api.call("POST", f"/execution-packages/{package['execution_package_id']}/send?session_id={session}", {"simulate_failure": False})
@@ -977,7 +1011,7 @@ def main() -> int:
             stop = transition["human_stops"][0]
             external = [c for c in payload["projection"]["deal"]["decisionRoom"]["courses"] if c["effect_type"] == "EXTERNAL_PACKAGE"]
             req(len(external) >= 2, "fixture needs two incompatible external courses")
-            first = {"run_id": run["run_id"], "candidate_state_id": run["candidate_state_id"], "human_stop_id": stop["stop_id"], "course_id": external[0]["id"], "artifact_hash": transition["replay_hash"], "idempotency_key": "V20-CONFLICT-A"}
+            first = {"run_id": run["run_id"], "candidate_state_id": run["candidate_state_id"], "human_stop_id": stop["stop_id"], "course_id": external[0]["id"], "actor_id": payload["context"]["authenticated_actor"]["actor_id"], "artifact_hash": transition["replay_hash"], "idempotency_key": "V20-CONFLICT-A"}
             status, out = api.call("POST", f"/runs/{run['run_id']}/authority/attest?session_id={session}", first, {"Idempotency-Key": first["idempotency_key"]})
             req(status == 200, f"first attestation failed: {out}")
             # Re-open only for negative conflict test; the server also checks existing incompatible records.
@@ -999,7 +1033,7 @@ def main() -> int:
             api.call("POST", f"/runs/{r1['run_id']}/prepare?session_id={session}", {"selected_change_ids": selected1})
             stop1 = t1["human_stops"][0]
             course = next(c for c in payload["projection"]["deal"]["decisionRoom"]["courses"] if c["effect_type"] == "EXTERNAL_PACKAGE")
-            auth = {"run_id": r1["run_id"], "candidate_state_id": r1["candidate_state_id"], "human_stop_id": stop1["stop_id"], "course_id": course["id"], "artifact_hash": t1["replay_hash"], "idempotency_key": "V20-REUSE-AUTH"}
+            auth = {"run_id": r1["run_id"], "candidate_state_id": r1["candidate_state_id"], "human_stop_id": stop1["stop_id"], "course_id": course["id"], "actor_id": payload["context"]["authenticated_actor"]["actor_id"], "artifact_hash": t1["replay_hash"], "idempotency_key": "V20-REUSE-AUTH"}
             status, attested = api.call("POST", f"/runs/{r1['run_id']}/authority/attest?session_id={session}", auth, {"Idempotency-Key": auth["idempotency_key"]})
             req(status == 200, f"authority creation failed: {attested}")
             authority_id = attested["authority_record"]["authority_record_id"]
@@ -1024,7 +1058,7 @@ def main() -> int:
             api.call("POST", f"/runs/{run['run_id']}/prepare?session_id={session}", {"selected_change_ids": selected})
             stop = transition["human_stops"][0]
             course = next(c for c in payload["projection"]["deal"]["decisionRoom"]["courses"] if c["effect_type"] == "EXTERNAL_PACKAGE")
-            auth = {"run_id": run["run_id"], "candidate_state_id": run["candidate_state_id"], "human_stop_id": stop["stop_id"], "course_id": course["id"], "artifact_hash": transition["replay_hash"], "idempotency_key": "V20-FAIL-AUTH"}
+            auth = {"run_id": run["run_id"], "candidate_state_id": run["candidate_state_id"], "human_stop_id": stop["stop_id"], "course_id": course["id"], "actor_id": payload["context"]["authenticated_actor"]["actor_id"], "artifact_hash": transition["replay_hash"], "idempotency_key": "V20-FAIL-AUTH"}
             _, attested = api.call("POST", f"/runs/{run['run_id']}/authority/attest?session_id={session}", auth, {"Idempotency-Key": auth["idempotency_key"]})
             package = attested["execution_package"]
             status, failed = api.call("POST", f"/execution-packages/{package['execution_package_id']}/send?session_id={session}", {"simulate_failure": True})

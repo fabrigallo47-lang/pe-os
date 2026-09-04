@@ -1,7 +1,7 @@
 {
   "schema_version": "runtime-policy-1.0",
   "policy_id": "KEYSTONE-AUTHORITY-V0",
-  "version": "0.2.0",
+  "version": "0.3.0",
   "status": "SYNTHETIC_TEST_FIXTURE",
   "canonical_ontology_version": "1.1.0",
   "scope": {
@@ -44,6 +44,11 @@
     "deny_or_block_overrides_permission": true,
     "escalation_required_when_delegation_unproven": true
   },
+  "unresolved_routing": {
+    "reason_code": "AUTHORITY_POLICY_UNRESOLVED",
+    "required_role": "AUTHORITY_POLICY_OWNER",
+    "policy_rule_id": "KERNEL-AUTHORITY-RESOLUTION"
+  },
   "rules": [
     {
       "rule_id": "AUTH-000",
@@ -73,10 +78,37 @@
       "escalation": null
     },
     {
+      "rule_id": "AUTH-012",
+      "name": "Professional-review fallback",
+      "priority": 12,
+      "when": {
+        "materiality_classes": [
+          "M1_PROFESSIONAL_REVIEW"
+        ]
+      },
+      "preparer_roles": [
+        "AGENT",
+        "ANALYST",
+        "ASSOCIATE"
+      ],
+      "current_adoption": {
+        "mode": "HUMAN",
+        "required_role": "WORKSTREAM_REVIEWER"
+      },
+      "approved_action": {
+        "mode": "UNCHANGED",
+        "approved_remains_frozen": true
+      },
+      "escalation": null
+    },
+    {
       "rule_id": "AUTH-010",
       "name": "Technical correction outside M0 automatic guards",
       "priority": 20,
       "when": {
+        "materiality_classes": [
+          "M1_PROFESSIONAL_REVIEW"
+        ],
         "change_types": [
           "TECHNICAL_CORRECTION",
           "SOURCE_CORRECTION",
@@ -158,6 +190,33 @@
       "escalation": {
         "required_when": "OUTSIDE_DELEGATION",
         "required_role": "IC"
+      }
+    },
+    {
+      "rule_id": "AUTH-035",
+      "name": "Gate-authority fallback",
+      "priority": 35,
+      "when": {
+        "materiality_classes": [
+          "M2_GATE_AUTHORITY"
+        ]
+      },
+      "preparer_roles": [
+        "ASSOCIATE",
+        "PROFESSIONAL_REVIEWER"
+      ],
+      "current_adoption": {
+        "mode": "HUMAN",
+        "required_role": "PROFESSIONAL_REVIEWER"
+      },
+      "approved_action": {
+        "mode": "HUMAN",
+        "required_role": "AUTHORITY_HOLDER",
+        "approved_remains_frozen_until_action": true
+      },
+      "escalation": {
+        "required_when": "DELEGATION_UNPROVEN",
+        "required_role": "AUTHORITY_HOLDER"
       }
     },
     {

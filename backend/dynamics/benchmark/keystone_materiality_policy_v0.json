@@ -1,7 +1,7 @@
 {
   "schema_version": "runtime-policy-1.0",
   "policy_id": "KEYSTONE-MATERIALITY-V0",
-  "version": "0.2.0",
+  "version": "0.4.0",
   "status": "SYNTHETIC_TEST_FIXTURE",
   "canonical_ontology_version": "1.1.0",
   "scope": {
@@ -72,6 +72,9 @@
         ]
       },
       "aggregation": "ANY",
+      "authority_change_types": [
+        "MATERIAL_EBITDA_TREATMENT"
+      ],
       "tests": [
         {
           "basis": "ABSOLUTE_CHANGE",
@@ -100,6 +103,9 @@
         ]
       },
       "aggregation": "ANY",
+      "authority_change_types": [
+        "PRICE"
+      ],
       "tests": [
         {
           "basis": "ABSOLUTE_CHANGE",
@@ -164,6 +170,9 @@
         ]
       },
       "aggregation": "ANY",
+      "authority_change_types": [
+        "LEVERAGE"
+      ],
       "tests": [
         {
           "basis": "ABSOLUTE_CHANGE",
@@ -174,6 +183,7 @@
         {
           "basis": "LIMIT_CROSSING",
           "operator": "any_crossing",
+          "unit": "x",
           "limit_types": [
             "INTERNAL",
             "LENDER",
@@ -269,5 +279,45 @@
       "ALL_INVARIANTS_PASS"
     ],
     "otherwise_minimum_class": "M1_PROFESSIONAL_REVIEW"
+  },
+  "classification_coverage": {
+    "unmatched_delta_class": "M1_PROFESSIONAL_REVIEW",
+    "unmatched_rule_id": "KERNEL-MATERIALITY-COVERAGE",
+    "m0_safe_harbors": [
+      {
+        "rule_id": "MAT-M0-001",
+        "selectors": {
+          "model_node_ids": [
+            "M-DERIVED"
+          ]
+        },
+        "fields": [
+          "value"
+        ],
+        "delta_reason_codes": [
+          "DIRECT_EVENT_MUTATION"
+        ],
+        "conditions": [
+          "DETERMINISTIC_DERIVED_CHANGE"
+        ]
+      },
+      {
+        "rule_id": "MAT-M0-002",
+        "selectors": {
+          "object_ids": [
+            "C-A"
+          ]
+        },
+        "fields": [
+          "__lifecycle__"
+        ],
+        "delta_reason_codes": [
+          "DIRECT_EVENT_MUTATION"
+        ],
+        "conditions": [
+          "TARGET_REMAINS_SUPPORTED_BY_ALTERNATIVE_ROUTE"
+        ]
+      }
+    ]
   }
 }

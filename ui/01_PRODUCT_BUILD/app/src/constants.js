@@ -11,6 +11,7 @@
     {id:'scenario',label:'Scenario Lab',section:'CASE ROOMS',icon:'scenario',scale:'deal',persistent:true},
     {id:'artifacts',label:'Artifacts',section:'CASE ROOMS',icon:'artifact',scale:'deal',persistent:true},
     {id:'registry',label:'Registry',section:'CASE ROOMS',icon:'registry',scale:'deal',persistent:true},
+    {id:'journal',label:'Journal',section:'CASE ROOMS',icon:'registry',scale:'deal',persistent:true},
     {id:'replay',label:'Causal Replay',short:'Replay',section:'CASE ROOMS',icon:'replay',scale:'deal',persistent:true},
     {id:'change-arrival',label:'Change Arrival',section:'CURRENT CHANGE',icon:'arrival',scale:'deal',transient:true},
     {id:'change-review',label:'Change Review',section:'CURRENT CHANGE',icon:'review',scale:'deal',transient:true},

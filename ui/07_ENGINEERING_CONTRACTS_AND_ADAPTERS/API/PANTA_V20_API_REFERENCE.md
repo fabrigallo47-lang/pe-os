@@ -40,6 +40,21 @@ Returns the complete page-wide projection as known at the requested date. `lens_
 - `GET /cases/{case_id}/objects/{object_id}` resolves a generic projection object for Object Aperture.
 - `GET /cases/{case_id}/replay?event_id={event_id}&as_of_date={date}` returns event-derived read-only replay.
 
+## Read the Case Journal
+
+`GET /cases/{case_id}/journal?since={date}&until={date}&as_of_date={date}&workstream={id}&kind={kind}`
+
+Returns the canonical event timeline plus a deterministic graph delta. Each
+event exposes `effective_date`, `known_at`, server-owned `recorded_at`, actor,
+object/workstream correlations and integrity metadata. `baseline_state_id` and
+`current_state_id` select exact immutable Current snapshots. `close_state_id`
+enables post-close drift; without an explicit close state drift is reported as
+unavailable. A corrupt runtime-ledger hash chain returns `409` rather than a
+partial Journal. Change summaries use `journal-change-rules/1.1`: malformed or
+duplicate graph identities also return `409`, audit-only metadata is excluded
+from semantic hashes, and disappearance alone never proves that an unresolved
+item was closed.
+
 # Source and compiler routes
 
 ## Intake and jobs
@@ -102,7 +117,11 @@ Requires explicit valid change IDs. Zero selection and any ID outside the transi
 
 `POST /runs/{run_id}/authority/attest`
 
-Creates a scoped authority record. The server verifies run, Candidate, open Human Stop, course, authenticated actor, authority assignment, artifact hash and idempotency semantics. Incompatible attestations are rejected.
+Creates a scoped authority record. `actor_id` remains mandatory for an explicit, backward-compatible request, but it is not an identity credential. The request must carry the opaque session returned by bootstrap in `X-Panta-Session`; `session_id` in the query remains accepted for compatibility, and both values must match when both are present. The server resolves the principal from its own expiring session registry and rejects a missing, unknown, expired, cross-case or actor-mismatched session before recording authority.
+
+The server then verifies the prepared selection, run, Candidate, normalized Human Stop, admissible course, server-owned actor assignment, role, authority verb, independence constraint, replay artifact hash and idempotency semantics. The output envelope is unchanged. Its `authority_record/2.0` now binds `case_id`, `authentication_context` and `authentication_context_hash` in addition to the Human Stop, policy references, selected authority resolution and bitemporal authority assignment. The authentication context contains the principal, method, session digest and validity interval; the raw bearer token is never persisted or returned in the record. It also includes signature metadata and the append-only ledger sequence/previous-hash link. Connected mode signs with Ed25519 and verifies `signing_key_id` against a versioned public-key keyring, so retired keys remain available for historical verification while unknown, post-retirement and effectively revoked keys fail closed. Mock Connected emits the same record contract with `SYNTHETIC-HMAC-SHA256` and `SYNTHETIC_SERVER_SESSION`, explicitly limited to the synthetic session. Correction-only, unresolved-policy and non-waivable stops are not attestable.
+
+Unsigned authority records from earlier contract versions fail closed. They require explicit migration or a new attestation; the API does not silently rewrite historical acts.
 
 ## Deliver an execution package
 
@@ -114,7 +133,7 @@ Returns synthetic server acknowledgment or failure. No success appears before th
 
 `POST /runs/{run_id}/settle`
 
-Validates selected changes, Human Stops, scoped authority, course-specific execution acknowledgment, blocked scope and partial-settlement boundaries. The server returns the canonical Current state, Registry event and replay identity. The browser does not invent the result.
+Validates selected changes, Human Stops, the authority-ledger hash chain, every record signature and historical authority snapshot, course-specific execution acknowledgment, blocked scope and partial-settlement boundaries. Reference arrays accept unique, non-empty string IDs only. The server returns the canonical Current state, Registry event and replay identity. The browser does not invent the result.
 
 # Other governed write routes
 

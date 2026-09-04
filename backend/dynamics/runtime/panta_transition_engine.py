@@ -8,7 +8,7 @@ extraction database.  The implemented runtime blocks cover:
 * immutable Candidate overlay construction;
 * semantic applicability checks;
 * conservative graph closure and deterministic SCC ordering;
-* three-valued support-route evaluation with OR between routes;
+* four-valued internal support reasoning adapted to the public three-value contract;
 * invalidation of circular support as independent evidence;
 * deterministic Decimal formula recomputation;
 * contradiction, materiality and governance routing;
@@ -44,9 +44,15 @@ _REPOSITORY_ROOT = Path(__file__).resolve().parents[3]
 if str(_REPOSITORY_ROOT) not in sys.path:
     sys.path.append(str(_REPOSITORY_ROOT))
 from tools.object_identity import is_resolvable, metric_identity
+from runtime.consequence_reasoning import (
+    EvidenceState,
+    ProofGraph,
+    evidence_and,
+    evidence_or,
+)
 
 
-ENGINE_VERSION = "0.5.0-conformance"
+ENGINE_VERSION = "0.9.0-conformance"
 OUTPUT_SCHEMA_VERSION = "transition-output-1.0"
 RUNTIME_STATE_VERSION = "runtime-state-1.0"
 
@@ -553,6 +559,21 @@ def normalize_event_batch(event_batch: Sequence[Mapping[str, Any]]) -> list[dict
         event["trigger_claim_ids"] = sorted(
             set(str(item) for item in event["trigger_claim_ids"])
         )
+        if "authority_change_types" in event:
+            authority_change_types = event["authority_change_types"]
+            if (
+                not isinstance(authority_change_types, list)
+                or any(
+                    not isinstance(item, str) or not item
+                    for item in authority_change_types
+                )
+                or len(authority_change_types) != len(set(authority_change_types))
+            ):
+                raise EventInputError(
+                    f"event {event_id}: authority_change_types must be unique "
+                    "non-empty strings"
+                )
+            event["authority_change_types"] = sorted(authority_change_types)
 
         normalized_mutations: list[dict[str, Any]] = []
         for mutation_index, raw_mutation in enumerate(event["mutations"]):
@@ -811,10 +832,13 @@ def _build_execution_adjacency(
     for route in graph.get("support_routes", []):
         route_id = route.get("route_id")
         target = route.get("target_position_id")
-        for member_id in sorted(
+        support_member_ids = (
             set(route.get("member_claim_ids", []))
             | set(route.get("member_position_ids", []))
-        ):
+            | set(route.get("member_model_node_ids", []))
+        )
+        counter_member_ids = set(route.get("counter_claim_ids", []))
+        for member_id in sorted(support_member_ids):
             _add_adjacency_edge(
                 adjacency,
                 registry,
@@ -822,6 +846,15 @@ def _build_execution_adjacency(
                 route_id,
                 "SUPPORT_ROUTE_MEMBER",
                 f"{route_id}:MEMBER:{member_id}",
+            )
+        for member_id in sorted(counter_member_ids):
+            _add_adjacency_edge(
+                adjacency,
+                registry,
+                member_id,
+                route_id,
+                "SUPPORT_ROUTE_COUNTEREVIDENCE",
+                f"{route_id}:COUNTER:{member_id}",
             )
         _add_adjacency_edge(
             adjacency,
@@ -1273,6 +1306,36 @@ _MATERIALITY_RANK = {
     "M3_HARD_BLOCKER": 3,
 }
 
+_AUTHORITY_WHEN_KEYS = frozenset(
+    {
+        "materiality_classes",
+        "maximum_materiality_class",
+        "change_types",
+        "all_conditions",
+        "any_conditions",
+    }
+)
+_AUTHORITY_CURRENT_MODES = frozenset(
+    {
+        "AUTOMATIC_RECONCILIATION",
+        "HUMAN",
+        "REGISTER_FACT_ONLY",
+        "RECOMMENDATION",
+        "ARTIFACT_APPLICATION_REVIEW",
+    }
+)
+_AUTHORITY_APPROVED_MODES = frozenset(
+    {
+        "NONE",
+        "UNCHANGED",
+        "NONE_UNLESS_RESERVED_DECISION_CHANGES",
+        "CONDITIONAL",
+        "HUMAN",
+        "WAIVER_IF_POLICY_ALLOWS",
+        "EXTERNAL_ACTION_POLICY",
+    }
+)
+
 
 def _selector_matches(
     delta: Mapping[str, Any],
@@ -1286,6 +1349,11 @@ def _selector_matches(
 
     exact_selectors_present = False
     exact_match = False
+    object_ids = selectors.get("object_ids", [])
+    if object_ids:
+        exact_selectors_present = True
+        if object_id in object_ids:
+            exact_match = True
     for selector_key, expected_type in (
         ("model_node_ids", "MODEL_NODE"),
         ("position_ids", "POSITION"),
@@ -1320,14 +1388,93 @@ def _selector_matches(
 
 def _numeric_threshold_triggered(
     old_value: Any, new_value: Any, test: Mapping[str, Any]
-) -> tuple[bool, str | None]:
+) -> tuple[bool, Any | None]:
     try:
         old_decimal = Decimal(str(old_value))
         new_decimal = Decimal(str(new_value))
+    except (InvalidOperation, TypeError, ValueError):
+        return False, None
+    basis = test.get("basis")
+    if basis == "LIMIT_CROSSING":
+        if test.get("operator") != "any_crossing":
+            return False, None
+        declared_limits = test.get("limits")
+        if (
+            not isinstance(declared_limits, Sequence)
+            or isinstance(declared_limits, (str, bytes))
+            or not declared_limits
+        ):
+            return False, None
+        requested_limit_types = test.get("limit_types", [])
+        if (
+            not isinstance(requested_limit_types, Sequence)
+            or isinstance(requested_limit_types, (str, bytes))
+        ):
+            return False, None
+        allowed_types = {str(item) for item in requested_limit_types}
+        evaluated_limit_ids = []
+        crossings = []
+        for declared_limit in declared_limits:
+            if not isinstance(declared_limit, Mapping):
+                return False, None
+            limit_type = str(declared_limit.get("limit_type", ""))
+            if not limit_type:
+                return False, None
+            if allowed_types and limit_type not in allowed_types:
+                continue
+            limit_id = str(declared_limit.get("limit_id", ""))
+            source_ref = str(declared_limit.get("source_ref", ""))
+            if (
+                not limit_id
+                or not source_ref
+                or limit_id in evaluated_limit_ids
+            ):
+                return False, None
+            limit_operator = str(declared_limit.get("operator", ""))
+            try:
+                limit_value = Decimal(str(declared_limit["value"]))
+            except (InvalidOperation, KeyError, TypeError, ValueError):
+                return False, None
+            compliance_test = {
+                "lte": lambda value: value <= limit_value,
+                "lt": lambda value: value < limit_value,
+                "gte": lambda value: value >= limit_value,
+                "gt": lambda value: value > limit_value,
+            }.get(limit_operator)
+            if compliance_test is None:
+                return False, None
+            test_unit = str(test.get("unit", ""))
+            limit_unit = str(declared_limit.get("unit", ""))
+            if not test_unit or not limit_unit or test_unit != limit_unit:
+                return False, None
+            from_compliant = compliance_test(old_decimal)
+            to_compliant = compliance_test(new_decimal)
+            evaluated_limit_ids.append(limit_id)
+            if from_compliant != to_compliant:
+                crossings.append(
+                    {
+                        "limit_id": limit_id,
+                        "limit_type": limit_type,
+                        "operator": limit_operator,
+                        "limit_value": _decimal_output(limit_value),
+                        "source_ref": source_ref,
+                        "direction": (
+                            "INTO_BREACH" if from_compliant else "OUT_OF_BREACH"
+                        ),
+                    }
+                )
+        if not evaluated_limit_ids:
+            return False, None
+        return bool(crossings), {
+            "from": _decimal_output(old_decimal),
+            "to": _decimal_output(new_decimal),
+            "evaluated_limit_ids": sorted(evaluated_limit_ids),
+            "crossings": sorted(crossings, key=lambda item: item["limit_id"]),
+        }
+    try:
         threshold = Decimal(str(test["value"]))
     except (InvalidOperation, KeyError, TypeError, ValueError):
         return False, None
-    basis = test.get("basis")
     if basis == "ABSOLUTE_CHANGE":
         observed = abs(new_decimal - old_decimal)
     elif basis == "RELATIVE_CHANGE_TO_LAST_CURRENT":
@@ -1337,7 +1484,12 @@ def _numeric_threshold_triggered(
     else:
         return False, None
     operator = test.get("operator")
-    triggered = observed >= threshold if operator == "gte" else observed > threshold
+    if operator == "gte":
+        triggered = observed >= threshold
+    elif operator == "gt":
+        triggered = observed > threshold
+    else:
+        return False, None
     return triggered, _decimal_output(observed)
 
 
@@ -1525,6 +1677,9 @@ def _evaluate_rule_switches(
                     "minimum_materiality_class": str(
                         rule_switch.get("minimum_materiality_class", "M1_PROFESSIONAL_REVIEW")
                     ),
+                    "authority_change_types": sorted(
+                        _string_set(rule_switch.get("authority_change_types", []))
+                    ),
                 }
             )
 
@@ -1543,36 +1698,166 @@ def _classify_materiality(
     materiality_policy: Mapping[str, Any],
     k_t: Mapping[str, Any],
     rule_switches: Sequence[Mapping[str, Any]],
+    route_results: Sequence[Mapping[str, Any]] = (),
+    support_combination_results: Sequence[Mapping[str, Any]] = (),
 ) -> dict[str, Any]:
     hits: list[dict[str, Any]] = []
+    covered_delta_keys: set[str] = set()
+    unmatched_delta_keys: set[str] = set()
+    unevaluable_delta_keys: set[str] = set()
+    safe_harbor_rule_ids: set[str] = set()
+
+    def delta_key(delta: Mapping[str, Any]) -> str:
+        return f"{delta.get('object_type', 'UNKNOWN')}:{delta['object_id']}.{delta['field']}"
+
+    coverage_policy = materiality_policy.get("classification_coverage", {})
+    if not isinstance(coverage_policy, Mapping):
+        coverage_policy = {}
+    unmatched_default_class = str(
+        coverage_policy.get(
+            "unmatched_delta_class", "M1_PROFESSIONAL_REVIEW"
+        )
+    )
+    # An absent, malformed, or permissive fallback must never make an
+    # unclassified change eligible for automatic Current reconciliation.
+    if (
+        unmatched_default_class not in _MATERIALITY_RANK
+        or unmatched_default_class == "M0_LOCAL"
+    ):
+        unmatched_default_class = "M1_PROFESSIONAL_REVIEW"
+    unmatched_rule_id = str(
+        coverage_policy.get(
+            "unmatched_rule_id", "KERNEL-MATERIALITY-COVERAGE"
+        )
+    )
+    if not unmatched_rule_id:
+        unmatched_rule_id = "KERNEL-MATERIALITY-COVERAGE"
+
+    def safe_harbor_conditions_pass(
+        safe_harbor: Mapping[str, Any], delta: Mapping[str, Any]
+    ) -> bool:
+        declared_conditions = safe_harbor.get("conditions")
+        if (
+            not isinstance(declared_conditions, Sequence)
+            or isinstance(declared_conditions, (str, bytes))
+            or not declared_conditions
+        ):
+            return False
+        conditions = [str(item) for item in declared_conditions]
+        for condition in conditions:
+            if condition == "DETERMINISTIC_DERIVED_CHANGE":
+                entry = registry.get(str(delta["object_id"]))
+                if not (
+                    entry
+                    and entry["object_type"] == "MODEL_NODE"
+                    and str(entry["object"].get("kind", "")).lower()
+                    == "derived"
+                    and delta.get("field") == "value"
+                ):
+                    return False
+            elif condition == "TARGET_REMAINS_SUPPORTED_BY_ALTERNATIVE_ROUTE":
+                object_id = str(delta["object_id"])
+                affected_targets = {
+                    str(result.get("target_position_id"))
+                    for result in route_results
+                    if object_id in result.get("member_states", {})
+                    or object_id in result.get("counter_member_states", {})
+                }
+                combined_by_target = {
+                    str(item.get("position_id")): str(item.get("state"))
+                    for item in support_combination_results
+                }
+                if not affected_targets or any(
+                    combined_by_target.get(target_id) != "TRUE"
+                    for target_id in affected_targets
+                ):
+                    return False
+            else:
+                # Unknown safe-harbor conditions cannot authorize M0.
+                return False
+        return True
 
     for rule in materiality_policy.get("economic_thresholds", []):
         selectors = rule.get("selectors", {})
         for delta in candidate_deltas:
             if delta.get("field") != "value" or not _selector_matches(delta, registry, selectors):
                 continue
+            key = delta_key(delta)
+            covered_delta_keys.add(key)
             triggered_tests = []
+            unevaluable_tests = []
+            declared_tests = rule.get("tests", [])
+            structurally_unevaluable = False
+            if (
+                not isinstance(declared_tests, Sequence)
+                or isinstance(declared_tests, (str, bytes))
+                or not declared_tests
+            ):
+                declared_tests = []
+                structurally_unevaluable = True
+                unevaluable_tests.append(
+                    {
+                        "basis": None,
+                        "operator": None,
+                        "threshold": None,
+                        "reason": "NO_EXECUTABLE_THRESHOLD_TEST",
+                    }
+                )
+            if rule.get("aggregation") != "ANY":
+                structurally_unevaluable = True
+                unevaluable_tests.append(
+                    {
+                        "basis": None,
+                        "operator": None,
+                        "threshold": None,
+                        "reason": "UNSUPPORTED_THRESHOLD_AGGREGATION",
+                    }
+                )
             comparison_value = k_t.get(str(delta["object_id"]), delta.get("from"))
-            for test in rule.get("tests", []):
+            for test in declared_tests:
                 triggered, observed = _numeric_threshold_triggered(
                     comparison_value, delta.get("to"), test
                 )
+                if observed is None:
+                    unevaluable_tests.append(
+                        {
+                            "basis": test.get("basis"),
+                            "operator": test.get("operator"),
+                            "threshold": test.get("value", test.get("limits")),
+                        }
+                    )
                 if triggered:
                     triggered_tests.append(
                         {
                             "basis": test.get("basis"),
                             "operator": test.get("operator"),
-                            "threshold": test.get("value"),
+                            "threshold": test.get("value", test.get("limits")),
                             "observed": observed,
                         }
                     )
-            if triggered_tests:
+            rule_minimum_class = str(
+                rule.get(
+                    "minimum_class_when_triggered",
+                    "M1_PROFESSIONAL_REVIEW",
+                )
+            )
+            if (
+                rule_minimum_class not in _MATERIALITY_RANK
+                or rule_minimum_class == "M0_LOCAL"
+            ):
+                rule_minimum_class = "M1_PROFESSIONAL_REVIEW"
+            rule_id = str(rule.get("rule_id") or "KERNEL-MATERIALITY-RULE")
+            authority_change_types = sorted(
+                _string_set(rule.get("authority_change_types", []))
+            )
+            if triggered_tests and not structurally_unevaluable:
                 cumulative = not _equivalent(comparison_value, delta.get("from"))
                 hits.append(
                     {
-                        "rule_id": str(rule["rule_id"]),
+                        "rule_id": rule_id,
                         "object_id": str(delta["object_id"]),
-                        "materiality_class": str(rule["minimum_class_when_triggered"]),
+                        "materiality_class": rule_minimum_class,
+                        "authority_change_types": authority_change_types,
                         "tests": triggered_tests,
                         "comparison_basis": (
                             "LAST_ABSORBED_CURRENT_K_T" if cumulative else "CURRENT_INPUT"
@@ -1584,6 +1869,101 @@ def _classify_materiality(
                         ),
                     }
                 )
+            elif unevaluable_tests:
+                # A matching rule whose complete test set cannot be evaluated
+                # is not evidence that the change is immaterial. Escalate at
+                # least to the rule's own minimum class and disclose why.
+                unevaluable_delta_keys.add(key)
+                hits.append(
+                    {
+                        "rule_id": rule_id,
+                        "object_id": str(delta["object_id"]),
+                        "field": str(delta["field"]),
+                        "materiality_class": rule_minimum_class,
+                        "authority_change_types": authority_change_types,
+                        "unevaluable_tests": unevaluable_tests,
+                        "reason_code": "MATERIALITY_RULE_NOT_FULLY_EVALUABLE",
+                    }
+                )
+            else:
+                hits.append(
+                    {
+                        "rule_id": rule_id,
+                        "object_id": str(delta["object_id"]),
+                        "field": str(delta["field"]),
+                        "materiality_class": "M0_LOCAL",
+                        "authority_change_types": authority_change_types,
+                        "comparison_basis": "LAST_ABSORBED_CURRENT_K_T",
+                        "reason_code": "BELOW_DECLARED_MATERIALITY_THRESHOLD",
+                    }
+                )
+
+    declared_safe_harbors = coverage_policy.get("m0_safe_harbors", [])
+    if (
+        not isinstance(declared_safe_harbors, Sequence)
+        or isinstance(declared_safe_harbors, (str, bytes))
+    ):
+        declared_safe_harbors = []
+    for safe_harbor in declared_safe_harbors:
+        if not isinstance(safe_harbor, Mapping):
+            continue
+        selectors = safe_harbor.get("selectors", {})
+        declared_fields = safe_harbor.get("fields")
+        if (
+            not isinstance(declared_fields, Sequence)
+            or isinstance(declared_fields, (str, bytes))
+            or not declared_fields
+        ):
+            continue
+        fields = {str(item) for item in declared_fields}
+        declared_reason_codes = safe_harbor.get("delta_reason_codes", [])
+        if (
+            not isinstance(declared_reason_codes, Sequence)
+            or isinstance(declared_reason_codes, (str, bytes))
+        ):
+            continue
+        reason_codes = {str(item) for item in declared_reason_codes}
+        rule_id = str(safe_harbor.get("rule_id", ""))
+        if not rule_id:
+            continue
+        for delta in candidate_deltas:
+            key = delta_key(delta)
+            if key in covered_delta_keys or str(delta.get("field")) not in fields:
+                continue
+            if reason_codes and str(delta.get("reason_code")) not in reason_codes:
+                continue
+            if not isinstance(selectors, Mapping) or not _selector_matches(
+                delta, registry, selectors
+            ):
+                continue
+            if not safe_harbor_conditions_pass(safe_harbor, delta):
+                continue
+            covered_delta_keys.add(key)
+            safe_harbor_rule_ids.add(rule_id)
+            hits.append(
+                {
+                    "rule_id": rule_id,
+                    "object_id": str(delta["object_id"]),
+                    "field": str(delta["field"]),
+                    "materiality_class": "M0_LOCAL",
+                    "reason_code": "EXPLICIT_M0_SAFE_HARBOR",
+                }
+            )
+
+    for delta in candidate_deltas:
+        key = delta_key(delta)
+        if key in covered_delta_keys:
+            continue
+        unmatched_delta_keys.add(key)
+        hits.append(
+            {
+                "rule_id": unmatched_rule_id,
+                "object_id": str(delta["object_id"]),
+                "field": str(delta["field"]),
+                "materiality_class": unmatched_default_class,
+                "reason_code": "MATERIALITY_POLICY_COVERAGE_UNPROVEN",
+            }
+        )
 
     for switch in rule_switches:
         hits.append(
@@ -1591,6 +1971,9 @@ def _classify_materiality(
                 "rule_id": str(switch["rule_id"]),
                 "object_id": str(switch["object_id"]),
                 "materiality_class": str(switch["minimum_materiality_class"]),
+                "authority_change_types": sorted(
+                    _string_set(switch.get("authority_change_types", []))
+                ),
                 "reason_code": "RULE_SWITCH_MATERIAL_BY_DEFINITION",
             }
         )
@@ -1638,22 +2021,411 @@ def _classify_materiality(
 
     classes = [str(hit["materiality_class"]) for hit in hits]
     overall_class = max(classes, key=lambda item: _MATERIALITY_RANK[item]) if classes else "M0_LOCAL"
+    non_trigger_reasons = {
+        "BELOW_DECLARED_MATERIALITY_THRESHOLD",
+        "EXPLICIT_M0_SAFE_HARBOR",
+    }
+    fail_closed_delta_keys = unmatched_delta_keys | unevaluable_delta_keys
     return {
         "overall_class": overall_class,
-        "triggered_rule_ids": sorted({str(hit["rule_id"]) for hit in hits}),
+        "triggered_rule_ids": sorted(
+            {
+                str(hit["rule_id"])
+                for hit in hits
+                if hit.get("reason_code") not in non_trigger_reasons
+            }
+        ),
         "assessments": sorted(hits, key=lambda item: (item["rule_id"], item["object_id"])),
         "comparison_after_full_affected_set": True,
         "severity_aggregation": "MAX",
+        "classification_coverage": {
+            "status": (
+                "NOT_APPLICABLE"
+                if not candidate_deltas
+                else "FAIL_CLOSED"
+                if fail_closed_delta_keys
+                else "COMPLETE"
+            ),
+            "policy_declaration_present": bool(coverage_policy),
+            "unmatched_delta_class": unmatched_default_class,
+            "covered_delta_keys": sorted(covered_delta_keys),
+            "unmatched_delta_keys": sorted(unmatched_delta_keys),
+            "unevaluable_delta_keys": sorted(unevaluable_delta_keys),
+            "fail_closed_delta_keys": sorted(fail_closed_delta_keys),
+            "m0_safe_harbor_rule_ids": sorted(safe_harbor_rule_ids),
+        },
     }
 
 
 def _authority_rule(
     authority_policy: Mapping[str, Any], rule_id: str
 ) -> Mapping[str, Any] | None:
+    rules = authority_policy.get("rules", [])
+    if not isinstance(rules, Sequence) or isinstance(rules, (str, bytes)):
+        return None
     return next(
-        (rule for rule in authority_policy.get("rules", []) if rule.get("rule_id") == rule_id),
+        (
+            rule
+            for rule in rules
+            if isinstance(rule, Mapping) and rule.get("rule_id") == rule_id
+        ),
         None,
     )
+
+
+def _string_set(value: Any) -> set[str]:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        return set()
+    return {str(item) for item in value if isinstance(item, str) and item}
+
+
+def _strict_nonempty_string_set(value: Any) -> set[str] | None:
+    if not isinstance(value, Sequence) or isinstance(value, (str, bytes)):
+        return None
+    items = list(value)
+    if not items or any(not isinstance(item, str) or not item for item in items):
+        return None
+    values = set(items)
+    if len(values) != len(items):
+        return None
+    return values
+
+
+def _authority_rule_is_well_formed(rule: Any) -> bool:
+    if not isinstance(rule, Mapping):
+        return False
+    rule_id = rule.get("rule_id")
+    priority = rule.get("priority")
+    when = rule.get("when")
+    current_adoption = rule.get("current_adoption")
+    approved_action = rule.get("approved_action")
+    if not isinstance(rule_id, str) or not rule_id.strip():
+        return False
+    if not isinstance(priority, int) or isinstance(priority, bool) or priority < 0:
+        return False
+    if not isinstance(when, Mapping) or not when or set(when) - _AUTHORITY_WHEN_KEYS:
+        return False
+    for key in (
+        "materiality_classes",
+        "change_types",
+        "all_conditions",
+        "any_conditions",
+    ):
+        if key in when and _strict_nonempty_string_set(when.get(key)) is None:
+            return False
+    if (
+        "maximum_materiality_class" in when
+        and when.get("maximum_materiality_class") not in _MATERIALITY_RANK
+    ):
+        return False
+    if not isinstance(current_adoption, Mapping) or (
+        current_adoption.get("mode") not in _AUTHORITY_CURRENT_MODES
+    ):
+        return False
+    if not isinstance(approved_action, Mapping) or (
+        approved_action.get("mode") not in _AUTHORITY_APPROVED_MODES
+    ):
+        return False
+    return True
+
+
+def _derive_authority_change_types(
+    normalized_events: Sequence[Mapping[str, Any]],
+    candidate_deltas: Sequence[Mapping[str, Any]],
+    materiality: Mapping[str, Any],
+    registry: Mapping[str, Any],
+) -> set[str]:
+    change_types: set[str] = set()
+    for event in normalized_events:
+        change_types.update(_string_set(event.get("authority_change_types", [])))
+    for assessment in materiality.get("assessments", []):
+        if isinstance(assessment, Mapping):
+            change_types.update(
+                _string_set(assessment.get("authority_change_types", []))
+            )
+    deterministic_recomputations = {
+        "FORMULA_RECOMPUTATION",
+        "INVERSE_SOLVER_RECOMPUTATION",
+        "NUMERICAL_SCC_RECOMPUTATION",
+    }
+    for delta in candidate_deltas:
+        reason_code = str(delta.get("reason_code", ""))
+        object_type = str(delta.get("object_type", ""))
+        if reason_code in deterministic_recomputations:
+            change_types.add("TECHNICAL_CORRECTION")
+        elif reason_code == "DIRECT_EVENT_MUTATION" and object_type == "CLAIM":
+            change_types.add("SOURCE_CORRECTION")
+        elif reason_code == "DIRECT_EVENT_MUTATION" and object_type == "MODEL_NODE":
+            entry = registry.get(str(delta.get("object_id")))
+            if (
+                entry
+                and str(entry.get("object", {}).get("kind", "")).lower()
+                == "input"
+            ):
+                change_types.add("MODEL_INPUT_CORRECTION")
+    return change_types
+
+
+def _authority_rule_matches(
+    rule: Mapping[str, Any],
+    materiality_class: str,
+    change_types: set[str],
+    conditions: set[str],
+) -> bool:
+    when = rule.get("when")
+    if not isinstance(when, Mapping) or not when:
+        return False
+    if set(when) - _AUTHORITY_WHEN_KEYS:
+        return False
+    for key in (
+        "materiality_classes",
+        "change_types",
+        "all_conditions",
+        "any_conditions",
+    ):
+        if key in when and _strict_nonempty_string_set(when.get(key)) is None:
+            return False
+    if "materiality_classes" in when:
+        materiality_classes = _strict_nonempty_string_set(
+            when.get("materiality_classes")
+        )
+        if materiality_classes is None or materiality_class not in materiality_classes:
+            return False
+    if "maximum_materiality_class" in when:
+        maximum = str(when.get("maximum_materiality_class"))
+        if maximum not in _MATERIALITY_RANK or materiality_class not in _MATERIALITY_RANK:
+            return False
+        if _MATERIALITY_RANK[materiality_class] > _MATERIALITY_RANK[maximum]:
+            return False
+    if "change_types" in when:
+        required_change_types = _strict_nonempty_string_set(
+            when.get("change_types")
+        )
+        if required_change_types is None or not change_types & required_change_types:
+            return False
+    if "all_conditions" in when:
+        required_conditions = _strict_nonempty_string_set(
+            when.get("all_conditions")
+        )
+        if required_conditions is None or not required_conditions.issubset(conditions):
+            return False
+    if "any_conditions" in when:
+        alternative_conditions = _strict_nonempty_string_set(
+            when.get("any_conditions")
+        )
+        if alternative_conditions is None or not conditions & alternative_conditions:
+            return False
+    return True
+
+
+def _resolve_authority_rule(
+    authority_policy: Mapping[str, Any],
+    materiality_class: str,
+    change_types: set[str],
+    conditions: set[str],
+    *,
+    applicable: bool,
+) -> tuple[dict[str, Any], Mapping[str, Any] | None]:
+    context = {
+        "materiality_class": materiality_class,
+        "change_types": sorted(change_types),
+        "conditions": sorted(conditions),
+        "delegation_status": "UNPROVEN",
+    }
+    rule_resolution = authority_policy.get("rule_resolution", {})
+    if not isinstance(rule_resolution, Mapping):
+        rule_resolution = {}
+    resolution_mode = str(rule_resolution.get("mode", ""))
+    if not applicable:
+        return (
+            {
+                "status": "NOT_APPLICABLE",
+                "resolution_mode": resolution_mode or None,
+                "context": context,
+                "matched_rule_ids": [],
+                "selected_rule_id": None,
+                "selected_priority": None,
+            },
+            None,
+        )
+    if resolution_mode != "MOST_RESTRICTIVE_MATCH":
+        return (
+            {
+                "status": "UNRESOLVED",
+                "resolution_mode": resolution_mode or None,
+                "context": context,
+                "matched_rule_ids": [],
+                "selected_rule_id": None,
+                "selected_priority": None,
+                "reason_code": "UNSUPPORTED_AUTHORITY_RESOLUTION_MODE",
+            },
+            None,
+        )
+    if (
+        rule_resolution.get("deny_or_block_overrides_permission") is not True
+        or rule_resolution.get("escalation_required_when_delegation_unproven")
+        is not True
+        or rule_resolution.get("class_order") != list(_MATERIALITY_RANK)
+    ):
+        return (
+            {
+                "status": "UNRESOLVED",
+                "resolution_mode": resolution_mode,
+                "context": context,
+                "matched_rule_ids": [],
+                "selected_rule_id": None,
+                "selected_priority": None,
+                "reason_code": "UNSAFE_AUTHORITY_RESOLUTION_POLICY",
+            },
+            None,
+        )
+    raw_rules = authority_policy.get("rules", [])
+    rules = (
+        list(raw_rules)
+        if isinstance(raw_rules, Sequence)
+        and not isinstance(raw_rules, (str, bytes))
+        else []
+    )
+    if not rules or any(not _authority_rule_is_well_formed(rule) for rule in rules):
+        return (
+            {
+                "status": "UNRESOLVED",
+                "resolution_mode": resolution_mode,
+                "context": context,
+                "matched_rule_ids": [],
+                "selected_rule_id": None,
+                "selected_priority": None,
+                "reason_code": "MALFORMED_AUTHORITY_RULE_SET",
+            },
+            None,
+        )
+    rule_ids = [
+        str(rule.get("rule_id"))
+        for rule in rules
+        if isinstance(rule, Mapping)
+        and isinstance(rule.get("rule_id"), str)
+        and rule.get("rule_id")
+    ]
+    if len(rule_ids) != len(set(rule_ids)):
+        return (
+            {
+                "status": "UNRESOLVED",
+                "resolution_mode": resolution_mode,
+                "context": context,
+                "matched_rule_ids": [],
+                "selected_rule_id": None,
+                "selected_priority": None,
+                "reason_code": "DUPLICATE_AUTHORITY_RULE_ID",
+            },
+            None,
+        )
+    matches = []
+    for rule in rules:
+        if not isinstance(rule, Mapping) or not _authority_rule_matches(
+            rule, materiality_class, change_types, conditions
+        ):
+            continue
+        priority = rule.get("priority")
+        if (
+            not isinstance(priority, int)
+            or isinstance(priority, bool)
+            or priority < 0
+        ):
+            continue
+        matches.append((priority, str(rule.get("rule_id", "")), rule))
+    matches = [item for item in matches if item[1]]
+    matched_rule_ids = sorted({item[1] for item in matches})
+    if not matches:
+        return (
+            {
+                "status": "UNRESOLVED",
+                "resolution_mode": resolution_mode,
+                "context": context,
+                "matched_rule_ids": [],
+                "selected_rule_id": None,
+                "selected_priority": None,
+                "reason_code": "NO_AUTHORITY_RULE_MATCH",
+            },
+            None,
+        )
+    highest_priority = max(item[0] for item in matches)
+    highest = [item for item in matches if item[0] == highest_priority]
+    if len(highest) != 1:
+        return (
+            {
+                "status": "AMBIGUOUS",
+                "resolution_mode": resolution_mode,
+                "context": context,
+                "matched_rule_ids": matched_rule_ids,
+                "selected_rule_id": None,
+                "selected_priority": highest_priority,
+                "reason_code": "AMBIGUOUS_AUTHORITY_RULE_PRIORITY",
+            },
+            None,
+        )
+    _, selected_rule_id, selected_rule = highest[0]
+    current_adoption = selected_rule.get("current_adoption", {})
+    if not isinstance(current_adoption, Mapping):
+        current_adoption = {}
+    approved_action = selected_rule.get("approved_action", {})
+    if not isinstance(approved_action, Mapping):
+        approved_action = {}
+    return (
+        {
+            "status": "RESOLVED",
+            "resolution_mode": resolution_mode,
+            "context": context,
+            "matched_rule_ids": matched_rule_ids,
+            "selected_rule_id": selected_rule_id,
+            "selected_priority": highest_priority,
+            "current_adoption_mode": current_adoption.get("mode"),
+            "approved_action_mode": approved_action.get("mode"),
+        },
+        selected_rule,
+    )
+
+
+def _approved_requirement(
+    authority_policy: Mapping[str, Any],
+    rule: Mapping[str, Any],
+    change_types: set[str],
+    conditions: set[str],
+) -> tuple[str | None, str | None]:
+    action = rule.get("approved_action", {})
+    if not isinstance(action, Mapping):
+        return None, None
+    mode = str(action.get("mode", ""))
+    if mode in {"", "NONE", "UNCHANGED", "NONE_UNLESS_RESERVED_DECISION_CHANGES"}:
+        return None, None
+    if mode == "CONDITIONAL":
+        triggers = _string_set(action.get("trigger_conditions", []))
+        if not triggers or not (triggers & (change_types | conditions)):
+            return None, None
+        role = action.get("required_role_when_triggered")
+        return mode, str(role) if role else None
+    rule_resolution = authority_policy.get("rule_resolution", {})
+    if not isinstance(rule_resolution, Mapping):
+        rule_resolution = {}
+    escalation_required = bool(
+        rule_resolution.get("escalation_required_when_delegation_unproven", True)
+    )
+    escalation = rule.get("escalation")
+    escalation_role = (
+        escalation.get("required_role")
+        if isinstance(escalation, Mapping)
+        else None
+    )
+    role = action.get("required_role")
+    if escalation_required:
+        role = (
+            action.get("required_role_beyond_delegation")
+            or escalation_role
+            or role
+            or action.get("required_role_within_delegation")
+        )
+    else:
+        role = role or action.get("required_role_within_delegation")
+    return mode, str(role) if role else None
 
 
 def _govern_transition(
@@ -1662,7 +2434,12 @@ def _govern_transition(
     materiality: Mapping[str, Any],
     authority_policy: Mapping[str, Any],
     contradictions: Sequence[Mapping[str, Any]],
+    registry: Mapping[str, Any],
+    m0_guard_policy: Mapping[str, Any],
+    invariant_checks: Sequence[Mapping[str, Any]],
 ) -> dict[str, Any]:
+    if not isinstance(m0_guard_policy, Mapping):
+        m0_guard_policy = {}
     materiality_class = str(materiality["overall_class"])
     human_stops: list[dict[str, Any]] = []
     current_deltas: list[dict[str, Any]] = []
@@ -1675,6 +2452,18 @@ def _govern_transition(
         "waiver_allowed": None,
         "approved_treatment": "UNCHANGED",
     }
+    materiality["m0_auto_reconciliation_guards"] = {
+        "status": "NOT_APPLICABLE",
+        "all_required": m0_guard_policy.get("all_required") is True,
+        "conditions": [],
+        "failed_conditions": [],
+    }
+    authority_change_types = _derive_authority_change_types(
+        normalized_events,
+        candidate_deltas,
+        materiality,
+        registry,
+    )
 
     for event in normalized_events:
         action = event.get("governance_action")
@@ -1732,18 +2521,132 @@ def _govern_transition(
             governance["current_treatment"] = "REJECTED_PENDING_INDEPENDENT_REVIEW"
 
     if materiality_class == "M0_LOCAL" and candidate_deltas:
-        m0_guards_pass = not contradictions and all(
-            delta.get("object_type") not in {"POSITION", "ARTIFACT"}
-            for delta in candidate_deltas
-        )
-        if m0_guards_pass:
-            governance["current_treatment"] = "AUTOMATIC_RECONCILIATION"
-            current_deltas = [
-                {**copy.deepcopy(dict(delta)), "status": "APPLIED"}
+        explicit_safe_harbor_deltas = {
+            (str(item.get("object_id")), str(item.get("field")))
+            for item in materiality.get("assessments", [])
+            if item.get("reason_code") == "EXPLICIT_M0_SAFE_HARBOR"
+        }
+        deterministic_reason_codes = {
+            "FORMULA_RECOMPUTATION",
+            "INVERSE_SOLVER_RECOMPUTATION",
+            "NUMERICAL_SCC_RECOMPUTATION",
+        }
+
+        def is_deterministic_derived_delta(delta: Mapping[str, Any]) -> bool:
+            if str(delta.get("reason_code")) in deterministic_reason_codes:
+                return True
+            if (
+                str(delta.get("object_id")),
+                str(delta.get("field")),
+            ) in explicit_safe_harbor_deltas:
+                return True
+            entry = registry.get(str(delta.get("object_id")))
+            return bool(
+                entry
+                and entry.get("object_type") == "MODEL_NODE"
+                and str(entry.get("object", {}).get("kind", "")).lower()
+                == "derived"
+                and delta.get("field") == "value"
+            )
+
+        decision_fields = {
+            "accepted",
+            "assumption_status",
+            "decision_status",
+            "decision_status_at_ic",
+        }
+        guard_evaluators = {
+            "DETERMINISTIC_DERIVED_CHANGE": lambda: all(
+                is_deterministic_derived_delta(delta)
                 for delta in candidate_deltas
-            ]
-        else:
-            materiality_class = "M1_PROFESSIONAL_REVIEW"
+            ),
+            "NO_CASE_POSITION_DECISION_CHANGE": lambda: all(
+                delta.get("object_type") != "POSITION"
+                for delta in candidate_deltas
+            ),
+            "NO_ACCEPTED_ASSUMPTION_CHANGE": lambda: all(
+                str(delta.get("field")) not in decision_fields
+                for delta in candidate_deltas
+            ),
+            "NO_RESERVED_DECISION_CHANGE": lambda: all(
+                delta.get("object_type") != "POSITION"
+                and str(delta.get("field")) not in decision_fields
+                for delta in candidate_deltas
+            )
+            and not authority_change_types
+            & {"PRICE", "LEVERAGE", "OFFER", "SPEND", "RISK_ACCEPTANCE"},
+            "NO_EXTERNAL_ARTIFACT_COMMITMENT_CHANGE": lambda: all(
+                delta.get("object_type") != "ARTIFACT"
+                for delta in candidate_deltas
+            ),
+            "ALL_INVARIANTS_PASS": lambda: bool(invariant_checks)
+            and all(item.get("status") == "PASS" for item in invariant_checks),
+        }
+        raw_declared_conditions = m0_guard_policy.get("conditions", [])
+        declared_conditions = (
+            [str(item) for item in raw_declared_conditions]
+            if isinstance(raw_declared_conditions, Sequence)
+            and not isinstance(raw_declared_conditions, (str, bytes))
+            else []
+        )
+        all_required = m0_guard_policy.get("all_required") is True
+        condition_results = []
+        if not declared_conditions:
+            condition_results.append(
+                {
+                    "condition": "M0_AUTO_RECONCILIATION_POLICY_DECLARED",
+                    "status": "FAIL",
+                }
+            )
+        for condition in declared_conditions:
+            evaluator = guard_evaluators.get(condition)
+            condition_results.append(
+                {
+                    "condition": condition,
+                    "status": (
+                        "PASS" if evaluator is not None and evaluator() else "FAIL"
+                    ),
+                }
+            )
+        if not all_required:
+            condition_results.append(
+                {
+                    "condition": "ALL_M0_GUARDS_REQUIRED",
+                    "status": "FAIL",
+                }
+            )
+        failed_conditions = [
+            item["condition"]
+            for item in condition_results
+            if item["status"] != "PASS"
+        ]
+        m0_guards_pass = not failed_conditions and not contradictions
+        if contradictions:
+            failed_conditions.append("NO_APPLICABLE_MATERIAL_CONTRADICTION")
+            condition_results.append(
+                {
+                    "condition": "NO_APPLICABLE_MATERIAL_CONTRADICTION",
+                    "status": "FAIL",
+                }
+            )
+        failed_conditions = sorted(set(failed_conditions))
+        materiality["m0_auto_reconciliation_guards"] = {
+            "status": "PASS" if m0_guards_pass else "FAIL",
+            "all_required": all_required,
+            "conditions": condition_results,
+            "failed_conditions": failed_conditions,
+        }
+        if not m0_guards_pass:
+            materiality_class = str(
+                m0_guard_policy.get(
+                    "otherwise_minimum_class", "M1_PROFESSIONAL_REVIEW"
+                )
+            )
+            if (
+                materiality_class not in _MATERIALITY_RANK
+                or materiality_class == "M0_LOCAL"
+            ):
+                materiality_class = "M1_PROFESSIONAL_REVIEW"
             materiality["overall_class"] = materiality_class
             materiality.setdefault("assessments", []).append(
                 {
@@ -1753,34 +2656,228 @@ def _govern_transition(
                     "reason_code": "M0_AUTO_RECONCILIATION_GUARDS_FAILED",
                 }
             )
+            materiality["assessments"].sort(
+                key=lambda item: (item["rule_id"], item["object_id"])
+            )
+            materiality["triggered_rule_ids"] = sorted(
+                set(materiality.get("triggered_rule_ids", []))
+                | {"M0-AUTO-RECONCILIATION-GUARDS"}
+            )
 
-    if materiality_class == "M1_PROFESSIONAL_REVIEW" and candidate_deltas:
+    authority_conditions = {
+        str(item.get("reason_code"))
+        for item in materiality.get("assessments", [])
+        if isinstance(item, Mapping) and item.get("reason_code")
+    }
+    if materiality.get("m0_auto_reconciliation_guards", {}).get("status") == "PASS":
+        authority_conditions.add("M0_AUTO_RECONCILIATION_GUARDS_PASS")
+    authority_resolution, selected_authority_rule = _resolve_authority_rule(
+        authority_policy,
+        materiality_class,
+        authority_change_types,
+        authority_conditions,
+        applicable=bool(candidate_deltas),
+    )
+    selected_rule_id = (
+        str(selected_authority_rule.get("rule_id"))
+        if selected_authority_rule is not None
+        else None
+    )
+    selected_current_adoption = (
+        selected_authority_rule.get("current_adoption", {})
+        if selected_authority_rule is not None
+        else {}
+    )
+    selected_approved_action = (
+        selected_authority_rule.get("approved_action", {})
+        if selected_authority_rule is not None
+        else {}
+    )
+    downstream_scope = sorted(
+        {str(delta["object_id"]) for delta in candidate_deltas}
+    )
+    current_mode = (
+        str(selected_current_adoption.get("mode", ""))
+        if isinstance(selected_current_adoption, Mapping)
+        else ""
+    )
+    current_role = (
+        selected_current_adoption.get("required_role")
+        if isinstance(selected_current_adoption, Mapping)
+        else None
+    )
+    approved_action_mode = (
+        str(selected_approved_action.get("mode", ""))
+        if isinstance(selected_approved_action, Mapping)
+        else ""
+    )
+    approved_mode, approved_role = (
+        _approved_requirement(
+            authority_policy,
+            selected_authority_rule,
+            authority_change_types,
+            authority_conditions,
+        )
+        if selected_authority_rule is not None
+        else (None, None)
+    )
+    selected_route_valid = (
+        selected_authority_rule is not None
+        and isinstance(selected_current_adoption, Mapping)
+        and isinstance(selected_approved_action, Mapping)
+        and current_mode in _AUTHORITY_CURRENT_MODES
+        and approved_action_mode in _AUTHORITY_APPROVED_MODES
+    )
+    if selected_route_valid and materiality_class == "M0_LOCAL":
+        selected_route_valid = (
+            current_mode == "AUTOMATIC_RECONCILIATION"
+            and materiality.get("m0_auto_reconciliation_guards", {}).get("status")
+            == "PASS"
+        )
+    elif selected_route_valid and materiality_class == "M3_HARD_BLOCKER":
+        selected_route_valid = (
+            current_mode == "REGISTER_FACT_ONLY"
+            and bool(current_role)
+            and approved_action_mode == "WAIVER_IF_POLICY_ALLOWS"
+        )
+    elif selected_route_valid and (
+        current_mode == "AUTOMATIC_RECONCILIATION" or not current_role
+    ):
+        selected_route_valid = False
+    if selected_route_valid and materiality_class == "M2_GATE_AUTHORITY" and (
+        approved_action_mode
+        not in {"HUMAN", "WAIVER_IF_POLICY_ALLOWS", "EXTERNAL_ACTION_POLICY"}
+        or not approved_mode
+        or not approved_role
+    ):
+        selected_route_valid = False
+    if selected_authority_rule is not None and not selected_route_valid:
+        authority_resolution.update(
+            {
+                "status": "UNRESOLVED",
+                "selected_rule_id": None,
+                "selected_priority": None,
+                "current_adoption_mode": None,
+                "approved_action_mode": None,
+                "reason_code": "INCOMPLETE_AUTHORITY_RULE_ACTION",
+            }
+        )
+        selected_authority_rule = None
+
+    if candidate_deltas and selected_authority_rule is None:
+        unresolved_policy = authority_policy.get("unresolved_routing", {})
+        if not isinstance(unresolved_policy, Mapping):
+            unresolved_policy = {}
+        unresolved_reason = str(
+            unresolved_policy.get(
+                "reason_code", "AUTHORITY_POLICY_UNRESOLVED"
+            )
+        )
+        unresolved_role = str(
+            unresolved_policy.get("required_role", "AUTHORITY_POLICY_OWNER")
+        )
+        unresolved_rule_id = str(
+            unresolved_policy.get(
+                "policy_rule_id", "KERNEL-AUTHORITY-RESOLUTION"
+            )
+        )
+        governance["current_treatment"] = "AUTHORITY_POLICY_UNRESOLVED"
+        if materiality_class == "M2_GATE_AUTHORITY":
+            governance["approved_treatment"] = "AUTHORITY_PENDING"
+        if materiality_class == "M3_HARD_BLOCKER":
+            governance.update(
+                {
+                    "current_treatment": "REGISTER_FACT_ONLY",
+                    "gate_status": "BLOCKED",
+                    "approved_treatment": "UNCHANGED",
+                }
+            )
+            blocked_components.append(
+                {
+                    "component_id": "component:hard-blocker",
+                    "member_ids": downstream_scope,
+                    "reason_code": "AUTHORITY_POLICY_UNRESOLVED",
+                    "dependent_ids": [],
+                    "missing_assumption_or_condition": "A unique executable authority rule.",
+                }
+            )
+        human_stops.append(
+            {
+                "stop_id": "STOP-AUTHORITY-ROUTING",
+                "object_or_component_id": "candidate-change-set",
+                "reason_code": unresolved_reason,
+                "requested_action": (
+                    "Complete or disambiguate the versioned authority policy before "
+                    "adoption."
+                ),
+                "required_role": unresolved_role,
+                "policy_rule_id": unresolved_rule_id,
+                "downstream_scope": downstream_scope,
+            }
+        )
+    elif materiality_class == "M0_LOCAL" and candidate_deltas:
+        governance["current_treatment"] = "AUTOMATIC_RECONCILIATION"
+        current_deltas = [
+            {**copy.deepcopy(dict(delta)), "status": "APPLIED"}
+            for delta in candidate_deltas
+        ]
+    elif materiality_class == "M1_PROFESSIONAL_REVIEW" and candidate_deltas:
         if contradictions:
-            rule_id = "AUTH-020"
-            role = "QUALIFIED_PROFESSIONAL_REVIEWER"
             reason_code = "APPLICABLE_MATERIAL_CONTRADICTION"
-        elif "MAT-ECON-001" in materiality.get("triggered_rule_ids", []):
-            rule_id = "AUTH-030"
-            role = "FINANCIAL_OR_WORKSTREAM_REVIEWER"
-            reason_code = "DECISION_REQUIRES_HUMAN"
+            requested_action = "Review and adopt or reject the Candidate treatment."
+        elif any(
+            item.get("reason_code")
+            in {
+                "MATERIALITY_POLICY_COVERAGE_UNPROVEN",
+                "MATERIALITY_RULE_NOT_FULLY_EVALUABLE",
+            }
+            for item in materiality.get("assessments", [])
+        ):
+            reason_code = "MATERIALITY_POLICY_COVERAGE_UNPROVEN"
+            requested_action = (
+                "Complete the materiality-policy coverage or explicitly review "
+                "the Candidate treatment."
+            )
+        elif any(
+            item.get("reason_code") == "M0_AUTO_RECONCILIATION_GUARDS_FAILED"
+            for item in materiality.get("assessments", [])
+        ):
+            reason_code = "M0_AUTO_RECONCILIATION_GUARDS_FAILED"
+            requested_action = (
+                "Resolve every failed M0 guard or explicitly review the Candidate "
+                "treatment."
+            )
         else:
-            rule_id = "AUTH-010"
-            role = "WORKSTREAM_REVIEWER"
             reason_code = "DECISION_REQUIRES_HUMAN"
+            requested_action = "Review and adopt or reject the Candidate treatment."
         governance["current_treatment"] = "PROFESSIONAL_REVIEW_REQUIRED"
         human_stops.append(
             {
                 "stop_id": "STOP-CURRENT-REVIEW",
                 "object_or_component_id": "candidate-change-set",
                 "reason_code": reason_code,
-                "requested_action": "Review and adopt or reject the Candidate treatment.",
-                "required_role": role,
-                "policy_rule_id": rule_id,
-                "downstream_scope": sorted(
-                    {str(delta["object_id"]) for delta in candidate_deltas}
-                ),
+                "requested_action": requested_action,
+                "required_role": str(current_role),
+                "policy_rule_id": str(selected_rule_id),
+                "downstream_scope": downstream_scope,
             }
         )
+        if approved_mode and approved_role:
+            governance["approved_treatment"] = "AUTHORITY_PENDING"
+            human_stops.append(
+                {
+                    "stop_id": "STOP-APPROVED-AUTHORITY",
+                    "object_or_component_id": "approved-snapshot",
+                    "reason_code": "APPROVED_FROZEN",
+                    "requested_action": (
+                        "Obtain the authority act required by the selected policy "
+                        "rule before creating a new Approved version."
+                    ),
+                    "required_role": approved_role,
+                    "policy_rule_id": str(selected_rule_id),
+                    "downstream_scope": downstream_scope,
+                }
+            )
     elif materiality_class == "M2_GATE_AUTHORITY":
         governance.update(
             {
@@ -1795,22 +2892,21 @@ def _govern_transition(
                     "object_or_component_id": "candidate-change-set",
                     "reason_code": "DECISION_REQUIRES_HUMAN",
                     "requested_action": "Review the Candidate analysis for Current.",
-                    "required_role": "PROFESSIONAL_REVIEWER",
-                    "policy_rule_id": "AUTH-040",
-                    "downstream_scope": sorted(
-                        {str(delta["object_id"]) for delta in candidate_deltas}
-                    ),
+                    "required_role": str(current_role),
+                    "policy_rule_id": str(selected_rule_id),
+                    "downstream_scope": downstream_scope,
                 },
                 {
                     "stop_id": "STOP-APPROVED-AUTHORITY",
                     "object_or_component_id": "approved-snapshot",
                     "reason_code": "APPROVED_FROZEN",
-                    "requested_action": "Obtain the applicable authority act before creating a new Approved version.",
-                    "required_role": "AUTHORITY_HOLDER",
-                    "policy_rule_id": "AUTH-040",
-                    "downstream_scope": sorted(
-                        {str(delta["object_id"]) for delta in candidate_deltas}
+                    "requested_action": (
+                        "Obtain the authority act required by the selected policy "
+                        "rule before creating a new Approved version."
                     ),
+                    "required_role": str(approved_role),
+                    "policy_rule_id": str(selected_rule_id),
+                    "downstream_scope": downstream_scope,
                 },
             ]
         )
@@ -1827,7 +2923,7 @@ def _govern_transition(
                 "approved_treatment": "UNCHANGED",
             }
         )
-        member_ids = sorted({str(delta["object_id"]) for delta in candidate_deltas})
+        member_ids = downstream_scope
         blocked_components.append(
             {
                 "component_id": "component:hard-blocker",
@@ -1847,8 +2943,10 @@ def _govern_transition(
                     if non_waivable
                     else "Obtain an allowed explicit waiver."
                 ),
-                "required_role": "PROFESSIONAL_REVIEWER",
-                "policy_rule_id": "AUTH-050",
+                "required_role": str(
+                    current_role if non_waivable else approved_role or current_role
+                ),
+                "policy_rule_id": str(selected_rule_id),
                 "downstream_scope": member_ids,
             }
         )
@@ -1860,25 +2958,22 @@ def _govern_transition(
         "human_stops": human_stops,
         "blocked_components": blocked_components,
         "governance": governance,
+        "authority_resolution": authority_resolution,
         "governance_action_results": action_results,
         "audit_records": audit_records,
     }
 
 
 def _truth_and(states: Sequence[str]) -> str:
-    if any(state == "FALSE" for state in states):
-        return "FALSE"
-    if states and all(state == "TRUE" for state in states):
-        return "TRUE"
-    return "UNKNOWN"
+    return evidence_and(
+        [EvidenceState.from_public(state) for state in states]
+    ).public_state
 
 
 def _truth_or(states: Sequence[str]) -> str:
-    if any(state == "TRUE" for state in states):
-        return "TRUE"
-    if states and all(state == "FALSE" for state in states):
-        return "FALSE"
-    return "UNKNOWN"
+    return evidence_or(
+        [EvidenceState.from_public(state) for state in states]
+    ).public_state
 
 
 def _member_usability(
@@ -2925,6 +4020,9 @@ def _evaluate_routes_and_formulas(
     invariant_checks: list[dict[str, Any]] = []
     settled_ids: set[str] = set()
     blocked_ids: set[str] = set()
+    conflicted_route_ids: set[str] = set()
+    conflicted_position_ids: set[str] = set()
+    proof_graph = ProofGraph()
 
     for route_id in sorted(selected_route_ids):
         route = routes_by_id[route_id]
@@ -2933,6 +4031,7 @@ def _evaluate_routes_and_formulas(
         member_ids = sorted(
             set(route.get("member_claim_ids", []))
             | set(route.get("member_position_ids", []))
+            | set(route.get("member_model_node_ids", []))
         )
         counter_ids = sorted(set(route.get("counter_claim_ids", [])))
         member_states = {
@@ -2943,6 +4042,25 @@ def _evaluate_routes_and_formulas(
             member_id: _member_usability(member_id, registry, runtime_flags)
             for member_id in counter_ids
         }
+        member_proposition_ids = [f"object:{member_id}" for member_id in member_ids]
+        counter_proposition_ids = [
+            f"object:{member_id}" for member_id in counter_ids
+        ]
+        for member_id, state in {**member_states, **counter_states}.items():
+            proof_graph.ensure_fact(
+                f"object:{member_id}",
+                EvidenceState.from_public(state),
+                evidence_token=member_id,
+            )
+        support_proposition_id = f"support:{route_id}"
+        support_node = proof_graph.derive_and(
+            support_proposition_id,
+            member_proposition_ids,
+            rule_id=f"{route_id}:SUPPORT",
+        )
+        support_state = support_node.state.public_state
+        route_proposition_id = f"route:{route_id}"
+        route_truth = EvidenceState.NEITHER
         result: dict[str, Any] = {
             "route_id": route_id,
             "target_position_id": target_id,
@@ -2952,6 +4070,11 @@ def _evaluate_routes_and_formulas(
             "reason_codes": [],
         }
         if route_id in circular_route_ids:
+            proof_graph.derive_or(
+                route_proposition_id,
+                (),
+                rule_id="KERNEL-CIRCULAR-SUPPORT",
+            )
             result.update(
                 {
                     "state": "UNKNOWN",
@@ -2964,7 +4087,6 @@ def _evaluate_routes_and_formulas(
             route_results.append(result)
             continue
 
-        support_state = _truth_and(list(member_states.values()))
         if logic == "FORMULA":
             formula = formulas_by_route.get(route_id)
             if support_state == "TRUE" and formula is not None:
@@ -3004,6 +4126,11 @@ def _evaluate_routes_and_formulas(
                                 "details": "Declared formula evaluated with usable inputs.",
                             }
                         )
+                    route_truth = proof_graph.derive_and(
+                        route_proposition_id,
+                        member_proposition_ids,
+                        rule_id=str(formula.get("formula_id") or route_id),
+                    ).state
                 else:
                     reason_code = error or "MISSING_FORMULA_OUTPUT"
                     result.update(
@@ -3021,8 +4148,18 @@ def _evaluate_routes_and_formulas(
                             "effect": "The formula route could not produce a Candidate value.",
                         }
                     )
+                    proof_graph.derive_or(
+                        route_proposition_id,
+                        (),
+                        rule_id=f"{route_id}:{reason_code}",
+                    )
             elif support_state == "FALSE":
                 result.update({"state": "FALSE", "support_satisfied": "FALSE"})
+                route_truth = proof_graph.derive_and(
+                    route_proposition_id,
+                    member_proposition_ids,
+                    rule_id=f"{route_id}:FORMULA-SUPPORT",
+                ).state
             else:
                 reason_code = "MISSING_FORMULA_MAPPING" if formula is None else "FORMULA_INPUT_UNKNOWN"
                 result.update(
@@ -3041,19 +4178,56 @@ def _evaluate_routes_and_formulas(
                             "effect": "A FORMULA support route has no executable formula mapping.",
                         }
                     )
+                proof_graph.derive_or(
+                    route_proposition_id,
+                    (),
+                    rule_id=f"{route_id}:{reason_code}",
+                )
         elif logic == "AND_WITH_COUNTEREVIDENCE":
-            counter_state = _truth_or(list(counter_states.values()))
+            counter_proposition_id = f"counter:{route_id}"
+            counter_node = proof_graph.derive_or(
+                counter_proposition_id,
+                counter_proposition_ids,
+                rule_id=f"{route_id}:COUNTEREVIDENCE",
+            )
+            counter_state = counter_node.state.public_state
+            route_node = proof_graph.derive_with_counterevidence(
+                route_proposition_id,
+                support_proposition_id,
+                counter_proposition_id,
+                rule_id=route_id,
+            )
+            route_truth = route_node.state
             result.update(
                 {
-                    "state": support_state,
+                    "state": route_truth.public_state,
                     "support_satisfied": support_state,
                     "counterevidence_present": counter_state,
                     "counter_member_states": counter_states,
                 }
             )
+            if route_truth is EvidenceState.BOTH:
+                result["reason_codes"].append("CONFLICTING_SUPPORT_EVIDENCE")
+                conflicted_route_ids.add(route_id)
+                blocked_ids.add(route_id)
         elif logic in {"AND", "INDEPENDENT"}:
-            result.update({"state": support_state, "support_satisfied": support_state})
+            route_truth = proof_graph.derive_and(
+                route_proposition_id,
+                member_proposition_ids,
+                rule_id=route_id,
+            ).state
+            result.update(
+                {
+                    "state": route_truth.public_state,
+                    "support_satisfied": support_state,
+                }
+            )
         else:
+            proof_graph.derive_or(
+                route_proposition_id,
+                (),
+                rule_id=f"{route_id}:UNKNOWN-LOGIC",
+            )
             result.update(
                 {
                     "state": "UNKNOWN",
@@ -3124,20 +4298,29 @@ def _evaluate_routes_and_formulas(
         target_routes = [
             result for result in route_results if result["target_position_id"] == target_id
         ]
-        valid_states = [result["state"] for result in target_routes if not result["invalid"]]
-        combined_state = _truth_or(valid_states)
+        valid_route_ids = sorted(
+            result["route_id"] for result in target_routes if not result["invalid"]
+        )
+        combination_node = proof_graph.derive_or(
+            f"position:{target_id}",
+            [f"route:{route_id}" for route_id in valid_route_ids],
+            rule_id=f"{target_id}:ALTERNATIVE-SUPPORT",
+        )
+        combined_truth = combination_node.state
+        combined_state = combined_truth.public_state
         combination_results.append(
             {
                 "position_id": target_id,
                 "state": combined_state,
-                "valid_route_ids": sorted(
-                    result["route_id"] for result in target_routes if not result["invalid"]
-                ),
+                "valid_route_ids": valid_route_ids,
                 "invalid_route_ids": sorted(
                     result["route_id"] for result in target_routes if result["invalid"]
                 ),
             }
         )
+        if combined_truth is EvidenceState.BOTH:
+            conflicted_position_ids.add(target_id)
+            blocked_ids.add(target_id)
         if combined_state in {"TRUE", "FALSE"}:
             settled_ids.add(target_id)
 
@@ -3149,6 +4332,9 @@ def _evaluate_routes_and_formulas(
         "invariant_checks": invariant_checks,
         "settled_ids": settled_ids,
         "blocked_ids": blocked_ids,
+        "conflicted_route_ids": conflicted_route_ids,
+        "conflicted_position_ids": conflicted_position_ids,
+        "proof_graph": proof_graph,
         "invalid_route_ids": sorted(circular_route_ids & selected_route_ids),
     }
 
@@ -3756,6 +4942,13 @@ def apply_state_transition(
         blocking_seed_ids,
         affected_ids,
     )
+    blocked_ids.update(
+        _forward_closure(
+            impact["adjacency"],
+            evaluation["conflicted_position_ids"],
+            affected_ids,
+        )
+    )
     blocked_ids.update(evaluation["blocked_ids"])
     blocked_ids.update(rule_switch_evaluation["blocked_ids"])
     blocked_ids.update(numerical_evaluation["blocked_ids"])
@@ -3874,6 +5067,35 @@ def apply_state_transition(
     candidate_deltas.sort(
         key=lambda item: (item["object_type"], item["object_id"], item["field"])
     )
+    pending_scope = sorted(affected_ids - settled_ids - blocked_ids)
+    invariant_checks = [
+        {
+            "invariant_id": "CURRENT_INPUT_IMMUTABLE",
+            "status": "PASS",
+            "details": "All mutations were applied to a Candidate copy.",
+        },
+        {
+            "invariant_id": "APPROVED_NOT_REWRITTEN",
+            "status": "PASS",
+            "details": "Approved snapshot is byte-equivalent to the prior state.",
+        },
+        {
+            "invariant_id": "HISTORY_APPEND_ONLY",
+            "status": "PASS",
+            "details": "Prior history was not modified; new records are returned separately.",
+        },
+        {
+            "invariant_id": "FULL_EVALUATION_COVERAGE",
+            "status": "UNKNOWN" if pending_scope else "PASS",
+            "details": (
+                "Some affected objects have no executable evaluator in this mapping."
+                if pending_scope
+                else "No downstream evaluation remained in this run."
+            ),
+        },
+    ]
+    invariant_checks.extend(evaluation["invariant_checks"])
+    invariant_checks.extend(numerical_evaluation["invariant_checks"])
 
     materiality_assessment = _classify_materiality(
         candidate_deltas,
@@ -3883,6 +5105,8 @@ def apply_state_transition(
         materiality_policy,
         state["K_t"],
         rule_switch_evaluation["results"],
+        evaluation["route_results"],
+        evaluation["combination_results"],
     )
     governance_plan = _govern_transition(
         normalized_events,
@@ -3890,6 +5114,9 @@ def apply_state_transition(
         materiality_assessment,
         authority_policy,
         contradictions,
+        impact["registry"],
+        materiality_policy.get("m0_auto_reconciliation_guards", {}),
+        invariant_checks,
     )
 
     recomputed_values = []
@@ -4073,6 +5300,30 @@ def apply_state_transition(
                     "downstream_scope": [combination["position_id"]],
                 }
             )
+    for position_id in sorted(evaluation["conflicted_position_ids"]):
+        downstream_scope = sorted(
+            _forward_closure(
+                impact["adjacency"],
+                [position_id],
+                affected_ids,
+            )
+        )
+        human_stops.append(
+            {
+                "stop_id": "STOP-CONFLICTING-SUPPORT-" + hashlib.sha256(
+                    position_id.encode("utf-8")
+                ).hexdigest()[:12],
+                "object_or_component_id": position_id,
+                "reason_code": "CONFLICTING_SUPPORT_EVIDENCE",
+                "requested_action": (
+                    "Resolve the simultaneous supporting and refuting evidence or "
+                    "record an explicit professional adjudication."
+                ),
+                "required_role": "PROFESSIONAL_REVIEWER",
+                "policy_rule_id": "KERNEL-FOUR-VALUED-SUPPORT",
+                "downstream_scope": downstream_scope,
+            }
+        )
     for condition in unsatisfied_conditions:
         downstream_scope = sorted(
             _forward_closure(
@@ -4107,6 +5358,33 @@ def apply_state_transition(
                 ),
                 "dependent_ids": sorted(blocked_ids - conflict_seed_ids),
                 "missing_assumption_or_condition": "One admitted value per object field.",
+            }
+        )
+    for position_id in sorted(evaluation["conflicted_position_ids"]):
+        conflicting_route_ids = sorted(
+            result["route_id"]
+            for result in evaluation["route_results"]
+            if result["target_position_id"] == position_id
+            and "CONFLICTING_SUPPORT_EVIDENCE" in result["reason_codes"]
+        )
+        dependent_ids = sorted(
+            _forward_closure(
+                impact["adjacency"],
+                [position_id],
+                affected_ids,
+            )
+            - {position_id}
+        )
+        blocked_components.append(
+            {
+                "component_id": f"component:conflicted-support:{position_id}",
+                "member_ids": [position_id, *conflicting_route_ids],
+                "reason_code": "CONFLICTING_SUPPORT_EVIDENCE",
+                "dependent_ids": dependent_ids,
+                "missing_assumption_or_condition": (
+                    "A professional adjudication of the supporting and refuting "
+                    "evidence."
+                ),
             }
         )
     for condition in unsatisfied_conditions:
@@ -4171,7 +5449,49 @@ def apply_state_transition(
     coverage_limits.extend(impact["coverage_limits"])
     coverage_limits.extend(evaluation["coverage_limits"])
     coverage_limits.extend(rule_switch_evaluation["coverage_limits"])
-    pending_scope = sorted(affected_ids - settled_ids - blocked_ids)
+    materiality_coverage = materiality_assessment.get(
+        "classification_coverage", {}
+    )
+    unmatched_materiality_keys = materiality_coverage.get(
+        "unmatched_delta_keys", []
+    )
+    if unmatched_materiality_keys:
+        coverage_limits.append(
+            {
+                "limit_id": "MATERIALITY-COVERAGE-UNMATCHED",
+                "reason_code": "MATERIALITY_POLICY_COVERAGE_UNPROVEN",
+                "scope_ids": sorted(
+                    {
+                        str(item).split(":", 1)[-1].rsplit(".", 1)[0]
+                        for item in unmatched_materiality_keys
+                    }
+                ),
+                "effect": (
+                    "Automatic Current reconciliation was disabled because no "
+                    "declared materiality rule or M0 safe harbor covered these deltas."
+                ),
+            }
+        )
+    unevaluable_materiality_keys = materiality_coverage.get(
+        "unevaluable_delta_keys", []
+    )
+    if unevaluable_materiality_keys:
+        coverage_limits.append(
+            {
+                "limit_id": "MATERIALITY-COVERAGE-UNEVALUABLE",
+                "reason_code": "MATERIALITY_RULE_NOT_FULLY_EVALUABLE",
+                "scope_ids": sorted(
+                    {
+                        str(item).split(":", 1)[-1].rsplit(".", 1)[0]
+                        for item in unevaluable_materiality_keys
+                    }
+                ),
+                "effect": (
+                    "Automatic Current reconciliation was disabled because at "
+                    "least one applicable materiality test could not be evaluated."
+                ),
+            }
+        )
     if pending_scope:
         coverage_limits.append(
             {
@@ -4197,6 +5517,7 @@ def apply_state_transition(
         }
     )
     normalized_execution_inputs = {
+        "engine_version": ENGINE_VERSION,
         "prior_state_hash": _sha256(state),
         "canonical_graph_hash": graph_hash,
         "materiality_policy_hash": _sha256(materiality_policy),
@@ -4267,34 +5588,7 @@ def apply_state_transition(
         "human_stops": human_stops,
         "blocked_components": blocked_components,
         "coverage_limits": coverage_limits,
-        "invariant_checks": [
-            {
-                "invariant_id": "CURRENT_INPUT_IMMUTABLE",
-                "status": "PASS",
-                "details": "All mutations were applied to a Candidate copy.",
-            },
-            {
-                "invariant_id": "APPROVED_NOT_REWRITTEN",
-                "status": "PASS",
-                "details": "Approved snapshot is byte-equivalent to the prior state.",
-            },
-            {
-                "invariant_id": "HISTORY_APPEND_ONLY",
-                "status": "PASS",
-                "details": "Prior history was not modified; new records are returned separately.",
-            },
-            {
-                "invariant_id": "FULL_EVALUATION_COVERAGE",
-                "status": "UNKNOWN" if pending_scope else "PASS",
-                "details": (
-                    "Some affected objects have no executable evaluator in this mapping."
-                    if pending_scope
-                    else "No downstream evaluation remained in this run."
-                ),
-            },
-        ]
-        + evaluation["invariant_checks"]
-        + numerical_evaluation["invariant_checks"],
+        "invariant_checks": invariant_checks,
         "candidate_current_approved_delta": {
             "candidate": candidate_deltas,
             "current": governance_plan["current_deltas"],
@@ -4318,6 +5612,7 @@ def apply_state_transition(
         "global_block": False,
         "materiality_assessment": materiality_assessment,
         "governance": governance_plan["governance"],
+        "authority_resolution": governance_plan["authority_resolution"],
         "governance_action_results": governance_plan["governance_action_results"],
         "audit_records": accumulation_audit_records + governance_plan["audit_records"],
         "accumulation": {
@@ -4413,7 +5708,55 @@ def compare_incremental_global(
 
     current_graph = _coerce_runtime_state(prior_state)["current_graph"]
     current_registry = _object_registry(copy.deepcopy(current_graph))
+    incremental_registry = _object_registry(
+        incremental["candidate_state"]["current_graph"]
+    )
     global_registry = _object_registry(global_run["candidate_state"]["current_graph"])
+    graph_ids = set(current_registry) | set(incremental_registry) | set(global_registry)
+
+    def scoped_human_stops(output: Mapping[str, Any]) -> list[dict[str, Any]]:
+        """Project graph-local stops onto the incremental affected set.
+
+        Stops without references to canonical graph objects are batch- or
+        governance-level results and remain in the oracle comparison.
+        """
+
+        scoped: list[dict[str, Any]] = []
+        for item in output["human_stops"]:
+            referenced_ids = {
+                str(item.get("object_or_component_id", "")),
+                *(str(value) for value in item.get("downstream_scope", [])),
+            } & graph_ids
+            if referenced_ids and not referenced_ids & affected_ids:
+                continue
+            scoped.append(copy.deepcopy(item))
+        return sorted(
+            scoped,
+            key=lambda item: (str(item.get("stop_id", "")), _canonical_json(item)),
+        )
+
+    def scoped_blocked_components(
+        output: Mapping[str, Any],
+    ) -> list[dict[str, Any]]:
+        """Project graph-local blocked components onto the affected set."""
+
+        scoped: list[dict[str, Any]] = []
+        for item in output["blocked_components"]:
+            referenced_ids = {
+                *(str(value) for value in item.get("member_ids", [])),
+                *(str(value) for value in item.get("dependent_ids", [])),
+            } & graph_ids
+            if referenced_ids and not referenced_ids & affected_ids:
+                continue
+            scoped.append(copy.deepcopy(item))
+        return sorted(
+            scoped,
+            key=lambda item: (
+                str(item.get("component_id", "")),
+                _canonical_json(item),
+            ),
+        )
+
     unaffected_ids = set(current_registry) - affected_ids
     unaffected_equal = all(
         _canonical_json(current_registry[object_id]["object"])
@@ -4437,10 +5780,12 @@ def compare_incremental_global(
         ],
         "materiality_classes_equal": incremental_output["materiality_assessment"]
         == global_output["materiality_assessment"],
-        "human_stops_equal": incremental_output["human_stops"]
-        == global_output["human_stops"],
-        "blocked_components_equal": incremental_output["blocked_components"]
-        == global_output["blocked_components"],
+        "authority_resolution_equal": incremental_output["authority_resolution"]
+        == global_output["authority_resolution"],
+        "human_stops_equal": scoped_human_stops(incremental_output)
+        == scoped_human_stops(global_output),
+        "blocked_components_equal": scoped_blocked_components(incremental_output)
+        == scoped_blocked_components(global_output),
         "invariant_results_equal": incremental_output["invariant_checks"]
         == global_output["invariant_checks"],
         "unaffected_objects_byte_equivalent_after_normalization": unaffected_equal,

@@ -13,6 +13,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
 
 DYNAMICS_ROOT = Path(__file__).resolve().parents[1]
 sys.path.insert(0, str(DYNAMICS_ROOT))
@@ -101,6 +102,44 @@ class SettlementLedgerTests(unittest.TestCase):
         self.assertFalse(replay["appended"], "re-appending the same row must be a no-op")
         self.assertEqual(len(ledger_store.read_ledger(case_id)), 1)
         self.assertEqual(first["state_id"], settled["state_id"])
+
+    def test_interrupted_ledger_append_recovers_from_durable_outbox(self):
+        result = run_bundle_transition(self.bundle, self.events, persist_outputs=True)
+        real_append = ledger_store.append_event
+        with mock.patch.object(
+            ledger_store,
+            "append_event",
+            side_effect=[OSError("simulated disk interruption")],
+        ):
+            with self.assertRaisesRegex(Exception, "ledger row failed to append"):
+                settle_candidate_state(
+                    self.bundle,
+                    result["candidate_state"],
+                    result["history_append"],
+                    current_state_id="STATE-OUTBOX-RECOVERY",
+                    actor_id="USR-PARTNER",
+                )
+
+        journal_path = self.bundle / "settlement_journal.json"
+        self.assertTrue(journal_path.exists())
+        journal = json.loads(journal_path.read_text(encoding="utf-8"))
+        self.assertEqual(journal["schema_version"], "settlement-journal/1.1")
+        self.assertEqual(journal["ledger_event"]["actor_id"], "USR-PARTNER")
+
+        with mock.patch.object(ledger_store, "append_event", wraps=real_append):
+            recovered = settle_candidate_state(
+                self.bundle,
+                result["candidate_state"],
+                result["history_append"],
+                current_state_id="STATE-OUTBOX-RECOVERY",
+                actor_id="USR-PARTNER",
+            )
+
+        self.assertEqual(recovered["state_id"], "STATE-OUTBOX-RECOVERY")
+        self.assertFalse(journal_path.exists())
+        rows = ledger_store.read_ledger(recovered["case_id"])
+        self.assertEqual(len(rows), 1)
+        self.assertEqual(rows[0]["actor_id"], "USR-PARTNER")
 
 
 if __name__ == "__main__":

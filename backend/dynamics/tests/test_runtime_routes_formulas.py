@@ -3,7 +3,7 @@ import json
 import unittest
 from pathlib import Path
 
-from runtime import apply_state_transition
+from runtime import apply_state_transition, compare_incremental_global
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -104,7 +104,218 @@ def run(graph, events, mapping=None):
     )
 
 
+def compare_modes(graph, events, mapping=None):
+    return compare_incremental_global(
+        graph,
+        events,
+        mapping or empty_mapping(),
+        load_json("benchmark/keystone_materiality_policy_v0.json"),
+        load_json("benchmark/keystone_authority_matrix_v0.json"),
+    )
+
+
 class RuntimeRoutesAndFormulaTests(unittest.TestCase):
+    def test_conflicting_support_is_unknown_publicly_and_stops_governance(self):
+        graph = graph_from_support_fixture({
+            "fixture_id": "SF-CONFLICTED-SUPPORT",
+            "claims": ["C-SUPPORT", "C-COUNTER"],
+            "positions": ["P-TARGET"],
+            "support_routes": [
+                {
+                    "route_id": "R-CONFLICTED",
+                    "target_position_id": "P-TARGET",
+                    "logic": "AND_WITH_COUNTEREVIDENCE",
+                    "member_claim_ids": ["C-SUPPORT"],
+                    "counter_claim_ids": ["C-COUNTER"],
+                }
+            ],
+        })
+        event = {
+            "event_id": "EV-EVALUATE-CONFLICT",
+            "event": "Evaluate conflicting evidence",
+            "effective_date": "2026-01-02",
+            "known_at": "2026-01-02T08:00:00Z",
+            "source_ids": ["S-REVIEW"],
+            "trigger_claim_ids": ["C-COUNTER"],
+            "mutations": [],
+        }
+
+        output = run(graph, [event])["transition_output"]
+        route = next(
+            item
+            for item in output["route_results"]
+            if item["route_id"] == "R-CONFLICTED"
+        )
+        combined = next(
+            item
+            for item in output["support_combination_results"]
+            if item["position_id"] == "P-TARGET"
+        )
+
+        self.assertEqual(route["state"], "UNKNOWN")
+        self.assertEqual(combined["state"], "UNKNOWN")
+        self.assertIn("CONFLICTING_SUPPORT_EVIDENCE", route["reason_codes"])
+        self.assertIn(
+            "CONFLICTING_SUPPORT_EVIDENCE",
+            {item["reason_code"] for item in output["human_stops"]},
+        )
+        self.assertIn(
+            "CONFLICTING_SUPPORT_EVIDENCE",
+            {item["reason_code"] for item in output["blocked_components"]},
+        )
+        self.assertNotIn("proof_graph", output)
+        self.assertNotIn('"state": "CONFLICTED"', json.dumps(output, sort_keys=True))
+        self.assertTrue(compare_modes(graph, [event])["equivalent"])
+
+    def test_clean_alternative_route_survives_conflicted_route(self):
+        graph = graph_from_support_fixture({
+            "fixture_id": "SF-CONFLICTED-ALTERNATIVE",
+            "claims": ["C-SUPPORT", "C-COUNTER", "C-ALTERNATIVE"],
+            "positions": ["P-TARGET"],
+            "support_routes": [
+                {
+                    "route_id": "R-CONFLICTED",
+                    "target_position_id": "P-TARGET",
+                    "logic": "AND_WITH_COUNTEREVIDENCE",
+                    "member_claim_ids": ["C-SUPPORT"],
+                    "counter_claim_ids": ["C-COUNTER"],
+                },
+                {
+                    "route_id": "R-ALTERNATIVE",
+                    "target_position_id": "P-TARGET",
+                    "logic": "INDEPENDENT",
+                    "member_claim_ids": ["C-ALTERNATIVE"],
+                },
+            ],
+        })
+        event = {
+            "event_id": "EV-EVALUATE-ALTERNATIVE",
+            "event": "Evaluate independent support",
+            "effective_date": "2026-01-02",
+            "known_at": "2026-01-02T08:00:00Z",
+            "source_ids": ["S-REVIEW"],
+            "trigger_claim_ids": ["C-COUNTER"],
+            "mutations": [],
+        }
+
+        output = run(graph, [event])["transition_output"]
+        combined = next(
+            item
+            for item in output["support_combination_results"]
+            if item["position_id"] == "P-TARGET"
+        )
+
+        self.assertEqual(combined["state"], "TRUE")
+        self.assertFalse(any(
+            item["reason_code"] == "CONFLICTING_SUPPORT_EVIDENCE"
+            and item["object_or_component_id"] == "P-TARGET"
+            for item in output["human_stops"]
+        ))
+        self.assertTrue(compare_modes(graph, [event])["equivalent"])
+
+    def test_model_node_member_propagates_through_support_route(self):
+        graph = graph_from_support_fixture({
+            "fixture_id": "SF-MODEL-SUPPORT",
+            "claims": [],
+            "positions": ["P-TARGET"],
+            "support_routes": [
+                {
+                    "route_id": "R-MODEL",
+                    "target_position_id": "P-TARGET",
+                    "logic": "AND",
+                    "member_model_node_ids": ["M-INPUT"],
+                }
+            ],
+        })
+        graph["model_nodes"] = [
+            {
+                "model_node_id": "M-INPUT",
+                "name": "Model input",
+                "kind": "input",
+                "period": "TEST",
+                "perimeter": "TEST",
+                "value": "1",
+                "unit": None,
+            }
+        ]
+        event = {
+            "event_id": "EV-MODEL-SUPPORT",
+            "event": "Model input becomes unknown",
+            "effective_date": "2026-01-02",
+            "known_at": "2026-01-02T08:00:00Z",
+            "source_ids": ["S-MODEL"],
+            "trigger_claim_ids": [],
+            "mutations": [
+                {
+                    "operation": "CORRECT",
+                    "object_type": "MODEL_NODE",
+                    "object_id": "M-INPUT",
+                    "field": "value",
+                    "from": "1",
+                    "to": None,
+                }
+            ],
+        }
+
+        output = run(graph, [event])["transition_output"]
+        affected_ids = {item["object_id"] for item in output["affected_set"]}
+        route = next(item for item in output["route_results"] if item["route_id"] == "R-MODEL")
+        combined = next(
+            item
+            for item in output["support_combination_results"]
+            if item["position_id"] == "P-TARGET"
+        )
+
+        self.assertEqual(affected_ids, {"M-INPUT", "R-MODEL", "P-TARGET"})
+        self.assertEqual(route["member_states"], {"M-INPUT": "UNKNOWN"})
+        self.assertEqual(route["state"], "UNKNOWN")
+        self.assertEqual(combined["state"], "UNKNOWN")
+        self.assertEqual(output["partial_settlement_status"]["candidate"], "PARTIAL")
+        self.assertTrue(compare_modes(graph, [event])["equivalent"])
+
+    def test_counterevidence_member_requeues_its_support_route(self):
+        graph = graph_from_support_fixture({
+            "fixture_id": "SF-COUNTEREVIDENCE",
+            "claims": ["C-SUPPORT", "C-COUNTER"],
+            "positions": ["P-TARGET"],
+            "support_routes": [
+                {
+                    "route_id": "R-COUNTER",
+                    "target_position_id": "P-TARGET",
+                    "logic": "AND_WITH_COUNTEREVIDENCE",
+                    "member_claim_ids": ["C-SUPPORT"],
+                    "counter_claim_ids": ["C-COUNTER"],
+                }
+            ],
+        })
+        event = {
+            "event_id": "EV-RETRACT-COUNTER",
+            "event": "Retract counterevidence",
+            "effective_date": "2026-01-02",
+            "known_at": "2026-01-02T08:00:00Z",
+            "source_ids": ["S-COUNTER"],
+            "trigger_claim_ids": ["C-COUNTER"],
+            "mutations": [
+                {
+                    "operation": "RETRACT",
+                    "object_type": "CLAIM",
+                    "object_id": "C-COUNTER",
+                }
+            ],
+        }
+
+        output = run(graph, [event])["transition_output"]
+        affected_ids = {item["object_id"] for item in output["affected_set"]}
+        route = next(
+            item for item in output["route_results"] if item["route_id"] == "R-COUNTER"
+        )
+
+        self.assertEqual(affected_ids, {"C-COUNTER", "R-COUNTER", "P-TARGET"})
+        self.assertEqual(route["counter_member_states"], {"C-COUNTER": "FALSE"})
+        self.assertEqual(route["counterevidence_present"], "FALSE")
+        self.assertEqual(route["state"], "TRUE")
+        self.assertTrue(compare_modes(graph, [event])["equivalent"])
+
     def test_tce001_formula_recomputes_firm_ebitda(self):
         graph = load_json("canonical/PANTA_Keystone_Initial_IC_State_2026-03-10.json")
         mapping = load_json("benchmark/keystone_execution_mapping_v0.json")
@@ -148,6 +359,31 @@ class RuntimeRoutesAndFormulaTests(unittest.TestCase):
         )
         self.assertEqual(output["human_stops"], [])
         self.assertEqual(output["partial_settlement_status"]["candidate"], "FULL")
+
+    def test_m0_retraction_safe_harbor_requires_a_surviving_route(self):
+        fixture = copy.deepcopy(synthetic_fixture("SF-ALTERNATIVE-ROUTES"))
+        fixture["support_routes"] = [
+            route for route in fixture["support_routes"] if route["route_id"] == "R-A"
+        ]
+        graph = graph_from_support_fixture(fixture)
+        case = normative_case("TCE-002-ALTERNATIVE-ROUTE-SURVIVES")
+
+        output = run(graph, case["event_batch"])["transition_output"]
+
+        self.assertEqual(
+            output["support_combination_results"][0]["state"], "FALSE"
+        )
+        self.assertEqual(
+            output["materiality_assessment"]["overall_class"],
+            "M1_PROFESSIONAL_REVIEW",
+        )
+        self.assertEqual(
+            output["materiality_assessment"]["classification_coverage"]["status"],
+            "FAIL_CLOSED",
+        )
+        self.assertEqual(
+            output["candidate_current_approved_delta"]["current"], []
+        )
 
     def test_tce003_circular_routes_do_not_defeat_grounded_route(self):
         fixture = synthetic_fixture("SF-CIRCULAR-SUPPORT")

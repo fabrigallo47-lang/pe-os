@@ -4,7 +4,14 @@
   "title": "PANTA Authority Record",
   "type": "object",
   "properties": {
+    "authority_record_version": {
+      "const": "authority-record/2.0"
+    },
     "authority_record_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "case_id": {
       "type": "string",
       "minLength": 1
     },
@@ -44,6 +51,145 @@
       "type": "string",
       "minLength": 1
     },
+    "required_role": {
+      "type": "string",
+      "minLength": 1
+    },
+    "prepared_selection_hash": {
+      "type": "string",
+      "minLength": 1
+    },
+    "authority_assignment": {
+      "type": "object",
+      "properties": {
+        "assignment_id": {"type": "string", "minLength": 1},
+        "assignment_version": {"type": "string", "minLength": 1},
+        "actor_id": {"type": "string", "minLength": 1},
+        "actor_role": {"type": "string", "minLength": 1},
+        "granted_roles": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "authority_verbs": {
+          "type": "array",
+          "items": {"type": "string", "minLength": 1},
+          "uniqueItems": true
+        },
+        "effective_from": {"type": "string", "format": "date-time"},
+        "effective_to": {"type": ["string", "null"], "format": "date-time"},
+        "known_at": {"type": "string", "format": "date-time"},
+        "assignment_status": {"const": "ACTIVE"},
+        "revoked_effective_at": {"type": ["string", "null"], "format": "date-time"},
+        "revocation_known_at": {"type": ["string", "null"], "format": "date-time"},
+        "temporal_basis": {
+          "enum": ["DECLARED_ASSIGNMENT", "ATTESTATION_TIME_FALLBACK"]
+        },
+        "captured_at": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": true,
+      "required": [
+        "assignment_id",
+        "assignment_version",
+        "actor_id",
+        "actor_role",
+        "granted_roles",
+        "authority_verbs",
+        "effective_from",
+        "effective_to",
+        "known_at",
+        "assignment_status",
+        "revoked_effective_at",
+        "revocation_known_at",
+        "temporal_basis",
+        "captured_at"
+      ]
+    },
+    "authority_assignment_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "authentication_context": {
+      "type": "object",
+      "properties": {
+        "principal_id": {"type": "string", "minLength": 1},
+        "case_id": {"type": "string", "minLength": 1},
+        "authentication_method": {
+          "enum": ["SERVER_ISSUED_SESSION", "SYNTHETIC_SERVER_SESSION"]
+        },
+        "session_id_hash": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "session_issued_at": {"type": "string", "format": "date-time"},
+        "session_expires_at": {"type": "string", "format": "date-time"},
+        "authenticated_at": {"type": "string", "format": "date-time"}
+      },
+      "additionalProperties": false,
+      "required": [
+        "principal_id",
+        "case_id",
+        "authentication_method",
+        "session_id_hash",
+        "session_issued_at",
+        "session_expires_at",
+        "authenticated_at"
+      ]
+    },
+    "authentication_context_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "human_stop_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "policy_refs_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "authority_resolution_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "policy_rule_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "authority_resolution_rule_id": {
+      "type": [
+        "string",
+        "null"
+      ]
+    },
+    "record_hash": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "signature_algorithm": {
+      "enum": ["ED25519", "SYNTHETIC-HMAC-SHA256"]
+    },
+    "signing_key_id": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
+    "record_signature": {
+      "type": "string",
+      "minLength": 32
+    },
+    "ledger_id": {
+      "const": "PANTA-AUTHORITY-LEDGER-V1"
+    },
+    "ledger_sequence": {
+      "type": "integer",
+      "minimum": 1
+    },
+    "previous_record_hash": {
+      "type": ["string", "null"],
+      "pattern": "^sha256:[0-9a-f]{64}$"
+    },
     "effect_type": {
       "enum": [
         "EXTERNAL_PACKAGE",
@@ -68,7 +214,9 @@
   },
   "additionalProperties": true,
   "required": [
+    "authority_record_version",
     "authority_record_id",
+    "case_id",
     "run_id",
     "candidate_state_id",
     "human_stop_id",
@@ -80,6 +228,24 @@
     "known_at",
     "artifact_hash",
     "authority_verb",
+    "required_role",
+    "prepared_selection_hash",
+    "authority_assignment",
+    "authority_assignment_hash",
+    "authentication_context",
+    "authentication_context_hash",
+    "human_stop_hash",
+    "policy_refs_hash",
+    "authority_resolution_hash",
+    "policy_rule_id",
+    "authority_resolution_rule_id",
+    "record_hash",
+    "signature_algorithm",
+    "signing_key_id",
+    "record_signature",
+    "ledger_id",
+    "ledger_sequence",
+    "previous_record_hash",
     "effect_type",
     "status"
   ]

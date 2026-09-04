@@ -4,6 +4,8 @@ import re
 import unittest
 from pathlib import Path
 
+from jsonschema import Draft202012Validator
+
 from runtime import apply_state_transition, build_runtime_state, compute_affected_set
 
 
@@ -257,6 +259,12 @@ class RuntimeCoreTests(unittest.TestCase):
         output = run(graph, [event])["transition_output"]
         schema = load_json("schemas/state_transition_engine_output.schema.json")
         self.assertTrue(set(schema["required"]) <= set(output))
+        Draft202012Validator.check_schema(schema)
+        errors = sorted(
+            Draft202012Validator(schema).iter_errors(output),
+            key=lambda error: list(error.absolute_path),
+        )
+        self.assertEqual(errors, [])
         self.assertRegex(output["replay_hash"], re.compile(r"^sha256:[0-9a-f]{64}$"))
         self.assertRegex(output["semantic_result_hash"], re.compile(r"^sha256:[0-9a-f]{64}$"))
 

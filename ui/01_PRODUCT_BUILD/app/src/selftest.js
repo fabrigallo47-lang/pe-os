@@ -25,6 +25,7 @@
     test('Page-wide as-of state exists',()=>{assert(s.context?.as_of_state_id,'No as-of state');return s.context.as_of_state_id});
     test('Replay is read-only by contract',()=>{assert(p.deal.replay?.snapshots,'Replay missing');return`${p.deal.replay.snapshots.length} snapshots`});
     test('Institutional Registry separate from UI telemetry',()=>{assert(Array.isArray(s.registry),'Registry missing');assert(!('uiTelemetry' in s),'UI telemetry must not share Registry');return`${s.registry.length} institutional events`});
+    test('Case Journal preserves actor and three temporal axes',()=>{assert(s.journal?.schema_version==='case-journal/1.0','Journal contract missing');const events=s.journal.events||[];assert(events.every(e=>e.actor_id&&e.effective_date&&e.known_at&&e.recorded_at),'Journal event lacks actor or temporal axis');return`${events.length} canonical events`});
     test('No global live region',()=>{assert(!document.getElementById('app').hasAttribute('aria-live'),'Root is live region');return'status region only'});
     test('Persistent room capability map',()=>{assert(p.deal.navigation_capabilities||p.deal.capabilities,'Capabilities missing');return'capabilities served'});
     test('Scenario trajectories are data-driven',()=>{const xs=p.deal.scenarioLab?.scenarios||[];assert(xs.every(x=>x.trajectory||x.markers),'Scenario trajectory missing');return`${xs.length} trajectories`});

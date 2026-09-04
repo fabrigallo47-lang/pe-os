@@ -1,0 +1,159 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://panta.example/schemas/case-journal-1.0.json",
+  "title": "PANTA Case Journal",
+  "description": "Read projection joining immutable runtime events, institutional vault events and archived graph-state deltas.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "case_id",
+    "generated_at",
+    "temporal",
+    "events",
+    "summary",
+    "drift",
+    "integrity"
+  ],
+  "properties": {
+    "schema_version": { "const": "case-journal/1.0" },
+    "case_id": { "type": "string", "minLength": 1 },
+    "generated_at": { "type": "string", "format": "date-time" },
+    "temporal": {
+      "type": "object",
+      "required": ["effective_axis", "knowledge_axis", "recording_axis"],
+      "properties": {
+        "effective_axis": { "const": "effective_date" },
+        "knowledge_axis": { "const": "known_at" },
+        "recording_axis": { "const": "recorded_at" },
+        "since": { "type": ["string", "null"] },
+        "until": { "type": ["string", "null"] },
+        "as_of": { "type": ["string", "null"] }
+      },
+      "additionalProperties": false
+    },
+    "filters": { "type": "object" },
+    "baseline": { "$ref": "#/$defs/stateReference" },
+    "current": { "$ref": "#/$defs/stateReference" },
+    "event_count": { "type": "integer", "minimum": 0 },
+    "events": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/event" }
+    },
+    "phases": { "type": "array" },
+    "event_kinds": { "type": "object" },
+    "summary": { "$ref": "#/$defs/changeSummary" },
+    "drift": {
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["status", "reason"],
+          "properties": {
+            "status": { "const": "UNAVAILABLE" },
+            "reason": { "type": "string" }
+          }
+        },
+        {
+          "allOf": [
+            { "$ref": "#/$defs/changeSummary" },
+            {
+              "type": "object",
+              "required": ["status", "baseline_state_id", "current_state_id"],
+              "properties": {
+                "status": { "const": "AVAILABLE" },
+                "baseline_state_id": { "type": ["string", "null"] },
+                "current_state_id": { "type": ["string", "null"] }
+              }
+            }
+          ]
+        }
+      ]
+    },
+    "integrity": {
+      "type": "object",
+      "required": ["sources", "runtime_ledger_is_primary_for_admissions_and_settlements", "warnings"],
+      "properties": {
+        "sources": { "type": "array", "items": { "type": "string" } },
+        "runtime_ledger_is_primary_for_admissions_and_settlements": { "const": true },
+        "inferred_system_actor_count": { "type": "integer", "minimum": 0 },
+        "warnings": { "type": "array", "items": { "type": "string" } }
+      }
+    }
+  },
+  "$defs": {
+    "stateReference": {
+      "type": "object",
+      "properties": {
+        "state_id": { "type": "string" },
+        "version_id": { "type": "string" },
+        "known_at": { "type": "string", "format": "date-time" },
+        "effective_date": { "type": "string", "format": "date" },
+        "graph_hash": { "type": "string" }
+      }
+    },
+    "event": {
+      "type": "object",
+      "required": [
+        "schema_version",
+        "journal_id",
+        "event_id",
+        "case_id",
+        "event_type",
+        "kind",
+        "phase",
+        "actor_id",
+        "effective_date",
+        "known_at",
+        "recorded_at",
+        "source",
+        "integrity"
+      ],
+      "properties": {
+        "schema_version": { "const": "case-journal-event/1.0" },
+        "journal_id": { "type": "string", "pattern": "^sha256:" },
+        "event_id": { "type": "string", "minLength": 1 },
+        "case_id": { "type": "string", "minLength": 1 },
+        "event_type": { "type": "string", "minLength": 1 },
+        "kind": { "type": "string", "minLength": 1 },
+        "phase": { "type": "string", "minLength": 1 },
+        "label": { "type": "string" },
+        "detail": { "type": "string" },
+        "actor_id": { "type": "string", "minLength": 1 },
+        "actor_label": { "type": "string" },
+        "actor_source": { "enum": ["DECLARED", "INFERRED_SYSTEM"] },
+        "effective_date": { "type": "string", "format": "date" },
+        "known_at": { "type": "string", "format": "date-time" },
+        "recorded_at": { "type": "string", "format": "date-time" },
+        "object_ids": { "type": "array", "items": { "type": "string" } },
+        "workstream_ids": { "type": "array", "items": { "type": "string" } },
+        "correlation_ids": { "type": "array", "items": { "type": "string" } },
+        "source": { "enum": ["RUNTIME_LEDGER", "VAULT_EVENT", "AUTHORITY_LEDGER"] },
+        "integrity": { "type": "object" }
+      }
+    },
+    "changeSummary": {
+      "type": "object",
+      "required": [
+        "rules_version",
+        "change_count",
+        "advanced",
+        "regressed",
+        "changed",
+        "opened",
+        "closed",
+        "workstreams",
+        "changes"
+      ],
+      "properties": {
+        "rules_version": { "const": "journal-change-rules/1.1" },
+        "change_count": { "type": "integer", "minimum": 0 },
+        "advanced": { "type": "integer", "minimum": 0 },
+        "regressed": { "type": "integer", "minimum": 0 },
+        "changed": { "type": "integer", "minimum": 0 },
+        "opened": { "type": "integer", "minimum": 0 },
+        "closed": { "type": "integer", "minimum": 0 },
+        "workstreams": { "type": "array" },
+        "changes": { "type": "array" }
+      }
+    }
+  }
+}

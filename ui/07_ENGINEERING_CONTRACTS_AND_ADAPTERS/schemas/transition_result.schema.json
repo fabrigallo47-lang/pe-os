@@ -251,6 +251,17 @@
               "CLOSED",
               "EXPIRED"
             ]
+          },
+          "attestable": {
+            "type": "boolean"
+          },
+          "resolution_kind": {
+            "enum": [
+              "AUTHORITY_ATTESTATION",
+              "INPUT_OR_MODEL_CORRECTION",
+              "NON_WAIVABLE_BLOCK",
+              "POLICY_CORRECTION"
+            ]
           }
         },
         "additionalProperties": true,
@@ -575,6 +586,18 @@
     "policy_result": {
       "type": "object",
       "properties": {},
+      "additionalProperties": true
+    },
+    "materiality_assessment": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "authority_resolution": {
+      "type": "object",
+      "additionalProperties": true
+    },
+    "governance": {
+      "type": "object",
       "additionalProperties": true
     },
     "effective_date": {

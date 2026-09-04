@@ -70,8 +70,11 @@ Implemented:
 - semantic applicability checks;
 - immutable Candidate construction;
 - conservative affected-set closure;
+- support-route closure across claim, position, model-node and counterevidence members;
 - SCC condensation ordering;
-- three-valued support-route evaluation (`TRUE` / `FALSE` / `UNKNOWN`);
+- bounded ATMS-like proof labels with minimal supporting/refuting environments;
+- four-valued internal support evaluation (`TRUE` / `FALSE` / `NEITHER` / `BOTH`),
+  adapted to the unchanged public `TRUE` / `FALSE` / `UNKNOWN` vocabulary;
 - `OR` between alternative routes, preserving each route's internal logic;
 - circular-support invalidation without invoking a numerical solver;
 - deterministic Decimal formula recomputation in the Candidate;
@@ -79,7 +82,8 @@ Implemented:
 - typed dated-cash-flow construction and deterministic XIRR evaluation;
 - applicable/material contradiction handling without changing decision status;
 - materiality classification from versioned M0-M3 policy inputs;
-- Current/Approved governance routing and separation of duties;
+- fail-closed materiality coverage and per-condition M0 guard evaluation;
+- policy-driven Current/Approved authority routing and separation of duties;
 - cumulative materiality against `K_t`, including sub-tolerance audit;
 - first-class rule switches with provenance and dependent requeue;
 - deterministic numerical SCC classification and solving;
@@ -95,6 +99,26 @@ boundary, four integration tests cover the real Financial Gold mapping and two
 tests cover typed dated cash flows/XIRR.
 Unmapped residual scope is always reported explicitly in
 `coverage_limits`; it is never guessed.
+
+The optional additive `classification_coverage` policy object defines the
+fallback for unmatched deltas and explicit, conditional M0 safe harbors.
+Missing, unmatched or unevaluable coverage cannot auto-reconcile Current.
+Even with complete coverage, every declared M0 guard must pass. Input and
+output are specified by `../schemas/materiality_policy.schema.json` and
+`../schemas/state_transition_engine_output.schema.json` respectively.
+Versioned `LIMIT_CROSSING` tests can embed sourced limit declarations and emit
+the exact boundary and breach direction; absent or malformed limits remain
+unevaluable rather than being guessed.
+
+Authority rules are resolved with the policy's `MOST_RESTRICTIVE_MATCH` mode.
+The runtime derives routing context from Candidate deltas and declared
+`authority_change_types`, selects the unique highest-priority match, and emits
+the full decision as `authority_resolution`. Routing tags do not confer
+authority or mutate Approved. Missing, tied, duplicate, malformed, or
+incomplete routes produce `STOP-AUTHORITY-ROUTING` and no Current/Approved
+delta. The input contract is `../schemas/authority_policy.schema.json`; event
+and rule-switch tags are specified by their existing input schemas, and the
+shape of `authority_resolution` is specified by the output schema.
 
 The Financial Gold formula set now runs end to end: 11,371 scalar formulas,
 five dated-cash-flow builders and five XIRR evaluators. Residual Gold coverage

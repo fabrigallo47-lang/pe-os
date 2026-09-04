@@ -11,12 +11,14 @@ from __future__ import annotations
 import datetime as dt
 import asyncio
 import base64
+import binascii
 import copy
 import hashlib
 import json
 import logging
 import os
 import re
+import secrets
 import sqlite3
 import subprocess
 import sys
@@ -39,7 +41,13 @@ logging.basicConfig(
 logger = logging.getLogger("v20")
 
 import yaml
-from fastapi import APIRouter, BackgroundTasks, HTTPException, Request, UploadFile
+from cryptography.exceptions import InvalidSignature, UnsupportedAlgorithm
+from cryptography.hazmat.primitives import serialization
+from cryptography.hazmat.primitives.asymmetric.ed25519 import (
+    Ed25519PrivateKey,
+    Ed25519PublicKey,
+)
+from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, UploadFile
 from fastapi.responses import JSONResponse
 
 from backend.dynamics import (
@@ -48,6 +56,8 @@ from backend.dynamics import (
     run_bundle_transition,
     settle_candidate_state,
 )
+from backend.dynamics.runtime import ledger_store
+from backend.dynamics.runtime.case_journal import build_case_journal
 from tools.source_envelope import build_source_envelope
 from tools.relation_rules import annotate_edge, audit_relation_outputs, relation_rule
 from tools.decision_criticality import next_position_work, rank_decision_criticality
@@ -70,6 +80,26 @@ INGEST_JOBS_LOG = ROOT / "logs" / "ingest_jobs.json"
 INGEST_BATCHES_LOG = ROOT / "logs" / "ingest_batches.json"
 RUNS_LOG = ROOT / "logs" / "runs.json"
 _REGISTRY_LIMIT = 200
+_AUTHORITY_LEDGER_ID = "PANTA-AUTHORITY-LEDGER-V1"
+_AUTHORITY_RECORD_VERSION = "authority-record/2.0"
+_AUTHORITY_SIGNATURE_ALGORITHM = "ED25519"
+_AUTHORITY_KEYRING_VERSION = "authority-keyring/1.0"
+
+_NON_ATTESTABLE_HUMAN_STOP_REASONS = frozenset(
+    {
+        "AUTHORITY_POLICY_UNRESOLVED",
+        "BATCH_VALUE_CONFLICT",
+        "CIRCULAR_SUPPORT",
+        "IMMUTABLE_HISTORICAL_FIELD",
+        "MISSING_RULE_PROVENANCE",
+        "NON_WAIVABLE_AXIOM",
+        "OBJECT_TYPE_MISMATCH",
+        "PRIOR_VALUE_MISMATCH",
+        "UNKNOWN_OBJECT_ID",
+        "UNKNOWN_TARGET_POSITION_ID",
+        "UPSTREAM_INPUT_BLOCKED",
+    }
+)
 
 v20 = APIRouter(prefix="/api/v20")
 
@@ -104,6 +134,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "sendPackage": {"status": "AVAILABLE", "method": "POST", "path": "/execution-packages/{package_id}/send"},
     "settle": {"status": "AVAILABLE", "method": "POST", "path": "/runs/{run_id}/settle"},
     "replay": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/replay"},
+    "loadJournal": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/journal"},
     "loadReunderwrite": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/re-underwrite"},
     "getFundLens": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/fund-lens"},
     "configureFundLens": {"status": "AVAILABLE", "method": "PUT", "path": "/cases/{case_id}/fund-lens"},
@@ -121,6 +152,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
 _jobs: dict[str, dict] = {}
 _batches: dict[str, dict] = {}
 _runs: dict[str, dict] = {}   # run_id → {transition, candidate_graph, case_id}
+_authenticated_sessions: dict[str, dict[str, Any]] = {}
 _inbox_lock = threading.Lock()
 _notes_lock = threading.Lock()
 _source_lock = threading.Lock()
@@ -129,6 +161,8 @@ _compiler_reviews_lock = threading.Lock()
 _ic_records_lock = threading.Lock()
 _mission_drafts_lock = threading.Lock()
 _registry_lock = threading.RLock()
+_authenticated_sessions_lock = threading.RLock()
+_authority_keyring_lock = threading.RLock()
 _batch_lock = threading.RLock()
 _graph_versions_lock = threading.Lock()
 _fund_lens_lock = threading.Lock()
@@ -149,6 +183,134 @@ def _now_iso() -> str:
 
 def _today() -> str:
     return dt.date.today().isoformat()
+
+
+def _authentication_session_ttl_seconds() -> int:
+    raw = os.environ.get("PANTA_AUTH_SESSION_TTL_SECONDS", "28800")
+    try:
+        return max(60, int(raw))
+    except ValueError as exc:
+        raise HTTPException(
+            503, "PANTA_AUTH_SESSION_TTL_SECONDS must be an integer"
+        ) from exc
+
+
+def _authentication_session_hash(session_id: str) -> str:
+    return "sha256:" + hashlib.sha256(session_id.encode("utf-8")).hexdigest()
+
+
+def _issue_authenticated_session(
+    case_id: str,
+    actor_id: str | None = None,
+    *,
+    authentication_method: str = "SERVER_ISSUED_SESSION",
+) -> tuple[str, dict[str, Any]]:
+    """Issue an opaque bearer session bound to one server-selected principal."""
+
+    if actor_id is None:
+        context = _make_context(case_id, _current_state_id(case_id), _today())
+        actor_id = str(context.get("authenticated_actor", {}).get("actor_id") or "")
+    actor_id = str(actor_id or "").strip()
+    if not actor_id:
+        raise HTTPException(503, "Authenticated principal is not configured")
+
+    issued_at = dt.datetime.now(dt.timezone.utc)
+    expires_at = issued_at + dt.timedelta(
+        seconds=_authentication_session_ttl_seconds()
+    )
+    session_id = "SES-" + secrets.token_urlsafe(32)
+    session_hash = _authentication_session_hash(session_id)
+    principal = {
+        "principal_id": actor_id,
+        "case_id": case_id,
+        "authentication_method": authentication_method,
+        "session_id_hash": session_hash,
+        "session_issued_at": issued_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+        "session_expires_at": expires_at.strftime("%Y-%m-%dT%H:%M:%SZ"),
+    }
+    with _authenticated_sessions_lock:
+        now = dt.datetime.now(dt.timezone.utc)
+        expired = [
+            key
+            for key, value in _authenticated_sessions.items()
+            if (_authority_parse_instant(value.get("session_expires_at")) or now)
+            <= now
+        ]
+        for key in expired:
+            _authenticated_sessions.pop(key, None)
+        _authenticated_sessions[session_hash] = principal
+    return session_id, copy.deepcopy(principal)
+
+
+def _authenticated_principal(
+    case_id: str,
+    claimed_actor_id: str,
+    *,
+    query_session_id: str | None,
+    header_session_id: str | None,
+) -> dict[str, Any]:
+    """Resolve identity from the server registry, never from the request body."""
+
+    query_token = (
+        query_session_id.strip() if isinstance(query_session_id, str) else ""
+    )
+    header_token = (
+        header_session_id.strip() if isinstance(header_session_id, str) else ""
+    )
+    if query_token and header_token and not secrets.compare_digest(
+        query_token, header_token
+    ):
+        raise HTTPException(401, "Session header and query token do not match")
+    session_id = header_token or query_token
+    if not session_id:
+        raise HTTPException(
+            401,
+            "An authenticated PANTA session is required for authority attestation",
+            headers={"WWW-Authenticate": "PantaSession"},
+        )
+    if not re.fullmatch(r"SES-[A-Za-z0-9_-]{32,128}", session_id):
+        raise HTTPException(
+            401,
+            "PANTA session token is malformed",
+            headers={"WWW-Authenticate": "PantaSession"},
+        )
+    session_hash = _authentication_session_hash(session_id)
+    with _authenticated_sessions_lock:
+        principal = copy.deepcopy(_authenticated_sessions.get(session_hash))
+        if principal is not None:
+            expires_at = _authority_parse_instant(
+                principal.get("session_expires_at")
+            )
+            if expires_at is None or expires_at <= dt.datetime.now(dt.timezone.utc):
+                _authenticated_sessions.pop(session_hash, None)
+                principal = None
+    if principal is None:
+        raise HTTPException(
+            401,
+            "PANTA session is unknown or expired; bootstrap again",
+            headers={"WWW-Authenticate": "PantaSession"},
+        )
+    if principal.get("case_id") != case_id:
+        raise HTTPException(403, "Authenticated session belongs to another case")
+    if principal.get("principal_id") != claimed_actor_id:
+        raise HTTPException(
+            403, "actor_id does not match the authenticated session principal"
+        )
+    return principal
+
+
+def _authority_authentication_snapshot(
+    principal: dict[str, Any], authenticated_at: str
+) -> dict[str, Any]:
+    return {
+        "principal_id": principal.get("principal_id"),
+        "case_id": principal.get("case_id"),
+        "authentication_method": principal.get("authentication_method"),
+        "session_id_hash": principal.get("session_id_hash"),
+        "session_issued_at": principal.get("session_issued_at"),
+        "session_expires_at": principal.get("session_expires_at"),
+        "authenticated_at": authenticated_at,
+    }
 
 
 def _pipeline_out_for_case(case_id: str) -> Path:
@@ -312,6 +474,951 @@ def _actor_satisfies_role(actor: dict[str, Any], required_role: str) -> bool:
     return required_role in granted
 
 
+def _authority_content_hash(value: Any) -> str:
+    encoded = json.dumps(
+        value,
+        sort_keys=True,
+        separators=(",", ":"),
+        ensure_ascii=False,
+        default=str,
+    ).encode("utf-8")
+    return "sha256:" + hashlib.sha256(encoded).hexdigest()
+
+
+def _authority_record_payload_hash(record: dict[str, Any]) -> str:
+    payload = {
+        key: value
+        for key, value in record.items()
+        if key not in {"record_hash", "record_signature"}
+    }
+    return _authority_content_hash(payload)
+
+
+def _authority_signing_key_path() -> Path:
+    return RUNS_LOG.with_name("authority_signing_ed25519.pem")
+
+
+def _authority_keyring_path() -> Path:
+    return RUNS_LOG.with_name("authority_trusted_keys.json")
+
+
+def _authority_ledger_path() -> Path:
+    return RUNS_LOG.with_name("authority_ledger.sqlite3")
+
+
+def _load_authority_private_key(*, create: bool) -> Ed25519PrivateKey:
+    configured = os.environ.get("PANTA_AUTHORITY_SIGNING_KEY", "").strip()
+    if configured:
+        try:
+            if configured.startswith("-----BEGIN"):
+                key = serialization.load_pem_private_key(
+                    configured.encode("utf-8"), password=None
+                )
+                if not isinstance(key, Ed25519PrivateKey):
+                    raise ValueError("configured key is not Ed25519")
+                return key
+            padded = configured + "=" * (-len(configured) % 4)
+            raw = base64.b64decode(
+                padded.encode("ascii"), altchars=b"-_", validate=True
+            )
+            return Ed25519PrivateKey.from_private_bytes(raw)
+        except (binascii.Error, TypeError, UnsupportedAlgorithm, ValueError) as exc:
+            raise HTTPException(
+                503, "PANTA_AUTHORITY_SIGNING_KEY is not a valid Ed25519 private key"
+            ) from exc
+
+    path = _authority_signing_key_path()
+    try:
+        encoded = path.read_bytes()
+    except FileNotFoundError:
+        if not create:
+            raise HTTPException(503, "Authority signing key is unavailable")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        key = Ed25519PrivateKey.generate()
+        encoded = key.private_bytes(
+            encoding=serialization.Encoding.PEM,
+            format=serialization.PrivateFormat.PKCS8,
+            encryption_algorithm=serialization.NoEncryption(),
+        )
+        temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+        descriptor = os.open(
+            temporary,
+            os.O_WRONLY | os.O_CREAT | os.O_EXCL,
+            0o600,
+        )
+        try:
+            with os.fdopen(descriptor, "wb") as handle:
+                handle.write(encoded)
+                handle.flush()
+                os.fsync(handle.fileno())
+            try:
+                os.link(temporary, path)
+            except FileExistsError:
+                encoded = path.read_bytes()
+        finally:
+            temporary.unlink(missing_ok=True)
+        os.chmod(path, 0o600)
+    try:
+        if path.stat().st_mode & 0o077:
+            raise HTTPException(
+                503, "Authority signing key permissions must be mode 0600"
+            )
+    except OSError as exc:
+        raise HTTPException(503, "Authority signing key permissions cannot be read") from exc
+    try:
+        key = serialization.load_pem_private_key(encoded, password=None)
+    except (TypeError, UnsupportedAlgorithm, ValueError) as exc:
+        raise HTTPException(503, "Authority signing key cannot be decoded") from exc
+    if not isinstance(key, Ed25519PrivateKey):
+        raise HTTPException(503, "Authority signing key is not Ed25519")
+    return key
+
+
+def _authority_public_key_bytes(key: Ed25519PublicKey) -> bytes:
+    return key.public_bytes(
+        encoding=serialization.Encoding.Raw,
+        format=serialization.PublicFormat.Raw,
+    )
+
+
+def _authority_public_key_id(key: Ed25519PublicKey) -> str:
+    public_bytes = _authority_public_key_bytes(key)
+    return "sha256:" + hashlib.sha256(public_bytes).hexdigest()
+
+
+def _authority_signing_key_id(key: Ed25519PrivateKey) -> str:
+    return _authority_public_key_id(key.public_key())
+
+
+def _encode_authority_public_key(key: Ed25519PublicKey) -> str:
+    return base64.urlsafe_b64encode(_authority_public_key_bytes(key)).decode(
+        "ascii"
+    ).rstrip("=")
+
+
+def _decode_authority_public_key(value: Any) -> Ed25519PublicKey:
+    encoded = str(value or "").strip()
+    try:
+        if encoded.startswith("-----BEGIN"):
+            key = serialization.load_pem_public_key(encoded.encode("utf-8"))
+            if not isinstance(key, Ed25519PublicKey):
+                raise ValueError("configured public key is not Ed25519")
+            return key
+        padded = encoded + "=" * (-len(encoded) % 4)
+        return Ed25519PublicKey.from_public_bytes(
+            base64.b64decode(
+                padded.encode("ascii"), altchars=b"-_", validate=True
+            )
+        )
+    except (binascii.Error, TypeError, UnsupportedAlgorithm, ValueError) as exc:
+        raise HTTPException(503, "Authority public key cannot be decoded") from exc
+
+
+def _empty_authority_keyring() -> dict[str, Any]:
+    return {
+        "keyring_version": _AUTHORITY_KEYRING_VERSION,
+        "active_signing_key_id": None,
+        "keys": [],
+        "updated_at": None,
+    }
+
+
+def _validate_authority_keyring(keyring: Any) -> dict[str, Any]:
+    if (
+        not isinstance(keyring, dict)
+        or keyring.get("keyring_version") != _AUTHORITY_KEYRING_VERSION
+        or not isinstance(keyring.get("keys"), list)
+    ):
+        raise HTTPException(503, "Authority trusted-key ring is malformed")
+    seen: set[str] = set()
+    active_ids: list[str] = []
+    for entry in keyring["keys"]:
+        if not isinstance(entry, dict):
+            raise HTTPException(503, "Authority trusted-key ring is malformed")
+        key_id = str(entry.get("key_id") or "")
+        if key_id in seen:
+            raise HTTPException(503, "Authority trusted-key ring has duplicate IDs")
+        seen.add(key_id)
+        if (
+            entry.get("algorithm") != _AUTHORITY_SIGNATURE_ALGORITHM
+            or entry.get("status")
+            not in {"ACTIVE", "RETIRED", "REVOKED", "TRUSTED"}
+        ):
+            raise HTTPException(503, "Authority trusted-key entry is malformed")
+        public_key = _decode_authority_public_key(entry.get("public_key"))
+        if key_id != _authority_public_key_id(public_key):
+            raise HTTPException(503, "Authority trusted-key ID does not match its key")
+        for timestamp_field in (
+            "registered_at",
+            "activated_at",
+            "retired_at",
+            "revoked_effective_at",
+            "revocation_known_at",
+        ):
+            if entry.get(timestamp_field) and _authority_parse_instant(
+                entry[timestamp_field]
+            ) is None:
+                raise HTTPException(
+                    503, "Authority trusted-key timing is malformed"
+                )
+        if entry.get("status") == "ACTIVE":
+            active_ids.append(key_id)
+        if entry.get("status") == "RETIRED" and not entry.get("retired_at"):
+            raise HTTPException(503, "Retired authority key lacks retired_at")
+        revocation_pair = bool(entry.get("revoked_effective_at")) == bool(
+            entry.get("revocation_known_at")
+        )
+        if not revocation_pair or (
+            entry.get("status") == "REVOKED"
+            and not entry.get("revoked_effective_at")
+        ):
+            raise HTTPException(503, "Revoked authority key lacks bitemporal scope")
+        if entry.get("status") != "REVOKED" and entry.get(
+            "revoked_effective_at"
+        ):
+            raise HTTPException(503, "Non-revoked authority key has revocation scope")
+    active_id = keyring.get("active_signing_key_id")
+    if len(active_ids) > 1 or (
+        active_ids and active_id != active_ids[0]
+    ) or (not active_ids and active_id is not None):
+        raise HTTPException(503, "Authority trusted-key active state is inconsistent")
+    return keyring
+
+
+def _authority_environment_public_keys() -> list[dict[str, Any]]:
+    configured = os.environ.get(
+        "PANTA_AUTHORITY_TRUSTED_PUBLIC_KEYS", ""
+    ).strip()
+    if not configured:
+        return []
+    try:
+        values = json.loads(configured)
+    except json.JSONDecodeError as exc:
+        raise HTTPException(
+            503, "PANTA_AUTHORITY_TRUSTED_PUBLIC_KEYS must be a JSON object"
+        ) from exc
+    if not isinstance(values, dict):
+        raise HTTPException(
+            503, "PANTA_AUTHORITY_TRUSTED_PUBLIC_KEYS must be a JSON object"
+        )
+    entries: list[dict[str, Any]] = []
+    for declared_id, encoded in values.items():
+        public_key = _decode_authority_public_key(encoded)
+        key_id = _authority_public_key_id(public_key)
+        if declared_id != key_id:
+            raise HTTPException(
+                503, "Configured authority public-key ID does not match its key"
+            )
+        entries.append(
+            {
+                "key_id": key_id,
+                "algorithm": _AUTHORITY_SIGNATURE_ALGORITHM,
+                "public_key": _encode_authority_public_key(public_key),
+                "status": "TRUSTED",
+                "registered_at": None,
+                "activated_at": None,
+                "retired_at": None,
+                "revoked_effective_at": None,
+                "revocation_known_at": None,
+                "source": "ENVIRONMENT_TRUST_ROOT",
+            }
+        )
+    return entries
+
+
+def _load_authority_keyring() -> dict[str, Any]:
+    path = _authority_keyring_path()
+    if path.exists():
+        try:
+            if path.stat().st_mode & 0o077:
+                raise HTTPException(
+                    503, "Authority trusted-key ring permissions must be mode 0600"
+                )
+        except OSError as exc:
+            raise HTTPException(
+                503, "Authority trusted-key ring permissions cannot be read"
+            ) from exc
+        try:
+            keyring = json.loads(path.read_text(encoding="utf-8"))
+        except (OSError, json.JSONDecodeError) as exc:
+            raise HTTPException(503, "Authority trusted-key ring cannot be read") from exc
+    else:
+        keyring = _empty_authority_keyring()
+    keyring = _validate_authority_keyring(keyring)
+    by_id = {entry["key_id"]: copy.deepcopy(entry) for entry in keyring["keys"]}
+    for configured in _authority_environment_public_keys():
+        existing = by_id.get(configured["key_id"])
+        if existing and existing.get("public_key") != configured["public_key"]:
+            raise HTTPException(503, "Authority trust roots conflict")
+        if existing is None:
+            by_id[configured["key_id"]] = configured
+    merged = {**keyring, "keys": sorted(by_id.values(), key=lambda item: item["key_id"])}
+    return _validate_authority_keyring(merged)
+
+
+def _write_authority_keyring(keyring: dict[str, Any]) -> None:
+    validated = _validate_authority_keyring(copy.deepcopy(keyring))
+    path = _authority_keyring_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    temporary = path.with_name(f".{path.name}.{uuid.uuid4().hex}.tmp")
+    descriptor = os.open(temporary, os.O_WRONLY | os.O_CREAT | os.O_EXCL, 0o600)
+    try:
+        with os.fdopen(descriptor, "w", encoding="utf-8") as handle:
+            json.dump(validated, handle, indent=2, ensure_ascii=False)
+            handle.write("\n")
+            handle.flush()
+            os.fsync(handle.fileno())
+        os.replace(temporary, path)
+        os.chmod(path, 0o600)
+    finally:
+        temporary.unlink(missing_ok=True)
+
+
+def _activate_authority_signing_key(key: Ed25519PrivateKey) -> dict[str, Any]:
+    public_key = key.public_key()
+    key_id = _authority_public_key_id(public_key)
+    now = _now_iso()
+    with _authority_keyring_lock:
+        keyring = _load_authority_keyring()
+        entries = {entry["key_id"]: copy.deepcopy(entry) for entry in keyring["keys"]}
+        target = entries.get(key_id)
+        if target and target.get("status") == "REVOKED":
+            raise HTTPException(503, "Revoked authority key cannot sign new records")
+        if target and target.get("status") == "RETIRED":
+            raise HTTPException(503, "Retired authority key cannot be reactivated")
+        for existing_id, entry in entries.items():
+            if existing_id != key_id and entry.get("status") == "ACTIVE":
+                entry["status"] = "RETIRED"
+                entry["retired_at"] = now
+        if target is None:
+            target = {
+                "key_id": key_id,
+                "algorithm": _AUTHORITY_SIGNATURE_ALGORITHM,
+                "public_key": _encode_authority_public_key(public_key),
+                "status": "ACTIVE",
+                "registered_at": now,
+                "activated_at": now,
+                "retired_at": None,
+                "revoked_effective_at": None,
+                "revocation_known_at": None,
+                "source": "ACTIVE_SIGNING_KEY",
+            }
+            entries[key_id] = target
+        else:
+            target["status"] = "ACTIVE"
+            target["activated_at"] = target.get("activated_at") or now
+            target["source"] = "ACTIVE_SIGNING_KEY"
+        keyring.update(
+            active_signing_key_id=key_id,
+            keys=sorted(entries.values(), key=lambda item: item["key_id"]),
+            updated_at=now,
+        )
+        _write_authority_keyring(keyring)
+        return copy.deepcopy(entries[key_id])
+
+
+def _trusted_authority_public_key(record: dict[str, Any]) -> tuple[Ed25519PublicKey, dict[str, Any]]:
+    key_id = str(record.get("signing_key_id") or "")
+    with _authority_keyring_lock:
+        keyring = _load_authority_keyring()
+        entries = {entry["key_id"]: entry for entry in keyring["keys"]}
+        if not entries:
+            try:
+                current = _load_authority_private_key(create=False)
+            except HTTPException:
+                current = None
+            if current is not None and _authority_signing_key_id(current) == key_id:
+                _activate_authority_signing_key(current)
+                keyring = _load_authority_keyring()
+                entries = {entry["key_id"]: entry for entry in keyring["keys"]}
+        entry = entries.get(key_id)
+    if entry is None:
+        raise HTTPException(409, "Authority record signing key is not trusted")
+    signed_at = _authority_parse_instant(record.get("timestamp"))
+    if signed_at is None:
+        raise HTTPException(409, "Authority record signature time is malformed")
+    if entry.get("status") == "RETIRED":
+        retired_at = _authority_parse_instant(entry.get("retired_at"))
+        if retired_at is None or signed_at > retired_at:
+            raise HTTPException(409, "Authority record was signed after key retirement")
+    if entry.get("status") == "REVOKED":
+        revoked_at = _authority_parse_instant(entry.get("revoked_effective_at"))
+        if revoked_at is None or signed_at >= revoked_at:
+            raise HTTPException(409, "Authority record signing key was revoked")
+    return _decode_authority_public_key(entry.get("public_key")), copy.deepcopy(entry)
+
+
+def _sign_authority_record(record: dict[str, Any]) -> dict[str, Any]:
+    key = _load_authority_private_key(create=True)
+    _activate_authority_signing_key(key)
+    signed = copy.deepcopy(record)
+    signed["signature_algorithm"] = _AUTHORITY_SIGNATURE_ALGORITHM
+    signed["signing_key_id"] = _authority_signing_key_id(key)
+    signed["record_hash"] = _authority_record_payload_hash(signed)
+    signature = key.sign(signed["record_hash"].encode("ascii"))
+    signed["record_signature"] = base64.urlsafe_b64encode(signature).decode(
+        "ascii"
+    ).rstrip("=")
+    return signed
+
+
+def _verify_authority_record_signature(record: dict[str, Any]) -> None:
+    if record.get("signature_algorithm") != _AUTHORITY_SIGNATURE_ALGORITHM:
+        raise HTTPException(409, "Authority record signature algorithm is unsupported")
+    record_hash = str(record.get("record_hash") or "")
+    if record_hash != _authority_record_payload_hash(record):
+        raise HTTPException(409, "Authority record immutable payload hash mismatch")
+    public_key, _ = _trusted_authority_public_key(record)
+    encoded_signature = str(record.get("record_signature") or "")
+    try:
+        padding = "=" * (-len(encoded_signature) % 4)
+        signature = base64.b64decode(
+            (encoded_signature + padding).encode("ascii"),
+            altchars=b"-_",
+            validate=True,
+        )
+        public_key.verify(signature, record_hash.encode("ascii"))
+    except (binascii.Error, InvalidSignature, ValueError, UnicodeEncodeError) as exc:
+        raise HTTPException(409, "Authority record signature verification failed") from exc
+
+
+def _authority_parse_instant(value: Any) -> dt.datetime | None:
+    if value in (None, ""):
+        return None
+    text = str(value).strip()
+    try:
+        if re.fullmatch(r"\d{4}-\d{2}-\d{2}", text):
+            return dt.datetime.combine(
+                dt.date.fromisoformat(text), dt.time.min, tzinfo=dt.timezone.utc
+            )
+        parsed = dt.datetime.fromisoformat(text.replace("Z", "+00:00"))
+        if parsed.tzinfo is None:
+            parsed = parsed.replace(tzinfo=dt.timezone.utc)
+        return parsed.astimezone(dt.timezone.utc)
+    except ValueError:
+        return None
+
+
+def _authority_assignment_snapshot(
+    actor: dict[str, Any], attested_at: str
+) -> dict[str, Any]:
+    actor_id = str(
+        actor.get("actor_id") or actor.get("participant_id") or actor.get("id") or ""
+    )
+    actor_role = str(actor.get("role") or "")
+    granted_roles = sorted(
+        {
+            actor_role,
+            *(str(item) for item in actor.get("authority_roles", []) if item),
+        }
+        - {""}
+    )
+    authority_verbs = sorted(
+        {str(item) for item in actor.get("authority_verbs", []) if item}
+    )
+    declared_effective_from = (
+        actor.get("effective_from") or actor.get("effective_date")
+    )
+    declared_known_at = actor.get("known_at")
+    identity = {
+        "actor_id": actor_id,
+        "actor_role": actor_role,
+        "granted_roles": granted_roles,
+        "authority_verbs": authority_verbs,
+        "effective_from": declared_effective_from or attested_at,
+        "effective_to": actor.get("effective_to") or actor.get("expires_at"),
+        "known_at": declared_known_at or attested_at,
+    }
+    assignment_identity = {
+        "actor_id": actor_id,
+        "actor_role": actor_role,
+        "granted_roles": granted_roles,
+        "authority_verbs": authority_verbs,
+        "declared_effective_from": declared_effective_from,
+        "declared_effective_to": actor.get("effective_to")
+        or actor.get("expires_at"),
+        "declared_known_at": declared_known_at,
+        "assignment_version": str(
+            actor.get("authority_assignment_version") or actor.get("version") or "1"
+        ),
+    }
+    assignment_id = str(
+        actor.get("authority_assignment_id")
+        or actor.get("assignment_id")
+        or "ASSIGN-"
+        + _authority_content_hash(assignment_identity).removeprefix("sha256:")[:20].upper()
+    )
+    return {
+        "assignment_id": assignment_id,
+        "assignment_version": str(
+            actor.get("authority_assignment_version") or actor.get("version") or "1"
+        ),
+        **identity,
+        "assignment_status": str(
+            actor.get("authority_status")
+            or ("ACTIVE" if actor.get("active", True) else "INACTIVE")
+        ),
+        "revoked_effective_at": actor.get("revoked_effective_at"),
+        "revocation_known_at": actor.get("revocation_known_at"),
+        "temporal_basis": (
+            "DECLARED_ASSIGNMENT"
+            if declared_effective_from and declared_known_at
+            else "ATTESTATION_TIME_FALLBACK"
+        ),
+        "captured_at": attested_at,
+    }
+
+
+def _validate_authority_assignment_snapshot(
+    record: dict[str, Any], required_role: str, authority_verb: str
+) -> None:
+    snapshot = record.get("authority_assignment")
+    if not isinstance(snapshot, dict):
+        raise HTTPException(409, "Authority assignment snapshot is missing")
+    if record.get("authority_assignment_hash") != _authority_content_hash(snapshot):
+        raise HTTPException(409, "Authority assignment snapshot hash mismatch")
+    if (
+        not isinstance(snapshot.get("assignment_id"), str)
+        or not snapshot.get("assignment_id")
+        or not isinstance(snapshot.get("assignment_version"), str)
+        or not snapshot.get("assignment_version")
+        or snapshot.get("captured_at") != record.get("timestamp")
+        or snapshot.get("temporal_basis")
+        not in {"DECLARED_ASSIGNMENT", "ATTESTATION_TIME_FALLBACK"}
+    ):
+        raise HTTPException(409, "Authority assignment snapshot identity is malformed")
+    if (
+        snapshot.get("actor_id") != record.get("actor_id")
+        or snapshot.get("actor_role") != record.get("actor_role")
+    ):
+        raise HTTPException(409, "Authority assignment snapshot actor mismatch")
+    if snapshot.get("assignment_status") != "ACTIVE":
+        raise HTTPException(403, "Authority assignment was not active at attestation")
+    if not isinstance(snapshot.get("granted_roles"), list) or required_role not in {
+        str(item) for item in snapshot.get("granted_roles", [])
+    }:
+        raise HTTPException(403, f"Snapshot lacks required authority role: {required_role}")
+    if not isinstance(snapshot.get("authority_verbs"), list) or authority_verb not in {
+        str(item) for item in snapshot.get("authority_verbs", [])
+    }:
+        raise HTTPException(403, f"Snapshot lacks required authority verb: {authority_verb}")
+
+    attested_at = _authority_parse_instant(record.get("timestamp"))
+    effective_from = _authority_parse_instant(snapshot.get("effective_from"))
+    effective_to = _authority_parse_instant(snapshot.get("effective_to"))
+    known_at = _authority_parse_instant(snapshot.get("known_at"))
+    if not attested_at or not effective_from or not known_at:
+        raise HTTPException(409, "Authority assignment temporal scope is malformed")
+    if snapshot.get("effective_to") and not effective_to:
+        raise HTTPException(409, "Authority assignment expiry is malformed")
+    if effective_from > attested_at or known_at > attested_at:
+        raise HTTPException(403, "Authority assignment was not valid and known at attestation")
+    if effective_to and attested_at > effective_to:
+        raise HTTPException(403, "Authority assignment had expired before attestation")
+    revoked_effective_at = _authority_parse_instant(
+        snapshot.get("revoked_effective_at")
+    )
+    revocation_known_at = _authority_parse_instant(snapshot.get("revocation_known_at"))
+    if bool(snapshot.get("revoked_effective_at")) != bool(
+        snapshot.get("revocation_known_at")
+    ) or (snapshot.get("revoked_effective_at") and not revoked_effective_at) or (
+        snapshot.get("revocation_known_at") and not revocation_known_at
+    ):
+        raise HTTPException(409, "Authority assignment revocation scope is malformed")
+    if (
+        revoked_effective_at
+        and revocation_known_at
+        and revoked_effective_at <= attested_at
+        and revocation_known_at <= attested_at
+    ):
+        raise HTTPException(403, "Authority assignment was revoked before attestation")
+
+
+def _validate_authority_authentication_snapshot(record: dict[str, Any]) -> None:
+    snapshot = record.get("authentication_context")
+    if not isinstance(snapshot, dict):
+        raise HTTPException(409, "Authority authentication context is missing")
+    if record.get("authentication_context_hash") != _authority_content_hash(snapshot):
+        raise HTTPException(409, "Authority authentication context hash mismatch")
+    required = {
+        "principal_id",
+        "case_id",
+        "authentication_method",
+        "session_id_hash",
+        "session_issued_at",
+        "session_expires_at",
+        "authenticated_at",
+    }
+    if any(key not in snapshot for key in required):
+        raise HTTPException(409, "Authority authentication context is malformed")
+    if (
+        snapshot.get("principal_id") != record.get("actor_id")
+        or snapshot.get("case_id") != record.get("case_id")
+        or snapshot.get("authentication_method")
+        not in {"SERVER_ISSUED_SESSION", "SYNTHETIC_SERVER_SESSION"}
+        or not re.fullmatch(
+            r"sha256:[0-9a-f]{64}", str(snapshot.get("session_id_hash") or "")
+        )
+        or snapshot.get("authenticated_at") != record.get("timestamp")
+    ):
+        raise HTTPException(409, "Authority authentication identity is malformed")
+    issued_at = _authority_parse_instant(snapshot.get("session_issued_at"))
+    expires_at = _authority_parse_instant(snapshot.get("session_expires_at"))
+    authenticated_at = _authority_parse_instant(snapshot.get("authenticated_at"))
+    if not issued_at or not expires_at or not authenticated_at:
+        raise HTTPException(409, "Authority authentication timing is malformed")
+    if issued_at > authenticated_at or authenticated_at > expires_at:
+        raise HTTPException(
+            409, "Authority act falls outside its authenticated session interval"
+        )
+
+
+def _authority_ledger_connect() -> sqlite3.Connection:
+    path = _authority_ledger_path()
+    path.parent.mkdir(parents=True, exist_ok=True)
+    connection = sqlite3.connect(path, timeout=5.0)
+    connection.execute("PRAGMA busy_timeout = 5000")
+    connection.execute("PRAGMA synchronous = FULL")
+    connection.execute(
+        """
+        CREATE TABLE IF NOT EXISTS authority_records (
+            ledger_sequence INTEGER PRIMARY KEY,
+            authority_record_id TEXT NOT NULL UNIQUE,
+            run_id TEXT NOT NULL,
+            candidate_state_id TEXT NOT NULL,
+            human_stop_id TEXT NOT NULL,
+            previous_record_hash TEXT,
+            record_hash TEXT NOT NULL UNIQUE,
+            record_json TEXT NOT NULL,
+            recorded_at TEXT NOT NULL
+        )
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS authority_records_no_update
+        BEFORE UPDATE ON authority_records
+        BEGIN
+            SELECT RAISE(ABORT, 'authority ledger is append-only');
+        END
+        """
+    )
+    connection.execute(
+        """
+        CREATE TRIGGER IF NOT EXISTS authority_records_no_delete
+        BEFORE DELETE ON authority_records
+        BEGIN
+            SELECT RAISE(ABORT, 'authority ledger is append-only');
+        END
+        """
+    )
+    connection.commit()
+    try:
+        os.chmod(path, 0o600)
+    except OSError:
+        pass
+    return connection
+
+
+def _authority_ledger_records(*, run_id: str | None = None) -> list[dict[str, Any]]:
+    if not _authority_ledger_path().exists():
+        return []
+    connection: sqlite3.Connection | None = None
+    try:
+        connection = _authority_ledger_connect()
+        rows = connection.execute(
+            """
+            SELECT ledger_sequence, previous_record_hash, record_hash, record_json
+            FROM authority_records
+            ORDER BY ledger_sequence
+            """
+        ).fetchall()
+    except sqlite3.DatabaseError as exc:
+        raise HTTPException(409, "Authority ledger cannot be read") from exc
+    finally:
+        if connection is not None:
+            connection.close()
+
+    expected_previous: str | None = None
+    records: list[dict[str, Any]] = []
+    for expected_sequence, row in enumerate(rows, start=1):
+        sequence, previous_hash, stored_hash, encoded = row
+        if sequence != expected_sequence or previous_hash != expected_previous:
+            raise HTTPException(409, "Authority ledger hash chain is discontinuous")
+        try:
+            record = json.loads(encoded)
+        except json.JSONDecodeError as exc:
+            raise HTTPException(409, "Authority ledger record is malformed") from exc
+        if (
+            record.get("ledger_id") != _AUTHORITY_LEDGER_ID
+            or record.get("ledger_sequence") != sequence
+            or record.get("previous_record_hash") != previous_hash
+            or record.get("record_hash") != stored_hash
+        ):
+            raise HTTPException(409, "Authority ledger row does not match its record")
+        _verify_authority_record_signature(record)
+        expected_previous = stored_hash
+        if run_id is None or record.get("run_id") == run_id:
+            records.append(record)
+    return records
+
+
+def _authority_ledger_record(record_id: str) -> dict[str, Any] | None:
+    return next(
+        (
+            record
+            for record in _authority_ledger_records()
+            if record.get("authority_record_id") == record_id
+        ),
+        None,
+    )
+
+
+def _append_authority_ledger_record(record: dict[str, Any]) -> dict[str, Any]:
+    try:
+        connection = _authority_ledger_connect()
+        connection.execute("BEGIN IMMEDIATE")
+        existing = connection.execute(
+            "SELECT record_json FROM authority_records WHERE authority_record_id = ?",
+            (record["authority_record_id"],),
+        ).fetchone()
+        if existing:
+            connection.rollback()
+            persisted = json.loads(existing[0])
+            _verify_authority_record_signature(persisted)
+            return persisted
+        last = connection.execute(
+            "SELECT ledger_sequence, record_hash FROM authority_records ORDER BY ledger_sequence DESC LIMIT 1"
+        ).fetchone()
+        sequence = int(last[0]) + 1 if last else 1
+        previous_hash = str(last[1]) if last else None
+        ledger_record = {
+            **copy.deepcopy(record),
+            "ledger_id": _AUTHORITY_LEDGER_ID,
+            "ledger_sequence": sequence,
+            "previous_record_hash": previous_hash,
+        }
+        ledger_record = _sign_authority_record(ledger_record)
+        connection.execute(
+            """
+            INSERT INTO authority_records (
+                ledger_sequence,
+                authority_record_id,
+                run_id,
+                candidate_state_id,
+                human_stop_id,
+                previous_record_hash,
+                record_hash,
+                record_json,
+                recorded_at
+            ) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            """,
+            (
+                sequence,
+                ledger_record["authority_record_id"],
+                ledger_record["run_id"],
+                ledger_record["candidate_state_id"],
+                ledger_record["human_stop_id"],
+                previous_hash,
+                ledger_record["record_hash"],
+                json.dumps(
+                    ledger_record,
+                    sort_keys=True,
+                    separators=(",", ":"),
+                    ensure_ascii=False,
+                ),
+                ledger_record["known_at"],
+            ),
+        )
+        connection.commit()
+        return ledger_record
+    except (KeyError, sqlite3.DatabaseError, OSError) as exc:
+        try:
+            connection.rollback()
+        except (NameError, sqlite3.DatabaseError):
+            pass
+        raise HTTPException(503, "Authority ledger append failed; retry is safe") from exc
+    finally:
+        try:
+            connection.close()
+        except NameError:
+            pass
+
+
+def _authority_record_index(run: dict[str, Any]) -> dict[str, dict[str, Any]]:
+    raw_records = run.get("authority_records", [])
+    if not isinstance(raw_records, list):
+        raise HTTPException(409, "Authority-record registry is malformed")
+    records: dict[str, dict[str, Any]] = {}
+    for record in raw_records:
+        if not isinstance(record, dict):
+            raise HTTPException(409, "Authority-record registry is malformed")
+        record_id = record.get("authority_record_id")
+        if not isinstance(record_id, str) or not record_id:
+            raise HTTPException(409, "Authority-record registry is malformed")
+        if record_id in records:
+            raise HTTPException(409, "Authority-record registry contains duplicate IDs")
+        records[record_id] = record
+    return records
+
+
+def _authority_records_with_ledger(
+    run: dict[str, Any],
+) -> tuple[list[dict[str, Any]], bool]:
+    records = _authority_record_index(run)
+    recovered = False
+    for ledger_record in _authority_ledger_records(
+        run_id=str(run.get("run_id") or "")
+    ):
+        record_id = str(ledger_record.get("authority_record_id") or "")
+        embedded = records.get(record_id)
+        if embedded is not None and embedded != ledger_record:
+            raise HTTPException(
+                409, "Run authority record conflicts with the immutable ledger"
+            )
+        if embedded is None:
+            run.setdefault("authority_records", []).append(ledger_record)
+            records[record_id] = ledger_record
+            recovered = True
+    return list(records.values()), recovered
+
+
+def _authority_record_binding(
+    run: dict[str, Any], human_stop: dict[str, Any]
+) -> dict[str, Any]:
+    transition_output = run.get("transition_output", {})
+    authority_resolution = transition_output.get("authority_resolution", {})
+    if not isinstance(authority_resolution, dict):
+        authority_resolution = {}
+    return {
+        "human_stop_hash": _graph_content_hash(human_stop),
+        "policy_refs_hash": _graph_content_hash(
+            transition_output.get("policy_refs", {})
+        ),
+        "authority_resolution_hash": _graph_content_hash(authority_resolution),
+        "policy_rule_id": human_stop.get("policy_rule_id"),
+        "authority_resolution_rule_id": authority_resolution.get(
+            "selected_rule_id"
+        ),
+    }
+
+
+def _authority_record_id(
+    run: dict[str, Any],
+    human_stop: dict[str, Any],
+    actor_id: str,
+    course_id: str,
+    authority_assignment_ref: str,
+) -> str:
+    identity = {
+        "case_id": run.get("case_id"),
+        "run_id": run.get("run_id"),
+        "candidate_state_id": run.get("candidate_state_id"),
+        "human_stop_id": human_stop.get("stop_id"),
+        "actor_id": actor_id,
+        "course_id": course_id,
+        "prepared_selection_hash": run.get("prepared_selection_hash"),
+        "authority_assignment_ref": authority_assignment_ref,
+        **_authority_record_binding(run, human_stop),
+    }
+    digest = _graph_content_hash(identity).removeprefix("sha256:")[:12].upper()
+    return "AUTH-" + digest
+
+
+def _validate_authority_record_scope(
+    run: dict[str, Any],
+    record: dict[str, Any],
+    *,
+    for_settlement: bool,
+    require_ledger: bool = True,
+) -> dict[str, Any]:
+    transition_output = run.get("transition_output", {})
+    prepared_selection_hash = run.get("prepared_selection_hash")
+    if not isinstance(prepared_selection_hash, str) or not prepared_selection_hash:
+        raise HTTPException(
+            409, "Authority act requires a durably prepared selection hash"
+        )
+    declared_stops = {
+        str(item.get("stop_id")): _frontend_human_stop(item)
+        for item in transition_output.get("human_stops", [])
+        if isinstance(item, dict) and item.get("stop_id")
+    }
+    human_stop_id = str(record.get("human_stop_id") or "")
+    human_stop = declared_stops.get(human_stop_id)
+    if human_stop is None:
+        raise HTTPException(409, "Authority record references an unknown Human Stop")
+    if human_stop.get("attestable") is not True:
+        raise HTTPException(
+            409,
+            "Human Stop requires correction or replay and cannot be authority-attested",
+        )
+
+    required_role = str(
+        human_stop.get("required_role")
+        or human_stop.get("required_authority_level")
+        or "PROFESSIONAL_REVIEWER"
+    )
+    authority_verb = str(
+        human_stop.get("authority_verb") or "RESOLVE_HUMAN_STOP"
+    )
+    required_scope = {
+        "case_id": run.get("case_id"),
+        "run_id": run.get("run_id"),
+        "candidate_state_id": run.get("candidate_state_id"),
+        "human_stop_id": human_stop_id,
+        "artifact_hash": transition_output.get("replay_hash"),
+        "prepared_selection_hash": prepared_selection_hash,
+        "authority_record_version": _AUTHORITY_RECORD_VERSION,
+        "required_role": required_role,
+        "authority_verb": authority_verb,
+        "status": "ATTESTED",
+        **_authority_record_binding(run, human_stop),
+    }
+    if any(record.get(key) != value for key, value in required_scope.items()):
+        raise HTTPException(
+            409, "Authority record is not scoped to the prepared Candidate policy"
+        )
+    _validate_authority_assignment_snapshot(record, required_role, authority_verb)
+    _validate_authority_authentication_snapshot(record)
+    _verify_authority_record_signature(record)
+    if require_ledger:
+        ledger_record = _authority_ledger_record(
+            str(record.get("authority_record_id") or "")
+        )
+        if ledger_record is None or ledger_record != record:
+            raise HTTPException(
+                409, "Authority record is not the immutable ledger entry"
+            )
+
+    actor_id = str(record.get("actor_id") or "")
+    course_id = str(record.get("course_id") or "")
+    if record.get("authority_record_id") != _authority_record_id(
+        run,
+        human_stop,
+        actor_id,
+        course_id,
+        str(record.get("authority_assignment", {}).get("assignment_id") or "")
+        + "@"
+        + str(record.get("authority_assignment", {}).get("assignment_version") or ""),
+    ):
+        raise HTTPException(409, "Authority record identity does not match its scope")
+    distinct_from = str(human_stop.get("required_actor_distinct_from") or "")
+    if distinct_from and actor_id == distinct_from:
+        raise HTTPException(409, "Human Stop requires an independent authority actor")
+
+    course, _ = _execution_course(str(run.get("case_id") or ""), course_id)
+    if not course:
+        raise HTTPException(409, "Authority record course is no longer admissible")
+    effect_type = str(course.get("effect_type") or "")
+    if effect_type not in {"EXTERNAL_PACKAGE", "INTERNAL", "DEFER"}:
+        raise HTTPException(409, f"Unsupported course effect_type: {effect_type}")
+    if record.get("effect_type") != effect_type:
+        raise HTTPException(409, "Authority record course effect was modified")
+    if for_settlement and effect_type == "DEFER":
+        raise HTTPException(409, "A DEFER authority record cannot settle Candidate scope")
+    return human_stop
+
+
 def _package_payload_hash(package: dict) -> str:
     mutable = {"status", "ack_id", "acknowledged_at", "failed_at"}
     payload = {key: value for key, value in package.items() if key not in mutable | {"artifact_hash"}}
@@ -325,10 +1432,18 @@ def _build_execution_package(run_id: str, authority_record: dict) -> dict:
         raise HTTPException(409, "Run must be PREPARED before package creation")
     if authority_record.get("run_id") != run_id:
         raise HTTPException(409, "Authority record belongs to another run")
+    registered = _authority_record_index(run).get(
+        str(authority_record.get("authority_record_id") or "")
+    )
+    if registered is None or registered != authority_record:
+        raise HTTPException(409, "Authority record is not the registered immutable act")
     if authority_record.get("candidate_state_id") != run.get("candidate_state_id"):
         raise HTTPException(409, "Authority record belongs to another Candidate")
     if authority_record.get("status") != "ATTESTED":
         raise HTTPException(409, "Execution package requires an ATTESTED authority record")
+    _validate_authority_record_scope(
+        run, authority_record, for_settlement=False
+    )
     if authority_record.get("effect_type") != "EXTERNAL_PACKAGE":
         raise HTTPException(409, "Attested course does not require an execution package")
 
@@ -485,6 +1600,16 @@ def _load_durable_registries() -> None:
         _batches.update(_read_registry(INGEST_BATCHES_LOG, "batches"))
         _runs.clear()
         _runs.update(_read_registry(RUNS_LOG, "runs"))
+        for run in _runs.values():
+            try:
+                _authority_records_with_ledger(run)
+            except HTTPException as exc:
+                run["authority_ledger_error"] = str(exc.detail)
+                logger.error(
+                    "Authority ledger recovery failed for run %s: %s",
+                    run.get("run_id"),
+                    exc.detail,
+                )
 
 
 _load_durable_registries()
@@ -2096,6 +3221,23 @@ def _frontend_human_stop(stop: dict[str, Any]) -> dict[str, Any]:
         "required_authority_level",
         str(stop.get("required_role") or "PROFESSIONAL_REVIEWER"),
     )
+    reason_code = str(result.get("reason_code") or "")
+    required_role = str(result.get("required_role") or "")
+    attestable = bool(
+        stop.get("attestable") is not False
+        and required_role != "PREPARER"
+        and reason_code not in _NON_ATTESTABLE_HUMAN_STOP_REASONS
+    )
+    result["attestable"] = attestable
+    if reason_code == "NON_WAIVABLE_AXIOM":
+        resolution_kind = "NON_WAIVABLE_BLOCK"
+    elif reason_code == "AUTHORITY_POLICY_UNRESOLVED":
+        resolution_kind = "POLICY_CORRECTION"
+    elif attestable:
+        resolution_kind = "AUTHORITY_ATTESTATION"
+    else:
+        resolution_kind = "INPUT_OR_MODEL_CORRECTION"
+    result["resolution_kind"] = resolution_kind
     result.setdefault("downstream_scope", [])
     return result
 
@@ -2268,6 +3410,22 @@ def _normalise_selected_change_ids(value: Any) -> list[str]:
         seen.add(change_id)
         selected.append(change_id)
     return selected
+
+
+def _normalise_reference_ids(value: Any, field: str) -> list[str]:
+    if not isinstance(value, list):
+        raise HTTPException(400, f"{field} must be an array")
+    normalized: list[str] = []
+    seen: set[str] = set()
+    for raw in value:
+        if not isinstance(raw, str) or not raw.strip():
+            raise HTTPException(400, f"{field} must contain non-empty strings")
+        reference_id = raw.strip()
+        if reference_id in seen:
+            raise HTTPException(409, f"Duplicate {field} entry: {reference_id}")
+        seen.add(reference_id)
+        normalized.append(reference_id)
+    return normalized
 
 
 def _change_set_index(run: dict[str, Any]) -> dict[str, dict[str, Any]]:
@@ -2589,6 +3747,138 @@ def _current_graph_as_of(
     snapshot = _load_graph_version(case_id, str(metadata["version_id"]))
     graph = snapshot.get("graph") if isinstance(snapshot, dict) else None
     return (copy.deepcopy(graph), metadata) if isinstance(graph, dict) else ({}, metadata)
+
+
+def _journal_cutoff(value: str | None, *, end_of_day: bool = False) -> dt.datetime | None:
+    """Parse one journal boundary and reject invalid temporal requests."""
+
+    if value is None or not str(value).strip():
+        return None
+    raw = str(value).strip()
+    if end_of_day and re.fullmatch(r"\d{4}-\d{2}-\d{2}", raw):
+        raw += "T23:59:59.999999Z"
+    parsed = _parse_temporal_instant(raw)
+    if parsed is None:
+        raise HTTPException(400, f"Invalid ISO temporal value: {value}")
+    return parsed
+
+
+def _journal_graph_inputs(
+    case_id: str,
+    *,
+    since: str | None,
+    until: str | None,
+    as_of_date: str | None,
+    baseline_state_id: str | None,
+    current_state_id: str | None,
+    close_state_id: str | None,
+) -> dict[str, Any]:
+    """Resolve the immutable snapshots used for delta, as-of and drift views."""
+
+    versions = [
+        item for item in _list_graph_versions(case_id)
+        if str(item.get("kind") or "").upper() == "CURRENT"
+    ]
+    versions.sort(
+        key=lambda item: (
+            _parse_temporal_instant(item.get("known_at"))
+            or dt.datetime.min.replace(tzinfo=dt.timezone.utc),
+            str(item.get("version_id") or ""),
+        )
+    )
+
+    def explicit(version_id: str | None) -> dict[str, Any] | None:
+        if not version_id:
+            return None
+        snapshot = _load_graph_version(case_id, version_id)
+        if str(snapshot.get("kind") or "").upper() != "CURRENT":
+            raise HTTPException(
+                409,
+                f"Journal state selection requires a CURRENT graph version: {version_id}",
+            )
+        return snapshot
+
+    def latest_at(cutoff: dt.datetime | None) -> dict[str, Any] | None:
+        eligible = versions if cutoff is None else [
+            item for item in versions if _known_by(item, cutoff)
+        ]
+        return explicit(str(eligible[-1]["version_id"])) if eligible else None
+
+    current = explicit(current_state_id)
+    if current is None:
+        current = latest_at(
+            _journal_cutoff(as_of_date or until, end_of_day=True)
+        )
+    if current is None:
+        # New deployments may predate graph-version archiving. Their mutable
+        # Current is still useful as the present endpoint, but it must be
+        # labelled as an operational fallback rather than immutable history.
+        graph = _load_json_safe(_pipeline_out_for_case(case_id) / "current_graph.json")
+        if isinstance(graph, dict) and graph:
+            known_at = dt.datetime.now(dt.timezone.utc).isoformat()
+            current = {
+                "schema_version": "graph-version/operational-fallback",
+                "version_id": _current_state_id(case_id),
+                "state_id": _current_state_id(case_id),
+                "case_id": case_id,
+                "kind": "CURRENT",
+                "known_at": known_at,
+                "effective_date": str(graph.get("canonical_as_of") or known_at[:10]),
+                "graph_hash": _graph_content_hash(graph),
+                "graph": graph,
+            }
+
+    baseline = explicit(baseline_state_id)
+    if baseline is None and since:
+        baseline = latest_at(_journal_cutoff(since, end_of_day=False))
+    if baseline is None and current is not None:
+        current_version_id = str(current.get("version_id") or "")
+        prior = [
+            item for item in versions
+            if str(item.get("version_id") or "") != current_version_id
+            and (
+                _parse_temporal_instant(item.get("known_at"))
+                or dt.datetime.min.replace(tzinfo=dt.timezone.utc)
+            ) <= (
+                _parse_temporal_instant(current.get("known_at"))
+                or dt.datetime.max.replace(tzinfo=dt.timezone.utc)
+            )
+        ]
+        baseline = explicit(str(prior[-1]["version_id"])) if prior else None
+
+    close = explicit(close_state_id)
+
+    current_known_at = _parse_temporal_instant((current or {}).get("known_at"))
+    for role, snapshot in (("baseline", baseline), ("close", close)):
+        selected_known_at = _parse_temporal_instant((snapshot or {}).get("known_at"))
+        if (
+            current_known_at is not None
+            and selected_known_at is not None
+            and selected_known_at > current_known_at
+        ):
+            raise HTTPException(
+                409,
+                f"Journal {role} state cannot be known after the selected Current state",
+            )
+
+    def split(snapshot: dict[str, Any] | None) -> tuple[dict[str, Any], dict[str, Any]]:
+        if snapshot is None:
+            return {}, {}
+        graph = snapshot.get("graph")
+        metadata = {key: value for key, value in snapshot.items() if key != "graph"}
+        return (copy.deepcopy(graph), metadata) if isinstance(graph, dict) else ({}, metadata)
+
+    baseline_graph, baseline_metadata = split(baseline)
+    current_graph, current_metadata = split(current)
+    close_graph, close_metadata = split(close)
+    return {
+        "baseline_graph": baseline_graph,
+        "baseline_metadata": baseline_metadata,
+        "current_graph": current_graph,
+        "current_metadata": current_metadata,
+        "close_graph": close_graph if close is not None else None,
+        "close_metadata": close_metadata,
+    }
 
 
 def _graph_collection_delta(
@@ -3290,11 +4580,22 @@ def _load_projection_events(case_id: str) -> dict[str, dict]:
         event_id = str(fm.get("id") or fm.get("event_id") or "")
         if not event_id:
             continue
-        known_at = str(fm.get("known_at") or fm.get("timestamp") or _now_iso())
+        file_recorded_at = dt.datetime.fromtimestamp(
+            md.stat().st_mtime, tz=dt.timezone.utc
+        ).isoformat().replace("+00:00", "Z")
+        # File mtime is a stable last-resort recording time. Using _now_iso()
+        # here made an old event appear newly known every time it was read.
+        known_at = str(
+            fm.get("known_at") or fm.get("timestamp") or file_recorded_at
+        )
         if len(known_at) == 8 and known_at.isdigit():
             known_at = f"{known_at[:4]}-{known_at[4:6]}-{known_at[6:]}T00:00:00Z"
         events[event_id] = {
             "event_id": event_id, "id": event_id,
+            "source_event_id": (
+                fm.get("event_id") if str(fm.get("event_id") or "") != event_id else None
+            ),
+            "case_id": case_id,
             "type": fm.get("type", "institutional_event"),
             "kind": fm.get("kind", fm.get("type", "institutional_event")),
             "label": fm.get("label") or f"{fm.get('type', 'Event').replace('_', ' ').title()}: {fm.get('source', event_id)}",
@@ -3302,16 +4603,158 @@ def _load_projection_events(case_id: str) -> dict[str, dict]:
             "source_id": fm.get("source_id", fm.get("source", "")),
             "source_version_id": fm.get("proposal_id", fm.get("source", "")),
             "source_passage": fm.get("detail", "Evidence admitted after professional review."),
+            "detail": fm.get("detail", "Evidence admitted after professional review."),
             "locator": fm.get("locator", ""), "definition": fm.get("definition_id", ""),
             "period": fm.get("period", ""), "perimeter": fm.get("perimeter", ""),
             "effective_date": str(fm.get("effective_date") or known_at[:10]),
-            "known_at": known_at, "proposed_treatment": fm.get("proposed_treatment", "Run dynamics against the admitted semantic Current."),
+            "known_at": known_at,
+            "recorded_at": str(fm.get("recorded_at") or file_recorded_at),
+            "proposed_treatment": fm.get("proposed_treatment", "Run dynamics against the admitted semantic Current."),
             "proposed_position": fm.get("proposed_position", "Run dynamics against the admitted semantic Current."),
             "source_state_id": fm.get("source_state_id", fm.get("prior_state_id")),
             "result_state_id": fm.get("result_state_id", fm.get("current_state_id")),
             "run_id": fm.get("run_id"),
-            "actor": fm.get("actor"),
+            "actor": fm.get("actor") or fm.get("actor_id") or fm.get("written-by"),
+            "actor_id": fm.get("actor_id") or fm.get("actor"),
+            "object_id": fm.get("object_id"),
+            "object_ids": fm.get("object_ids") or fm.get("settled-object-ids") or [],
+            "workstream": fm.get("workstream"),
+            "workstream_ids": fm.get("workstream_ids") or [],
+            "settles": fm.get("settles"),
+            "selected_change_ids": fm.get("selected-change-ids") or [],
+            "provenance": fm.get("written-by") or "vault-event",
         }
+    return events
+
+
+def _load_journal_vault_events(case_id: str) -> list[dict[str, Any]]:
+    """Collect immutable case acts beyond the change-arrival event directory."""
+
+    collected = list(_load_projection_events(case_id).values())
+    case_dir = _case_vault_dir(case_id)
+    categories = {
+        "decisions": "DECISION",
+        "notes": "ANNOTATION",
+        "compiler_reviews": "ANNOTATION",
+        "work_drafts": "EXECUTION",
+        "mission_runs": "EXECUTION",
+    }
+    seen = {str(item.get("event_id") or item.get("id")) for item in collected}
+    for directory, default_kind in categories.items():
+        source_dir = case_dir / directory
+        if not source_dir.exists():
+            continue
+        for path in sorted(source_dir.glob("*.md")):
+            fm = _read_frontmatter(path)
+            raw_id = (
+                fm.get("event_id")
+                or fm.get("id")
+                or fm.get("note_id")
+                or fm.get("review_id")
+                or fm.get("draft_id")
+                or fm.get("mission_run_id")
+                or path.stem
+            )
+            event_id = str(raw_id)
+            if event_id in seen:
+                event_id = f"{directory}:{event_id}"
+            seen.add(event_id)
+            file_recorded_at = dt.datetime.fromtimestamp(
+                path.stat().st_mtime, tz=dt.timezone.utc
+            ).isoformat().replace("+00:00", "Z")
+            known_at = str(
+                fm.get("known_at")
+                or fm.get("timestamp")
+                or fm.get("created_at")
+                or file_recorded_at
+            )
+            if re.fullmatch(r"\d{4}-\d{2}-\d{2}", known_at):
+                known_at += "T00:00:00Z"
+            decided_by = fm.get("decided-by") or fm.get("decided_by")
+            if isinstance(decided_by, list):
+                decided_by = decided_by[0] if decided_by else None
+            actor = (
+                fm.get("actor_id")
+                or fm.get("actor")
+                or fm.get("reviewed_by")
+                or fm.get("prepared_by")
+                or decided_by
+                or fm.get("written-by")
+            )
+            event_type = str(fm.get("type") or default_kind)
+            collected.append({
+                **fm,
+                "event_id": event_id,
+                "id": event_id,
+                "case_id": case_id,
+                "type": event_type,
+                "kind": fm.get("kind") or default_kind,
+                "label": (
+                    fm.get("label")
+                    or fm.get("title")
+                    or fm.get("commitment")
+                    or f"{event_type.replace('_', ' ').title()}: {raw_id}"
+                ),
+                "detail": (
+                    fm.get("detail")
+                    or fm.get("rationale")
+                    or fm.get("conditions")
+                or fm.get("objective")
+                or fm.get("text")
+                    or ""
+                ),
+                "actor_id": actor,
+                "actor": actor,
+                "effective_date": str(
+                    fm.get("effective_date") or fm.get("date") or known_at[:10]
+                )[:10],
+                "known_at": known_at,
+                "recorded_at": str(fm.get("recorded_at") or file_recorded_at),
+                "object_ids": (
+                    fm.get("object_ids")
+                    or fm.get("settled-object-ids")
+                    or [
+                        value for value in (
+                            fm.get("object_id"), fm.get("human_stop_id"),
+                            fm.get("work_item_id"), fm.get("mission_id"),
+                        ) if value
+                    ]
+                ),
+                "workstream_ids": fm.get("workstream_ids") or [],
+                "workstream": fm.get("workstream") or fm.get("question_id"),
+                "source_state_id": fm.get("source_state_id") or fm.get("prior_state_id"),
+                "result_state_id": fm.get("result_state_id") or fm.get("current_state_id"),
+                "provenance": f"vault/{directory}/{path.name}",
+            })
+    return collected
+
+
+def _load_journal_authority_events(case_id: str) -> list[dict[str, Any]]:
+    """Project verified append-only authority records into the case timeline."""
+
+    events = []
+    for record in _authority_ledger_records():
+        if str(record.get("case_id") or "") != case_id:
+            continue
+        events.append({
+            **record,
+            "event_id": record.get("authority_record_id"),
+            "event": "AUTHORITY_ATTESTED",
+            "type": "authority",
+            "kind": "AUTHORITY",
+            "label": f"Authority attested: {record.get('course_id') or record.get('authority_verb')}",
+            "detail": (
+                f"{record.get('actor_id')} exercised {record.get('authority_verb')} "
+                f"for Human Stop {record.get('human_stop_id')}."
+            ),
+            "recorded_at": record.get("recorded_at") or record.get("known_at"),
+            "object_ids": [
+                value for value in (
+                    record.get("human_stop_id"), record.get("candidate_state_id")
+                ) if value
+            ],
+            "state_after": record.get("candidate_state_id"),
+        })
     return events
 
 
@@ -4076,12 +5519,21 @@ def bootstrap_flat(case_id: str | None = None, actor: str | None = None) -> dict
     profile = _load_profile(cid)
     today = _today()
     state_id = _current_state_id(cid)
-    session_id = f"SES-{uuid.uuid4().hex[:8].upper()}"
+    context = _make_context(cid, state_id, today)
+    session_id, principal = _issue_authenticated_session(
+        cid,
+        str(context.get("authenticated_actor", {}).get("actor_id") or ""),
+    )
+    context["authentication"] = {
+        key: value
+        for key, value in principal.items()
+        if key != "session_id_hash"
+    }
     return {
         "session_id": session_id,
         "available_cases": available_cases,
         "cases": available_cases,
-        "context": _make_context(cid, state_id, today),
+        "context": context,
         "action_capabilities": _action_capability_manifest(),
     }
 
@@ -4094,13 +5546,22 @@ def bootstrap(case_id: str) -> dict:
     profile = _load_profile(case_id)
     today = _today()
     state_id = _current_state_id(case_id)
-    session_id = f"SES-{uuid.uuid4().hex[:8].upper()}"
+    context = _make_context(case_id, state_id, today)
+    session_id, principal = _issue_authenticated_session(
+        case_id,
+        str(context.get("authenticated_actor", {}).get("actor_id") or ""),
+    )
+    context["authentication"] = {
+        key: value
+        for key, value in principal.items()
+        if key != "session_id_hash"
+    }
     available_cases = _available_case_ids()
     return {
         "session_id": session_id,
         "available_cases": available_cases,
         "cases": available_cases,
-        "context": _make_context(case_id, state_id, today),
+        "context": context,
         "action_capabilities": _action_capability_manifest(),
         "entity": profile.get("entity", case_id),
         "deal_profile": profile,
@@ -4147,8 +5608,57 @@ def projection(
     return {
         "projection": proj,
         "context": _make_context(case_id, state_id, as_of_date or today),
-        "registry": [],
+        "registry": list(_load_projection_events(case_id).values()),
     }
+
+
+@v20.get("/cases/{case_id}/journal")
+def get_case_journal(
+    case_id: str,
+    since: str | None = None,
+    until: str | None = None,
+    as_of_date: str | None = None,
+    workstream: str | None = None,
+    kind: str | None = None,
+    baseline_state_id: str | None = None,
+    current_state_id: str | None = None,
+    close_state_id: str | None = None,
+) -> dict[str, Any]:
+    """Return the canonical case timeline and deterministic state deltas."""
+
+    graph_inputs = _journal_graph_inputs(
+        case_id,
+        since=since,
+        until=until,
+        as_of_date=as_of_date,
+        baseline_state_id=baseline_state_id,
+        current_state_id=current_state_id,
+        close_state_id=close_state_id,
+    )
+    try:
+        runtime_events = ledger_store.read_ledger(case_id)
+        vault_events = _load_journal_vault_events(case_id)
+        authority_events = _load_journal_authority_events(case_id)
+        return build_case_journal(
+            case_id,
+            runtime_events=runtime_events,
+            vault_events=vault_events,
+            authority_events=authority_events,
+            since=since,
+            until=until,
+            as_of=as_of_date,
+            workstream=workstream,
+            kind=kind,
+            **graph_inputs,
+        )
+    except ValueError as exc:
+        # Invalid filters are client errors. A broken hash chain is not: it is
+        # an institutional integrity conflict that must never be hidden behind
+        # a partially reconstructed Journal.
+        status = 409 if any(
+            marker in str(exc) for marker in ("ledger chain", "graph identity error")
+        ) else 400
+        raise HTTPException(status, str(exc)) from exc
 
 
 @v20.get("/cases/{case_id}/graph-versions")
@@ -4385,7 +5895,7 @@ def create_execution_package(run_id: str, payload: dict | None = None) -> dict:
         raise HTTPException(404, f"Run not found: {run_id}")
     payload = payload or {}
     record_id = str(payload.get("authority_record_id") or "")
-    records = run.get("authority_records", [])
+    records = list(_authority_record_index(run).values())
     record = next(
         (item for item in records if not record_id or item.get("authority_record_id") == record_id),
         None,
@@ -5735,6 +7245,13 @@ async def admit(
         "blocked_components": blocked,
         "coverage_limits": transition_output.get("coverage_limits", []),
         "invariant_checks": transition_output.get("invariant_checks", []),
+        "materiality_assessment": transition_output.get(
+            "materiality_assessment", {}
+        ),
+        "authority_resolution": transition_output.get(
+            "authority_resolution", {}
+        ),
+        "governance": transition_output.get("governance", {}),
         "candidate_current_approved_delta": transition_output.get("candidate_current_approved_delta", {}),
         "partial_settlement_status": transition_output.get("partial_settlement_status", {}),
         "replay_hash": transition_output.get("replay_hash", "sha256:live"),
@@ -5796,14 +7313,15 @@ async def settle_run(
                 context = _make_context(
                     run["case_id"], response["current_state_id"], today
                 )
+                registry = list(_load_projection_events(run["case_id"]).values())
                 response.update(
                     projection={
                         "projection": _build_projection(run["case_id"]),
                         "context": context,
-                        "registry": [],
+                        "registry": registry,
                     },
                     context=context,
-                    registry=[],
+                    registry=registry,
                 )
                 return response
             if (
@@ -5925,32 +7443,25 @@ async def settle_run(
     if not selected_object_ids:
         raise HTTPException(409, "Prepared change set has no settleable object scope")
 
-    raw_record_ids = payload.get("authority_record_ids", [])
-    if not isinstance(raw_record_ids, list):
-        raise HTTPException(400, "authority_record_ids must be an array")
-    supplied_record_ids = [str(item) for item in raw_record_ids]
-    if len(supplied_record_ids) != len(set(supplied_record_ids)):
-        raise HTTPException(409, "Duplicate authority_record_id in settlement")
-    recorded = {
-        str(item["authority_record_id"]): item
-        for item in run.get("authority_records", [])
-        if isinstance(item, dict) and item.get("authority_record_id")
-    }
+    supplied_record_ids = _normalise_reference_ids(
+        payload.get("authority_record_ids", []), "authority_record_ids"
+    )
+    recorded = _authority_record_index(run)
     unknown_records = sorted(set(supplied_record_ids) - set(recorded))
     if unknown_records:
         raise HTTPException(409, "Settlement contains an unknown authority record")
     scoped_records = [recorded[record_id] for record_id in supplied_record_ids]
     for record in scoped_records:
-        if (
-            record.get("run_id") != run_id
-            or record.get("candidate_state_id") != run.get("candidate_state_id")
-            or record.get("status") != "ATTESTED"
-            or record.get("artifact_hash") != transition_output.get("replay_hash")
-            or record.get("prepared_selection_hash") != run.get("prepared_selection_hash")
-        ):
-            raise HTTPException(409, "Authority record is not scoped to this prepared Candidate")
-        if record.get("effect_type") == "DEFER":
-            raise HTTPException(409, "A DEFER authority record cannot settle Candidate scope")
+        _validate_authority_record_scope(run, record, for_settlement=True)
+    authority_actor_ids = sorted({
+        str(record.get("actor_id"))
+        for record in scoped_records
+        if record.get("actor_id")
+    })
+    # A settlement is either performed by the sole cryptographically verified
+    # authority actor or by PANTA's state machine. Never trust the actor string
+    # repeated in the settlement body as an audit identity.
+    actor = authority_actor_ids[0] if len(authority_actor_ids) == 1 else "PANTA_SYSTEM"
 
     all_stop_ids = {
         str(item.get("stop_id"))
@@ -5963,7 +7474,11 @@ async def settle_run(
         selected_object_ids,
     )
     if "human_stop_ids" in payload:
-        supplied_stop_ids = {str(item) for item in payload.get("human_stop_ids", [])}
+        supplied_stop_ids = set(
+            _normalise_reference_ids(
+                payload.get("human_stop_ids", []), "human_stop_ids"
+            )
+        )
         if supplied_stop_ids != required_stops:
             raise HTTPException(409, "Settlement Human Stop scope does not match the Candidate")
     covered_stops = {
@@ -5977,10 +7492,9 @@ async def settle_run(
             + ", ".join(missing),
         )
 
-    raw_package_ids = payload.get("execution_package_ids", [])
-    if not isinstance(raw_package_ids, list):
-        raise HTTPException(400, "execution_package_ids must be an array")
-    package_ids = [str(item) for item in raw_package_ids]
+    package_ids = _normalise_reference_ids(
+        payload.get("execution_package_ids", []), "execution_package_ids"
+    )
     _validate_execution_package_scope(run, scoped_records, package_ids)
 
     bundle_dir = Path(run.get("bundle_dir", _pipeline_out_for_case(case_id)))
@@ -6081,6 +7595,7 @@ async def settle_run(
                 ),
                 settlement_runtime_flags=settlement_runtime_flags,
                 pending_settlement=pending_settlement,
+                actor_id=actor,
             )
         except DynamicsBundleError as exc:
             with _registry_lock:
@@ -6112,7 +7627,6 @@ async def settle_run(
         archive_warning = str(exc)
         logger.exception("settled graph version archive failed for %s", run_id)
 
-    actor = str(payload.get("actor_id") or "partner-001")
     with _registry_lock:
         run["settled_state_id"] = new_state_id
         run["settled_graph_version"] = settled_graph_version
@@ -6140,6 +7654,7 @@ async def settle_run(
         "replay_hash": transition_output.get("replay_hash", "sha256:settled"),
         "decision": "accepted",
         "actor": actor,
+        "authority-actor-ids": authority_actor_ids,
         "timestamp": settled_known_at,
         "written-by": "v20-api",
     }
@@ -6156,6 +7671,7 @@ async def settle_run(
         audit_warning = str(exc)
         logger.exception("settlement audit event write failed for %s", run_id)
     background_tasks.add_task(_rebuild_index)
+    registry = list(_load_projection_events(case_id).values())
 
     context = _make_context(case_id, new_state_id, today)
     response = {
@@ -6184,7 +7700,7 @@ async def settle_run(
         "as_of_state_id": new_state_id,
         "as_of_date": today,
         "context": context,
-        "registry": [],
+        "registry": registry,
         "runtime_state_id": settled_state["state_id"],
         "graph_version": settled_graph_version,
     }
@@ -6203,7 +7719,7 @@ async def settle_run(
     response["projection"] = {
         "projection": updated_projection,
         "context": context,
-        "registry": [],
+        "registry": registry,
     }
     return response
 
@@ -6367,12 +7883,35 @@ async def prepare_run(run_id: str, payload: dict = {}) -> dict:
 
 
 @v20.post("/runs/{run_id}/authority/attest")
-async def attest(run_id: str, payload: dict = {}) -> dict:
+async def attest(
+    run_id: str,
+    payload: dict = {},
+    session_id: str | None = None,
+    x_panta_session: str | None = Header(
+        default=None, alias="X-Panta-Session"
+    ),
+) -> dict:
     run = _runs.get(run_id)
     if not run:
         raise HTTPException(404, f"Run not found: {run_id}")
     if run.get("status") != "PREPARED":
         raise HTTPException(409, "Run must be PREPARED before authority attestation")
+    if not isinstance(run.get("prepared_selection_hash"), str) or not run.get(
+        "prepared_selection_hash"
+    ):
+        raise HTTPException(
+            409, "Authority attestation requires a durably prepared selection"
+        )
+    raw_actor_id = payload.get("actor_id")
+    if not isinstance(raw_actor_id, str) or not raw_actor_id.strip():
+        raise HTTPException(400, "actor_id is required for authority attestation")
+    actor_id = raw_actor_id.strip()
+    authenticated_principal = _authenticated_principal(
+        str(run.get("case_id") or ""),
+        actor_id,
+        query_session_id=session_id,
+        header_session_id=x_panta_session,
+    )
     ts = _now_iso()
     today = _today()
     human_stop_id = str(payload.get("human_stop_id") or "")
@@ -6386,6 +7925,11 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
     if human_stop_id not in declared_stops:
         raise HTTPException(409, "human_stop_id is not part of this Candidate")
     human_stop = declared_stops[human_stop_id]
+    if human_stop.get("attestable") is not True:
+        raise HTTPException(
+            409,
+            "Human Stop requires correction or replay and cannot be authority-attested",
+        )
     if payload.get("candidate_state_id") != run.get("candidate_state_id"):
         raise HTTPException(409, "Authority request Candidate does not match the run")
     course_id = str(payload.get("course_id") or "")
@@ -6404,7 +7948,6 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
     if effect_type not in {"EXTERNAL_PACKAGE", "INTERNAL", "DEFER"}:
         raise HTTPException(409, f"Unsupported course effect_type: {effect_type}")
 
-    actor_id = str(payload.get("actor_id") or "partner-001")
     actor = _authority_actor(run["case_id"], actor_id)
     if actor is None:
         raise HTTPException(403, "Actor has no server-side authority assignment for this case")
@@ -6424,18 +7967,27 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
     if distinct_from and actor_id == distinct_from:
         raise HTTPException(409, "Human Stop requires an independent authority actor")
 
-    record_key = "|".join(
-        (
-            run_id,
-            human_stop_id,
-            actor_id,
-            course_id,
-        )
+    authority_assignment = _authority_assignment_snapshot(actor, ts)
+    authority_assignment_hash = _authority_content_hash(authority_assignment)
+    authentication_context = _authority_authentication_snapshot(
+        authenticated_principal, ts
     )
-    record_id = "AUTH-" + hashlib.sha256(record_key.encode("utf-8")).hexdigest()[:12].upper()
+    authentication_context_hash = _authority_content_hash(authentication_context)
+    record_id = _authority_record_id(
+        run,
+        human_stop,
+        actor_id,
+        course_id,
+        str(authority_assignment.get("assignment_id") or "")
+        + "@"
+        + str(authority_assignment.get("assignment_version") or ""),
+    )
+    authority_records, recovered_from_ledger = _authority_records_with_ledger(run)
+    if recovered_from_ledger:
+        _store_run(run_id, run)
     records_for_stop = [
         item
-        for item in run.get("authority_records", [])
+        for item in authority_records
         if item.get("human_stop_id") == human_stop_id
         and item.get("status") == "ATTESTED"
     ]
@@ -6444,6 +7996,9 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
         None,
     )
     if existing:
+        _validate_authority_record_scope(
+            run, existing, for_settlement=False
+        )
         package = None
         if existing.get("effect_type") == "EXTERNAL_PACKAGE":
             package = _build_execution_package(run_id, existing)
@@ -6451,7 +8006,7 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
             set(declared_stops)
             - {
                 str(item.get("human_stop_id"))
-                for item in run.get("authority_records", [])
+                for item in authority_records
                 if item.get("status") == "ATTESTED"
             }
         )
@@ -6464,7 +8019,9 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
     if records_for_stop:
         raise HTTPException(409, "Human Stop already has a conflicting authority record")
     authority_record = {
+        "authority_record_version": _AUTHORITY_RECORD_VERSION,
         "authority_record_id": record_id,
+        "case_id": run["case_id"],
         "run_id": run_id,
         "candidate_state_id": run["candidate_state_id"],
         "human_stop_id": human_stop_id,
@@ -6478,12 +8035,46 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
         "authority_verb": authority_verb,
         "required_role": required_role,
         "prepared_selection_hash": run.get("prepared_selection_hash"),
+        "authority_assignment": authority_assignment,
+        "authority_assignment_hash": authority_assignment_hash,
+        "authentication_context": authentication_context,
+        "authentication_context_hash": authentication_context_hash,
         "effect_type": effect_type,
         "status": "ATTESTED",
         "synthetic": False,
+        **_authority_record_binding(run, human_stop),
     }
-    run.setdefault("authority_records", []).append(authority_record)
-    _store_run(run_id, run)
+    _validate_authority_assignment_snapshot(
+        authority_record, required_role, authority_verb
+    )
+    authority_record = _append_authority_ledger_record(authority_record)
+    _validate_authority_record_scope(
+        run, authority_record, for_settlement=False
+    )
+    with _registry_lock:
+        current_run = _runs.get(run_id)
+        if (
+            current_run is None
+            or current_run.get("status") != "PREPARED"
+            or current_run.get("prepared_selection_hash")
+            != run.get("prepared_selection_hash")
+        ):
+            raise HTTPException(
+                409, "Run authority scope changed while the act was being recorded"
+            )
+        current_records = _authority_record_index(current_run)
+        embedded = current_records.get(record_id)
+        if embedded is not None and embedded != authority_record:
+            raise HTTPException(409, "Run contains a conflicting authority record")
+        if embedded is None:
+            current_run.setdefault("authority_records", []).append(authority_record)
+        try:
+            run = _store_run(run_id, current_run)
+        except OSError as exc:
+            raise HTTPException(
+                503,
+                "Authority act is durable in the ledger but run embedding failed; retry is safe",
+            ) from exc
     execution_package = None
     if effect_type == "EXTERNAL_PACKAGE":
         execution_package = _build_execution_package(run_id, authority_record)
@@ -6492,6 +8083,7 @@ async def attest(run_id: str, payload: dict = {}) -> dict:
         - {
             str(item.get("human_stop_id"))
             for item in run.get("authority_records", [])
+            if isinstance(item, dict)
             if item.get("status") == "ATTESTED"
         }
     )
@@ -6743,7 +8335,13 @@ def get_object(case_id: str, object_id: str) -> dict:
 
 @v20.post("/sessions")
 async def new_session(payload: dict = {}) -> dict:
-    return {"session_id": f"SES-{uuid.uuid4().hex[:8].upper()}"}
+    case_id = str(payload.get("case_id") or "keystone")
+    context = _make_context(case_id, _current_state_id(case_id), _today())
+    session_id, _ = _issue_authenticated_session(
+        case_id,
+        str(context.get("authenticated_actor", {}).get("actor_id") or ""),
+    )
+    return {"session_id": session_id}
 
 
 @v20.get("/search")

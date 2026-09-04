@@ -48,6 +48,15 @@
       },
       "uniqueItems": true
     },
+    "authority_change_types": {
+      "description": "Optional routing tags evaluated by the versioned authority matrix. Tags select a route but never confer authority.",
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
     "mutations": {
       "type": "array",
       "items": {

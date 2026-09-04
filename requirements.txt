@@ -10,6 +10,7 @@ email-reply-parser
 requests
 jsonschema
 referencing
+cryptography>=43.0
 # Real PDF table/chart extraction (parse_pdf) is an optional, much heavier
 # add-on -- see requirements-pdf-ml.txt. Not required: parse_pdf falls
 # back to plain text extraction when it's absent.

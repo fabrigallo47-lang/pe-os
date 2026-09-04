@@ -19,6 +19,15 @@ class V20CapabilitiesTests(unittest.TestCase):
         self.assertEqual(manifest["actions"]["openDeal"]["status"], "UNAVAILABLE")
         bootstrap = router.bootstrap_flat("keystone")
         self.assertEqual(bootstrap["action_capabilities"], manifest)
+        session_id = bootstrap["session_id"]
+        self.assertRegex(session_id, r"^SES-[A-Za-z0-9_-]{32,128}$")
+        session_hash = router._authentication_session_hash(session_id)
+        self.assertIn(session_hash, router._authenticated_sessions)
+        self.assertNotIn(session_id, router._authenticated_sessions)
+        self.assertEqual(
+            bootstrap["context"]["authentication"]["principal_id"],
+            bootstrap["context"]["authenticated_actor"]["actor_id"],
+        )
 
     def test_unavailable_response_has_stable_machine_readable_shape(self):
         response = router.open_deal_unavailable()

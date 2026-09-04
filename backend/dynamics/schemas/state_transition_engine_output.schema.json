@@ -407,6 +407,244 @@
         "additionalProperties": true
       }
     },
+    "authority_resolution": {
+      "type": "object",
+      "required": [
+        "status",
+        "resolution_mode",
+        "context",
+        "matched_rule_ids",
+        "selected_rule_id",
+        "selected_priority"
+      ],
+      "properties": {
+        "status": {
+          "enum": [
+            "NOT_APPLICABLE",
+            "RESOLVED",
+            "UNRESOLVED",
+            "AMBIGUOUS"
+          ]
+        },
+        "resolution_mode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "context": {
+          "type": "object",
+          "required": [
+            "materiality_class",
+            "change_types",
+            "conditions",
+            "delegation_status"
+          ],
+          "properties": {
+            "materiality_class": {
+              "$ref": "#/$defs/materiality_class"
+            },
+            "change_types": {
+              "$ref": "#/$defs/unique_string_array"
+            },
+            "conditions": {
+              "$ref": "#/$defs/unique_string_array"
+            },
+            "delegation_status": {
+              "const": "UNPROVEN"
+            }
+          },
+          "additionalProperties": false
+        },
+        "matched_rule_ids": {
+          "$ref": "#/$defs/unique_string_array"
+        },
+        "selected_rule_id": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "selected_priority": {
+          "type": [
+            "integer",
+            "null"
+          ]
+        },
+        "current_adoption_mode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "approved_action_mode": {
+          "type": [
+            "string",
+            "null"
+          ]
+        },
+        "reason_code": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "additionalProperties": false
+    },
+    "materiality_assessment": {
+      "type": "object",
+      "required": [
+        "overall_class",
+        "triggered_rule_ids",
+        "assessments",
+        "comparison_after_full_affected_set",
+        "severity_aggregation"
+      ],
+      "properties": {
+        "overall_class": {
+          "$ref": "#/$defs/materiality_class"
+        },
+        "triggered_rule_ids": {
+          "$ref": "#/$defs/unique_string_array"
+        },
+        "assessments": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": [
+              "rule_id",
+              "object_id",
+              "materiality_class",
+              "reason_code"
+            ],
+            "properties": {
+              "rule_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "object_id": {
+                "type": "string",
+                "minLength": 1
+              },
+              "field": {
+                "type": "string",
+                "minLength": 1
+              },
+              "materiality_class": {
+                "$ref": "#/$defs/materiality_class"
+              },
+              "reason_code": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "additionalProperties": true
+          }
+        },
+        "comparison_after_full_affected_set": {
+          "const": true
+        },
+        "severity_aggregation": {
+          "const": "MAX"
+        },
+        "m0_auto_reconciliation_guards": {
+          "type": "object",
+          "required": [
+            "status",
+            "all_required",
+            "conditions",
+            "failed_conditions"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_APPLICABLE",
+                "PASS",
+                "FAIL"
+              ]
+            },
+            "all_required": {
+              "type": "boolean"
+            },
+            "conditions": {
+              "type": "array",
+              "items": {
+                "type": "object",
+                "required": [
+                  "condition",
+                  "status"
+                ],
+                "properties": {
+                  "condition": {
+                    "type": "string",
+                    "minLength": 1
+                  },
+                  "status": {
+                    "enum": [
+                      "PASS",
+                      "FAIL"
+                    ]
+                  }
+                },
+                "additionalProperties": false
+              }
+            },
+            "failed_conditions": {
+              "$ref": "#/$defs/unique_string_array"
+            }
+          },
+          "additionalProperties": false
+        },
+        "classification_coverage": {
+          "type": "object",
+          "required": [
+            "status",
+            "policy_declaration_present",
+            "unmatched_delta_class",
+            "covered_delta_keys",
+            "unmatched_delta_keys",
+            "unevaluable_delta_keys",
+            "fail_closed_delta_keys",
+            "m0_safe_harbor_rule_ids"
+          ],
+          "properties": {
+            "status": {
+              "enum": [
+                "NOT_APPLICABLE",
+                "COMPLETE",
+                "FAIL_CLOSED"
+              ]
+            },
+            "policy_declaration_present": {
+              "type": "boolean"
+            },
+            "unmatched_delta_class": {
+              "enum": [
+                "M1_PROFESSIONAL_REVIEW",
+                "M2_GATE_AUTHORITY",
+                "M3_HARD_BLOCKER"
+              ]
+            },
+            "covered_delta_keys": {
+              "$ref": "#/$defs/unique_string_array"
+            },
+            "unmatched_delta_keys": {
+              "$ref": "#/$defs/unique_string_array"
+            },
+            "unevaluable_delta_keys": {
+              "$ref": "#/$defs/unique_string_array"
+            },
+            "fail_closed_delta_keys": {
+              "$ref": "#/$defs/unique_string_array"
+            },
+            "m0_safe_harbor_rule_ids": {
+              "$ref": "#/$defs/unique_string_array"
+            }
+          },
+          "additionalProperties": false
+        }
+      },
+      "additionalProperties": true
+    },
     "candidate_current_approved_delta": {
       "type": "object",
       "required": [
@@ -491,6 +729,14 @@
     }
   },
   "$defs": {
+    "unique_string_array": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
     "hash": {
       "type": "string",
       "pattern": "^sha256:[0-9a-f]{64}$"

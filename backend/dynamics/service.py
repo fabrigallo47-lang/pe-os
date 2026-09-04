@@ -211,6 +211,7 @@ def settle_candidate_state(
     expected_candidate_graph_hash: str | None = None,
     settlement_runtime_flags: Mapping[str, Mapping[str, Any]] | None = None,
     pending_settlement: Mapping[str, Any] | None = None,
+    actor_id: str | None = None,
 ) -> dict[str, Any]:
     """Explicitly adopt a Candidate as Current and persist replay state.
 
@@ -294,6 +295,18 @@ def settle_candidate_state(
             _atomic_write_json(candidate_graph_path, {})
             candidate_state_path.unlink(missing_ok=True)
             _atomic_write_json(bundle_dir / "transition_output.json", {})
+            ledger_event = journal.get("ledger_event")
+            if isinstance(ledger_event, Mapping):
+                _append_settlement_event_to_ledger(target_graph, ledger_event)
+            else:
+                # Backward-compatible recovery for a journal created before the
+                # durable outbox event became part of settlement-journal/1.1.
+                _append_settlement_to_ledger(
+                    target_graph,
+                    target_state,
+                    history_append,
+                    actor_id=actor_id,
+                )
             journal_path.unlink(missing_ok=True)
         except OSError as exc:
             raise DynamicsBundleError(
@@ -395,8 +408,14 @@ def settle_candidate_state(
             else candidate_state.get("pending_settlement")
         ),
     )
+    ledger_event = _settlement_ledger_event(
+        graph,
+        settled,
+        history_append,
+        actor_id=actor_id,
+    )
     journal = {
-        "schema_version": "settlement-journal/1.0",
+        "schema_version": "settlement-journal/1.1",
         "status": "SETTLING",
         "current_state_id": current_state_id,
         "prior_state_id": persisted_state.get("state_id"),
@@ -406,6 +425,9 @@ def settle_candidate_state(
         "candidate_graph_hash": _canonical_hash(candidate_graph),
         "target_graph": graph,
         "target_runtime_state": settled,
+        # Durable outbox payload. The recovery marker is removed only after
+        # this event is present in the canonical case ledger.
+        "ledger_event": ledger_event,
     }
     try:
         _atomic_write_json(journal_path, journal)
@@ -419,32 +441,23 @@ def settle_candidate_state(
         _atomic_write_json(bundle_dir / "candidate_graph.json", {})
         (bundle_dir / "candidate_state.json").unlink(missing_ok=True)
         _atomic_write_json(bundle_dir / "transition_output.json", {})
+        _append_settlement_event_to_ledger(graph, ledger_event)
         journal_path.unlink(missing_ok=True)
     except OSError as exc:
         raise DynamicsBundleError(
             "settlement commit was interrupted; retry the same idempotent request"
         ) from exc
-
-    _append_settlement_to_ledger(graph, settled, history_append)
     return settled
 
 
-def _append_settlement_to_ledger(
+def _settlement_ledger_event(
     graph: Mapping[str, Any],
     settled: Mapping[str, Any],
     history_append: Sequence[Mapping[str, Any]],
-) -> None:
-    """Record the settlement as one durable, append-only row.
-
-    Deliberately after the commit, not before. The ledger answers "what happened",
-    so a row written ahead of a commit that then failed would assert a settlement
-    that never occurred — worse than no row at all.
-
-    current_graph.json is a materialized view that the next settlement overwrites;
-    this is the only place the fact of the settlement survives. The settlement
-    journal above is crash recovery, not history: it is deleted on success.
-    """
-    from .runtime import ledger_store
+    *,
+    actor_id: str | None = None,
+) -> dict[str, Any]:
+    """Build the immutable event placed in the settlement outbox."""
 
     case_id = str(graph.get("case_id") or settled.get("case_id") or "")
     if not case_id:
@@ -456,7 +469,7 @@ def _append_settlement_to_ledger(
 
     state_id = str(settled.get("state_id") or "")
     graph_hash = _canonical_hash(graph)
-    event = {
+    return {
         # Derived from what was settled, so re-appending the same settlement is a
         # no-op and a retried request cannot double-count it. Hashed here rather
         # than through ledger_store.compute_event_id, whose parameters name an
@@ -469,6 +482,7 @@ def _append_settlement_to_ledger(
         "event": "CASE_SETTLED",
         "effective_date": str(graph.get("canonical_as_of") or "")[:10] or "1970-01-01",
         "known_at": datetime.now(timezone.utc).isoformat(),
+        "actor_id": str(actor_id or "PANTA_SYSTEM"),
         "source_ids": [],
         "trigger_claim_ids": [],
         "mutations": [],
@@ -476,6 +490,22 @@ def _append_settlement_to_ledger(
         "graph_hash": graph_hash,
         "history_append": copy.deepcopy(list(history_append)),
     }
+
+
+def _append_settlement_event_to_ledger(
+    graph: Mapping[str, Any],
+    event: Mapping[str, Any],
+) -> None:
+    """Append an outbox event and surface a precise post-commit failure."""
+
+    from .runtime import ledger_store
+
+    case_id = str(graph.get("case_id") or "")
+    state_id = str(event.get("state_id") or "UNKNOWN")
+    if not case_id:
+        raise DynamicsBundleError(
+            "Current is settled but has no case_id, so the audit row cannot be written"
+        )
     try:
         ledger_store.append_event(case_id, event)
     except Exception as exc:                       # noqa: BLE001 — surfaced verbatim below
@@ -485,3 +515,21 @@ def _append_settlement_to_ledger(
             f"Current is settled ({state_id}) but its ledger row failed to append: {exc}. "
             "Do not re-settle; re-appending is idempotent."
         ) from exc
+
+
+def _append_settlement_to_ledger(
+    graph: Mapping[str, Any],
+    settled: Mapping[str, Any],
+    history_append: Sequence[Mapping[str, Any]],
+    *,
+    actor_id: str | None = None,
+) -> None:
+    """Backward-compatible helper used by legacy settlement recovery."""
+
+    event = _settlement_ledger_event(
+        graph,
+        settled,
+        history_append,
+        actor_id=actor_id,
+    )
+    _append_settlement_event_to_ledger(graph, event)

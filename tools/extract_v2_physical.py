@@ -925,6 +925,15 @@ SYSTEM_PROMPT = textwrap.dedent("""
       emitting right now, set derivation_operand_indices to that operand's
       position in this same response (see the tool schema) so the derivation
       chain is machine-checkable, not just prose.
+    - Emit the INTERMEDIATE step, do not jump the chain. If getting to the
+      answer runs through a subtotal — sum seven account rows into one
+      customer's total, then divide that total by revenue — the subtotal is
+      its own derived claim, and the final figure derives from THAT subtotal
+      plus the divisor, not from the seven rows directly. A chain someone
+      can re-check one step at a time is the whole point: "7.0 = 4.0 + 3.0"
+      and "10.0% = 7.0 / 70.0" are each verifiable on their own, while
+      "10.0% came from these eight numbers somehow" is not. Collapsing the
+      chain hides the step most likely to be wrong.
     - Base/downside/upside are NOT independent claims with no relationship to
       each other. When you emit a downside or upside scenario claim and its
       base case is ALSO in this response, set alternative_to_index to the
@@ -3439,6 +3448,34 @@ def assemble(claims: list[CanonicalClaim]) -> SubGraph:
     )
 
 
+def resolve_operand_claim_ids(claims: list[CanonicalClaim]) -> dict[str, list[str]]:
+    """claim_id -> the real claim_ids of its same-batch derivation operands.
+
+    The dictionary's rule for a derived output (section 11.3): it "porta
+    input IDs/version/hash" -- a derived value has to name what it was
+    computed FROM, or nobody downstream can re-check it. The model can only
+    reference operands positionally while it writes them (claim_id does not
+    exist yet), so this resolves those positions once, and both the
+    DERIVED_FROM edges and each claim's own derivation.operand_claim_ids are
+    built from this same answer rather than computing it twice.
+    """
+    by_batch_position = {
+        (c.chunk_id, c.batch_index): c.claim_id
+        for c in claims
+        if c.chunk_id and c.batch_index >= 0
+    }
+    resolved: dict[str, list[str]] = {}
+    for c in claims:
+        ids: list[str] = []
+        for operand_index in c.derivation_operand_batch_indices:
+            target_id = by_batch_position.get((c.chunk_id, operand_index))
+            if target_id and target_id != c.claim_id and target_id not in ids:
+                ids.append(target_id)
+        if ids:
+            resolved[c.claim_id] = ids
+    return resolved
+
+
 def derive_relations(claims: list[CanonicalClaim]) -> list[dict[str, str]]:
     """DERIVED_FROM and ALTERNATIVE_TO edges from same-batch references (see
     RawClaim / CLAIM_TOOL's derivation_operand_indices and
@@ -3452,6 +3489,7 @@ def derive_relations(claims: list[CanonicalClaim]) -> list[dict[str, str]]:
     chunk produces no edge here, same limitation as the cross-chunk-context
     gap parse_markdown's merge already narrows but does not eliminate.
     """
+    operands = resolve_operand_claim_ids(claims)
     by_batch_position = {
         (c.chunk_id, c.batch_index): c.claim_id
         for c in claims
@@ -3459,10 +3497,7 @@ def derive_relations(claims: list[CanonicalClaim]) -> list[dict[str, str]]:
     }
     relations: list[dict[str, str]] = []
     for c in claims:
-        for operand_index in c.derivation_operand_batch_indices:
-            target_id = by_batch_position.get((c.chunk_id, operand_index))
-            if target_id is None or target_id == c.claim_id:
-                continue
+        for target_id in operands.get(c.claim_id, ()):
             relations.append({
                 "source_claim_id": c.claim_id,
                 "relation": "DERIVED_FROM",

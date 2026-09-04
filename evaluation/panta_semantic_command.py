@@ -53,7 +53,8 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from tools.extract_v2_physical import (  # noqa: E402
-    MODEL, annotate_chunk, assemble, derive_relations, parse_source, validate,
+    MODEL, annotate_chunk, assemble, derive_relations, parse_source,
+    resolve_operand_claim_ids, validate,
 )
 from tools.llm_provider import anthropic_client_kwargs, configured_api_key  # noqa: E402
 
@@ -109,7 +110,8 @@ def _load_chunks(case: Mapping[str, Any]) -> tuple[list, dict[str, str]]:
     return chunks, path_to_input
 
 
-def _claim_to_prediction(claim: Any, input_id: str) -> dict[str, Any]:
+def _claim_to_prediction(claim: Any, input_id: str,
+                         operand_ids: list[str] | None = None) -> dict[str, Any]:
     out: dict[str, Any] = {
         "claim_id": claim.claim_id,
         "statement": claim.statement,
@@ -144,7 +146,16 @@ def _claim_to_prediction(claim: Any, input_id: str) -> dict[str, Any]:
     if claim.period:
         out["period"] = claim.period
     if claim.derivation:
-        out["derivation"] = {"expression": claim.derivation, "operand_claim_ids": []}
+        # A derived value has to name what it was computed FROM, or nobody
+        # downstream can re-check it (dictionary section 11.3: the formula output
+        # "porta input IDs"). Operands the model referenced positionally are
+        # resolved to real claim_ids by resolve_operand_claim_ids(); an operand
+        # that was a bare number in the text, or lived in another chunk, stays
+        # unlisted rather than being invented.
+        out["derivation"] = {
+            "expression": claim.derivation,
+            "operand_claim_ids": list(operand_ids or []),
+        }
     return out
 
 
@@ -162,8 +173,10 @@ def main() -> int:
 
     canonicals = [validate(r) for r in raw_claims]
     graph = assemble(canonicals)
+    operand_ids = resolve_operand_claim_ids(graph.claims)
     claims = [
-        _claim_to_prediction(c, path_to_input.get(c.source_path, "unknown-input"))
+        _claim_to_prediction(c, path_to_input.get(c.source_path, "unknown-input"),
+                             operand_ids.get(c.claim_id))
         for c in graph.claims
     ]
     # The per-claim eval schema has additionalProperties:false, so a real

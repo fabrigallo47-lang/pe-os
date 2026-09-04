@@ -769,6 +769,19 @@ CLAIM_TOOL = {
                                 "not exist yet when you are writing this."
                             ),
                         },
+                        "alternative_to_index": {
+                            "type": ["integer", "null"],
+                            "minimum": 0,
+                            "description": (
+                                "Only when this claim is a downside/upside/alternative "
+                                "scenario of a base-case claim ALSO in this response: that "
+                                "base claim's 0-based position in this claims array (same "
+                                "position convention as derivation_operand_indices). Null when "
+                                "this claim IS the base case, when there is no base-case "
+                                "counterpart in this fragment, or when scenario=base/"
+                                "unspecified."
+                            ),
+                        },
                         "author": {
                             "type": ["string", "null"],
                             "description": "Party making the claim (e.g. management, QoE provider, IC).",
@@ -888,6 +901,11 @@ SYSTEM_PROMPT = textwrap.dedent("""
       emitting right now, set derivation_operand_indices to that operand's
       position in this same response (see the tool schema) so the derivation
       chain is machine-checkable, not just prose.
+    - Base/downside/upside are NOT independent claims with no relationship to
+      each other. When you emit a downside or upside scenario claim and its
+      base case is ALSO in this response, set alternative_to_index to the
+      base claim's position (see the tool schema) — do not leave scenario
+      alone to carry that link.
 
     PERIOD EXTRACTION — mandatory for every emitted claim:
     - Never leave period blank. Read the workbook column header, table header,
@@ -2904,6 +2922,7 @@ class RawClaim:
     chunk_id: str = ""
     batch_index: int = -1
     derivation_operand_batch_indices: list[int] = field(default_factory=list)
+    alternative_to_batch_index: int | None = None
 
 
 def _is_fatal_provider_error(exc: Exception) -> bool:
@@ -3035,6 +3054,9 @@ def annotate_chunk(
                     idx for idx in (c.get("derivation_operand_indices") or [])
                     if isinstance(idx, int) and 0 <= idx < batch_size and idx != batch_index
                 ]
+                alt_idx = c.get("alternative_to_index")
+                if not (isinstance(alt_idx, int) and 0 <= alt_idx < batch_size and alt_idx != batch_index):
+                    alt_idx = None
                 period = _non_empty_l2_text(c.get("period"))
                 if period is None:
                     effective_date = _non_empty_l2_text(src.get("effective_date"))
@@ -3095,6 +3117,7 @@ def annotate_chunk(
                     chunk_id=chunk.chunk_id,
                     batch_index=batch_index,
                     derivation_operand_batch_indices=operand_indices,
+                    alternative_to_batch_index=alt_idx,
                 ))
     return raw_claims
 
@@ -3180,6 +3203,7 @@ class CanonicalClaim:
     chunk_id: str = ""
     batch_index: int = -1
     derivation_operand_batch_indices: list[int] = field(default_factory=list)
+    alternative_to_batch_index: int | None = None
 
 
 def validate(raw: RawClaim) -> CanonicalClaim:
@@ -3298,6 +3322,7 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         chunk_id=raw.chunk_id,
         batch_index=raw.batch_index,
         derivation_operand_batch_indices=raw.derivation_operand_batch_indices,
+        alternative_to_batch_index=raw.alternative_to_batch_index,
     )
 
 
@@ -3358,16 +3383,17 @@ def assemble(claims: list[CanonicalClaim]) -> SubGraph:
 
 
 def derive_relations(claims: list[CanonicalClaim]) -> list[dict[str, str]]:
-    """DERIVED_FROM edges from same-batch operand references (see RawClaim /
-    CLAIM_TOOL's derivation_operand_indices).
+    """DERIVED_FROM and ALTERNATIVE_TO edges from same-batch references (see
+    RawClaim / CLAIM_TOOL's derivation_operand_indices and
+    alternative_to_index).
 
     Deterministic, not model-trusted: an index has to resolve to a REAL
     admitted claim from the SAME chunk_id, or it is dropped rather than
     turned into an edge pointing at something arbitrary or already rejected.
-    Only covers operands the model saw in its own tool call -- a derivation
-    whose operands live in a different chunk produces no edge here, same
-    limitation as the cross-chunk-context gap parse_markdown's merge
-    already narrows but does not eliminate.
+    Only covers references the model saw in its own tool call -- a
+    derivation or scenario link whose counterpart lives in a different
+    chunk produces no edge here, same limitation as the cross-chunk-context
+    gap parse_markdown's merge already narrows but does not eliminate.
     """
     by_batch_position = {
         (c.chunk_id, c.batch_index): c.claim_id
@@ -3376,8 +3402,6 @@ def derive_relations(claims: list[CanonicalClaim]) -> list[dict[str, str]]:
     }
     relations: list[dict[str, str]] = []
     for c in claims:
-        if not c.derivation_operand_batch_indices:
-            continue
         for operand_index in c.derivation_operand_batch_indices:
             target_id = by_batch_position.get((c.chunk_id, operand_index))
             if target_id is None or target_id == c.claim_id:
@@ -3388,6 +3412,15 @@ def derive_relations(claims: list[CanonicalClaim]) -> list[dict[str, str]]:
                 "target_type": "claim",
                 "target_id": target_id,
             })
+        if c.alternative_to_batch_index is not None:
+            target_id = by_batch_position.get((c.chunk_id, c.alternative_to_batch_index))
+            if target_id is not None and target_id != c.claim_id:
+                relations.append({
+                    "source_claim_id": c.claim_id,
+                    "relation": "ALTERNATIVE_TO",
+                    "target_type": "claim",
+                    "target_id": target_id,
+                })
     return relations
 
 

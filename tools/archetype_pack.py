@@ -9,10 +9,13 @@ import yaml
 
 
 ROOT = Path(__file__).resolve().parent.parent
+_ARCHETYPE_DIR = ROOT / "vault" / "policy" / "archetypes"
 PACK_PATHS = {
-    "buyout": ROOT / "vault" / "policy" / "archetypes" / "semantic_handoff_v0_2"
-    / "02_buyout_archetype_pack_v0_2.yaml",
+    "buyout": _ARCHETYPE_DIR / "semantic_handoff_v0_2" / "02_buyout_archetype_pack_v0_2.yaml",
+    "venture": _ARCHETYPE_DIR / "venture_growth_v1_1" / "01_venture_archetype_pack_v1_1.yaml",
+    "growth": _ARCHETYPE_DIR / "venture_growth_v1_1" / "02_growth_archetype_pack_v1_1.yaml",
 }
+DEFAULT_ARCHETYPE = "buyout"
 
 
 @lru_cache(maxsize=None)
@@ -290,3 +293,56 @@ def unrepresentable_required_identity(
         field_name for field_name in concept.get("required_identity") or []
         if field_name not in _IDENTITY_FIELD_MAP
     ]
+
+
+# ── Archetype-selected extraction vocabulary ─────────────────────────────────
+# A concept only belongs in the `metric` slot if it actually carries a value.
+# Section 3.3 maps `kind` to object type, and most of an archetype is NOT a
+# metric: 9 of venture's 49 concepts are `kind: metric`, the rest are
+# case_reading, qualitative_topic, condition, risk, assumption... Flattening
+# those into the metric enum would put "Current product state" (a
+# categorical_observation) in the same slot as "Revenue" and let two different
+# object types collide on one identity. They stay out until the object model
+# can hold them -- honestly unresolvable beats wrongly resolved.
+_VALUE_BEARING_KINDS = frozenset({
+    "metric", "metric_set", "metric_or_definition", "metric_or_reading",
+    "metric_or_condition", "metric_or_assumption", "metric_or_model_output",
+    "model_output", "model_output_set", "derived_analytic",
+})
+
+
+def value_bearing_concepts(archetype_id: str) -> list[dict[str, Any]]:
+    """Concepts of this archetype that can legitimately carry a value."""
+    return [
+        c for c in canonical_concepts(load_pack(archetype_id))
+        if str(c.get("kind") or "") in _VALUE_BEARING_KINDS
+    ]
+
+
+def extraction_vocabulary(archetype_id: str, baseline: list[str]) -> list[str]:
+    """The metric labels extraction may use for this archetype.
+
+    `baseline` (METRIC_ENUM) is always kept: it is the buyout vocabulary and
+    the frozen contract the benchmark scores against, so widening must never
+    remove or rename anything already in it.
+
+    For buyout the baseline is returned UNCHANGED. The buyout pack's own
+    labels ("Reported revenue", "Reported EBITDA") are deliberately not merged:
+    METRIC_ENUM already covers that archetype, and adding near-synonyms would
+    fragment one identity across two spellings -- the same failure mode the
+    dictionary's 4.1 warns about from the other direction.
+
+    For venture and growth the baseline carries no vocabulary at all, which is
+    why a venture corpus extracts almost entirely as "Other". There, the
+    pack's value-bearing concept labels are appended.
+    """
+    if archetype_id == DEFAULT_ARCHETYPE:
+        return list(baseline)
+    seen = {label.casefold() for label in baseline}
+    widened = list(baseline)
+    for concept in value_bearing_concepts(archetype_id):
+        label = str(concept.get("label") or "").strip()
+        if label and label.casefold() not in seen:
+            seen.add(label.casefold())
+            widened.append(label)
+    return widened

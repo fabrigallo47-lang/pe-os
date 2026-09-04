@@ -1,0 +1,148 @@
+metadata:
+  name: PANTA Venture-Growth Archetype Selection and Shared Grammar
+  version: 1.1.0
+  date: '2026-09-04'
+  status: IMPLEMENTATION_CANDIDATE_PENDING_BLIND_BENCHMARK
+  extends_kernel: PANTA Universal Investment Kernel 0.2.0
+  confidentiality:
+    contains_identifiable_firm_fund_person_or_company_names: false
+    contains_proprietary_source_references: false
+    contains_institution_specific_thresholds_or_policies: false
+configuration_stack:
+- Universal Kernel
+- 'Archetype configuration: primary Archetype plus optional secondary modules, maturity module, business-model modules,
+  sector overlays and transaction modules'
+- Provisional or validated Fund Lens
+- Deal Frame
+- Live Investment Case
+shared_private_growth_capital_grammar:
+  definition: Both strategies underwrite a future enterprise under uncertainty. They share one Kernel and many domain
+    functions, while differing in evidence maturity, model center and dominant error.
+  shared_functions:
+  - define the decision, security, role and time horizon
+  - define the problem, buyer, market and timing
+  - establish current product or technical truth
+  - test customer value, adoption and economic capture
+  - underwrite competitive durability
+  - underwrite founders, management, organization and governance
+  - connect operating assumptions to capital and financing
+  - translate the case into security-level outcomes
+  - identify decision-critical work and reopening events
+  not_shared_as_one_default:
+  - evidence sufficiency
+  - metric set
+  - formula set
+  - relative workstream weight
+  - maturity progression
+  - failure probability
+  - return hurdle
+  - ownership target
+selection_dimensions:
+- dimension: existence_of_engine
+  venture_pole: The product, demand or economics required for value do not yet exist at repeatable scale.
+  growth_pole: A measurable customer and economic engine exists.
+- dimension: capital_role
+  venture_pole: Capital substantially creates the next proof state.
+  growth_pole: Capital substantially accelerates, replicates or finances an observed engine.
+- dimension: dominant_evidence
+  venture_pole: Milestones, tests, pilots, references, founder execution and financing path.
+  growth_pole: Actuals, cohorts, retention, conversion, sales capacity, margins and cash.
+- dimension: model_center
+  venture_pole: State branches, milestones, runway, dilution and outcome distribution.
+  growth_pole: Revenue bridge, unit economics, operating leverage, financing and liquidity.
+- dimension: dominant_error
+  venture_pole: The required enterprise state never becomes real before time or capital expires.
+  growth_pole: The observed engine is less durable, repeatable or scalable than the valuation assumes.
+selection_rule:
+  VENTURE: Select Venture when value depends primarily on creating or proving a technical, customer, market, economic
+    or organizational state that is not repeatable.
+  GROWTH: Select Growth when a real operating engine exists and the main uncertainty is durability, replication, operating
+    leverage and financing at scale.
+  HYBRID: Use the primary Archetype for the pending Decision and add scoped secondary-Archetype assignments when a
+    material product, program, geography, segment or business-model transition follows a different evidence regime.
+  prohibited_shortcuts:
+  - round label
+  - valuation
+  - company age
+  - technology sector
+  - revenue presence alone
+  out_of_scope_handoffs:
+    BUYOUT: When control, mature cash generation, leverage capacity and owner-driven value creation dominate, use
+      Buyout as the primary Archetype.
+    CREDIT: When contractual repayment, coverage, priority, collateral and recovery dominate the investor payoff,
+      use Credit as the primary Archetype.
+    INFRASTRUCTURE_OR_REAL_ASSET: When long-duration asset cash flows, concession or contract structure, construction
+      and asset-level financing dominate, use the relevant real-asset Archetype.
+  scope_rule: Do not force one maturity or secondary Archetype across the whole company. Record scoped assignments
+    where different products, programs, segments or revenue streams are at different proof states.
+question_activation_contract:
+  principle: The packs are candidate grammars, not questionnaires.
+  candidate_origins:
+  - Deal Frame
+  - Archetype
+  - Maturity module
+  - Business-model module
+  - Sector overlay
+  - Transaction module
+  - Fund Lens
+  - Source-triggered
+  - Professional-directed
+  activate_when:
+  - the Question bears directly on the pending Decision
+  - an active module makes the uncertainty applicable
+  - a source introduces material evidence, inconsistency or residue
+  - a model or causal dependency requires the answer
+  - a professional explicitly promotes it
+  prioritize_by:
+  - decision criticality
+  - load-bearingness
+  - fragility
+  - unresolved evidence
+  - time to decision
+  - expected information value
+  - downstream consequence
+  spine_rule: Instantiate a bounded decision-bearing root spine. Keep lower-priority families dormant and available
+    for drill-down or source-triggered activation.
+  deduplication_rule: Deduplicate only when uncertainty identity, evidence need and downstream consequence are the
+    same; textual similarity is insufficient.
+  required_activation_record:
+  - question_family_id
+  - origin
+  - decision_root_id
+  - activation_rationale
+  - applicable_modules
+  - evidence_gap
+  - downstream_object_ids
+  - selection_confidence
+  retire_or_deactivate_when:
+  - the Question is no longer applicable
+  - it is merged through a governed spine change
+  - the Decision scope changes
+  - a successor Question replaces it
+workstream_correspondence:
+- shared_function: Market
+  venture_expression: problem severity, beachhead and category timing
+  growth_expression: headroom, growth duration and expansion vectors
+- shared_function: Product
+  venture_expression: current-versus-required technical state and milestone path
+  growth_expression: measured customer value, usage and durable differentiation
+- shared_function: Demand
+  venture_expression: progression from interest to paid, repeated adoption
+  growth_expression: retention, expansion, conversion and repeatable acquisition
+- shared_function: Economics
+  venture_expression: emerging value capture, unit economics and capital intensity
+  growth_expression: current unit economics, contribution, operating leverage and cash generation
+- shared_function: Team
+  venture_expression: founder-domain access, learning and creation of the next organization
+  growth_expression: management scalability, delegation, controls and functional maturity
+- shared_function: Capital
+  venture_expression: capital to proof, future rounds, dilution and survival
+  growth_expression: capital to self-funding, liquidity and financing optionality
+- shared_function: Returns
+  venture_expression: ownership through failure, delay, partial and outlier outcomes
+  growth_expression: growth duration, margin, capital, dilution, multiple and liquidity
+- shared_function: Re-underwriting
+  venture_expression: milestone outcomes and incremental follow-on decision
+  growth_expression: engine performance, transformation and incremental capital decision
+architectural_rule: Venture and Growth are different grammars over one Kernel. Maturity, business model, sector and
+  transaction modify applicability and model emphasis; none creates another ontology or source of truth.

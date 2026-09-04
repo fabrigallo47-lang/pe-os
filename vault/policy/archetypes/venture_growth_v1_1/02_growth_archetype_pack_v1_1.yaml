@@ -1,0 +1,2012 @@
+metadata:
+  name: PANTA Growth Archetype Pack
+  version: 1.1.0
+  date: '2026-09-04'
+  status: IMPLEMENTATION_CANDIDATE_PENDING_BLIND_BENCHMARK
+  extends_kernel: PANTA Universal Investment Kernel 0.2.0
+  purpose: Reusable Growth underwriting grammar for case formation, semantic extraction, model routing and re-underwriting.
+  derivation:
+    top_down: Derived independently from the economics and epistemology of the strategy.
+    evidence_challenge: Challenged against varied underwriting patterns, counterexamples and later-state logic without
+      importing institution-specific policy, names or thresholds.
+    membership_rule: Economic necessity determines Archetype membership; observed frequency never establishes universality.
+  confidentiality:
+    contains_identifiable_firm_fund_person_or_company_names: false
+    contains_proprietary_source_references: false
+    contains_institution_specific_thresholds_or_policies: false
+    contains_case_specific_values_or_examples: false
+  not_a_checklist: true
+  open_world: true
+strategy_definition:
+  strategy: GROWTH
+  core_economic_problem: Underwrite a security exposure to an operating company with demonstrated demand while testing
+    the durability, repeatability, scalability, capital efficiency and liquidity of its growth engine.
+  epistemic_regime: Current actuals, customers and cohorts anchor the case. The main uncertainty is whether the observed
+    engine generalizes across time, segments, geographies, products and organizational scale.
+  dominant_loss_orientation:
+  - reported growth is low-quality, acquired, one-off or concentrated
+  - customer value does not sustain retention, expansion or pricing
+  - GTM does not repeat beyond founders, one channel or one geography
+  - delivery, service or capital burden prevents operating leverage
+  - management and controls do not scale
+  - future financing, dilution or liquidity timing weakens the security return
+  - multiple compression overwhelms operating progress
+  default_decision_moments:
+  - screen or pursue
+  - new growth investment
+  - term or allocation decision
+  - closing or funding
+  - follow-on
+  - secondary or liquidity
+  - bridge or recapitalization
+  - transformation or re-underwriting
+archetype_selection:
+  select_when:
+  - A real operating and customer engine exists and can be measured.
+  - The core investment question is whether that engine is durable and repeatable at larger scale.
+  - Capital is used mainly to accelerate, replicate or finance the engine rather than create its first proof.
+  do_not_select_by:
+  - round label alone
+  - company age alone
+  - current revenue alone
+  hybrid_rule: Activate Venture modules where a new product, technical program or market remains milestone-dependent
+    and unproven.
+deal_frame_extensions:
+- current_revenue_and_recurring_base
+- growth_stage_and_engine_maturity
+- customer_and_segment_concentration
+- primary_growth_vectors
+- current_cash_and_path_to_self_funding
+- round_or_security
+- primary_secondary_mix
+- current_and_target_ownership
+- liquidity_or_exit_context
+- follow_on_or_new_investment
+proof_ladder:
+  principle: Growth proof progresses from reported scale to reconciled, durable, repeatable and cash-generative scale
+    using the economic unit selected by the active business-model modules.
+  progression:
+  - reported growth
+  - reconciled business-model operating unit and recognized revenue
+  - durable repeat, renewal, reorder, contract conversion or cohort behavior
+  - repeatable customer acquisition, channel production or project origination
+  - replication across another segment, product, channel or geography
+  - operating leverage
+  - cash generation and financing independence
+  rule: The sequence is causal, not a universal numeric score. Exact evidence bars belong to the Fund Lens, and inapplicable
+    steps remain dormant.
+workstreams:
+  MARKET_HEADROOM_AND_CATEGORY_DURABILITY:
+    governing_question: How much durable growth remains available, and where must the next increment come from?
+    first_principles_rationale: A Growth investment pays for future scale in a company that already has operating
+      evidence. Underwriting must separate category growth, share capture, segment expansion and pricing from a generic
+      large-market narrative.
+    question_families:
+    - id: GF-MKT-01
+      question: What is the correctly defined market for the current product, buyer, geography and value-chain position?
+      concept_families:
+      - market_definition
+      - current_addressable_market
+      - buyer_segment
+      typical_evidence:
+      - customer and revenue segmentation
+      - industry data
+      - value-chain evidence
+      expected_case_outputs:
+      - Definition
+      - MetricObservation
+      - CaseReading
+      proof_direction: Use the actual revenue engine to define the market.
+    - id: GF-MKT-02
+      question: How much growth comes from category expansion, share gain, pricing, product expansion or acquisitions?
+      concept_families:
+      - growth_source
+      - market_growth
+      - share_capture
+      - pricing
+      - acquired_growth
+      typical_evidence:
+      - historical bridge
+      - market data
+      - customer wins
+      - acquisition history
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - Assumption
+      proof_direction: Decompose growth rather than extrapolating the headline rate.
+    - id: GF-MKT-03
+      question: Which segment, geography, product or channel provides the next credible growth pool?
+      concept_families:
+      - expansion_vector
+      - segment_headroom
+      - geographic_headroom
+      - product_headroom
+      typical_evidence:
+      - segment cohorts
+      - pipeline
+      - market share
+      - competitive position
+      expected_case_outputs:
+      - Question
+      - CaseReading
+      - ModelNode
+      proof_direction: Connect each expansion vector to evidence and capability.
+    - id: GF-MKT-04
+      question: What cyclicality, regulation, platform change or market saturation could shorten the growth duration?
+      concept_families:
+      - growth_duration
+      - cyclicality
+      - regulatory_change
+      - saturation
+      typical_evidence:
+      - historical cycles
+      - regulatory timeline
+      - platform roadmap
+      - penetration data
+      expected_case_outputs:
+      - Risk
+      - Condition
+      - Assumption
+      proof_direction: Model duration and timing, not only terminal market size.
+    - id: GF-MKT-05
+      question: What evidence would show that the addressable market or growth vector is smaller than assumed?
+      concept_families:
+      - market_falsifier
+      - share_ceiling
+      - expansion_failure
+      typical_evidence:
+      - lost deals
+      - segment economics
+      - regional performance
+      - competitor response
+      expected_case_outputs:
+      - Unknown
+      - WorkItem
+      - Risk
+      proof_direction: Define the observation that would reduce growth headroom.
+    reasoning_operators:
+    - MARKET_DEFINITION
+    - GROWTH_DECOMPOSITION
+    - SEGMENTATION
+    - SHARE_CAPTURE
+    - GROWTH_DURATION
+    - FALSIFY
+    failure_modes:
+    - large market disguises limited obtainable headroom
+    - current growth relies on a temporary market or regulatory dislocation
+    - share gain is assumed without a repeatable advantage
+    - new geographies or segments have different economics
+    - acquired growth is mistaken for organic engine quality
+    model_bindings:
+    - market_growth
+    - share
+    - price
+    - volume
+    - segment_mix
+    - geography_mix
+  PRODUCT_VALUE_AND_COMPETITIVE_POSITION:
+    governing_question: Does the product create durable, measurable customer value that can withstand competition
+      and platform change?
+    first_principles_rationale: At Growth stage, product quality must already be visible in customer behavior. The
+      question is whether the product remains differentiated and mission-critical enough to sustain retention, expansion
+      and pricing.
+    question_families:
+    - id: GF-PROD-01
+      question: What measurable operational, financial or strategic outcome does the product create?
+      concept_families:
+      - customer_value
+      - customer_roi
+      - workflow_criticality
+      typical_evidence:
+      - customer reference
+      - before-and-after metric
+      - competitive trial
+      - usage data
+      expected_case_outputs:
+      - MetricObservation
+      - CaseReading
+      - Claim
+      proof_direction: Tie product value to customer behavior and economics.
+    - id: GF-PROD-02
+      question: How deeply is the product used, by whom, and in which production workflows?
+      concept_families:
+      - product_usage
+      - user_penetration
+      - workflow_embedding
+      typical_evidence:
+      - usage logs
+      - seat or volume data
+      - feature adoption
+      - customer workflow
+      expected_case_outputs:
+      - MetricObservation
+      - CaseReading
+      - Unknown
+      proof_direction: Separate a purchased product from an adopted product.
+    - id: GF-PROD-03
+      question: Why do customers choose, renew, expand or replace the product?
+      concept_families:
+      - win_loss
+      - retention_driver
+      - expansion_driver
+      - switching
+      typical_evidence:
+      - customer calls
+      - tender evidence
+      - renewal notes
+      - churn interviews
+      expected_case_outputs:
+      - CaseReading
+      - Risk
+      - WorkItem
+      proof_direction: Use behavior across the customer lifecycle.
+    - id: GF-PROD-04
+      question: What is the moat mechanism, and is it strengthening or eroding with scale?
+      concept_families:
+      - moat_mechanism
+      - data_advantage
+      - network_effect
+      - distribution
+      - switching_cost
+      typical_evidence:
+      - cohort behavior
+      - competitive bake-off
+      - data or cost curve
+      - partner evidence
+      expected_case_outputs:
+      - Assumption
+      - MetricObservation
+      - CaseReading
+      proof_direction: Test whether scale compounds advantage rather than only company size.
+    - id: GF-PROD-05
+      question: What can incumbents, platforms or adjacent vendors copy, bundle or control?
+      concept_families:
+      - commoditization
+      - platform_dependency
+      - incumbent_response
+      typical_evidence:
+      - product roadmaps
+      - platform policy
+      - competitive releases
+      - expert evidence
+      expected_case_outputs:
+      - Risk
+      - Condition
+      - CaseReading
+      proof_direction: Assess the product against a capable response.
+    reasoning_operators:
+    - CUSTOMER_OUTCOME
+    - USAGE_DEPTH
+    - WIN_LOSS
+    - RETENTION_DRIVER
+    - MOAT_MECHANISM
+    - ADVERSARIAL_RESPONSE
+    failure_modes:
+    - strong demo or product score does not create adoption
+    - product remains optional in the customer's workflow
+    - incumbent bundles a good-enough substitute
+    - implementation or support burden offsets product value
+    - moat is a temporary execution lead rather than a compounding asset
+    model_bindings:
+    - usage
+    - renewal
+    - expansion
+    - price
+    - win_rate
+    - gross_margin
+  REVENUE_QUALITY_AND_CUSTOMER_DURABILITY:
+    governing_question: How much of reported growth is recurring, retained, organic, diversified and economically
+      real?
+    first_principles_rationale: Growth underwriting begins with the quality and identity of the existing revenue base.
+      Revenue, ARR, bookings, backlog, GMV and pipeline are different objects and must reconcile to customer-level
+      behavior.
+    question_families:
+    - id: GF-REV-01
+      question: What does each reported growth measure represent, and how does it reconcile to recognized revenue
+        and customer-level activity?
+      concept_families:
+      - revenue_definition
+      - recurring_revenue
+      - bookings
+      - backlog
+      - pipeline
+      - business_model_operating_volume
+      typical_evidence:
+      - contracts
+      - billing data
+      - revenue recognition
+      - CRM
+      - financial statements
+      expected_case_outputs:
+      - Definition
+      - MetricObservation
+      - CoverageLimit
+      proof_direction: Keep recognized revenue, recurring base, contracted value, backlog, pipeline and operating-volume
+        measures as distinct identities.
+    - id: GF-REV-02
+      question: How much growth is organic, acquired, one-off, price, volume, mix, expansion or new-logo driven?
+      concept_families:
+      - organic_growth
+      - acquired_growth
+      - price_volume_mix
+      - new_vs_expansion
+      typical_evidence:
+      - revenue bridge
+      - customer-level data
+      - acquisition data
+      - invoice history
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - CaseReading
+      proof_direction: Decompose the current engine into causal components.
+    - id: GF-REV-03
+      question: What do repeat purchase, renewal, gross retention, net retention, churn and expansion show for the
+        relevant customer or economic unit?
+      concept_families:
+      - gross_retention
+      - net_retention
+      - churn
+      - cohort_expansion
+      typical_evidence:
+      - customer cohorts
+      - renewal data
+      - usage
+      - contract history
+      expected_case_outputs:
+      - MetricObservation
+      - CaseReading
+      - Risk
+      proof_direction: Activate only the repeat/durability measures appropriate to the selected business-model modules.
+    - id: GF-REV-04
+      question: How concentrated is revenue by customer, channel, product, geography, contract type and source?
+      concept_families:
+      - customer_concentration
+      - channel_concentration
+      - product_concentration
+      - source_concentration
+      typical_evidence:
+      - customer-level revenue
+      - channel data
+      - contract register
+      - segment P&L
+      expected_case_outputs:
+      - MetricObservation
+      - Risk
+      - Condition
+      proof_direction: Measure correlated exposure, not only the largest account.
+    - id: GF-REV-05
+      question: What portion of the current revenue base is contractually visible, implemented and likely to be recognized?
+      concept_families:
+      - contract_durability
+      - implementation_status
+      - revenue_visibility
+      typical_evidence:
+      - contract terms
+      - implementation plan
+      - usage and billing status
+      - customer reference
+      expected_case_outputs:
+      - CaseReading
+      - Assumption
+      - ModelNode
+      proof_direction: Separate signed value from executable revenue.
+    reasoning_operators:
+    - METRIC_IDENTITY
+    - REVENUE_BRIDGE
+    - COHORT
+    - RETENTION
+    - CONCENTRATION
+    - CONTRACT_TO_REVENUE
+    failure_modes:
+    - bookings or pipeline presented as recurring revenue
+    - acquired or one-off growth presented as organic
+    - changing cohort definitions create false retention
+    - headline NRR hides segment or customer concentration
+    - contracted revenue fails to implement or recognize
+    model_bindings:
+    - opening_arr
+    - new_arr
+    - expansion
+    - contraction
+    - churn
+    - revenue
+    - backlog
+  GO_TO_MARKET_REPEATABILITY_AND_EXPANSION:
+    governing_question: Can the company acquire and expand customers repeatedly across reps, channels, segments and
+      geographies?
+    first_principles_rationale: Growth capital normally accelerates or replicates an observed core engine. Underwriting
+      must connect pipeline, conversion, commercial capacity, acquisition cost, implementation and customer expansion;
+      where a material new engine remains unproven, selected Venture modules are activated.
+    question_families:
+    - id: GF-GTM-01
+      question: What is the historical funnel from qualified opportunity to contracted, implemented and paying customer?
+      concept_families:
+      - pipeline_quality
+      - conversion
+      - implementation
+      - sales_cycle
+      typical_evidence:
+      - CRM
+      - contracts
+      - implementation status
+      - invoice data
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - CoverageLimit
+      proof_direction: Use stage definitions and historical conversion, not raw pipeline value.
+    - id: GF-GTM-02
+      question: How much output comes from founder relationships, one channel or one partner versus a repeatable motion?
+      concept_families:
+      - founder_led_sales
+      - channel_dependency
+      - partner_dependency
+      - repeatability
+      typical_evidence:
+      - lead-source data
+      - rep cohorts
+      - partner economics
+      - customer attribution
+      expected_case_outputs:
+      - CaseReading
+      - Risk
+      - Unknown
+      proof_direction: Separate exceptional access from institutionalized distribution.
+    - id: GF-GTM-03
+      question: What do rep ramp, quota, attainment, productivity and capacity imply for the forecast?
+      concept_families:
+      - sales_capacity
+      - rep_ramp
+      - quota
+      - attainment
+      typical_evidence:
+      - rep-level data
+      - hiring plan
+      - quota history
+      - pipeline coverage
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - Assumption
+      proof_direction: Build growth from productive capacity rather than headcount alone.
+    - id: GF-GTM-04
+      question: Where acquisition can be cohort-measured, what are acquisition cost, payback and conversion by channel,
+        segment and geography?
+      concept_families:
+      - cac
+      - payback
+      - conversion
+      - channel_efficiency
+      typical_evidence:
+      - marketing and sales spend
+      - lead-source data
+      - cohorts
+      - gross profit
+      expected_case_outputs:
+      - MetricObservation
+      - CaseReading
+      - Risk
+      proof_direction: Use the acquisition and contribution definitions selected by the business-model modules.
+    - id: GF-GTM-05
+      question: Has the motion repeated in a second segment, product, channel or geography with comparable economics?
+      concept_families:
+      - replication
+      - geographic_repeatability
+      - segment_repeatability
+      - cross_sell
+      typical_evidence:
+      - regional cohorts
+      - new product cohorts
+      - channel cohorts
+      - win-loss evidence
+      expected_case_outputs:
+      - CaseReading
+      - Assumption
+      - WorkItem
+      proof_direction: Treat expansion as a new proof problem, not a copy of the core market.
+    reasoning_operators:
+    - FUNNEL
+    - PIPELINE_STAGE
+    - SALES_CAPACITY
+    - CAC_PAYBACK
+    - CHANNEL_ATTRIBUTION
+    - REPLICATION
+    failure_modes:
+    - headline pipeline has weak stage quality
+    - founder or partner access does not institutionalize
+    - sales hires add cost before productivity
+    - implementation delay breaks the booking-to-revenue bridge
+    - a successful core geography does not repeat
+    model_bindings:
+    - pipeline
+    - conversion
+    - sales_cycle
+    - productive_reps
+    - quota
+    - attainment
+    - cac
+    - new_arr
+  UNIT_ECONOMICS_AND_OPERATING_LEVERAGE:
+    governing_question: Does incremental growth create enough gross profit and contribution to support durable operating
+      leverage?
+    first_principles_rationale: The correct profit measure depends on the economic delivery model. Growth investors
+      must identify all variable costs, separate accounting presentation from economic contribution and test the mechanism
+      of margin expansion.
+    question_families:
+    - id: GF-ECO-01
+      question: What is the economically correct unit and profit measure for this business?
+      concept_families:
+      - economic_unit
+      - gross_margin_definition
+      - contribution_definition
+      typical_evidence:
+      - cost accounting
+      - delivery workflow
+      - customer or transaction unit
+      - P&L
+      expected_case_outputs:
+      - Definition
+      - MetricObservation
+      - CaseReading
+      proof_direction: Define the unit before comparing margins or valuation.
+    - id: GF-ECO-02
+      question: How do price, volume, mix, delivery cost, support and partner share determine unit economics?
+      concept_families:
+      - price_volume_mix
+      - delivery_cost
+      - support_cost
+      - partner_share
+      typical_evidence:
+      - invoice and cost data
+      - supplier or partner terms
+      - implementation data
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - Assumption
+      proof_direction: Build the actual contribution bridge.
+    - id: GF-ECO-03
+      question: What evidence supports gross-margin or contribution-margin expansion?
+      concept_families:
+      - margin_expansion
+      - automation
+      - utilization
+      - procurement
+      - pricing_power
+      typical_evidence:
+      - historical margin bridge
+      - cost curve
+      - capacity data
+      - pricing evidence
+      expected_case_outputs:
+      - CaseReading
+      - Assumption
+      - Risk
+      proof_direction: Require a causal mechanism rather than a target percentage.
+    - id: GF-ECO-04
+      question: What does it cost to acquire, contract, implement and retain the relevant customer or economic unit,
+        and how quickly is that cost recovered?
+      concept_families:
+      - acquisition_cost
+      - contracting_cost
+      - implementation_cost
+      - retention_cost
+      - cost_recovery
+      typical_evidence:
+      - sales and marketing allocation
+      - implementation labor
+      - cohort gross profit
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - CoverageLimit
+      proof_direction: Use the economic unit and contribution definition supplied by the active business-model modules.
+    - id: GF-ECO-05
+      question: At what growth and margin state does the company generate EBITDA and free cash flow, and what capital
+        is consumed first?
+      concept_families:
+      - ebitda
+      - free_cash_flow
+      - breakeven
+      - capital_consumption
+      typical_evidence:
+      - integrated model
+      - working capital
+      - capex
+      - cash taxes
+      expected_case_outputs:
+      - ModelNode
+      - CaseReading
+      - Risk
+      proof_direction: Connect growth quality to self-funding capacity.
+    reasoning_operators:
+    - ECONOMIC_UNIT
+    - PRICE_VOLUME_MIX
+    - CONTRIBUTION_MARGIN
+    - FULLY_LOADED_CAC
+    - OPERATING_LEVERAGE
+    - CASH_CONVERSION
+    failure_modes:
+    - management gross margin omits delivery or refurbishment cost
+    - software narrative hides services or implementation intensity
+    - margin expansion relies on unproven automation
+    - growth is attractive before acquisition and support cost but not after
+    - EBITDA path ignores capex, working capital or cash taxes
+    model_bindings:
+    - price
+    - volume
+    - gross_margin
+    - contribution_margin
+    - cac
+    - ltv
+    - ebitda
+    - free_cash_flow
+  OPERATING_CAPACITY_AND_SCALABILITY:
+    governing_question: Can systems, people, capacity, supply and implementation support the planned growth without
+      degrading economics or quality?
+    first_principles_rationale: Revenue growth may be demand-constrained, capacity-constrained or implementation-constrained.
+      Operating bottlenecks must be connected to recognized revenue, customer outcomes, margin and capital.
+    question_families:
+    - id: GF-OPS-01
+      question: What physical, technical or human capacity constrains current delivery?
+      concept_families:
+      - capacity
+      - utilization
+      - bottleneck
+      - delivery_capacity
+      typical_evidence:
+      - site or workflow data
+      - implementation backlog
+      - production metrics
+      - staffing
+      expected_case_outputs:
+      - MetricObservation
+      - CaseReading
+      - Risk
+      proof_direction: Identify the binding constraint rather than average capacity.
+    - id: GF-OPS-02
+      question: What implementation, onboarding or service effort is required for each new customer or unit?
+      concept_families:
+      - implementation_intensity
+      - onboarding
+      - service_capacity
+      typical_evidence:
+      - project data
+      - time tracking
+      - customer go-live history
+      - support data
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - CaseReading
+      proof_direction: Connect bookings to delivery and revenue recognition.
+    - id: GF-OPS-03
+      question: What capex, inventory, working capital or supplier commitment is required to scale?
+      concept_families:
+      - capex
+      - inventory
+      - working_capital
+      - supplier_capacity
+      typical_evidence:
+      - capacity plan
+      - inventory data
+      - payment terms
+      - supplier agreements
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - Condition
+      proof_direction: Model the cash consequence of scale.
+    - id: GF-OPS-04
+      question: Can technology, data, security and reporting systems support a larger and more demanding customer
+        base?
+      concept_families:
+      - systems_readiness
+      - data_quality
+      - security
+      - reporting
+      typical_evidence:
+      - architecture
+      - security review
+      - reporting process
+      - customer requirements
+      expected_case_outputs:
+      - Risk
+      - Condition
+      - WorkItem
+      proof_direction: Treat enterprise readiness as an operating dependency.
+    - id: GF-OPS-05
+      question: What quality, reliability or customer outcome deteriorates if growth arrives faster than planned?
+      concept_families:
+      - quality_at_scale
+      - reliability
+      - service_level
+      - customer_outcome
+      typical_evidence:
+      - failure logs
+      - backlog
+      - SLA data
+      - customer complaints
+      expected_case_outputs:
+      - Risk
+      - CaseReading
+      - Condition
+      proof_direction: Expose the failure state created by growth itself.
+    reasoning_operators:
+    - BOTTLENECK
+    - CAPACITY
+    - IMPLEMENTATION_BRIDGE
+    - WORKING_CAPITAL
+    - SYSTEMS_READINESS
+    - QUALITY_AT_SCALE
+    failure_modes:
+    - sales outpace implementation or production
+    - capacity expansion consumes more capital than modeled
+    - manual operations prevent margin expansion
+    - security or reporting blocks enterprise growth
+    - quality or customer outcomes degrade with scale
+    model_bindings:
+    - capacity
+    - utilization
+    - implementation_time
+    - inventory
+    - working_capital
+    - capex
+    - service_cost
+  MANAGEMENT_ORGANIZATION_AND_GOVERNANCE:
+    governing_question: Can the leadership team build the organization, controls and execution cadence required for
+      the next scale state?
+    first_principles_rationale: Growth underwriting is an organizational scaling problem. The team must move from
+      founder or early executive heroics to repeatable sales, delivery, finance and governance without losing speed.
+    question_families:
+    - id: GF-TEAM-01
+      question: Has management delivered prior forecasts, milestones and corrective actions with credible transparency?
+      concept_families:
+      - forecast_accuracy
+      - execution_history
+      - transparency
+      typical_evidence:
+      - budget versus actual
+      - board history
+      - revised plan
+      - references
+      expected_case_outputs:
+      - MetricObservation
+      - StatedPosition
+      - CaseReading
+      proof_direction: Use observed behavior, not biography alone.
+    - id: GF-TEAM-02
+      question: Which leadership and functional capabilities are missing for the next phase?
+      concept_families:
+      - leadership_gap
+      - functional_maturity
+      - hiring_plan
+      typical_evidence:
+      - organization chart
+      - role requirements
+      - candidate pipeline
+      - operating evidence
+      expected_case_outputs:
+      - Unknown
+      - Condition
+      - WorkItem
+      proof_direction: Map capability gaps to the growth model.
+    - id: GF-TEAM-03
+      question: Can founders delegate and can new executives integrate without damaging the operating engine?
+      concept_families:
+      - delegation
+      - executive_integration
+      - founder_dependency
+      typical_evidence:
+      - references
+      - decision history
+      - turnover
+      - operating cadence
+      expected_case_outputs:
+      - CaseReading
+      - Risk
+      - Outcome
+      proof_direction: Evaluate the transition, not only the hire.
+    - id: GF-TEAM-04
+      question: Are incentives, governance, reporting and controls aligned with the capital and execution plan?
+      concept_families:
+      - incentives
+      - governance
+      - reporting_controls
+      - board_effectiveness
+      typical_evidence:
+      - cap table
+      - board materials
+      - audit findings
+      - reserved matters
+      expected_case_outputs:
+      - Condition
+      - Risk
+      - CaseReading
+      proof_direction: Separate legal rights from demonstrated governance quality.
+    - id: GF-TEAM-05
+      question: What key-person, integrity, reporting or organizational risk could impair financing or exit?
+      concept_families:
+      - key_person
+      - integrity
+      - reporting_quality
+      - exit_readiness
+      typical_evidence:
+      - references
+      - audit history
+      - regulatory evidence
+      - management behavior
+      expected_case_outputs:
+      - Risk
+      - CaseReading
+      - WorkItem
+      proof_direction: Connect governance and reporting to enterprise value and liquidity.
+    reasoning_operators:
+    - FORECAST_ACCURACY
+    - ROLE_REQUIREMENT_MAPPING
+    - REFERENCE_TRIANGULATION
+    - DELEGATION
+    - GOVERNANCE_ALIGNMENT
+    - CONTROL_READINESS
+    failure_modes:
+    - founder-led execution cannot scale
+    - senior hires fail or arrive too late
+    - forecast optimism persists without correction
+    - reporting or control weakness blocks financing or exit
+    - governance rights exist but cannot change behavior
+    model_bindings:
+    - headcount
+    - hiring_date
+    - sales_capacity
+    - opex
+    - forecast_accuracy
+    - financing_date
+  CAPITAL_NEEDS_AND_FINANCING_OPTIONALITY:
+    governing_question: Can the company finance the growth plan and downside without destroying strategic or shareholder
+      optionality?
+    first_principles_rationale: A growth company may still be far from self-funding. The investment case must connect
+      burn, working capital, capex, future raises, debt capacity, dilution and the timing of market access.
+    question_families:
+    - id: GF-CAP-01
+      question: What are current cash, normalized burn, liquidity and runway under base and downside cases?
+      concept_families:
+      - cash
+      - burn
+      - liquidity
+      - runway
+      typical_evidence:
+      - cash data
+      - monthly actuals
+      - working capital
+      - capex plan
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - CaseReading
+      proof_direction: Use an integrated cash view rather than EBITDA alone.
+    - id: GF-CAP-02
+      question: How much capital is required to reach self-funding or the next credible financing state?
+      concept_families:
+      - capital_need
+      - breakeven_funding
+      - next_financing
+      typical_evidence:
+      - integrated model
+      - use of funds
+      - milestones
+      - financing plan
+      expected_case_outputs:
+      - ModelNode
+      - Assumption
+      - Condition
+      proof_direction: Separate planned raise from required capital.
+    - id: GF-CAP-03
+      question: What debt, working-capital, project, grant, prepayment or partner financing is available and conditional
+        on what?
+      concept_families:
+      - non_equity_financing
+      - debt_capacity
+      - prepayment
+      - grant
+      - project_finance
+      typical_evidence:
+      - financing terms
+      - contract cash flows
+      - lender evidence
+      - grant conditions
+      expected_case_outputs:
+      - Condition
+      - ModelNode
+      - Risk
+      proof_direction: Connect funding availability to operating evidence and covenants.
+    - id: GF-CAP-04
+      question: What dilution, preference or control change follows if the base case slips?
+      concept_families:
+      - dilution
+      - down_round
+      - preference
+      - control_shift
+      typical_evidence:
+      - cap-table scenarios
+      - term sheets
+      - waterfall
+      - bridge options
+      expected_case_outputs:
+      - ModelNode
+      - Risk
+      - CaseReading
+      proof_direction: Represent the path-dependent downside.
+    - id: GF-CAP-05
+      question: Does the company retain strategic options if public, private or debt markets close?
+      concept_families:
+      - financing_optionality
+      - contingency
+      - liquidity_buffer
+      typical_evidence:
+      - downside plan
+      - cost actions
+      - strategic alternatives
+      - insider support
+      expected_case_outputs:
+      - Risk
+      - WorkItem
+      - Condition
+      proof_direction: Test whether the company can choose rather than merely survive.
+    reasoning_operators:
+    - CASH_RUNWAY
+    - CAPITAL_TO_BREAKEVEN
+    - FINANCING_PATH
+    - DEBT_CAPACITY
+    - DILUTION
+    - CONTINGENCY
+    failure_modes:
+    - growth plan requires an unmodeled financing
+    - working capital or inventory absorbs cash before revenue
+    - market closure forces a punitive bridge or recapitalization
+    - insider support is assumed rather than evidenced
+    - liquidity risk and valuation risk compound
+    model_bindings:
+    - cash
+    - burn
+    - runway
+    - working_capital
+    - capex
+    - debt
+    - next_round
+    - dilution
+  VALUATION_RETURNS_AND_LIQUIDITY:
+    governing_question: What outcome distribution does the entry security create after realistic growth, margin, capital,
+      dilution and liquidity assumptions?
+    first_principles_rationale: Growth returns are especially exposed to duration and multiple. Valuation must be
+      linked to the quality and persistence of the operating engine, future capital needs and the security's path
+      to liquidity.
+    question_families:
+    - id: GF-RET-01
+      question: What is the current valuation and security basis relative to actual, run-rate and forward economics?
+      concept_families:
+      - entry_valuation
+      - security
+      - actual_vs_forward_multiple
+      typical_evidence:
+      - term sheet
+      - cap table
+      - actuals
+      - forecast
+      expected_case_outputs:
+      - MetricObservation
+      - Definition
+      - CaseReading
+      proof_direction: Keep actual, run-rate and forecast denominators distinct.
+    - id: GF-RET-02
+      question: Which growth duration, margin, capital and dilution assumptions support the return?
+      concept_families:
+      - growth_duration
+      - margin_path
+      - capital_need
+      - dilution
+      typical_evidence:
+      - integrated model
+      - scenario bridge
+      - capital plan
+      expected_case_outputs:
+      - Assumption
+      - ModelNode
+      - Risk
+      proof_direction: Expose the operating assumptions embedded in price.
+    - id: GF-RET-03
+      question: What downside is produced by slower growth, weaker retention, lower margin, more capital or multiple
+        compression?
+      concept_families:
+      - downside
+      - sensitivity
+      - multiple_compression
+      - financing_downside
+      typical_evidence:
+      - scenario analysis
+      - historical misses
+      - public/private comparables
+      expected_case_outputs:
+      - ModelNode
+      - CaseReading
+      - Risk
+      proof_direction: Use coherent downside states rather than isolated sensitivities alone.
+    - id: GF-RET-04
+      question: 'What liquidity route and timing are plausible: strategic sale, sponsor sale, IPO, secondary or continued
+        private ownership?'
+      concept_families:
+      - exit_route
+      - liquidity_timing
+      - buyer_universe
+      typical_evidence:
+      - transaction evidence
+      - public readiness
+      - strategic buyer map
+      - secondary market
+      expected_case_outputs:
+      - Assumption
+      - Condition
+      - CaseReading
+      proof_direction: Treat liquidity as a conditional path with timing, execution and market dependencies.
+    - id: GF-RET-05
+      question: What rights, preferences, fees or secondary components alter the investor's actual payoff?
+      concept_families:
+      - security_rights
+      - preference
+      - fees
+      - secondary
+      typical_evidence:
+      - legal terms
+      - SPV terms
+      - waterfall
+      - cap table
+      expected_case_outputs:
+      - Definition
+      - ModelNode
+      - Condition
+      proof_direction: Calculate the security return, not only enterprise value.
+    reasoning_operators:
+    - ACTUAL_VS_FORWARD_MULTIPLE
+    - GROWTH_DURATION
+    - SCENARIO
+    - MULTIPLE_COMPRESSION
+    - LIQUIDITY_PATH
+    - WATERFALL
+    failure_modes:
+    - high growth hides weak current economics
+    - return requires simultaneous success in growth, margin and multiple
+    - exit timing is treated as certain
+    - future financing and dilution are omitted
+    - security economics differ from headline enterprise valuation
+    model_bindings:
+    - entry_value
+    - revenue_or_profit_metric
+    - growth
+    - margin
+    - dilution
+    - exit_multiple
+    - moic
+    - irr
+  REUNDERWRITING_AND_TRANSFORMATION:
+    governing_question: What has the company proved, broken or changed, and what case is investable from today's state?
+    first_principles_rationale: Growth cases evolve quickly. A re-underwrite must compare the original engine with
+      actual cohorts, execution, capital use and strategic changes, rather than preserving the old thesis through
+      narrative.
+    question_families:
+    - id: GF-REU-01
+      question: Which original growth, retention, margin, financing and organizational assumptions are confirmed or
+        contradicted?
+      concept_families:
+      - original_case
+      - actual_vs_plan
+      - assumption_outcome
+      typical_evidence:
+      - prior decision basis
+      - actuals
+      - cohorts
+      - cash and organization history
+      expected_case_outputs:
+      - Outcome
+      - CaseReading
+      - Risk
+      proof_direction: Replay the original state before updating the thesis.
+    - id: GF-REU-02
+      question: Has the core engine weakened, or has the constraint moved to a new segment, product, team or capacity
+        layer?
+      concept_families:
+      - constraint_shift
+      - core_engine
+      - new_bottleneck
+      typical_evidence:
+      - segment performance
+      - customer evidence
+      - operating metrics
+      - organization changes
+      expected_case_outputs:
+      - Question
+      - CaseReading
+      - WorkItem
+      proof_direction: Distinguish thesis failure from a changed bottleneck.
+    - id: GF-REU-03
+      question: Does a revised plan describe a tested corrective mechanism or only a lower forecast?
+      concept_families:
+      - transformation_plan
+      - corrective_mechanism
+      - reacceleration
+      typical_evidence:
+      - initiative owner
+      - milestone
+      - leading indicator
+      - cost and timing
+      expected_case_outputs:
+      - Assumption
+      - Condition
+      - WorkItem
+      proof_direction: Require causal and owned corrective work.
+    - id: GF-REU-04
+      question: What is the incremental value and downside of additional capital, a bridge, secondary sale or transformation?
+      concept_families:
+      - incremental_return
+      - bridge
+      - secondary
+      - transformation_value
+      typical_evidence:
+      - new terms
+      - updated model
+      - liquidity evidence
+      - capital alternatives
+      expected_case_outputs:
+      - ModelNode
+      - CaseReading
+      - Condition
+      proof_direction: Evaluate the new decision independently of sunk cost.
+    - id: GF-REU-05
+      question: What later evidence should reopen the revised case?
+      concept_families:
+      - reopen_rule
+      - monitoring_trigger
+      - decision_condition
+      typical_evidence:
+      - leading indicators
+      - covenants
+      - customer milestones
+      - financing deadlines
+      expected_case_outputs:
+      - Condition
+      - WorkItem
+      - Outcome
+      proof_direction: Turn the revised plan into a monitored case.
+    reasoning_operators:
+    - REPLAY
+    - ACTUAL_VS_ASSUMPTION
+    - BOTTLENECK_SHIFT
+    - TRANSFORMATION_CAUSALITY
+    - SUNK_COST_EXCLUSION
+    - REOPEN_RULE
+    failure_modes:
+    - old thesis survives because one layer still looks positive
+    - forecast reset is mistaken for corrective action
+    - bridge capital funds time but not a mechanism
+    - sunk cost or prior mark drives the new decision
+    - new plan lacks leading indicators and reopening rules
+    model_bindings:
+    - actual_vs_plan
+    - cohort_change
+    - margin_change
+    - cash_consumed
+    - new_capital
+    - incremental_return
+canonical_concepts:
+- id: G_MARKET_DEFINITION
+  label: Current market definition
+  family: market_headroom
+  kind: definition
+  required_identity:
+  - product
+  - buyer
+  - geography
+  - value_chain
+  - period
+- id: G_MARKET_GROWTH
+  label: Market growth
+  family: market_headroom
+  kind: metric
+  required_identity:
+  - market_definition
+  - period
+  - geography
+  - basis
+- id: G_SHARE_CAPTURE
+  label: Share capture
+  family: market_headroom
+  kind: metric_or_assumption
+  required_identity:
+  - company
+  - market_definition
+  - period
+  - basis
+- id: G_GROWTH_DURATION
+  label: Growth duration
+  family: market_headroom
+  kind: assumption
+  required_identity:
+  - company_or_market
+  - start_period
+  - end_condition
+  - scenario
+- id: G_EXPANSION_VECTOR
+  label: Expansion vector
+  family: market_headroom
+  kind: qualitative_topic
+  required_identity:
+  - source_segment
+  - target_segment
+  - product_or_geography
+  - time_scope
+- id: G_CUSTOMER_VALUE
+  label: Customer value or ROI
+  family: product_value
+  kind: metric_or_reading
+  required_identity:
+  - customer_segment
+  - use_case
+  - baseline
+  - period
+  - measurement
+- id: G_PRODUCT_USAGE
+  label: Product usage
+  family: product_value
+  kind: metric
+  required_identity:
+  - customer_or_cohort
+  - product_or_feature
+  - period
+  - measurement
+- id: G_WORKFLOW_CRITICALITY
+  label: Workflow criticality
+  family: product_value
+  kind: case_reading
+  required_identity:
+  - customer_segment
+  - workflow
+  - time_scope
+- id: G_MOAT_MECHANISM
+  label: Moat mechanism
+  family: product_value
+  kind: assumption_or_reading
+  required_identity:
+  - mechanism_type
+  - product_or_market
+  - time_scope
+- id: G_PLATFORM_DEPENDENCY
+  label: Platform dependency
+  family: product_value
+  kind: risk
+  required_identity:
+  - platform
+  - dependency_type
+  - product
+  - time_scope
+- id: G_REVENUE
+  label: Revenue
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - recognition_basis
+  - scenario
+  - currency
+- id: G_ARR
+  label: Annual recurring revenue
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - as_of_or_period
+  - customer_perimeter
+  - arr_definition
+  - scenario
+  - currency
+- id: G_BOOKINGS
+  label: Bookings
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - booking_definition
+  - contract_perimeter
+  - currency
+- id: G_BACKLOG
+  label: Backlog
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - as_of
+  - backlog_definition
+  - contract_status
+  - currency
+- id: G_ORGANIC_GROWTH
+  label: Organic growth
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - organic_definition
+  - measurement
+- id: G_ACQUIRED_GROWTH
+  label: Acquired growth
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - acquisition_perimeter
+  - basis
+  - measurement
+- id: G_GROSS_RETENTION
+  label: Gross retention
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - cohort
+  - period
+  - retention_definition
+  - measurement
+- id: G_NET_RETENTION
+  label: Net retention
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - cohort
+  - period
+  - retention_definition
+  - measurement
+- id: G_CHURN
+  label: Churn
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - cohort_or_population
+  - period
+  - churn_definition
+  - measurement
+- id: G_COHORT_EXPANSION
+  label: Cohort expansion
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - cohort
+  - period
+  - expansion_definition
+  - measurement
+- id: G_CUSTOMER_CONCENTRATION
+  label: Customer concentration
+  family: revenue_quality
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - customer_perimeter
+  - measure
+- id: G_PIPELINE
+  label: Pipeline
+  family: gtm
+  kind: metric_set
+  required_identity:
+  - entity
+  - as_of
+  - stage_definition
+  - segment
+  - currency
+- id: G_PIPELINE_CONVERSION
+  label: Pipeline conversion
+  family: gtm
+  kind: metric
+  required_identity:
+  - entity
+  - cohort
+  - start_stage
+  - end_stage
+  - period
+  - basis
+- id: G_SALES_CYCLE
+  label: Sales cycle
+  family: gtm
+  kind: metric
+  required_identity:
+  - entity
+  - segment
+  - start_definition
+  - end_definition
+  - period
+  - unit
+- id: G_SALES_CAPACITY
+  label: Sales capacity
+  family: gtm
+  kind: model_output
+  required_identity:
+  - entity
+  - period
+  - rep_definition
+  - productivity_basis
+  - scenario
+- id: G_REP_RAMP
+  label: Sales-rep ramp
+  family: gtm
+  kind: metric_or_assumption
+  required_identity:
+  - entity
+  - rep_cohort
+  - period
+  - productivity_definition
+- id: G_WIN_RATE
+  label: Win rate
+  family: gtm
+  kind: metric
+  required_identity:
+  - entity
+  - opportunity_cohort
+  - period
+  - win_definition
+- id: G_CAC
+  label: Customer acquisition cost
+  family: gtm
+  kind: metric
+  required_identity:
+  - entity
+  - segment
+  - channel
+  - period
+  - cost_definition
+  - currency
+- id: G_CAC_PAYBACK
+  label: CAC payback
+  family: gtm
+  kind: metric
+  required_identity:
+  - entity
+  - segment
+  - channel
+  - period
+  - gross_profit_definition
+  - unit
+- id: G_LTV
+  label: Customer lifetime value
+  family: gtm
+  kind: metric_or_model_output
+  required_identity:
+  - entity
+  - segment
+  - cohort
+  - value_definition
+  - currency
+- id: G_PRICING_OR_ARPU
+  label: Pricing or ARPU
+  family: unit_economics
+  kind: metric
+  required_identity:
+  - product
+  - customer_segment
+  - period
+  - pricing_definition
+  - currency
+- id: G_GROSS_MARGIN
+  label: Gross margin
+  family: unit_economics
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - cost_definition
+  - scenario
+- id: G_CONTRIBUTION_MARGIN
+  label: Contribution margin
+  family: unit_economics
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - economic_unit
+  - cost_definition
+  - scenario
+- id: G_IMPLEMENTATION_COST
+  label: Implementation or onboarding cost
+  family: unit_economics
+  kind: metric
+  required_identity:
+  - entity
+  - customer_segment
+  - period
+  - cost_definition
+  - currency
+- id: G_SERVICE_INTENSITY
+  label: Service intensity
+  family: unit_economics
+  kind: metric_or_reading
+  required_identity:
+  - entity
+  - customer_segment
+  - period
+  - activity_definition
+- id: G_EBITDA
+  label: EBITDA
+  family: unit_economics
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - accounting_basis
+  - scenario
+  - currency
+- id: G_FREE_CASH_FLOW
+  label: Free cash flow
+  family: unit_economics
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - calculation_basis
+  - scenario
+  - currency
+- id: G_CAPACITY
+  label: Operating capacity
+  family: operations
+  kind: metric
+  required_identity:
+  - entity_or_site
+  - period
+  - capacity_definition
+  - unit
+  - scenario
+- id: G_UTILIZATION
+  label: Utilization
+  family: operations
+  kind: metric
+  required_identity:
+  - entity_or_site
+  - period
+  - capacity_definition
+  - basis
+- id: G_WORKING_CAPITAL
+  label: Working capital
+  family: operations
+  kind: metric
+  required_identity:
+  - entity
+  - period_or_as_of
+  - component_definition
+  - scenario
+  - currency
+- id: G_FORECAST_ACCURACY
+  label: Forecast accuracy
+  family: management
+  kind: metric
+  required_identity:
+  - entity
+  - forecast_vintage
+  - actual_period
+  - metric_definition
+- id: G_ORGANIZATIONAL_READINESS
+  label: Organizational readiness
+  family: management
+  kind: case_reading
+  required_identity:
+  - capability_set
+  - growth_stage
+  - time_scope
+- id: G_REPORTING_QUALITY
+  label: Reporting quality
+  family: management
+  kind: case_reading_or_risk
+  required_identity:
+  - entity
+  - reporting_scope
+  - period
+  - standard
+- id: G_CASH_BURN
+  label: Cash burn
+  family: capital
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - cash_cost_definition
+  - scenario
+  - currency
+- id: G_RUNWAY
+  label: Runway
+  family: capital
+  kind: model_output
+  required_identity:
+  - entity
+  - as_of
+  - cash_definition
+  - burn_basis
+  - scenario
+  - unit
+- id: G_CAPITAL_TO_BREAKEVEN
+  label: Capital to breakeven
+  family: capital
+  kind: model_output
+  required_identity:
+  - entity
+  - start_date
+  - breakeven_definition
+  - scenario
+  - currency
+- id: G_DILUTION_PATH
+  label: Dilution path
+  family: capital
+  kind: model_output
+  required_identity:
+  - security_or_holder
+  - financing_sequence
+  - scenario
+  - measurement
+- id: G_ENTRY_VALUATION
+  label: Entry valuation
+  family: returns
+  kind: metric
+  required_identity:
+  - company_or_security
+  - valuation_date
+  - security_basis
+  - valuation_method
+  - scenario
+  - currency
+- id: G_EXIT_MULTIPLE
+  label: Exit multiple
+  family: returns
+  kind: assumption
+  required_identity:
+  - company
+  - exit_metric_definition
+  - exit_date_or_horizon
+  - scenario
+- id: G_LIQUIDITY_PATH
+  label: Liquidity path
+  family: returns
+  kind: assumption_or_condition
+  required_identity:
+  - company_or_security
+  - route
+  - time_horizon
+  - scenario
+- id: G_RETURN
+  label: Security return
+  family: returns
+  kind: model_output
+  required_identity:
+  - security_or_holder
+  - return_measure
+  - entry_date
+  - exit_date_or_horizon
+  - fee_basis
+  - scenario
+- id: G_TRANSFORMATION_PLAN
+  label: Transformation or reacceleration plan
+  family: reunderwriting
+  kind: assumption_set
+  required_identity:
+  - company
+  - constraint
+  - initiative_set
+  - period
+  - owner_set
+- id: G_INCREMENTAL_CAPITAL_RETURN
+  label: Incremental capital return
+  family: reunderwriting
+  kind: model_output
+  required_identity:
+  - new_security_or_action
+  - decision_date
+  - scenario
+  - fee_basis
+model_grammar:
+  purpose: Translate an observable operating engine into reconciled growth, contribution, cash, financing and security-level
+    outcomes.
+  principles:
+  - Reconcile metric definitions before modeling growth.
+  - Build growth from the economic units and causal relationships selected by the business-model modules.
+  - Separate organic, acquired, price, volume, mix, repeat, expansion and new-customer effects where applicable.
+  - Use the economically correct gross or contribution measure, not a label supplied by a source.
+  - Connect contracted or indicated demand to implementation, delivery and recognized revenue.
+  - Model financing, dilution, liquidity timing and multiple compression explicitly.
+  - No valuation output becomes a human Decision or canonical supported price.
+  modules:
+    operating_engine_bridge:
+      activation: Always; the active business-model modules define the economic unit and bridge.
+      relationship: Opening economic base + new activity + repeat or expansion + price/volume/mix effects - churn,
+        contraction, loss or cancellation = ending economic base and recognized output.
+      outputs:
+      - recognized_revenue
+      - durable_economic_base
+      - growth_decomposition
+      - customer_or_unit_state
+    commercial_capacity:
+      activation: When growth depends on identifiable sales, channel, transaction-supply, project-origination or deployment
+        capacity.
+      relationship: Available productive capacity × ramp or readiness × conversion or completion × realized output
+        determines new business or delivered volume.
+      outputs:
+      - new_revenue_or_volume
+      - capacity_requirement
+      - hiring_or_supply_dependency
+    unit_economics:
+      activation: When the business has a definable economic unit or contract.
+      relationship: Realized value less fully loaded acquisition, delivery, implementation, support, loss and capital
+        cost determines unit or contract contribution.
+      outputs:
+      - gross_profit
+      - contribution
+      - payback_or_cash_recovery
+      - economic_unit_quality
+    operating_leverage:
+      activation: When scale, profitability, cash or additional financing is decision-relevant.
+      relationship: Gross or contribution profit less operating costs, capex, working capital, cash taxes and financing
+        requirements determines cash generation.
+      outputs:
+      - ebitda_or_operating_profit
+      - free_cash_flow
+      - capital_to_self_funding
+    returns_and_liquidity:
+      activation: Always at a security Decision.
+      relationship: Operating duration and quality, financing and dilution, security terms, valuation and liquidity
+        timing determine investor outcomes.
+      outputs:
+      - loss_state
+      - downside_state
+      - base_state
+      - upside_state
+      - return_measures
+toolkit:
+  CUSTOMER_COHORT_AND_RETENTION_ANALYSIS:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - revenue quality
+    - retention
+    - expansion
+    - concentration
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  CUSTOMER_REFERENCE_AND_WIN_LOSS:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - customer value
+    - switching
+    - renewal drivers
+    - competitive position
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  CRM_PIPELINE_AND_SALES_CAPACITY_AUDIT:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - pipeline quality
+    - conversion
+    - sales cycle
+    - rep productivity
+    - forecast
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  PRICING_AND_UNIT_ECONOMICS_REBUILD:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - price realization
+    - economic unit
+    - gross and contribution margin
+    - CAC/payback
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  FINANCIAL_AND_REPORTING_QUALITY_REVIEW:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - metric definition
+    - revenue recognition
+    - forecast accuracy
+    - cash and controls
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  PRODUCT_TECHNICAL_AND_SECURITY_REVIEW:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - product value
+    - moat
+    - platform risk
+    - enterprise readiness
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  MARKET_HEADROOM_AND_SEGMENTATION:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - market definition
+    - growth duration
+    - share capture
+    - expansion vectors
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  OPERATING_CAPACITY_AND_SITE_REVIEW:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - capacity
+    - implementation
+    - working capital
+    - quality at scale
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  MANAGEMENT_ORGANIZATION_AND_CONTROL_REVIEW:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - forecast credibility
+    - leadership gaps
+    - delegation
+    - reporting and governance
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  INTEGRATED_MODEL_AND_RETURN_SENSITIVITY:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - growth bridge
+    - operating leverage
+    - capital need
+    - valuation and return
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  REUNDERWRITING_AND_TRANSFORMATION_REVIEW:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - actual versus original case
+    - constraint shift
+    - corrective plan
+    - incremental capital
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+compiler_use:
+  routing_rule: Use engine maturity, workstream and concept families. Do not route only by round or company label.
+  binding_rule: Bind claims to exact metric identities and Questions before computing revenue quality, repeatability
+    or operating leverage.
+  new_structure_rule: Propose new segment, product, geography, capacity or transformation Questions when the existing
+    engine no longer explains the case.
+  day_zero_rule: Show the available operating evidence and unanswered repeatability Questions without inventing a
+    positive Reading.
+  metric_rule: Recognized revenue, recurring base, bookings, backlog, pipeline and business-model operating volume
+    remain separate identities and cannot be silently substituted.
+  question_activation_rule: Use the shared activation contract to form a bounded decision-bearing spine; never instantiate
+    every family.
+  module_rule: Select maturity, business-model, sector and transaction modules independently and preserve every origin.
+  tool_rule: A completed method may add evidence, CoverageLimits or WorkItems; it cannot automatically close a Question.
+  concept_activation_rule: Canonical concept seeds are available vocabulary, not compulsory fields. Activate only
+    those made applicable by the Deal Frame, active modules, source evidence or model dependencies.
+non_goals:
+- Treat headline growth or a large pipeline as evidence of repeatability.
+- Require a software-specific metric set for every Growth company.
+- Assume margin expansion because scale increases.
+- Encode one institution's hurdle, concentration limit, ownership target or process.
+- Treat follow-on capital as automatically protective of an existing position.
+- Prevent Venture or sector modules from activating where the case remains technically or regulatorily unproven.
+- Treat a business model as a sector or a sector as a business model.
+- Store empirical corpus counts or institution-specific validation metadata in the production pack.
+- Duplicate maturity, business-model, sector or transaction module definitions inside the pack.
+- Treat completion of a diligence method or artifact as closure of an underwriting Question.
+- Represent deal sourcing, fundraising, limited-partner relations or the complete investment-firm operating model.
+- Replace a dedicated ownership, portfolio-monitoring or operating-value-creation system beyond case re-underwriting.
+- Treat every canonical concept seed as an active metric or required data field.
+- Force a debt-dominant, control-buyout or asset-level infrastructure case into Venture or Growth.
+archetype_boundary:
+  definition: Reusable Growth economics and epistemology, not the preferences of one institution.
+  inclusion_test:
+  - The item remains relevant for another competent Growth investor facing the same engine and transaction.
+  - The item follows from revenue quality, repeatability, operating leverage, capital needs or liquidity mechanics.
+  - The item survives changes in committee, ticket, threshold, template, provider and cadence.
+  excluded_to_fund_lens:
+  - minimum growth, retention, margin or runway threshold
+  - return hurdle and valuation ceiling
+  - target ownership, ticket and concentration
+  - required audit, customer-reference or diligence depth
+  - follow-on, write-down and liquidity policy
+  - authority bodies and process cadence
+  - house metric definitions and accepted adjustments
+  - preferred sectors, geographies, investors and providers
+  excluded_to_deal_state:
+  - specific company facts, sources, people, values, dates, terms, customers, forecasts and decisions
+  evidence_examples_rule: Evidence lists guide retrieval and work design. They are non-exhaustive and never constitute
+    mandatory sufficiency or automatic closure.
+cross_strategy_functions_reference:
+- DealFrame
+- QuestionEngine
+- EvidenceProvenance
+- DecisionCriticalWork
+- StatedPosition
+- CaseReading
+- Ledger
+- Dynamic
+module_refs:
+  maturity_registry: 04_maturity_modules_v1_1.yaml
+  maturity_modules:
+  - EARLY_COMMERCIAL_PROOF
+  - EARLY_REPEATABILITY
+  - SCALE_AND_REPLICATION
+  - INSTITUTIONAL_SCALE
+  business_model_registry: 05_business_model_modules_v1_1.yaml
+  business_model_modules:
+  - RECURRING_SUBSCRIPTION
+  - USAGE_OR_CONSUMPTION
+  - COMMERCE_OR_INVENTORY
+  - HARDWARE_OR_EQUIPMENT
+  - INSTALLED_BASE_PLUS_RECURRING
+  - SERVICES_OR_TECH_ENABLED_SERVICES
+  - PROJECT_OR_CONTRACTED_PROGRAM
+  - LICENSING_ROYALTY_OR_MILESTONE
+  - ADVERTISING_OR_DATA_MONETIZATION
+  - BALANCE_SHEET_OR_RISK_BEARING
+  - TRANSACTION_PROCESSING_OR_TAKE_RATE
+  - MARKETPLACE_OR_NETWORK
+  - ASSET_OR_VOLUME_BASED_FEE
+  sector_overlay_registry: 06_sector_overlay_candidates_v1_1.yaml
+  sector_overlay_candidates:
+  - AI_AND_AUTONOMOUS_DECISION_SYSTEMS
+  - DEEP_TECH_AND_ADVANCED_HARDWARE
+  - HEALTHCARE_AND_LIFE_SCIENCES
+  - FINANCIAL_SERVICES_AND_REGULATED_FINTECH
+  - CLIMATE_ENERGY_AND_INDUSTRIAL
+  - PUBLIC_SECTOR_DEFENSE_AND_REGULATED_PROCUREMENT
+  - CONSUMER
+  - ENTERPRISE_CRITICAL_WORKFLOW
+  transaction_registry: 07_transaction_modules_v1_1.yaml
+  transaction_modules:
+  - NEW_PRIMARY
+  - FOLLOW_ON
+  - BRIDGE_OR_RECAPITALIZATION
+  - PRIMARY_PLUS_SECONDARY
+  - SECONDARY_PURCHASE
+  - SECONDARY_SALE_OR_PARTIAL_LIQUIDITY
+  - UNPRICED_OR_CONVERTIBLE_SECURITY
+  - PRICED_EQUITY
+  - LEAD_OR_GOVERNANCE_ROLE
+  - INTERMEDIATED_EXPOSURE
+  - PRE_IPO_OR_PUBLIC_TRANSITION
+  - INORGANIC_GROWTH
+  - STRATEGIC_SALE_OR_EXIT_PROCESS
+  - TRANCHED_OR_MILESTONE_FINANCING
+  - STRUCTURED_PREFERRED_OR_REDEMPTION
+  - CROSS_BORDER_OR_MULTI_JURISDICTION
+  selection_rule: Activate only applicable modules and record the activation rationale. Module availability is not
+    automatic activation.
+question_activation_ref: 03_archetype_selection_and_shared_grammar_v1_1.yaml#question_activation_contract
+toolkit_rule: Work methods create evidence and artifacts. Question status changes only through admitted evidence,
+  CaseReading recomputation and human Decision where required.

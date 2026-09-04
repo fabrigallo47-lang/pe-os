@@ -39,7 +39,9 @@ import mailbox
 import os
 import re
 import sys
+import copy
 import textwrap
+from functools import lru_cache
 import time
 import zipfile
 from concurrent.futures import ThreadPoolExecutor, as_completed
@@ -64,7 +66,8 @@ from tools.llm_provider import (  # noqa: E402
     openrouter_extra_body,
 )
 from tools.archetype_pack import (  # noqa: E402
-    load_pack, missing_required_identity, workstream_ids,
+    DEFAULT_ARCHETYPE, extraction_vocabulary, load_pack,
+    missing_required_identity, workstream_ids,
 )
 from tools.derivation_verifier import verify_derivation  # noqa: E402
 from tools.object_identity import claim_id as canonical_claim_id  # noqa: E402
@@ -691,6 +694,21 @@ CLAIM_TOOL = {
                                 "position, objection or vote is ATTRIBUTION; CHARACTERISATION "
                                 "is for un-attributed narrative color with no party to check it "
                                 "against.\n"
+                                "Attribution alone does not decide this — a seller's adjectives "
+                                "are still adjectives when a named party says them. The test is "
+                                "whether the VIEW ITSELF contains something confirmable or "
+                                "refutable. 'Management describes the company as a leading, "
+                                "scaled platform with attractive momentum' is CHARACTERISATION: "
+                                "strip the attribution and nothing testable remains. 'The IC "
+                                "believes current product truth is narrower than the deck: "
+                                "partly detect, not full classification' is ATTRIBUTION: the "
+                                "view carries a substantive proposition about what the product "
+                                "does, which later evidence can confirm or refute, and the fact "
+                                "that this committee holds it is itself checkable. A deal team's "
+                                "or committee's reasoning about the target is almost always the "
+                                "second kind — it is the most decision-critical content in the "
+                                "document, and labelling it CHARACTERISATION removes it from the "
+                                "graph entirely.\n"
                                 "An instruction telling the reader HOW TO ANALYSE the data in "
                                 "this fragment ('aggregate accounts only when the ultimate-"
                                 "parent field is identical', 'similar names alone do not "
@@ -803,6 +821,40 @@ CLAIM_TOOL = {
         },
     },
 }
+
+def metric_vocabulary(archetype_id: str = DEFAULT_ARCHETYPE) -> list[str]:
+    """Metric labels extraction may emit for this archetype.
+
+    buyout returns METRIC_ENUM unchanged -- it IS the buyout vocabulary, and
+    the benchmark scores against it, so the default path is byte-identical to
+    before this existed. venture/growth widen it from their packs.
+    """
+    try:
+        return extraction_vocabulary(archetype_id, METRIC_ENUM)
+    except (KeyError, ValueError, FileNotFoundError):
+        # An unknown or unreadable archetype must not silently narrow the
+        # vocabulary to nothing; fall back to the buyout baseline and let the
+        # caller's own archetype validation surface the problem.
+        return list(METRIC_ENUM)
+
+
+@lru_cache(maxsize=8)
+def claim_tool_for(archetype_id: str = DEFAULT_ARCHETYPE) -> dict:
+    """CLAIM_TOOL with this archetype's metric enum substituted.
+
+    Everything else about the contract -- identity fields, bounds, derivation
+    references, the claim_kind rules -- is archetype-independent on purpose.
+    Only the vocabulary of WHAT can be measured changes with strategy; how a
+    claim is identified does not.
+    """
+    if archetype_id == DEFAULT_ARCHETYPE:
+        return CLAIM_TOOL
+    tool = copy.deepcopy(CLAIM_TOOL)
+    tool["input_schema"]["properties"]["claims"]["items"]["properties"]["metric"]["enum"] = (
+        metric_vocabulary(archetype_id)
+    )
+    return tool
+
 
 SYSTEM_PROMPT = textwrap.dedent("""
     You are a financial claim extractor for a private equity firm (PANTA system).
@@ -3031,6 +3083,7 @@ def annotate_chunk(
     rate_limit_delay: float = 0.25,
     *,
     raise_errors: bool = False,
+    archetype: str = DEFAULT_ARCHETYPE,
 ) -> list[RawClaim]:
     src = chunk.source_record
     prompt = (
@@ -3051,7 +3104,7 @@ def annotate_chunk(
             # more than four claim-bearing rows and need room for tool JSON.
             "max_tokens": MAX_TOKENS,
             "system": SYSTEM_PROMPT,
-            "tools": [CLAIM_TOOL],
+            "tools": [claim_tool_for(archetype)],
             "tool_choice": {"type": "tool", "name": "emit_claims"},
             "messages": [{"role": "user", "content": prompt}],
         }
@@ -3274,10 +3327,10 @@ class CanonicalClaim:
     alternative_to_batch_index: int | None = None
 
 
-def validate(raw: RawClaim) -> CanonicalClaim:
+def validate(raw: RawClaim, archetype: str = DEFAULT_ARCHETYPE) -> CanonicalClaim:
     errors: list[str] = []
     nonblocking_errors: list[str] = []
-    if raw.metric not in METRIC_ENUM:
+    if raw.metric not in metric_vocabulary(archetype):
         errors.append(f"unknown metric: '{raw.metric}'")
     metric_label = (raw.metric_label or "").strip() or None
     if raw.metric == "Other" and not metric_label:

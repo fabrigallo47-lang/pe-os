@@ -1,0 +1,1927 @@
+metadata:
+  name: PANTA Venture Archetype Pack
+  version: 1.1.0
+  date: '2026-09-04'
+  status: IMPLEMENTATION_CANDIDATE_PENDING_BLIND_BENCHMARK
+  extends_kernel: PANTA Universal Investment Kernel 0.2.0
+  purpose: Reusable Venture underwriting grammar for case formation, semantic extraction, model routing and re-underwriting.
+  derivation:
+    top_down: Derived independently from the economics and epistemology of the strategy.
+    evidence_challenge: Challenged against varied underwriting patterns, counterexamples and later-state logic without
+      importing institution-specific policy, names or thresholds.
+    membership_rule: Economic necessity determines Archetype membership; observed frequency never establishes universality.
+  confidentiality:
+    contains_identifiable_firm_fund_person_or_company_names: false
+    contains_proprietary_source_references: false
+    contains_institution_specific_thresholds_or_policies: false
+    contains_case_specific_values_or_examples: false
+  not_a_checklist: true
+  open_world: true
+strategy_definition:
+  strategy: VENTURE
+  core_economic_problem: Underwrite a security and rights exposure to a future enterprise whose technical, customer,
+    economic, organizational and financing states are not yet proven at repeatable scale.
+  epistemic_regime: Evidence is sparse, stage-relative and often created after investment. The case is a proof-and-financing
+    path, not a current-state extrapolation alone.
+  dominant_loss_orientation:
+  - the problem or market does not become urgent enough
+  - technology or product fails the required performance state
+  - early interest never becomes paid, repeated adoption
+  - the company creates value but cannot capture it economically
+  - the team cannot cross the next organizational stage
+  - capital runs out before decisive proof
+  - future dilution, terms or exit state destroy investor returns
+  default_decision_moments:
+  - screen or pursue
+  - initial investment
+  - term or lead decision
+  - closing or funding
+  - follow-on or pro-rata
+  - bridge or rescue
+  - secondary or liquidity
+  - re-underwriting after milestone
+archetype_selection:
+  select_when:
+  - A material part of enterprise value depends on capabilities, demand or economics that do not yet exist at scale.
+  - Capital is used substantially to create evidence, not only to scale a demonstrated engine.
+  - Milestone timing and future financings are constitutive parts of the investment outcome.
+  do_not_select_by:
+  - round label alone
+  - company age alone
+  - technology sector alone
+  hybrid_rule: Activate Growth modules as well when repeatable cohorts, sales or operating economics become observable.
+deal_frame_extensions:
+- product_and_technical_maturity
+- commercial_signal_state
+- current_revenue_state
+- next_value_inflecting_milestones
+- current_cash_and_runway
+- round_or_security
+- primary_secondary_mix
+- current_and_target_ownership
+- lead_or_governance_role
+- follow_on_or_new_investment
+proof_ladder:
+  principle: Evidence states are typed, not collapsed into a single traction label.
+  commercial_progression:
+  - stated interest
+  - design participation
+  - unpaid test
+  - paid pilot
+  - production deployment
+  - repeat purchase or renewal
+  - expansion
+  - repeatable cohort
+  technical_progression:
+  - concept
+  - bench or prototype result
+  - independent test
+  - relevant-environment demonstration
+  - reliable production use
+  - scaled delivery
+  rule: Progression is sector- and stage-sensitive; no universal numeric sufficiency threshold is embedded in the
+    Archetype.
+workstreams:
+  PROBLEM_MARKET_AND_TIMING:
+    governing_question: Is there a real, important and timely problem capable of supporting a venture-scale outcome?
+    first_principles_rationale: At venture stage, current revenue rarely proves the future market. Underwriting must
+      establish the problem, the buyer's urgency, the obtainable beachhead and the exogenous conditions that make
+      the opportunity timely.
+    question_families:
+    - id: VF-MKT-01
+      question: What problem or constraint is severe enough to cause a user, buyer or ecosystem participant to act?
+      concept_families:
+      - problem_severity
+      - buyer_urgency
+      - current_workaround
+      typical_evidence:
+      - observed workflow
+      - customer interviews
+      - spend or loss evidence
+      - existing workaround
+      expected_case_outputs:
+      - Question
+      - CaseReading
+      - Unknown
+      proof_direction: Move from stated pain to observed costly behavior.
+    - id: VF-MKT-02
+      question: Who experiences the problem, who controls budget, and which initial use case is actually obtainable?
+      concept_families:
+      - buyer_user_identity
+      - budget_owner
+      - beachhead_market
+      typical_evidence:
+      - customer evidence
+      - procurement evidence
+      - segment data
+      - early pipeline
+      expected_case_outputs:
+      - Definition
+      - Question
+      - CaseReading
+      proof_direction: Separate users, beneficiaries and economic buyers.
+    - id: VF-MKT-03
+      question: What change in technology, regulation, cost, behavior or infrastructure makes the opportunity possible
+        now?
+      concept_families:
+      - category_timing
+      - enabling_change
+      - market_formation
+      typical_evidence:
+      - historical adoption
+      - regulatory timeline
+      - cost curve
+      - ecosystem evidence
+      expected_case_outputs:
+      - Assumption
+      - Risk
+      - Condition
+      proof_direction: Convert a narrative tailwind into a dated causal mechanism.
+    - id: VF-MKT-04
+      question: How large is the reachable beachhead, and what evidence supports expansion beyond it?
+      concept_families:
+      - beachhead_market
+      - expansion_path
+      - addressable_market
+      typical_evidence:
+      - bottom-up market build
+      - customer counts
+      - pricing evidence
+      - adjacent-use evidence
+      expected_case_outputs:
+      - Definition
+      - MetricObservation
+      - Assumption
+      proof_direction: Distinguish obtainable demand from a theoretical category ceiling.
+    - id: VF-MKT-05
+      question: What observable evidence would falsify the category, beachhead or timing thesis?
+      concept_families:
+      - market_falsifier
+      - timing_risk
+      - substitution
+      typical_evidence:
+      - counterexamples
+      - historical failures
+      - expert challenge
+      - incumbent response
+      expected_case_outputs:
+      - Risk
+      - Unknown
+      - WorkItem
+      proof_direction: Name the cheapest observation that could invalidate the market thesis.
+    reasoning_operators:
+    - PROBLEM_DECOMPOSITION
+    - BUYER_USER_SEPARATION
+    - BOTTOM_UP_MARKET
+    - WHY_NOW_CAUSALITY
+    - COUNTERFACTUAL
+    - FALSIFY
+    failure_modes:
+    - large category with no urgent buyer
+    - user enthusiasm without budget ownership
+    - regulatory or technology timing arrives after runway
+    - beachhead does not support credible expansion
+    - theoretical TAM substituted for obtainable demand
+    model_bindings:
+    - beachhead_units
+    - adoption
+    - price
+    - market_share
+    - timing
+  PRODUCT_AND_TECHNICAL_TRUTH:
+    governing_question: What works today, what remains a roadmap claim, and can the product or technology reach the
+      required performance envelope?
+    first_principles_rationale: Venture value often depends on a future technical or product state. The system must
+      separate observed capability from planned capability and connect each unproven claim to a test, dependency and
+      milestone.
+    question_families:
+    - id: VF-TEC-01
+      question: What capability exists today, under what exact conditions, and with what measured performance?
+      concept_families:
+      - product_state
+      - performance_envelope
+      - technical_definition
+      typical_evidence:
+      - product demonstration
+      - test data
+      - usage logs
+      - technical documentation
+      expected_case_outputs:
+      - Claim
+      - MetricObservation
+      - Definition
+      - CaseReading
+      proof_direction: Anchor claims to the current version, use case and test conditions.
+    - id: VF-TEC-02
+      question: Which roadmap capabilities are required for the investment case, and what evidence would prove them?
+      concept_families:
+      - roadmap_dependency
+      - technical_milestone
+      - proof_requirement
+      typical_evidence:
+      - roadmap
+      - engineering plan
+      - test protocol
+      - milestone schedule
+      expected_case_outputs:
+      - Assumption
+      - Condition
+      - WorkItem
+      proof_direction: Convert roadmap narrative into falsifiable milestones.
+    - id: VF-TEC-03
+      question: Can performance, reliability, safety and quality survive real-world use and scale?
+      concept_families:
+      - reliability
+      - quality
+      - safety
+      - scale_performance
+      typical_evidence:
+      - field data
+      - independent test
+      - failure logs
+      - customer deployment
+      expected_case_outputs:
+      - MetricObservation
+      - Risk
+      - CaseReading
+      proof_direction: Separate a successful demonstration from repeatable production performance.
+    - id: VF-TEC-04
+      question: What manufacturing, infrastructure, data, supply, regulatory or partner dependencies sit outside the
+        company's control?
+      concept_families:
+      - external_dependency
+      - manufacturing_path
+      - infrastructure_dependency
+      - regulatory_dependency
+      typical_evidence:
+      - supplier evidence
+      - site or lab review
+      - partner terms
+      - regulatory materials
+      expected_case_outputs:
+      - Condition
+      - Risk
+      - Unknown
+      proof_direction: Make external dependencies explicit rather than embedding them in a forecast.
+    - id: VF-TEC-05
+      question: Which technical claims have independent support, and which rely only on management or sponsor assertion?
+      concept_families:
+      - technical_evidence_independence
+      - source_weight
+      typical_evidence:
+      - independent expert
+      - customer test
+      - third-party certification
+      - raw test data
+      expected_case_outputs:
+      - CaseReading
+      - CoverageLimit
+      - WorkItem
+      proof_direction: Preserve source independence without imposing a universal evidence threshold.
+    reasoning_operators:
+    - CURRENT_VS_ROADMAP
+    - TEST_CONDITION_NORMALIZATION
+    - FAILURE_MODE
+    - DEPENDENCY_MAPPING
+    - SOURCE_WEIGHT
+    - FALSIFY
+    failure_modes:
+    - prototype success mistaken for production readiness
+    - test conditions do not match the commercial use case
+    - technical milestone slips beyond financing runway
+    - external infrastructure or supplier dependency fails
+    - performance improves while reliability or cost remains unacceptable
+    model_bindings:
+    - milestone_date
+    - technical_success_state
+    - capacity
+    - yield
+    - cost_per_unit
+  CUSTOMER_VALIDATION_AND_PRODUCT_MARKET_FIT:
+    governing_question: What evidence shows that target users and buyers obtain enough value to adopt, pay, repeat
+      and expand?
+    first_principles_rationale: Early signals are heterogeneous. A design partnership, letter of intent, paid pilot,
+      repeated production use and expansion are not interchangeable. Venture underwriting requires a stage-aware evidence
+      ladder.
+    question_families:
+    - id: VF-PMF-01
+      question: What direct outcome or workflow improvement does the product create for the user and buyer?
+      concept_families:
+      - customer_outcome
+      - customer_roi
+      - workflow_value
+      typical_evidence:
+      - customer reference
+      - before-and-after data
+      - competitive trial
+      - usage evidence
+      expected_case_outputs:
+      - Claim
+      - MetricObservation
+      - CaseReading
+      proof_direction: Move from feature approval to measurable customer value.
+    - id: VF-PMF-02
+      question: 'What is the exact status of each commercial signal: interest, design partnership, pilot, contract,
+        deployment, repeat use or expansion?'
+      concept_families:
+      - commercial_signal_state
+      - pilot_status
+      - contract_status
+      - repeat_use
+      typical_evidence:
+      - CRM
+      - contracts
+      - invoices
+      - usage logs
+      - customer calls
+      expected_case_outputs:
+      - Definition
+      - MetricObservation
+      - CoverageLimit
+      proof_direction: Do not collapse pipeline, bookings, revenue and production adoption.
+    - id: VF-PMF-03
+      question: Who pays, from which budget, through what procurement path, and on what timeline?
+      concept_families:
+      - budget_owner
+      - willingness_to_pay
+      - procurement
+      - sales_cycle
+      typical_evidence:
+      - pricing discussion
+      - procurement evidence
+      - lost deal
+      - contract
+      expected_case_outputs:
+      - CaseReading
+      - Assumption
+      - Risk
+      proof_direction: Identify the economic buyer, budget authority, procurement path and time-to-production separately.
+    - id: VF-PMF-04
+      question: Are early customers representative, relationship-driven or unusually motivated?
+      concept_families:
+      - customer_representativeness
+      - founder_led_demand
+      - reference_generalizability
+      typical_evidence:
+      - customer segmentation
+      - reference calls
+      - win-loss analysis
+      - source-of-lead data
+      expected_case_outputs:
+      - Risk
+      - Unknown
+      - WorkItem
+      proof_direction: Separate a useful proof point from a repeatable market signal.
+    - id: VF-PMF-05
+      question: What evidence would mark progression from initial pull to repeatable product-market fit?
+      concept_families:
+      - pmf_milestone
+      - retention
+      - repeat_usage
+      - expansion
+      typical_evidence:
+      - cohort data
+      - renewals
+      - reorders
+      - seat or volume expansion
+      expected_case_outputs:
+      - Question
+      - Condition
+      - MetricObservation
+      proof_direction: Define the next proof state without imposing one universal metric threshold.
+    reasoning_operators:
+    - COMMERCIAL_SIGNAL_NORMALIZATION
+    - CUSTOMER_EVIDENCE_TRIANGULATION
+    - PAID_REPEAT_EXPAND_LADDER
+    - BUYER_USER_SEPARATION
+    - REPRESENTATIVENESS
+    failure_modes:
+    - pilot or letter of intent treated as recurring demand
+    - product score wins but procurement or change management blocks adoption
+    - relationship-led customers do not generalize
+    - usage exists without budget or willingness to pay
+    - support or services effort scales with revenue
+    model_bindings:
+    - paid_customers
+    - pilot_conversion
+    - repeat_rate
+    - expansion
+    - sales_cycle
+    - price
+  BUSINESS_MODEL_AND_VALUE_CAPTURE:
+    governing_question: Can the company convert delivered value into durable revenue and economically attractive gross
+      profit?
+    first_principles_rationale: A valuable technology can fail as an investment if value is captured by customers,
+      platforms, partners or capital providers. The business model must connect price, cost, recurrence and control
+      of the profit pool.
+    question_families:
+    - id: VF-BM-01
+      question: What unit of delivered value is monetized, through which pricing and contract structure, and how does
+        revenue accrue?
+      concept_families:
+      - pricing_unit
+      - contract_structure
+      - revenue_model
+      - value_capture
+      typical_evidence:
+      - price list
+      - contract
+      - invoice
+      - customer willingness-to-pay evidence
+      expected_case_outputs:
+      - Definition
+      - MetricObservation
+      - CaseReading
+      proof_direction: Define monetization and contract economics separately from buyer, budget and procurement evidence.
+    - id: VF-BM-02
+      question: Which revenue is recurring, transactional, milestone-based, service-based or one-off?
+      concept_families:
+      - revenue_quality
+      - recurrence
+      - transaction_revenue
+      - service_revenue
+      typical_evidence:
+      - revenue bridge
+      - contracts
+      - invoices
+      - cohort data
+      expected_case_outputs:
+      - MetricObservation
+      - CaseReading
+      - Unknown
+      proof_direction: Separate present revenue quality from the intended future model.
+    - id: VF-BM-03
+      question: What are current and scaled unit economics, including implementation, support, delivery and partner
+        costs?
+      concept_families:
+      - unit_economics
+      - gross_margin
+      - contribution_margin
+      - service_intensity
+      typical_evidence:
+      - cost build
+      - operating data
+      - customer implementation data
+      - supplier terms
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - Assumption
+      proof_direction: Prevent a services, hardware or partner burden from disappearing inside a software narrative.
+    - id: VF-BM-04
+      question: What capital, inventory, equipment or working-capital burden is required to create revenue?
+      concept_families:
+      - capital_intensity
+      - working_capital
+      - inventory
+      - capex
+      typical_evidence:
+      - cash flow
+      - production plan
+      - supplier/customer payment terms
+      - capacity plan
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - Risk
+      proof_direction: Connect growth to its full funding requirement.
+    - id: VF-BM-05
+      question: Which participant in the ecosystem controls distribution, data, price and the long-run profit pool?
+      concept_families:
+      - value_capture
+      - platform_dependency
+      - partner_economics
+      - profit_pool
+      typical_evidence:
+      - value-chain map
+      - partner agreement
+      - competitive economics
+      - customer interviews
+      expected_case_outputs:
+      - CaseReading
+      - Risk
+      - Condition
+      proof_direction: Distinguish creating value from capturing it.
+    reasoning_operators:
+    - REVENUE_TYPE_NORMALIZATION
+    - UNIT_ECONOMICS
+    - FULL_COST
+    - WORKING_CAPITAL
+    - VALUE_CHAIN
+    - PROFIT_POOL
+    failure_modes:
+    - value creation without durable monetization
+    - high gross margin forecast depends on unproven automation or scale
+    - low-margin wedge never converts into recurring economics
+    - partner or platform captures the profit pool
+    - growth requires more capital than the financing path supports
+    model_bindings:
+    - price
+    - volume
+    - take_rate
+    - gross_margin
+    - contribution_margin
+    - working_capital
+    - capex
+  COMPETITION_AND_MOAT:
+    governing_question: Why can this company preserve value capture as customers, incumbents and technology evolve?
+    first_principles_rationale: At venture stage, a moat is often a causal hypothesis rather than an established fact.
+      The Archetype must identify the mechanism, the compounding asset, the time required to build it and the response
+      available to competitors.
+    question_families:
+    - id: VF-MOAT-01
+      question: What alternative does the customer use today, and what must be displaced or complemented?
+      concept_families:
+      - status_quo
+      - substitute
+      - switching
+      typical_evidence:
+      - customer workflow
+      - competitive tender
+      - lost-deal evidence
+      - incumbent product
+      expected_case_outputs:
+      - Definition
+      - CaseReading
+      - Risk
+      proof_direction: Include non-consumption and internal work as competitors.
+    - id: VF-MOAT-02
+      question: 'What is the proposed moat mechanism: technology, data, workflow, network, distribution, brand, rights
+        or cost?'
+      concept_families:
+      - moat_mechanism
+      - compounding_asset
+      - defensibility
+      typical_evidence:
+      - architecture
+      - usage data
+      - IP
+      - distribution evidence
+      - customer switching evidence
+      expected_case_outputs:
+      - Assumption
+      - CaseReading
+      - ModelNode
+      proof_direction: Name a mechanism and the evidence expected to strengthen it.
+    - id: VF-MOAT-03
+      question: What can a well-funded incumbent, platform or adjacent player copy, bundle or foreclose?
+      concept_families:
+      - incumbent_response
+      - platform_risk
+      - commoditization
+      typical_evidence:
+      - roadmaps
+      - platform policy
+      - competitive release
+      - expert evidence
+      expected_case_outputs:
+      - Risk
+      - Condition
+      - WorkItem
+      proof_direction: Test the moat against a capable adversary, not only current startups.
+    - id: VF-MOAT-04
+      question: Does more scale actually improve product quality, cost, distribution or switching cost?
+      concept_families:
+      - scale_advantage
+      - data_flywheel
+      - network_effect
+      - learning_curve
+      typical_evidence:
+      - cohort or usage evidence
+      - cost curve
+      - model performance
+      - marketplace liquidity
+      expected_case_outputs:
+      - MetricObservation
+      - CaseReading
+      - Assumption
+      proof_direction: Separate an asserted flywheel from an observed feedback loop.
+    - id: VF-MOAT-05
+      question: How long is the lead likely to last relative to the capital and time needed to exploit it?
+      concept_families:
+      - lead_duration
+      - time_to_scale
+      - financing_dependency
+      typical_evidence:
+      - development timeline
+      - competitor funding
+      - sales cycle
+      - capital plan
+      expected_case_outputs:
+      - Risk
+      - ModelNode
+      - CaseReading
+      proof_direction: Connect defensibility to runway and execution speed.
+    reasoning_operators:
+    - STATUS_QUO_COMPARISON
+    - MOAT_MECHANISM
+    - ADVERSARIAL_RESPONSE
+    - FLYWHEEL_TEST
+    - LEAD_DURATION
+    failure_modes:
+    - temporary product lead treated as durable exclusion
+    - open ecosystem creates value captured elsewhere
+    - platform owner bundles a good-enough substitute
+    - data or network effect does not improve with scale
+    - lead expires before commercial distribution is built
+    model_bindings:
+    - win_rate
+    - retention
+    - pricing_power
+    - cost_curve
+    - time_to_scale
+  TEAM_ORGANIZATION_AND_GOVERNANCE:
+    governing_question: Can the founders and emerging organization learn, recruit and execute through the next proof
+      stage?
+    first_principles_rationale: When evidence is sparse, the team's capacity to create evidence is itself load-bearing.
+      This does not make reputation a substitute for proof; it makes learning speed, domain access, integrity and
+      organizational evolution explicit.
+    question_families:
+    - id: VF-TEAM-01
+      question: What domain, technical or customer access is demonstrated by the founding team rather than merely
+        biographical?
+      concept_families:
+      - founder_domain_access
+      - technical_capability
+      - customer_access
+      - execution_evidence
+      typical_evidence:
+      - references
+      - prior work
+      - customer behavior
+      - technical output
+      expected_case_outputs:
+      - StatedPosition
+      - CaseReading
+      - Risk
+      proof_direction: Evaluate demonstrated access and capability, not pedigree or preferred background.
+    - id: VF-TEAM-02
+      question: How quickly has the team learned, changed its view and converted evidence into execution?
+      concept_families:
+      - learning_velocity
+      - adaptability
+      - forecast_response
+      typical_evidence:
+      - decision history
+      - product iterations
+      - hiring decisions
+      - forecast revisions
+      expected_case_outputs:
+      - CaseReading
+      - Outcome
+      - Risk
+      proof_direction: Distinguish productive adaptation from undisciplined pivoting.
+    - id: VF-TEAM-03
+      question: Which capabilities are missing before the next stage, and can the company recruit them in time?
+      concept_families:
+      - team_gap
+      - hiring_plan
+      - organizational_readiness
+      typical_evidence:
+      - organization plan
+      - candidate pipeline
+      - references
+      - compensation plan
+      expected_case_outputs:
+      - Unknown
+      - Condition
+      - WorkItem
+      proof_direction: Connect each missing capability to a milestone and deadline.
+    - id: VF-TEAM-04
+      question: Where does key-person, founder conflict, integrity, incentive or governance risk threaten the case?
+      concept_families:
+      - key_person
+      - founder_conflict
+      - integrity
+      - incentive_alignment
+      - governance
+      typical_evidence:
+      - founder references
+      - cap table
+      - vesting
+      - board and reserved matters
+      expected_case_outputs:
+      - Risk
+      - Condition
+      - StatedPosition
+      proof_direction: Keep personality judgments attributed and separate from the system Reading.
+    - id: VF-TEAM-05
+      question: Can the team cross from product creation to commercial and operational scale?
+      concept_families:
+      - stage_transition
+      - commercial_leadership
+      - operating_leadership
+      typical_evidence:
+      - customer execution
+      - sales hiring
+      - delivery metrics
+      - management references
+      expected_case_outputs:
+      - CaseReading
+      - Assumption
+      - WorkItem
+      proof_direction: Underwrite the next organization, not only the current founders.
+    reasoning_operators:
+    - ROLE_REQUIREMENT_MAPPING
+    - REFERENCE_TRIANGULATION
+    - LEARNING_VELOCITY
+    - KEY_PERSON
+    - GOVERNANCE_ALIGNMENT
+    - STAGE_TRANSITION
+    failure_modes:
+    - prestige or charisma substitutes for relevant execution evidence
+    - founder-led selling or delivery cannot institutionalize
+    - critical hire arrives after runway or milestone deadline
+    - conflict, incentives or governance block adaptation
+    - one strength and its associated failure mode are evaluated separately
+    model_bindings:
+    - hiring_date
+    - headcount
+    - burn
+    - sales_capacity
+    - milestone_dependency
+  MILESTONE_EXECUTION_AND_EVIDENCE_PATH:
+    governing_question: Which milestones turn uncertainty into evidence, what must happen first, and what happens
+      if they slip or fail?
+    first_principles_rationale: 'The venture case is often a sequence of experiments. Milestones are not generic roadmap
+      dates: each must change a material Question, financing state, customer state or technical state.'
+    question_families:
+    - id: VF-MILE-01
+      question: What are the next value-inflecting technical, commercial, regulatory and organizational milestones?
+      concept_families:
+      - milestone
+      - value_inflection
+      - proof_stage
+      typical_evidence:
+      - roadmap
+      - customer plan
+      - regulatory plan
+      - hiring plan
+      expected_case_outputs:
+      - Question
+      - Condition
+      - WorkItem
+      proof_direction: Include only milestones capable of changing the case.
+    - id: VF-MILE-02
+      question: What Question will each milestone answer, and what result counts as success, failure or partial proof?
+      concept_families:
+      - milestone_test
+      - evidence_output
+      - falsifier
+      typical_evidence:
+      - test protocol
+      - acceptance criteria
+      - historical baseline
+      expected_case_outputs:
+      - Definition
+      - Condition
+      - Outcome
+      proof_direction: Make milestone states observable rather than narrative.
+    - id: VF-MILE-03
+      question: What is the cost, time, dependency and owner for reaching each milestone?
+      concept_families:
+      - cost_to_milestone
+      - time_to_milestone
+      - dependency
+      - owner
+      typical_evidence:
+      - operating plan
+      - budget
+      - supplier or partner plan
+      - responsibility map
+      expected_case_outputs:
+      - ModelNode
+      - Condition
+      - WorkItem
+      proof_direction: Connect the proof path to capital and executability.
+    - id: VF-MILE-04
+      question: Which milestones are binary, correlated or outside company control?
+      concept_families:
+      - binary_risk
+      - correlated_milestones
+      - external_dependency
+      typical_evidence:
+      - technical dependency map
+      - regulatory timeline
+      - launch or partner evidence
+      expected_case_outputs:
+      - Risk
+      - Condition
+      - Assumption
+      proof_direction: Avoid counting correlated proof points as independent de-risking.
+    - id: VF-MILE-05
+      question: What alternative path remains if a milestone is delayed or fails?
+      concept_families:
+      - contingency
+      - pivot_option
+      - salvage_path
+      typical_evidence:
+      - contingency plan
+      - alternate customer or product
+      - financing options
+      expected_case_outputs:
+      - Assumption
+      - Risk
+      - WorkItem
+      proof_direction: Preserve genuine optionality without inventing a rescue path.
+    reasoning_operators:
+    - MILESTONE_GRAPH
+    - TEST_CRITERIA
+    - DEPENDENCY_MAPPING
+    - CORRELATION
+    - CONTINGENCY
+    - INFORMATION_VALUE
+    failure_modes:
+    - roadmap activity mistaken for evidence-producing milestone
+    - correlated milestones double-count de-risking
+    - critical proof sits outside company control
+    - cost or timing exceeds the financing window
+    - failure has no credible contingency
+    model_bindings:
+    - milestone_date
+    - milestone_cost
+    - success_state
+    - financing_trigger
+    - scenario
+  CAPITAL_RUNWAY_AND_FINANCING_PATH:
+    governing_question: Can the company reach the next evidence and value state before capital, liquidity or financing
+      options expire?
+    first_principles_rationale: Future financings are part of venture economics, not an afterthought. The company
+      must finance the proof path, and the investor must understand dilution, dependency on capital markets and the
+      consequence of delay.
+    question_families:
+    - id: VF-CAP-01
+      question: What is current cash, normalized burn and runway under realistic operating and working-capital assumptions?
+      concept_families:
+      - cash
+      - burn
+      - runway
+      - working_capital
+      typical_evidence:
+      - bank or cash data
+      - monthly actuals
+      - operating plan
+      - capex and working-capital build
+      expected_case_outputs:
+      - MetricObservation
+      - ModelNode
+      - CaseReading
+      proof_direction: Use cash consumption, not accounting loss alone.
+    - id: VF-CAP-02
+      question: How much capital is required to reach each critical milestone and a financeable next state?
+      concept_families:
+      - capital_to_milestone
+      - use_of_funds
+      - minimum_viable_financing
+      typical_evidence:
+      - milestone budget
+      - hiring plan
+      - capex plan
+      - contingency
+      expected_case_outputs:
+      - ModelNode
+      - Assumption
+      - Condition
+      proof_direction: Distinguish a round target from capital actually required.
+    - id: VF-CAP-03
+      question: What future financing, debt, grant, prepayment or partner capital is assumed, and how credible is
+        it?
+      concept_families:
+      - next_financing
+      - non_dilutive_capital
+      - financing_dependency
+      typical_evidence:
+      - investor evidence
+      - grant terms
+      - debt or prepayment terms
+      - fundraising history
+      expected_case_outputs:
+      - Assumption
+      - Risk
+      - Condition
+      proof_direction: Treat uncommitted financing as an assumption, not cash.
+    - id: VF-CAP-04
+      question: What happens to ownership, control and survival if milestones or fundraising slip?
+      concept_families:
+      - dilution
+      - down_round
+      - liquidation_risk
+      - control_shift
+      typical_evidence:
+      - cap-table scenarios
+      - security terms
+      - bridge scenarios
+      - waterfall
+      expected_case_outputs:
+      - ModelNode
+      - Risk
+      - CaseReading
+      proof_direction: Model the path-dependent downside, including zero.
+    - id: VF-CAP-05
+      question: Does the financing structure itself create or reduce operating risk?
+      concept_families:
+      - tranche
+      - bridge
+      - milestone_financing
+      - capital_structure
+      typical_evidence:
+      - term sheet
+      - funds-flow plan
+      - closing conditions
+      - investor syndicate evidence
+      expected_case_outputs:
+      - Condition
+      - CaseReading
+      - Risk
+      proof_direction: Link structure, timing and company execution rather than evaluating price alone.
+    reasoning_operators:
+    - CASH_RUNWAY
+    - CAPITAL_TO_MILESTONE
+    - FINANCING_PATH
+    - DILUTION
+    - WATERFALL
+    - DOWNSIDE_SURVIVAL
+    failure_modes:
+    - headline runway ignores capex, inventory or implementation
+    - round size does not fund the critical proof state
+    - future capital is assumed available regardless of performance
+    - delay simultaneously weakens evidence and financing terms
+    - bridge financing preserves sunk cost without creating proof
+    model_bindings:
+    - cash
+    - burn
+    - runway
+    - capex
+    - working_capital
+    - next_round
+    - dilution
+  TERMS_OWNERSHIP_AND_RETURN_DISTRIBUTION:
+    governing_question: What economic exposure, rights and outcome distribution does the proposed security create?
+    first_principles_rationale: Venture returns depend on ownership through multiple financings and on security rights
+      under weak outcomes. Price, ownership, dilution, preferences, governance and exit cannot be evaluated independently.
+    question_families:
+    - id: VF-RET-01
+      question: What security, price, ownership and economic rights are actually being offered?
+      concept_families:
+      - security
+      - entry_price
+      - ownership
+      - preference
+      - rights
+      typical_evidence:
+      - term sheet
+      - cap table
+      - side letter
+      - subscription document
+      expected_case_outputs:
+      - Definition
+      - MetricObservation
+      - Condition
+      proof_direction: Separate proposed, authorized and executed terms.
+    - id: VF-RET-02
+      question: How does ownership evolve through plausible future rounds, option pools and secondary transactions?
+      concept_families:
+      - dilution
+      - option_pool
+      - future_round
+      - secondary
+      typical_evidence:
+      - cap-table model
+      - financing plan
+      - pro-rata rights
+      expected_case_outputs:
+      - ModelNode
+      - Assumption
+      - CaseReading
+      proof_direction: Model ownership as a path, not a static percentage.
+    - id: VF-RET-03
+      question: Which operating and financing states produce loss, partial recovery, a Lens-defined target return
+        and an outlier outcome?
+      concept_families:
+      - return_distribution
+      - zero_case
+      - outlier_case
+      - waterfall
+      typical_evidence:
+      - scenario model
+      - security waterfall
+      - exit comparables
+      expected_case_outputs:
+      - ModelNode
+      - Risk
+      - CaseReading
+      proof_direction: Use a distribution of coherent states rather than one point forecast.
+    - id: VF-RET-04
+      question: What future enterprise or security value is required, by when, and through which exit route?
+      concept_families:
+      - required_outcome
+      - exit_route
+      - exit_timing
+      - valuation_basis
+      typical_evidence:
+      - M&A evidence
+      - public/private comparables
+      - strategic buyer map
+      expected_case_outputs:
+      - Assumption
+      - ModelNode
+      - CaseReading
+      proof_direction: Expose the operating scale and market valuation embedded in the return.
+    - id: VF-RET-05
+      question: Which rights materially change information, governance, follow-on access or downside recovery?
+      concept_families:
+      - information_rights
+      - governance_rights
+      - pro_rata
+      - downside_protection
+      typical_evidence:
+      - legal documents
+      - board structure
+      - waterfall
+      expected_case_outputs:
+      - Definition
+      - Condition
+      - Risk
+      proof_direction: Do not describe rights as protection without testing the failure state.
+    reasoning_operators:
+    - CAP_TABLE
+    - DILUTION
+    - WATERFALL
+    - SCENARIO
+    - REQUIRED_OUTCOME
+    - EXIT_PATH
+    - RIGHTS_UNDER_STRESS
+    failure_modes:
+    - headline valuation ignores security and fees
+    - static ownership ignores future dilution
+    - downside protection is assumed effective without control or asset value
+    - return depends on a single extreme exit state
+    - current round signaling substitutes for independent value work
+    model_bindings:
+    - entry_price
+    - ownership
+    - dilution
+    - security_waterfall
+    - exit_value
+    - moic
+    - irr
+  REUNDERWRITING_AND_FOLLOW_ON:
+    governing_question: What has changed since the prior decision, and does additional capital improve the risk-adjusted
+      exposure from today?
+    first_principles_rationale: A follow-on is a new decision. It must compare the original case with observed outcomes,
+      distinguish confirmed from broken assumptions, and ignore sunk cost when evaluating the incremental security
+      and financing path.
+    question_families:
+    - id: VF-REU-01
+      question: Which original Questions, Assumptions and milestones are confirmed, contradicted, delayed or still
+        untested?
+      concept_families:
+      - original_case
+      - actual_outcome
+      - milestone_state
+      typical_evidence:
+      - prior decision basis
+      - actuals
+      - customer evidence
+      - technical or regulatory outcomes
+      expected_case_outputs:
+      - Outcome
+      - CaseReading
+      - Risk
+      proof_direction: Replay the original case before creating a new narrative.
+    - id: VF-REU-02
+      question: What new failure mechanism or opportunity has emerged?
+      concept_families:
+      - new_risk
+      - new_option
+      - case_reframe
+      typical_evidence:
+      - operating update
+      - market change
+      - team change
+      - new financing
+      expected_case_outputs:
+      - Question
+      - Risk
+      - Assumption
+      proof_direction: Add new structure rather than forcing all evidence into old Questions.
+    - id: VF-REU-03
+      question: Has the company converted capital into evidence and enterprise value at the expected rate?
+      concept_families:
+      - capital_efficiency
+      - evidence_velocity
+      - value_inflection
+      typical_evidence:
+      - cash usage
+      - milestone history
+      - valuation history
+      - operating outcomes
+      expected_case_outputs:
+      - MetricObservation
+      - CaseReading
+      - ModelNode
+      proof_direction: Compare proof created with time and capital consumed.
+    - id: VF-REU-04
+      question: What is the incremental return and downside from the new security at today's price and terms?
+      concept_families:
+      - incremental_return
+      - follow_on_terms
+      - current_ownership
+      typical_evidence:
+      - new term sheet
+      - updated cap table
+      - new scenarios
+      expected_case_outputs:
+      - ModelNode
+      - CaseReading
+      - Condition
+      proof_direction: Evaluate today's decision independently of original cost.
+    - id: VF-REU-05
+      question: Does new capital fund a proof-producing plan, or only defer an unresolved failure?
+      concept_families:
+      - bridge_quality
+      - proof_plan
+      - survival_financing
+      typical_evidence:
+      - use of funds
+      - milestone plan
+      - insider participation
+      - contingency
+      expected_case_outputs:
+      - CaseReading
+      - Risk
+      - Condition
+      proof_direction: Distinguish option-preserving financing from unsupported rescue.
+    reasoning_operators:
+    - REPLAY
+    - ASSUMPTION_VS_OUTCOME
+    - EVIDENCE_VELOCITY
+    - SUNK_COST_EXCLUSION
+    - INCREMENTAL_RETURN
+    - BRIDGE_QUALITY
+    failure_modes:
+    - follow-on treated as continuation rather than new decision
+    - later narrative replaces the original decision basis
+    - positive technical proof masks commercial or capital failure
+    - sunk cost or insider signaling substitutes for incremental analysis
+    - bridge extends runway without a credible evidence milestone
+    model_bindings:
+    - actual_vs_plan
+    - cash_consumed
+    - ownership
+    - new_price
+    - incremental_return
+    - runway
+canonical_concepts:
+- id: V_PROBLEM_SEVERITY
+  label: Problem severity
+  family: market_timing
+  kind: qualitative_topic
+  required_identity:
+  - user_or_buyer
+  - use_case
+  - current_workaround
+  - time_scope
+- id: V_BUYER_URGENCY
+  label: Buyer urgency
+  family: market_timing
+  kind: qualitative_topic
+  required_identity:
+  - buyer
+  - trigger
+  - budget
+  - time_scope
+- id: V_CATEGORY_TIMING
+  label: Category timing
+  family: market_timing
+  kind: assumption
+  required_identity:
+  - enabling_change
+  - jurisdiction_or_market
+  - period
+  - scenario
+- id: V_BEACHHEAD_MARKET
+  label: Reachable beachhead market
+  family: market_timing
+  kind: metric_or_definition
+  required_identity:
+  - customer_definition
+  - geography
+  - use_case
+  - period
+  - basis
+  - currency
+- id: V_EXPANSION_PATH
+  label: Expansion path
+  family: market_timing
+  kind: qualitative_topic
+  required_identity:
+  - starting_segment
+  - adjacent_segment
+  - dependency
+  - time_scope
+- id: V_PRODUCT_STATE
+  label: Current product state
+  family: product_technical
+  kind: categorical_observation
+  required_identity:
+  - product_version
+  - use_case
+  - as_of
+  - environment
+- id: V_TECHNICAL_FEASIBILITY
+  label: Technical feasibility
+  family: product_technical
+  kind: case_reading
+  required_identity:
+  - technology
+  - use_case
+  - performance_requirement
+  - time_scope
+- id: V_PERFORMANCE_ENVELOPE
+  label: Performance envelope
+  family: product_technical
+  kind: metric_set
+  required_identity:
+  - product_version
+  - test_condition
+  - metric
+  - period
+  - unit
+- id: V_RELIABILITY
+  label: Reliability
+  family: product_technical
+  kind: metric
+  required_identity:
+  - product_version
+  - environment
+  - period
+  - failure_definition
+  - unit
+- id: V_TECHNICAL_MILESTONE
+  label: Technical milestone
+  family: milestone
+  kind: condition
+  required_identity:
+  - technology
+  - test
+  - target_date
+  - success_state
+- id: V_CUSTOMER_OUTCOME
+  label: Customer outcome
+  family: customer_pmf
+  kind: metric_or_reading
+  required_identity:
+  - customer_segment
+  - use_case
+  - baseline
+  - period
+  - measurement
+- id: V_COMMERCIAL_SIGNAL_STATE
+  label: Commercial signal state
+  family: customer_pmf
+  kind: categorical_observation
+  required_identity:
+  - account_or_segment
+  - signal_type
+  - as_of
+  - product_or_use_case
+- id: V_PAID_VALIDATION
+  label: Paid validation
+  family: customer_pmf
+  kind: metric_or_condition
+  required_identity:
+  - customer_segment
+  - product
+  - period
+  - contract_status
+  - currency
+- id: V_REPEAT_USAGE
+  label: Repeat usage
+  family: customer_pmf
+  kind: metric
+  required_identity:
+  - customer_or_cohort
+  - product
+  - period
+  - measurement
+- id: V_PILOT_CONVERSION
+  label: Pilot conversion
+  family: customer_pmf
+  kind: metric
+  required_identity:
+  - pilot_cohort
+  - conversion_definition
+  - period
+  - basis
+- id: V_ADOPTION_FRICTION
+  label: Adoption friction
+  family: customer_pmf
+  kind: qualitative_topic
+  required_identity:
+  - buyer_segment
+  - friction_type
+  - process_stage
+  - time_scope
+- id: V_SALES_CYCLE
+  label: Sales cycle
+  family: customer_pmf
+  kind: metric
+  required_identity:
+  - customer_segment
+  - start_definition
+  - end_definition
+  - period
+  - unit
+- id: V_REVENUE_MODEL
+  label: Revenue model
+  family: business_model
+  kind: definition
+  required_identity:
+  - payer
+  - pricing_unit
+  - contract_type
+  - product
+- id: V_PRICING
+  label: Pricing
+  family: business_model
+  kind: metric_or_definition
+  required_identity:
+  - product
+  - customer_segment
+  - period
+  - pricing_basis
+  - currency
+- id: V_UNIT_ECONOMICS
+  label: Unit economics
+  family: business_model
+  kind: metric_set
+  required_identity:
+  - economic_unit
+  - period
+  - cost_basis
+  - scenario
+  - currency
+- id: V_GROSS_MARGIN
+  label: Gross margin
+  family: business_model
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - perimeter
+  - cost_definition
+  - scenario
+- id: V_SERVICE_INTENSITY
+  label: Service or implementation intensity
+  family: business_model
+  kind: metric_or_reading
+  required_identity:
+  - customer_segment
+  - activity_definition
+  - period
+  - unit
+- id: V_CAPITAL_INTENSITY
+  label: Capital intensity
+  family: business_model
+  kind: metric_or_reading
+  required_identity:
+  - entity
+  - period
+  - capital_definition
+  - scenario
+  - currency
+- id: V_VALUE_CAPTURE
+  label: Value-capture position
+  family: business_model
+  kind: case_reading
+  required_identity:
+  - ecosystem
+  - company_role
+  - profit_pool
+  - time_scope
+- id: V_MOAT_MECHANISM
+  label: Moat mechanism
+  family: competition
+  kind: assumption_or_reading
+  required_identity:
+  - mechanism_type
+  - product_or_market
+  - time_scope
+- id: V_PLATFORM_DEPENDENCY
+  label: Platform dependency
+  family: competition
+  kind: risk
+  required_identity:
+  - platform
+  - dependency_type
+  - product
+  - time_scope
+- id: V_DATA_OR_NETWORK_EFFECT
+  label: Data or network effect
+  family: competition
+  kind: assumption
+  required_identity:
+  - feedback_loop
+  - participant_set
+  - measurement
+  - time_scope
+- id: V_IP_AND_FTO
+  label: IP and freedom to operate
+  family: competition
+  kind: condition_or_reading
+  required_identity:
+  - right_or_claim
+  - jurisdiction
+  - product
+  - time_scope
+- id: V_FOUNDER_DOMAIN_ACCESS
+  label: Founder domain and customer access
+  family: team
+  kind: case_reading
+  required_identity:
+  - person_or_team
+  - problem_domain
+  - access_or_capability
+  - evidence_scope
+  - time_scope
+- id: V_LEARNING_VELOCITY
+  label: Learning velocity
+  family: team
+  kind: metric_or_reading
+  required_identity:
+  - team
+  - decision_or_iteration_set
+  - period
+  - measurement
+- id: V_TEAM_COMPLETENESS
+  label: Team completeness
+  family: team
+  kind: case_reading
+  required_identity:
+  - required_capability_set
+  - current_team
+  - milestone_horizon
+- id: V_KEY_PERSON_DEPENDENCY
+  label: Key-person dependency
+  family: team
+  kind: risk
+  required_identity:
+  - person
+  - capability_or_relationship
+  - time_scope
+- id: V_HIRING_MILESTONE
+  label: Hiring milestone
+  family: team
+  kind: condition
+  required_identity:
+  - role
+  - required_capability
+  - target_date
+  - success_state
+- id: V_GOVERNANCE_ALIGNMENT
+  label: Governance and alignment
+  family: team
+  kind: case_reading
+  required_identity:
+  - actors
+  - rights
+  - incentives
+  - decision_scope
+- id: V_MILESTONE
+  label: Evidence-producing milestone
+  family: milestone
+  kind: condition
+  required_identity:
+  - milestone_type
+  - question_id
+  - test
+  - target_date
+  - owner
+- id: V_COST_TO_MILESTONE
+  label: Cost to milestone
+  family: milestone
+  kind: metric
+  required_identity:
+  - milestone_id
+  - cost_perimeter
+  - period
+  - scenario
+  - currency
+- id: V_TIME_TO_MILESTONE
+  label: Time to milestone
+  family: milestone
+  kind: metric
+  required_identity:
+  - milestone_id
+  - start_date
+  - target_date
+  - scenario
+  - unit
+- id: V_CASH_BURN
+  label: Cash burn
+  family: capital
+  kind: metric
+  required_identity:
+  - entity
+  - period
+  - cash_cost_definition
+  - scenario
+  - currency
+- id: V_RUNWAY
+  label: Runway
+  family: capital
+  kind: model_output
+  required_identity:
+  - entity
+  - as_of
+  - cash_definition
+  - burn_basis
+  - scenario
+  - unit
+- id: V_CAPITAL_TO_PROOF
+  label: Capital to next proof state
+  family: capital
+  kind: model_output
+  required_identity:
+  - milestone_set
+  - start_date
+  - scenario
+  - currency
+- id: V_NEXT_FINANCING
+  label: Next financing requirement
+  family: capital
+  kind: assumption_or_condition
+  required_identity:
+  - entity
+  - required_by
+  - amount_basis
+  - instrument
+  - scenario
+  - currency
+- id: V_DILUTION_PATH
+  label: Dilution path
+  family: returns
+  kind: model_output
+  required_identity:
+  - security_or_holder
+  - financing_sequence
+  - scenario
+  - measurement
+- id: V_OWNERSHIP
+  label: Ownership
+  family: returns
+  kind: metric
+  required_identity:
+  - holder
+  - security
+  - as_of_or_round
+  - fully_diluted_basis
+  - measurement
+- id: V_SECURITY_TERMS
+  label: Security terms
+  family: returns
+  kind: definition
+  required_identity:
+  - security
+  - round
+  - right_type
+  - jurisdiction
+- id: V_RETURN_DISTRIBUTION
+  label: Return distribution
+  family: returns
+  kind: model_output_set
+  required_identity:
+  - security_or_holder
+  - scenario_set
+  - return_measure_set
+  - entry_date
+  - exit_horizon
+  - fee_basis
+- id: V_ZERO_OR_LOSS_CASE
+  label: Zero or loss case
+  family: returns
+  kind: scenario
+  required_identity:
+  - security_or_holder
+  - failure_mechanism
+  - time_horizon
+- id: V_EXIT_OUTCOME
+  label: Exit outcome
+  family: returns
+  kind: assumption_or_outcome
+  required_identity:
+  - company_or_security
+  - route
+  - date_or_horizon
+  - scenario
+  - currency
+- id: V_EVIDENCE_VELOCITY
+  label: Proof progress relative to time and capital
+  family: reunderwriting
+  kind: derived_analytic
+  required_identity:
+  - case_or_company
+  - observation_window
+  - milestone_definition
+  - capital_basis
+- id: V_INCREMENTAL_FOLLOW_ON_RETURN
+  label: Incremental follow-on return
+  family: reunderwriting
+  kind: model_output
+  required_identity:
+  - new_security
+  - decision_date
+  - scenario
+  - fee_basis
+model_grammar:
+  purpose: Translate milestones, financing path, ownership and outcome states into an auditable venture case.
+  principles:
+  - The model is a state-and-branch model before it is a point forecast.
+  - Current facts, future assumptions and milestone conditions remain distinct.
+  - Probability weights are optional Assumptions, never observed facts.
+  - A future financing is an explicit dependency with timing, amount, terms and dilution.
+  - Zero, delay and down-round states must remain representable.
+  - No model output becomes a human Decision or a canonical supported price.
+  modules:
+    milestone_path:
+      inputs:
+      - milestone
+      - success_test
+      - date
+      - cost
+      - dependency
+      - owner
+      outputs:
+      - milestone_state
+      - evidence_state
+      - time_to_next_proof
+    cash_and_runway:
+      relationship: opening cash + committed financing + operating receipts - cash costs - capex - working capital
+        = ending cash
+      outputs:
+      - runway
+      - capital_to_milestone
+      - financing_deadline
+    financing_and_dilution:
+      relationship: ownership evolves through option pools, primary rounds, conversion, secondaries and pro-rata participation
+      outputs:
+      - fully_diluted_ownership
+      - security_waterfall
+      - future_capital_need
+    commercial_progression:
+      relationship: commercial signal state progresses from interest through paid, repeated and expanded production
+        use
+      outputs:
+      - pilot_conversion
+      - repeat_usage
+      - revenue_quality
+    outcome_distribution:
+      relationship: coherent technical, commercial and financing states determine security proceeds and return
+      outputs:
+      - zero_case
+      - partial_recovery
+      - base_state
+      - outlier_state
+      - moic
+      - irr
+toolkit:
+  CUSTOMER_DISCOVERY_AND_REFERENCE:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - problem urgency
+    - customer outcome
+    - buyer/budget
+    - commercial signal quality
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  PRODUCT_DEMO_AND_USAGE_REVIEW:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - current product state
+    - workflow value
+    - adoption friction
+    - usage
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  TECHNICAL_OR_SCIENTIFIC_REVIEW:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - feasibility
+    - performance envelope
+    - failure modes
+    - roadmap credibility
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  PILOT_OR_EXPERIMENT_AUDIT:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - test validity
+    - pilot conversion
+    - repeatability
+    - evidence independence
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  MARKET_AND_REGULATORY_RESEARCH:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - beachhead
+    - why now
+    - category timing
+    - regulatory path
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  FOUNDER_TEAM_AND_INVESTOR_REFERENCES:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - founder-market fit
+    - integrity
+    - learning velocity
+    - team gaps
+    - syndicate context
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  SITE_LAB_FACTORY_OR_FIELD_VISIT:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - operating reality
+    - capacity
+    - quality
+    - process dependency
+    - technical state
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  RUNWAY_MILESTONE_AND_FINANCING_MODEL:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - cash runway
+    - capital to proof
+    - future financing
+    - dilution
+    - downside survival
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  CAP_TABLE_TERMS_AND_WATERFALL:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - ownership
+    - conversion
+    - preference
+    - governance rights
+    - security return
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  IP_LEGAL_SECURITY_AND_COMPLIANCE:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - IP/FTO
+    - data rights
+    - regulatory condition
+    - security
+    - closing terms
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+  FOLLOW_ON_REUNDERWRITING:
+    cost_band: FUND_CONFIGURED
+    duration_band: FUND_CONFIGURED
+    artifact_optional: true
+    can_address_question_classes:
+    - original case replay
+    - milestone outcomes
+    - new risks
+    - incremental return
+    completion_semantics: Produces evidence or analysis candidates; completion does not imply evidence sufficiency
+      or Question closure.
+compiler_use:
+  routing_rule: Use stage, workstream and concept families to route extraction. Never infer identity from category.
+  binding_rule: Bind material Claims first to Questions; bind to CaseReadings, Assumptions, Conditions or ModelNodes
+    only when semantic direction and identity are resolved.
+  new_structure_rule: Propose a new Question, concept or milestone when material evidence cannot be represented by
+    the configured pack.
+  day_zero_rule: Create the Question and Unknown structure without inventing StatedPositions or a positive CaseReading.
+  stage_rule: Absence of mature metrics may be stage-appropriate; the Compiler must instead expose the next evidence
+    state required.
+  question_activation_rule: Use the shared activation contract to form a bounded decision-bearing spine; never instantiate
+    every family.
+  module_rule: Select maturity, business-model, sector and transaction modules independently and preserve every origin.
+  tool_rule: A completed method may add evidence, CoverageLimits or WorkItems; it cannot automatically close a Question.
+  concept_activation_rule: Canonical concept seeds are available vocabulary, not compulsory fields. Activate only
+    those made applicable by the Deal Frame, active modules, source evidence or model dependencies.
+non_goals:
+- Treat founder quality, TAM and syndicate reputation as sufficient underwriting.
+- Require revenue or mature unit economics at every venture stage.
+- Treat a pilot, letter of intent, backlog, booking and recognized revenue as the same state.
+- Encode one institution's ticket, ownership, hurdle, evidence bar or IC process.
+- Use probability-weighted returns as an automatic Decision.
+- Prevent deal-specific Questions or sector modules from being proposed.
+- Treat a business model as a sector or a sector as a business model.
+- Store empirical corpus counts or institution-specific validation metadata in the production pack.
+- Duplicate maturity, business-model, sector or transaction module definitions inside the pack.
+- Treat completion of a diligence method or artifact as closure of an underwriting Question.
+- Represent deal sourcing, fundraising, limited-partner relations or the complete investment-firm operating model.
+- Replace a dedicated ownership, portfolio-monitoring or operating-value-creation system beyond case re-underwriting.
+- Treat every canonical concept seed as an active metric or required data field.
+- Force a debt-dominant, control-buyout or asset-level infrastructure case into Venture or Growth.
+archetype_boundary:
+  definition: Reusable Venture economics and epistemology, not the preferences of one institution.
+  inclusion_test:
+  - The item remains relevant for another competent investor facing the same stage and transaction.
+  - The item follows from sparse evidence, milestone dependence, financing path, ownership or venture loss mechanics.
+  - The item survives changes in committee, ticket, threshold, template, provider and cadence.
+  excluded_to_fund_lens:
+  - minimum ownership and ticket
+  - return hurdle and scenario weights
+  - required runway or evidence threshold
+  - reserve and follow-on allocation policy
+  - sector mandate and exclusions
+  - authority, committee and board-seat policy
+  - preferred investors, advisers or providers
+  - artifact format and process cadence
+  excluded_to_deal_state:
+  - specific company facts, sources, people, values, dates, terms, milestones and decisions
+  evidence_examples_rule: Evidence lists guide retrieval and work design. They are non-exhaustive and never constitute
+    mandatory sufficiency or automatic closure.
+cross_strategy_functions_reference:
+- DealFrame
+- QuestionEngine
+- EvidenceProvenance
+- DecisionCriticalWork
+- StatedPosition
+- CaseReading
+- Ledger
+- Dynamic
+module_refs:
+  maturity_registry: 04_maturity_modules_v1_1.yaml
+  maturity_modules:
+  - PRE_PRODUCT_CONCEPT
+  - PRODUCT_OR_TECHNICAL_PROOF
+  - EARLY_COMMERCIAL_PROOF
+  - EARLY_REPEATABILITY
+  business_model_registry: 05_business_model_modules_v1_1.yaml
+  business_model_modules:
+  - RECURRING_SUBSCRIPTION
+  - USAGE_OR_CONSUMPTION
+  - COMMERCE_OR_INVENTORY
+  - HARDWARE_OR_EQUIPMENT
+  - INSTALLED_BASE_PLUS_RECURRING
+  - SERVICES_OR_TECH_ENABLED_SERVICES
+  - PROJECT_OR_CONTRACTED_PROGRAM
+  - LICENSING_ROYALTY_OR_MILESTONE
+  - ADVERTISING_OR_DATA_MONETIZATION
+  - BALANCE_SHEET_OR_RISK_BEARING
+  - TRANSACTION_PROCESSING_OR_TAKE_RATE
+  - MARKETPLACE_OR_NETWORK
+  - ASSET_OR_VOLUME_BASED_FEE
+  sector_overlay_registry: 06_sector_overlay_candidates_v1_1.yaml
+  sector_overlay_candidates:
+  - AI_AND_AUTONOMOUS_DECISION_SYSTEMS
+  - DEEP_TECH_AND_ADVANCED_HARDWARE
+  - HEALTHCARE_AND_LIFE_SCIENCES
+  - FINANCIAL_SERVICES_AND_REGULATED_FINTECH
+  - CLIMATE_ENERGY_AND_INDUSTRIAL
+  - PUBLIC_SECTOR_DEFENSE_AND_REGULATED_PROCUREMENT
+  - CONSUMER
+  - ENTERPRISE_CRITICAL_WORKFLOW
+  transaction_registry: 07_transaction_modules_v1_1.yaml
+  transaction_modules:
+  - NEW_PRIMARY
+  - FOLLOW_ON
+  - BRIDGE_OR_RECAPITALIZATION
+  - PRIMARY_PLUS_SECONDARY
+  - SECONDARY_PURCHASE
+  - SECONDARY_SALE_OR_PARTIAL_LIQUIDITY
+  - UNPRICED_OR_CONVERTIBLE_SECURITY
+  - PRICED_EQUITY
+  - LEAD_OR_GOVERNANCE_ROLE
+  - INTERMEDIATED_EXPOSURE
+  - PRE_IPO_OR_PUBLIC_TRANSITION
+  - INORGANIC_GROWTH
+  - STRATEGIC_SALE_OR_EXIT_PROCESS
+  - TRANCHED_OR_MILESTONE_FINANCING
+  - STRUCTURED_PREFERRED_OR_REDEMPTION
+  - CROSS_BORDER_OR_MULTI_JURISDICTION
+  selection_rule: Activate only applicable modules and record the activation rationale. Module availability is not
+    automatic activation.
+question_activation_ref: 03_archetype_selection_and_shared_grammar_v1_1.yaml#question_activation_contract
+toolkit_rule: Work methods create evidence and artifacts. Question status changes only through admitted evidence,
+  CaseReading recomputation and human Decision where required.

@@ -7,6 +7,7 @@ import math
 import re
 import unicodedata
 from collections import Counter
+from datetime import datetime
 from typing import Any, Iterable, Mapping, Sequence
 
 
@@ -534,6 +535,333 @@ def fact_f1(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
     return 2 * precision * recall / (precision + recall) if precision + recall else 0.0
 
 
+# Semantic-claim evaluation deliberately sits above generic fact extraction.
+# A correct number with the wrong period, economic basis, or perimeter is a
+# different claim in PANTA and must not earn an exact-match pass.
+SEMANTIC_IDENTITY_FIELDS = (
+    "entity", "metric", "measurement", "period_canonical",
+    "scope", "basis", "scenario",
+)
+SEMANTIC_CLASSIFICATION_FIELDS = (
+    "bound", "epistemic_class", "claim_kind", "direction",
+)
+
+
+def _semantic_claims(container: Mapping[str, Any]) -> list[Mapping[str, Any]]:
+    return [item for item in container.get("claims", []) if isinstance(item, Mapping)]
+
+
+def _semantic_text_equal(expected: Any, actual: Any) -> bool:
+    return normalize_semantic_label(expected) == normalize_semantic_label(actual)
+
+
+def _semantic_unit(value: Any) -> str:
+    if value is None:
+        return ""
+    raw = normalize_text(value).replace(" ", "")
+    raw_aliases = {
+        "$m": "usd_m", "%": "percent", "usd_m": "usd_m",
+        "eur_m": "eur_m",
+    }
+    if raw in raw_aliases:
+        return raw_aliases[raw]
+    normalized = normalize_semantic_label(value)
+    compact = normalized.replace(" ", "")
+    aliases = {
+        "usdm": "usd_m", "usdmillion": "usd_m",
+        "usdmm": "usd_m", "eurm": "eur_m", "eurmillion": "eur_m",
+        "eurmm": "eur_m", "pct": "percent", "percent": "percent",
+        "percentage": "percent",
+    }
+    return aliases.get(compact, normalized)
+
+
+def _semantic_field_correct(field: str, expected: Mapping[str, Any], actual: Mapping[str, Any]) -> bool:
+    if field == "value":
+        return values_equal(expected.get(field), actual.get(field))
+    if field == "unit":
+        return _semantic_unit(expected.get(field)) == _semantic_unit(actual.get(field))
+    if field == "locator":
+        expected_locator, actual_locator = expected.get(field), actual.get(field)
+        return (
+            isinstance(expected_locator, Mapping)
+            and isinstance(actual_locator, Mapping)
+            and locator_matches(expected_locator, actual_locator)
+        )
+    if field in {"input_id", "source_id"}:
+        return normalize_text(expected.get(field)) == normalize_text(actual.get(field))
+    return _semantic_text_equal(expected.get(field), actual.get(field))
+
+
+def _semantic_claim_match_score(
+    expected: Mapping[str, Any], actual: Mapping[str, Any],
+) -> float | None:
+    same_input = normalize_text(expected.get("input_id")) == normalize_text(actual.get("input_id"))
+    same_source = normalize_text(expected.get("source_id")) == normalize_text(actual.get("source_id"))
+    same_metric = _semantic_text_equal(expected.get("metric"), actual.get("metric"))
+    same_entity = _semantic_text_equal(expected.get("entity"), actual.get("entity"))
+    same_measurement = _semantic_text_equal(expected.get("measurement"), actual.get("measurement"))
+    locator_match = (
+        same_input
+        and isinstance(expected.get("locator"), Mapping)
+        and isinstance(actual.get("locator"), Mapping)
+        and locator_matches(expected["locator"], actual["locator"])
+    )
+    quote_match = (
+        same_input
+        and bool(expected.get("source_quote"))
+        and bool(actual.get("source_quote"))
+        and token_f1(expected["source_quote"], actual["source_quote"]) >= 0.75
+    )
+    statement_match = (
+        same_input
+        and token_f1(expected.get("statement"), actual.get("statement")) >= 0.70
+    )
+    concept_match = same_source and same_metric and same_entity
+    if not (locator_match or quote_match or concept_match or (same_metric and statement_match)):
+        return None
+
+    score = 0.0
+    score += 120.0 if locator_match else 0.0
+    score += 80.0 if quote_match else 0.0
+    score += 50.0 if same_source else 0.0
+    score += 45.0 if same_metric else 0.0
+    score += 35.0 if same_entity else 0.0
+    score += 20.0 if same_measurement else 0.0
+    score += 10.0 if statement_match else 0.0
+    score += 5.0 if values_equal(expected.get("value"), actual.get("value")) else 0.0
+    return score
+
+
+def _semantic_claim_alignment(
+    expected: Sequence[Mapping[str, Any]], actual: Sequence[Mapping[str, Any]],
+) -> dict[int, int]:
+    """Maximum-cardinality one-to-one alignment without using gold claim IDs."""
+    candidates: dict[int, list[tuple[int, float]]] = {}
+    for expected_index, expected_claim in enumerate(expected):
+        edges: list[tuple[int, float]] = []
+        for actual_index, actual_claim in enumerate(actual):
+            score = _semantic_claim_match_score(expected_claim, actual_claim)
+            if score is not None:
+                edges.append((actual_index, score))
+        candidates[expected_index] = sorted(edges, key=lambda item: (-item[1], item[0]))
+
+    actual_owner: dict[int, int] = {}
+
+    def assign(expected_index: int, seen: set[int]) -> bool:
+        for actual_index, _score in candidates[expected_index]:
+            if actual_index in seen:
+                continue
+            seen.add(actual_index)
+            previous = actual_owner.get(actual_index)
+            if previous is None or assign(previous, seen):
+                actual_owner[actual_index] = expected_index
+                return True
+        return False
+
+    for expected_index in sorted(candidates, key=lambda index: (len(candidates[index]), index)):
+        assign(expected_index, set())
+    return {expected_index: actual_index for actual_index, expected_index in actual_owner.items()}
+
+
+def _aligned_semantic_claims(
+    case: Mapping[str, Any], prediction: Mapping[str, Any],
+) -> tuple[list[Mapping[str, Any]], list[Mapping[str, Any]], dict[int, int]]:
+    expected = _semantic_claims(case["gold"])
+    actual = _semantic_claims(prediction)
+    return expected, actual, _semantic_claim_alignment(expected, actual)
+
+
+def semantic_claim_precision(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    expected, actual, alignment = _aligned_semantic_claims(case, prediction)
+    if case["gold"].get("coverage", "exhaustive") == "subset":
+        return len(alignment) / len(alignment) if alignment else float(not expected)
+    return len(alignment) / len(actual) if actual else float(not expected)
+
+
+def semantic_claim_recall(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    expected, _actual, alignment = _aligned_semantic_claims(case, prediction)
+    return len(alignment) / len(expected) if expected else 1.0
+
+
+def semantic_claim_f1(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    precision = semantic_claim_precision(case, prediction)
+    recall = semantic_claim_recall(case, prediction)
+    return 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+
+
+def _semantic_end_to_end_field_accuracy(
+    case: Mapping[str, Any], prediction: Mapping[str, Any], fields: Sequence[str],
+) -> float:
+    expected, actual, alignment = _aligned_semantic_claims(case, prediction)
+    if not expected:
+        return 1.0
+    correct = 0
+    for expected_index, expected_claim in enumerate(expected):
+        actual_index = alignment.get(expected_index)
+        if actual_index is None:
+            continue
+        actual_claim = actual[actual_index]
+        correct += all(
+            _semantic_field_correct(field, expected_claim, actual_claim)
+            for field in fields
+        )
+    return correct / len(expected)
+
+
+def semantic_identity_accuracy(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    return _semantic_end_to_end_field_accuracy(case, prediction, SEMANTIC_IDENTITY_FIELDS)
+
+
+def semantic_value_accuracy(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    return _semantic_end_to_end_field_accuracy(case, prediction, ("value", "unit", "bound"))
+
+
+def semantic_grounding_accuracy(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    return _semantic_end_to_end_field_accuracy(
+        case, prediction, ("input_id", "locator")
+    )
+
+
+def semantic_exact_match(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    fields = (
+        *SEMANTIC_IDENTITY_FIELDS, "value", "unit",
+        *SEMANTIC_CLASSIFICATION_FIELDS, "input_id", "locator",
+    )
+    return _semantic_end_to_end_field_accuracy(case, prediction, fields)
+
+
+def semantic_critical_exact_match(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    critical_case = dict(case)
+    critical_gold = dict(case["gold"])
+    critical_gold["claims"] = [
+        claim for claim in _semantic_claims(case["gold"])
+        if claim.get("criticality") == "decision_critical"
+    ]
+    critical_case["gold"] = critical_gold
+    return semantic_exact_match(critical_case, prediction)
+
+
+def _semantic_single_field_metric(field: str):
+    return lambda case, prediction: _semantic_end_to_end_field_accuracy(
+        case, prediction, (field,)
+    )
+
+
+def _semantic_relation_sets(
+    case: Mapping[str, Any], prediction: Mapping[str, Any],
+) -> tuple[set[tuple[str, str, str, str]], set[tuple[str, str, str, str]]]:
+    expected_claims, actual_claims, alignment = _aligned_semantic_claims(case, prediction)
+    expected_ids = {
+        str(claim.get("claim_id")): index for index, claim in enumerate(expected_claims)
+    }
+    actual_to_expected = {
+        str(actual_claims[actual_index].get("claim_id")): str(expected_claims[expected_index].get("claim_id"))
+        for expected_index, actual_index in alignment.items()
+    }
+
+    def relation_key(relation: Mapping[str, Any], *, predicted: bool) -> tuple[str, str, str, str]:
+        source = str(relation.get("source_claim_id", ""))
+        target_type = normalize_text(relation.get("target_type"))
+        target = str(relation.get("target_id", ""))
+        if predicted:
+            source = actual_to_expected.get(source, f"UNMATCHED:{source}")
+            if target_type == "claim":
+                target = actual_to_expected.get(target, f"UNMATCHED:{target}")
+        elif source not in expected_ids:
+            source = f"UNKNOWN:{source}"
+        return source, normalize_text(relation.get("relation")), target_type, target
+
+    expected = {
+        relation_key(item, predicted=False)
+        for item in case["gold"].get("relations", []) if isinstance(item, Mapping)
+    }
+    actual = {
+        relation_key(item, predicted=True)
+        for item in prediction.get("relations", []) if isinstance(item, Mapping)
+    }
+    return expected, actual
+
+
+def semantic_relation_precision(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    expected, actual = _semantic_relation_sets(case, prediction)
+    return len(expected & actual) / len(actual) if actual else float(not expected)
+
+
+def semantic_relation_recall(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    expected, actual = _semantic_relation_sets(case, prediction)
+    return len(expected & actual) / len(expected) if expected else 1.0
+
+
+def semantic_relation_f1(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    precision = semantic_relation_precision(case, prediction)
+    recall = semantic_relation_recall(case, prediction)
+    return 2 * precision * recall / (precision + recall) if precision + recall else 0.0
+
+
+def semantic_derivation_accuracy(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    expected, actual, alignment = _aligned_semantic_claims(case, prediction)
+    derived_indices = [
+        index for index, claim in enumerate(expected)
+        if normalize_text(claim.get("epistemic_class")) == "derived"
+    ]
+    if not derived_indices:
+        return 1.0
+    actual_to_expected = {
+        str(actual[actual_index].get("claim_id")): str(expected[expected_index].get("claim_id"))
+        for expected_index, actual_index in alignment.items()
+    }
+    correct = 0
+    for expected_index in derived_indices:
+        actual_index = alignment.get(expected_index)
+        if actual_index is None:
+            continue
+        expected_derivation = expected[expected_index].get("derivation") or {}
+        actual_derivation = actual[actual_index].get("derivation") or {}
+        expected_operands = set(expected_derivation.get("operand_claim_ids", []))
+        actual_operands = {
+            actual_to_expected.get(str(claim_id), f"UNMATCHED:{claim_id}")
+            for claim_id in actual_derivation.get("operand_claim_ids", [])
+        }
+        expression_present = bool(normalize_text(actual_derivation.get("expression")))
+        correct += expression_present and expected_operands == actual_operands
+    return correct / len(derived_indices)
+
+
+def semantic_no_temporal_leakage(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    as_of = case["gold"].get("as_of_known_at")
+    actual = _semantic_claims(prediction)
+    if not as_of or not actual:
+        return 1.0
+    try:
+        as_of_dt = datetime.fromisoformat(str(as_of).replace("Z", "+00:00"))
+    except ValueError:
+        return 0.0
+    input_known_at = {
+        str(item.get("input_id")): (item.get("metadata") or {}).get("known_at")
+        for item in case.get("inputs", [])
+    }
+    leaked = 0
+    for claim in actual:
+        input_id = str(claim.get("input_id"))
+        input_unknown = input_id not in input_known_at
+        known_at = claim.get("known_at") or input_known_at.get(input_id)
+        future = False
+        if known_at:
+            try:
+                future = datetime.fromisoformat(str(known_at).replace("Z", "+00:00")) > as_of_dt
+            except ValueError:
+                future = True
+        leaked += input_unknown or future
+    return 1.0 - leaked / len(actual)
+
+
+def semantic_abstention_accuracy(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
+    expected = _semantic_claims(case["gold"])
+    actual = _semantic_claims(prediction)
+    return float(bool(expected) or not actual)
+
+
 def evidence_f1(case: Mapping[str, Any], prediction: Mapping[str, Any]) -> float:
     expected = [item for item in case.get("evidence", []) if isinstance(item, Mapping)]
     actual = [item for item in prediction.get("evidence", []) if isinstance(item, Mapping)]
@@ -617,6 +945,29 @@ METRICS = {
     "fact_value_accuracy": fact_value_accuracy,
     "fact_qualifier_accuracy": fact_qualifier_accuracy,
     "fact_grounding_accuracy": fact_grounding_accuracy,
+    "semantic_claim_precision": semantic_claim_precision,
+    "semantic_claim_recall": semantic_claim_recall,
+    "semantic_claim_f1": semantic_claim_f1,
+    "semantic_identity_accuracy": semantic_identity_accuracy,
+    "semantic_value_accuracy": semantic_value_accuracy,
+    "semantic_grounding_accuracy": semantic_grounding_accuracy,
+    "semantic_exact_match": semantic_exact_match,
+    "semantic_critical_exact_match": semantic_critical_exact_match,
+    "semantic_entity_accuracy": _semantic_single_field_metric("entity"),
+    "semantic_metric_accuracy": _semantic_single_field_metric("metric"),
+    "semantic_measurement_accuracy": _semantic_single_field_metric("measurement"),
+    "semantic_period_accuracy": _semantic_single_field_metric("period_canonical"),
+    "semantic_scope_accuracy": _semantic_single_field_metric("scope"),
+    "semantic_basis_accuracy": _semantic_single_field_metric("basis"),
+    "semantic_scenario_accuracy": _semantic_single_field_metric("scenario"),
+    "semantic_epistemic_accuracy": _semantic_single_field_metric("epistemic_class"),
+    "semantic_claim_kind_accuracy": _semantic_single_field_metric("claim_kind"),
+    "semantic_relation_precision": semantic_relation_precision,
+    "semantic_relation_recall": semantic_relation_recall,
+    "semantic_relation_f1": semantic_relation_f1,
+    "semantic_derivation_accuracy": semantic_derivation_accuracy,
+    "semantic_no_temporal_leakage": semantic_no_temporal_leakage,
+    "semantic_abstention_accuracy": semantic_abstention_accuracy,
     "evidence_f1": evidence_f1,
     "content_similarity": content_similarity,
     "element_f1": element_f1,

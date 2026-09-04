@@ -13,6 +13,8 @@
     "content": {"type": "string"},
     "fields": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
     "facts": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
+    "claims": {"type": "array", "items": {"$ref": "https://panta.local/evaluation/evaluation_case.schema.json#/$defs/semantic_claim"}},
+    "relations": {"type": "array", "items": {"$ref": "https://panta.local/evaluation/evaluation_case.schema.json#/$defs/semantic_relation"}},
     "elements": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
     "media": {"type": "array", "items": {"type": "object", "additionalProperties": true}},
     "evidence": {

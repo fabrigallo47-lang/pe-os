@@ -64,6 +64,7 @@ from tools.llm_provider import (  # noqa: E402
     openrouter_extra_body,
 )
 from tools.archetype_pack import load_pack, workstream_ids  # noqa: E402
+from tools.derivation_verifier import verify_derivation  # noqa: E402
 from tools.object_identity import claim_id as canonical_claim_id  # noqa: E402
 from tools.source_envelope import extractor_source_record  # noqa: E402
 from tools.source_capabilities import (  # noqa: E402
@@ -2916,10 +2917,15 @@ class CanonicalClaim:
     # unresolvable by design — visible, never silently matched.
     metric_label: str | None = None
     validation_errors: list[str] = field(default_factory=list)
+    # A deterministic review finding can be material without being grounds to
+    # discard evidence. Keep it visible in validation_errors while preserving
+    # the separate admission rule used by the graph assembler.
+    nonblocking_validation_errors: list[str] = field(default_factory=list)
 
 
 def validate(raw: RawClaim) -> CanonicalClaim:
     errors: list[str] = []
+    nonblocking_errors: list[str] = []
     if raw.metric not in METRIC_ENUM:
         errors.append(f"unknown metric: '{raw.metric}'")
     metric_label = (raw.metric_label or "").strip() or None
@@ -2942,6 +2948,19 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         errors.append(f"invalid epistemic_class: '{raw.epistemic_class}'")
     if ec == "derived" and not (raw.derivation or "").strip():
         errors.append("derived claim missing derivation field")
+    elif ec == "derived":
+        result = verify_derivation(raw.derivation, raw.value)
+        if result["status"] in {
+            "computed_disagrees_with_both",
+            "value_disagrees_with_text",
+        }:
+            error = (
+                "derivation arithmetic disagrees with stored value "
+                f"(status={result['status']}, computed={result.get('computed')}, "
+                f"claimed={raw.value})"
+            )
+            errors.append(error)
+            nonblocking_errors.append(error)
     # The schema tells the model not to emit a CHARACTERISATION, and the model
     # labels one correctly and emits it anyway — observed on "low capital
     # expenditure", classified CHARACTERISATION and returned regardless.
@@ -3016,6 +3035,7 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         scenario=raw.scenario or "unspecified",
         metric_label=metric_label,
         validation_errors=errors,
+        nonblocking_validation_errors=nonblocking_errors,
     )
 
 
@@ -3038,7 +3058,11 @@ def assemble(claims: list[CanonicalClaim]) -> SubGraph:
     conflicts: list[dict] = []
     rejected: list[dict] = []
     for c in claims:
-        if c.validation_errors:
+        blocking_errors = [
+            error for error in c.validation_errors
+            if error not in c.nonblocking_validation_errors
+        ]
+        if blocking_errors:
             rejected.append({
                 "claim_id": c.claim_id,
                 "metric": c.metric,
@@ -3132,6 +3156,12 @@ def _to_e3_manifest(graph: SubGraph, deal: str, manifest: str,
                     "bound": c.bound,
                     "basis": c.basis,
                     "scenario": c.scenario,
+                    # Computed by validate(), consumed by assemble() to decide
+                    # admission — but never written to e3_claims.json before
+                    # this line, so a flagged-but-admitted claim's flag was
+                    # silently lost the moment it left the Python process. A
+                    # review flag nobody downstream can see is not a flag.
+                    "nonblocking_validation_errors": c.nonblocking_validation_errors,
                 }
                 for c in graph.claims
             ],
@@ -3611,7 +3641,11 @@ def main() -> int:
     # ── L3: Validate ──────────────────────────────────────────────────────
     print("\n[L3] Validating...")
     canonicals = [validate(r) for r in all_raw]
-    invalid = [c for c in canonicals if c.validation_errors]
+    invalid = [
+        c for c in canonicals
+        if any(error not in c.nonblocking_validation_errors
+               for error in c.validation_errors)
+    ]
     if invalid:
         print(f"  Rejected: {len(invalid)}")
         for c in invalid[:5]:

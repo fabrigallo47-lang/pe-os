@@ -2,7 +2,7 @@ import React, { useMemo, useState } from 'react';
 import { usePanta } from '../app/PantaContext';
 import { EmptyCase } from '../components/EmptyCase';
 import { HumanPositionNote } from '../components/HumanPositionNote';
-import { unknownById, objectLabel, humanPositionsForScope, caseReadingById, supportSummary, questionById, workstreamById } from '../app/selectors';
+import { unknownById, objectLabel, humanPositionsForScope, caseReadingById, supportSummary, questionById, workstreamById, formatCount, formatRemaining } from '../app/selectors';
 import { goTo } from '../app/routes';
 
 export function Trace(){
@@ -32,11 +32,11 @@ export function Trace(){
 
   return <main className="p-page p-trace-page">
     <section className="p-trace-summary">
-      <div><h1>{stats.independent===0?'No independent evidence':`${stats.independent} independent support${stats.independent===1?'':'s'}`}</h1><p>{stats.total} current support{stats.total===1?'':'s'} · {reading.relatedObjectIds.length} places in the case rely on it</p>{unknowns[0]&&<p className="p-trace-gap"><span>Still missing</span>{unknowns[0]!.title}</p>}</div>
+      <div><h1>{stats.independent===0?'No independent evidence':formatCount(stats.independent,'independent support')}</h1><p>{formatCount(stats.total,'current support')} · {formatCount(reading.relatedObjectIds.length,'place')} in the case {reading.relatedObjectIds.length===1?'relies':'rely'} on it</p>{unknowns[0]&&<p className="p-trace-gap"><span>Still missing</span>{unknowns[0]!.title}</p>}</div>
       <div className="p-trace-state">{humanState(reading.epistemicStatus)}{reading.computedAt&&<span>{reading.computedAt}</span>}</div>
     </section>
 
-    {excluded.length>0&&<div className="p-basis-test"><strong>Temporary basis test</strong><span>{activeSupports.length} support{activeSupports.length===1?'':'s'} remain · live case unchanged</span><button onClick={()=>{setExcluded([]);void setActiveObject(undefined)}}>Reset</button></div>}
+    {excluded.length>0&&<div className="p-basis-test"><strong>Temporary basis test</strong><span>{formatRemaining(activeSupports.length,'support')} · live case unchanged</span><button onClick={()=>{setExcluded([]);void setActiveObject(undefined)}}>Reset</button></div>}
 
     <section className="p-trace-field">
       <aside className="p-trace-supports">
@@ -45,7 +45,7 @@ export function Trace(){
           const evidence=snapshot.claims.find(e=>e.id===id); const finding=snapshot.findings.find(f=>f.id===id); const position=snapshot.humanPositions.find(p=>p.id===id);
           const title=evidence?.label??finding?.title??position?.text??objectLabel(snapshot,id);
           const meta=evidence?(reading.independentSupportObjectIds.includes(id)?'Independent evidence':evidence.type):finding?'PANTA finding':position?'Human view':'';
-          return <button key={id} className={`p-trace-support ${selectedSupportId===id?'is-selected':''} ${excluded.includes(id)?'is-excluded':''}`} onClick={()=>setSelectedSupportId(id)}><strong>{title}</strong>{meta&&<span>{meta}</span>}</button>
+          return <button key={id} aria-pressed={selectedSupportId===id} className={`p-trace-support ${selectedSupportId===id?'is-selected':''} ${excluded.includes(id)?'is-excluded':''}`} onClick={()=>setSelectedSupportId(id)}><strong>{title}</strong>{meta&&<span>{meta}</span>}</button>
         })}
       </aside>
 

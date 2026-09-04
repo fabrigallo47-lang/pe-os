@@ -1,31 +1,71 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { usePanta } from '../app/PantaContext';
-import { objectLabel } from '../app/selectors';
+import { useDialogFocus } from './useDialogFocus';
+import { formatCount } from '../app/selectors';
 
 export function FindInCaseModal({ onClose }: { onClose: () => void }) {
-  const { search, searchResults, setActiveObject } = usePanta();
+  const { search, searching, searchResults, setActiveObject } = usePanta();
   const [query, setQuery] = useState('');
-  useEffect(()=>{const t=setTimeout(()=>void search(query),140);return()=>clearTimeout(t)},[query,search]);
-  return <div className="p-modal-backdrop" role="dialog" aria-modal="true"><div className="p-modal p-command-modal">
-    <div className="p-modal-head"><strong>Find in case</strong><button className="p-btn p-btn-quiet" onClick={onClose}>Close</button></div>
-    <div className="p-modal-body"><input autoFocus className="p-search-input" placeholder="Find a reading, source, number, person or event" value={query} onChange={(e: React.ChangeEvent<HTMLInputElement>)=>setQuery(e.target.value)} />
-      <div className="p-search-results">{searchResults.map(r=><button key={r.objectId} onClick={()=>{void setActiveObject(r.objectId);onClose()}}><strong>{r.label}</strong><span>{r.kind}</span></button>)}{query && !searchResults.length&&<p className="p-muted">No matching case object.</p>}</div>
+  const inputRef = useRef<HTMLInputElement>(null);
+  const dialogRef = useDialogFocus<HTMLDivElement>(true, onClose, inputRef);
+  useEffect(() => {
+    const timer = window.setTimeout(() => { void search(query); }, 140);
+    return () => window.clearTimeout(timer);
+  }, [query, search]);
+
+  const inspectResult = (objectId: string) => {
+    onClose();
+    window.requestAnimationFrame(() => { void setActiveObject(objectId); });
+  };
+
+  return <div className="p-modal-backdrop"><div ref={dialogRef} tabIndex={-1} className="p-modal p-command-modal" role="dialog" aria-modal="true" aria-labelledby="find-in-case-title">
+    <div className="p-modal-head"><strong id="find-in-case-title">Find in case</strong><button className="p-btn p-btn-quiet" onClick={onClose}>Close</button></div>
+    <div className="p-modal-body">
+      <label className="p-field-label" htmlFor="find-in-case-input">Reading, source, number, person, or event</label>
+      <input ref={inputRef} id="find-in-case-input" className="p-search-input" placeholder="Search the current case" value={query} onChange={(event: React.ChangeEvent<HTMLInputElement>) => setQuery(event.target.value)} aria-describedby="find-in-case-status" />
+      <div id="find-in-case-status" className="p-search-status" role="status" aria-live="polite">{searching ? 'Searching the case…' : query ? `${searchResults.length} result${searchResults.length === 1 ? '' : 's'}` : 'Start typing to search'}</div>
+      <div className="p-search-results" aria-busy={searching}>{searchResults.map(result => <button key={result.objectId} disabled={searching} onClick={() => inspectResult(result.objectId)}><strong>{result.label}</strong><span>{result.kind}</span></button>)}{query && !searching && !searchResults.length && <p className="p-muted">No matching case object.</p>}</div>
     </div>
   </div></div>;
 }
 
 export function SourceDrawer() {
-  const { snapshot, sourcesOpen, selectedSourceId, closeSources, setActiveObject } = usePanta();
+  const { snapshot, sourcesOpen, selectedSourceId, closeSources, openSource, setActiveObject, inspecting } = usePanta();
+  const dialogRef = useDialogFocus<HTMLElement>(sourcesOpen, closeSources);
+  const sourceBackRef = useRef<HTMLButtonElement>(null);
+  const firstSourceRef = useRef<HTMLButtonElement>(null);
+  const previousSourceId = useRef<string>();
+  useEffect(() => {
+    if (!sourcesOpen || previousSourceId.current === selectedSourceId) return;
+    const hadSelection = Boolean(previousSourceId.current);
+    previousSourceId.current = selectedSourceId;
+    const timer = window.setTimeout(() => (selectedSourceId ? sourceBackRef.current : hadSelection ? firstSourceRef.current : null)?.focus(), 0);
+    return () => window.clearTimeout(timer);
+  }, [selectedSourceId, sourcesOpen]);
   if (!snapshot || !sourcesOpen) return null;
-  const sources = selectedSourceId ? snapshot.sources.filter(s=>s.id===selectedSourceId) : snapshot.sources;
-  return <div className="p-drawer-backdrop" onMouseDown={(e: React.MouseEvent<HTMLDivElement>)=>{if(e.target===e.currentTarget)closeSources()}}><aside className="p-source-drawer">
-    <div className="p-modal-head"><div><strong>{selectedSourceId ? 'Source' : 'Sources'}</strong><div className="p-meta">{sources.length} mapped</div></div><button className="p-btn p-btn-quiet" onClick={closeSources}>Close</button></div>
-    <div className="p-source-list">{sources.map(s=><button key={s.id} className="p-source-item" onClick={()=>void setActiveObject(s.id)}><span className="p-meta">{s.type}</span><strong>{s.title}</strong>{s.excerpt&&<p>“{s.excerpt}”</p>}{s.limitation&&<small>Doesn't prove: {s.limitation}</small>}</button>)}</div>
+  const source = selectedSourceId ? snapshot.sources.find(item => item.id === selectedSourceId) : undefined;
+
+  const inspectSource = () => {
+    if (!source || inspecting) return;
+    const sourceId = source.id;
+    closeSources();
+    window.requestAnimationFrame(() => { void setActiveObject(sourceId); });
+  };
+
+  return <div className="p-drawer-backdrop" onMouseDown={(event: React.MouseEvent<HTMLDivElement>) => { if (event.target === event.currentTarget) closeSources(); }}><aside ref={dialogRef} tabIndex={-1} className="p-source-drawer" role="dialog" aria-modal="true" aria-labelledby="source-drawer-title">
+    <div className="p-modal-head"><div><strong id="source-drawer-title">{source?.title ?? 'Sources'}</strong><div className="p-meta">{source ? source.type : `${formatCount(snapshot.sources.length,'source')} mapped`}</div></div><button className="p-btn p-btn-quiet" onClick={closeSources}>Close</button></div>
+    {source ? <div className="p-source-detail">
+      <button ref={sourceBackRef} className="p-shell-link p-source-back" onClick={() => openSource(undefined)}>← Back to all sources</button>
+      {source.occurredAt && <p className="p-meta">Dated {source.occurredAt}</p>}
+      {source.excerpt ? <blockquote>“{source.excerpt}”</blockquote> : <p className="p-muted">No excerpt is available in this projection.</p>}
+      {source.limitation && <div className="p-source-limit"><span>What this doesn't prove</span><p>{source.limitation}</p></div>}
+      <button className="p-btn p-btn-primary" disabled={inspecting} onClick={inspectSource}>{inspecting ? 'Opening inspection…' : 'Inspect in case'}</button>
+    </div> : <div className="p-source-list">{snapshot.sources.map((item,index) => <button ref={index===0?firstSourceRef:undefined} key={item.id} className="p-source-item" onClick={() => openSource(item.id)}><span className="p-meta">{item.type}</span><strong>{item.title}</strong>{item.excerpt && <p>“{item.excerpt}”</p>}{item.limitation && <small>Doesn't prove: {item.limitation}</small>}<span className="p-source-open-cue">Open source →</span></button>)}</div>}
   </aside></div>;
 }
 
-export function SourcesModal({ onClose }: { onClose: () => void }) {
+export function SourcesModal() {
   const { openSource } = usePanta();
-  useEffect(()=>{openSource(undefined); return ()=>{}},[openSource]);
-  return <></>;
+  useEffect(() => { openSource(undefined); }, [openSource]);
+  return null;
 }

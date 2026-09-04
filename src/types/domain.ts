@@ -681,6 +681,7 @@ export interface PantaCaseSnapshot {
   decisionPaths: DecisionPath[];
   decisions: DecisionRecord[];
   formation?: FormationDraft;
+  formationMaterials?: FormationMaterial[];
 }
 
 export type PantaAction =

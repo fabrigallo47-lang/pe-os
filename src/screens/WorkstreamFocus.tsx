@@ -18,7 +18,7 @@ export function WorkstreamFocus() {
   const selectedReading=selected?caseReadingById(snapshot,selected.currentCaseReadingId):undefined;
   const owner=actorById(snapshot,workstream.ownerActorId);
   const relevantFindings=snapshot.findings.filter(f=>f.affectedObjectIds.some(id=>id===workstream.id||questions.some(t=>t.id===id))).slice(0,2);
-  const enter=(route:'trace'|'simulate'|'resolve')=>{if(selected)setFocusedQuestion(selected.id);goTo(route)};
+  const enter=(route:'trace'|'simulate'|'resolve')=>{if(selected)goTo(route,{workstreamId:workstream?.id,questionId:selected.id})};
 
   return <main className="p-page p-workstream-page">
     <section className="p-ws-head">
@@ -29,7 +29,7 @@ export function WorkstreamFocus() {
     {!!relevantFindings.length&&<section className="p-ws-finding-line"><strong>New in this workstream</strong>{relevantFindings.map(f=><button key={f.id} onClick={()=>void setActiveObject(f.id)}>{f.proposition}<small>PANTA found</small></button>)}</section>}
 
     <section className="p-question-index" aria-label="Reasoning questions">
-      {questions.map(t=>{const r=caseReadingById(snapshot,t.currentCaseReadingId);const ss=r?supportSummary(snapshot,r):{total:0,independent:0};const gap=unknownById(snapshot,t.openUnknownIds[0]);return <button key={t.id} className={selected?.id===t.id?'is-selected':''} onClick={()=>{setSelectedId(t.id);setFocusedQuestion(t.id);void setActiveObject(undefined)}}><strong>{t.name}</strong><span>{humanState(t.questionStatus)}</span>{r&&<small>{r.text}</small>}<em>{ss.independent?`${ss.independent} independent`:'No independent evidence'}{gap?` · ${gap.title}`:''}</em></button>})}
+      {questions.map(t=>{const r=caseReadingById(snapshot,t.currentCaseReadingId);const ss=r?supportSummary(snapshot,r):{total:0,independent:0};const gap=unknownById(snapshot,t.openUnknownIds[0]);return <button key={t.id} aria-pressed={selected?.id===t.id} className={selected?.id===t.id?'is-selected':''} onClick={()=>{setSelectedId(t.id);setFocusedQuestion(t.id);void setActiveObject(undefined)}}><strong>{t.name}</strong><span>{humanState(t.questionStatus)}</span>{r&&<small>{r.text}</small>}<em>{ss.independent?`${ss.independent} independent`:'No independent evidence'}{gap?` · ${gap.title}`:''}</em></button>})}
     </section>
 
     {selected&&selectedReading&&<section className="p-ws-focus">
@@ -41,7 +41,7 @@ export function WorkstreamFocus() {
       </div>
     </section>}
 
-    {!!selected?.chronologyEventIds.length&&<section className="p-ws-evolution"><div className="p-section-heading"><strong>How this reading changed</strong><span className="p-meta">same case, through time</span></div><div className="p-time-ribbon">{selected.chronologyEventIds.map(id=>{const e=eventById(snapshot,id);return e?<button key={id} className="p-time-node" onClick={()=>void setActiveObject(id)}><span>{e.effectiveAt??e.knownAt}</span><strong>{eventDisplayLabel(snapshot,e)}</strong></button>:null})}</div></section>}
+    {!!selected?.chronologyEventIds.length&&<section className="p-ws-evolution"><div className="p-section-heading"><strong>How this reading changed</strong><span className="p-meta">select a moment to replay the case</span></div><div className="p-time-ribbon">{selected.chronologyEventIds.map(id=>{const e=eventById(snapshot,id);return e?<button key={id} className="p-time-node" onClick={()=>goTo('replay',{asOf:e.knownAt})}><span>{e.effectiveAt??e.knownAt}</span><strong>{eventDisplayLabel(snapshot,e)}</strong><small>Open in Replay</small></button>:null})}</div></section>}
 
     <div className="p-floating-lens"><ObjectLens compact/></div>
   </main>;

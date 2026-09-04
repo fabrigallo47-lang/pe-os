@@ -13,6 +13,8 @@ import type {
   HumanPosition,
   Quantity,
   CaseReading,
+  DecisionRecord,
+  ImpactChange,
   Relation,
   Question,
   Workstream,
@@ -26,6 +28,20 @@ export function unknownById(snapshot: PantaCaseSnapshot, id?: Id): Unknown | und
 }
 export function actorById(snapshot: PantaCaseSnapshot, id?: Id): Actor | undefined {
   return id ? snapshot.actors.find(x => x.id === id) : undefined;
+}
+/** Case ownership is derived from the earliest canonical creation event. */
+export function caseOwner(snapshot: PantaCaseSnapshot): Actor | undefined {
+  const creationEvent = [...snapshot.events]
+    .filter(event => event.eventType === 'CASE_CREATED')
+    .sort((left, right) => left.recordedAt.localeCompare(right.recordedAt) || left.id.localeCompare(right.id))[0];
+  return actorById(snapshot, creationEvent?.actorOrPolicyId);
+}
+/** A case exists, but PANTA has not yet formed any case structure. */
+export function isCaseUnformed(snapshot: PantaCaseSnapshot): boolean {
+  return !snapshot.formation
+    && snapshot.workstreams.length === 0
+    && snapshot.questions.length === 0
+    && snapshot.caseReadings.length === 0;
 }
 export function workItemById(snapshot: PantaCaseSnapshot, id?: Id): WorkItem | undefined {
   return id ? snapshot.workItems.find(x => x.id === id) : undefined;
@@ -50,6 +66,65 @@ export function questionById(snapshot: PantaCaseSnapshot, id?: Id): Question | u
 }
 export function workstreamById(snapshot: PantaCaseSnapshot, id?: Id): Workstream | undefined {
   return id ? snapshot.workstreams.find(x => x.id === id) : undefined;
+}
+
+/** Deal Home attention summary. ID order remains backend-owned; the UI never invents priority. */
+export function dealWorkstreamSummary(snapshot: PantaCaseSnapshot, workstream: Workstream) {
+  const reading = caseReadingById(snapshot, workstream.currentCaseReadingId);
+  const openPoint = workstream.openUnknownIds
+    .map(id => unknownById(snapshot, id))
+    .find(item => item?.status === 'OPEN');
+  const nextStep = workstream.activeWorkItemIds
+    .map(id => workItemById(snapshot, id))
+    .find(item => item
+      && item.status !== 'COMPLETED'
+      && item.status !== 'CANCELLED'
+      && item.institutionalState !== 'REJECTED'
+      && item.institutionalState !== 'RETIRED');
+  const owner = actorById(snapshot, workstream.ownerActorId);
+  const nextStepOwner = actorById(snapshot, nextStep?.ownerActorId);
+  const latestChange = eventById(snapshot, workstream.latestChangeEventId)
+    ?? eventById(snapshot, reading?.lastChangeEventId);
+  const humanPosition = humanPositionsForScope(snapshot, [workstream.id, reading?.id])[0];
+  return { reading, openPoint, nextStep, owner, nextStepOwner, latestChange, humanPosition };
+}
+
+/** Resolve the canonical decision linked by the decision context before using a deterministic fallback. */
+export function recordedDecision(snapshot: PantaCaseSnapshot): DecisionRecord | undefined {
+  const recordedDecisionId = snapshot.decision?.recordedDecisionId;
+  if (recordedDecisionId) {
+    const linked = snapshot.decisions.find(decision => decision.id === recordedDecisionId);
+    if (linked) return linked;
+  }
+  return [...snapshot.decisions].sort((a, b) =>
+    b.recordedAt.localeCompare(a.recordedAt) || b.id.localeCompare(a.id)
+  )[0];
+}
+
+/** Every simulated object appears once; a material effect wins over a duplicate HOLD. */
+export function normalizeSimulationEffects(effects: ImpactChange[]): ImpactChange[] {
+  const byObjectId = new Map<Id, ImpactChange>();
+  for (const effect of effects) {
+    const current = byObjectId.get(effect.objectId);
+    if (!current || (current.state === 'HOLDS' && effect.state !== 'HOLDS')) {
+      byObjectId.set(effect.objectId, effect);
+    }
+  }
+  return [...byObjectId.values()];
+}
+
+export function simulationImpactCounts(effects: ImpactChange[]): { total: number; changed: number; held: number } {
+  const normalized = normalizeSimulationEffects(effects);
+  const held = normalized.filter(effect => effect.state === 'HOLDS').length;
+  return { total: normalized.length, changed: normalized.length - held, held };
+}
+
+export function formatCount(count: number, singular: string, plural = `${singular}s`): string {
+  return `${count} ${count === 1 ? singular : plural}`;
+}
+
+export function formatRemaining(count: number, singular: string, plural = `${singular}s`): string {
+  return `${formatCount(count, singular, plural)} ${count === 1 ? 'remains' : 'remain'}`;
 }
 
 export function humanPositionsForScope(snapshot: PantaCaseSnapshot, scopeIds: Array<Id | undefined>): HumanPosition[] {
@@ -181,9 +256,10 @@ export function objectRef(snapshot: PantaCaseSnapshot, id: Id): ObjectRef {
 }
 
 export function supportSummary(snapshot: PantaCaseSnapshot, reading: CaseReading): { total: number; independent: number; labels: string[] } {
+  const activeSupportIds = new Set(reading.supportObjectIds);
   return {
     total: reading.supportObjectIds.length,
-    independent: reading.independentSupportObjectIds.length,
+    independent: reading.independentSupportObjectIds.filter(id => activeSupportIds.has(id)).length,
     labels: reading.supportObjectIds.slice(0, 3).map(id => objectLabel(snapshot, id)),
   };
 }
@@ -196,7 +272,7 @@ export interface LensViewModel {
   supportRefs: ObjectRef[];
   unknowns: ObjectRef[];
   dependents: ObjectRef[];
-  lastChange?: { label: string; date: string };
+  lastChange?: { eventId: Id; label: string; date: string; knownAt: string };
   related: ObjectRef[];
   sourceRefs: ObjectRef[];
   actions: InspectionPayload['allowedActions'];
@@ -217,7 +293,7 @@ export function composeLens(snapshot: PantaCaseSnapshot, inspection: InspectionP
     supportRefs,
     unknowns,
     dependents,
-    lastChange: event ? { label: eventDisplayLabel(snapshot, event), date: event.effectiveAt ?? event.knownAt } : undefined,
+    lastChange: event ? { eventId: event.id, label: eventDisplayLabel(snapshot, event), date: event.effectiveAt ?? event.knownAt, knownAt: event.knownAt } : undefined,
     related,
     sourceRefs,
     actions: inspection.allowedActions,

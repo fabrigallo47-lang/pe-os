@@ -3,7 +3,8 @@ import fs from 'node:fs';
 const domain = fs.readFileSync('src/types/domain.ts','utf8');
 const adapter = fs.readFileSync('src/providers/PantaBackendAdapter.ts','utf8');
 const selectors = fs.readFileSync('src/app/selectors.ts','utf8');
-const screens = ['DealHome','WorkstreamFocus','Trace','Simulate','ReviewAdmit','Resolve','Formation','ReplayDecision','Outputs'].map(x=>fs.readFileSync(`src/screens/${x}.tsx`,'utf8')).join('\n');
+const deal = fs.readFileSync('src/screens/DealHome.tsx','utf8');
+const screens = [deal,...['WorkstreamFocus','Trace','Simulate','ReviewAdmit','Resolve','Formation','ReplayDecision','Outputs'].map(x=>fs.readFileSync(`src/screens/${x}.tsx`,'utf8'))].join('\n');
 const failures=[];
 function requireText(name,text,needle){if(!text.includes(needle))failures.push(`${name}: missing ${needle}`)}
 function forbid(name,text,rx){if(rx.test(text))failures.push(`${name}: forbidden ${rx}`)}
@@ -60,7 +61,9 @@ forbid('Simulation',domain,/coverageLabel\??\s*:/);
 forbid('Simulation',domain,/coverageLimit\??\s*:/);
 
 // Product surface gates.
-requireText('DealHome',screens,'no independent evidence');
+for (const label of ['Where we stand','Still to prove','Next step','Owner','What changed']) requireText('DealHome',deal,label);
+requireText('DealHome',deal,'dealWorkstreamSummary');
+forbid('DealHome',deal,/supportSummary|current supports?|independent evidence/i);
 requireText('Positions',screens,'HumanPositionNote');
 requireText('Replay',screens,'setAsOf');
 requireText('Trace',screens,'Test without this');

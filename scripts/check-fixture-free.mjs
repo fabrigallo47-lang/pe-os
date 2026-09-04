@@ -11,6 +11,9 @@ const forbiddenTokens = [
   /syntheticAdapter/i,
   /mockCase/i,
   /previewCase/i,
+  /\blabCase\b/,
+  /p-lab-mode/i,
+  /Product Lab case mode/i,
 ];
 const extraTerms = (process.env.PANTA_FORBIDDEN_TERMS ?? '')
   .split(',')

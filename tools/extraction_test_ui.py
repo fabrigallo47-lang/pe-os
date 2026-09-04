@@ -51,8 +51,14 @@ from urllib.parse import parse_qs, urlparse
 from tools.extract_v2_physical import (
     UnsupportedSourceError,
     _granite_docling_available,
+    annotate_chunk,
+    assemble,
     parse_source,
+    validate,
+    _to_e3_manifest,
 )
+from tools.claim_overlap import analyze_claims
+from tools.llm_provider import anthropic_client_kwargs, configured_api_key
 
 SUPPORTED_EXTENSIONS = [
     ".pdf", ".docx", ".pptx", ".xlsx", ".xlsm",
@@ -626,6 +632,10 @@ def _extract_payload(name: str, data: bytes, page_spec: str = "",
         payload["traceback"] = traceback.format_exc()
     else:
         payload["status"] = "ok"
+        # Kept in-process (not re-parsed) so step 2 runs against the exact
+        # same Chunk objects step 1 showed, not a fresh parse that could
+        # legitimately differ for a page-range slice or a re-uploaded file.
+        _SESSIONS[sid]["chunks"] = chunks
         payload["chunks"] = [{
             "chunk_id": c.chunk_id,
             "locator": c.locator,
@@ -638,6 +648,129 @@ def _extract_payload(name: str, data: bytes, page_spec: str = "",
         } for c in chunks]
     payload["elapsed_s"] = round(time.perf_counter() - started, 2)
     return payload
+
+
+# --------------------------------------------------------------------------
+# Step 2: semantic extraction (L2) + the claim-identity graph
+#
+# Reuses annotate_chunk/validate/assemble/_to_e3_manifest exactly as
+# tools/extract_v2_physical.py's own CLI does, and claim_overlap.
+# analyze_claims() exactly as it runs in production -- this tool shows
+# what the pipeline does, it does not run a second, UI-only approximation
+# of it.
+# --------------------------------------------------------------------------
+
+_ANTHROPIC_CLIENT: Any = None
+
+
+def _anthropic_client() -> Any:
+    global _ANTHROPIC_CLIENT
+    if _ANTHROPIC_CLIENT is None:
+        import anthropic
+        api_key = configured_api_key()
+        if not api_key:
+            raise RuntimeError(
+                "no Anthropic API key configured (checked the usual env/.env "
+                "locations) -- semantic extraction needs one, physical "
+                "extraction does not"
+            )
+        _ANTHROPIC_CLIENT = anthropic.Anthropic(**anthropic_client_kwargs(api_key))
+    return _ANTHROPIC_CLIENT
+
+
+def _semantic_payload(sid: str) -> dict[str, Any]:
+    """Run real L2 + L3 + L4 over the chunks step 1 already parsed."""
+    session = _SESSIONS.get(sid)
+    if not session or "chunks" not in session:
+        return {"status": "error", "error": "run extraction (step 1) first"}
+    chunks = session["chunks"]
+
+    started = time.perf_counter()
+    client = _anthropic_client()
+    raw_claims = []
+    chunk_errors = []
+    for chunk in chunks:
+        try:
+            raw_claims.extend(annotate_chunk(chunk, client, deal="ui-test"))
+        except Exception as exc:  # noqa: BLE001 -- one bad chunk must not void the rest
+            chunk_errors.append({"chunk_id": chunk.chunk_id, "error": f"{type(exc).__name__}: {exc}"})
+
+    canonicals = [validate(r) for r in raw_claims]
+    graph = assemble(canonicals)
+    manifest = _to_e3_manifest(graph, deal="ui-test", manifest="UI",
+                               sources_used=[{"source_id": "SRC-UI-UPLOAD"}])
+    overlap = analyze_claims(manifest)
+    session["manifest"] = manifest  # step 3 (archetype) reads this back
+
+    return {
+        "status": "ok",
+        "elapsed_s": round(time.perf_counter() - started, 2),
+        "chunk_errors": chunk_errors,
+        "manifest": manifest,
+        "overlap": overlap,
+    }
+
+
+# --------------------------------------------------------------------------
+# Step 3: deal-archetype signal
+#
+# Honest label: THERE IS NO PRODUCTION CLASSIFIER. METRIC_ENUM is built for
+# LBO/buyout underwriting (see docs/dizionario_estrazione.md); a claim
+# outside that vocabulary lands on "Other" (PAN-117) rather than being
+# force-fit onto the nearest-sounding entry. This step turns that same
+# signal -- which labels landed on Other, and what they contain -- into a
+# rough, visible-as-a-guess-not-a-fact hint of which known vocabulary (if
+# any) the document actually matches. It never blocks or relabels a claim.
+# --------------------------------------------------------------------------
+
+_FAMILY_KEYWORDS: dict[str, tuple[str, ...]] = {
+    "LBO / buyout": (
+        "sponsor equity", "leverage", "covenant", "ebitda", "first-lien",
+        "revolver", "ddtl", "rollover", "moic", "irr", "entry multiple",
+        "exit multiple", "net debt",
+    ),
+    "Venture / growth": (
+        "pre-money", "post-money", "round", "runway", "arr", "mrr",
+        "burn rate", "cap table", "dilution", "safe", "seed", "series",
+        "ownership stake", "funding",
+    ),
+}
+
+
+def _archetype_payload(sid: str) -> dict[str, Any]:
+    session = _SESSIONS.get(sid)
+    manifest = session.get("manifest") if session else None
+    if not manifest:
+        return {"status": "error", "error": "run semantic extraction (step 2) first"}
+
+    fields = manifest["extraction_metadata"]["compiler_fields_per_claim"]
+    total = len(fields)
+    other = [f for f in fields if f.get("metric") == "Other"]
+    other_labels = " | ".join((f.get("metric_label") or "").lower() for f in other)
+    known_metrics = [f.get("metric") for f in fields if f.get("metric") != "Other"]
+
+    family_hits: dict[str, list[str]] = {name: [] for name in _FAMILY_KEYWORDS}
+    for name, keywords in _FAMILY_KEYWORDS.items():
+        for kw in keywords:
+            if kw in other_labels:
+                family_hits[name].append(kw)
+        # A known METRIC_ENUM value that is itself LBO-shaped vocabulary
+        # counts too -- Sponsor Equity/Leverage/etc are only IN the enum
+        # because that is the domain it was built for.
+        for metric in known_metrics:
+            if metric and metric.lower() in _FAMILY_KEYWORDS.get(name, ()):
+                family_hits[name].append(metric)
+
+    return {
+        "status": "ok",
+        "note": "euristica sperimentale -- nessun classificatore di archetipo "
+                "esiste in produzione. Segnale grezzo da parole chiave, non "
+                "una decisione. Vedi G5 in docs/dizionario_estrazione.md.",
+        "total_claims": total,
+        "other_count": len(other),
+        "other_ratio": round(len(other) / total, 2) if total else None,
+        "family_hits": {name: sorted(set(hits)) for name, hits in family_hits.items()},
+    }
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -711,11 +844,28 @@ class Handler(BaseHTTPRequestHandler):
         if not _authorised(self):
             return self._json({"status": "error", "error": "unauthorised"}, 401)
         parsed = urlparse(self.path)
+        query = parse_qs(parsed.query)
+
+        if parsed.path == "/semantic":
+            sid = (query.get("sid") or [""])[0]
+            try:
+                return self._json(_semantic_payload(sid))
+            except Exception as exc:  # noqa: BLE001 -- never hang the browser
+                return self._json({"status": "error", "error": f"{type(exc).__name__}: {exc}",
+                                   "traceback": traceback.format_exc()}, 500)
+
+        if parsed.path == "/archetype":
+            sid = (query.get("sid") or [""])[0]
+            try:
+                return self._json(_archetype_payload(sid))
+            except Exception as exc:  # noqa: BLE001
+                return self._json({"status": "error", "error": f"{type(exc).__name__}: {exc}",
+                                   "traceback": traceback.format_exc()}, 500)
+
         if parsed.path != "/extract":
             return self._html("<p>not found</p>", 404)
         # The browser posts the raw bytes with the filename in the query
         # string: no multipart parsing, and `cgi` is gone in 3.13+ anyway.
-        query = parse_qs(parsed.query)
         name = (query.get("name") or ["upload"])[0]
         page_spec = (query.get("pages") or [""])[0]
         engine = (query.get("engine") or ["granite"])[0]
@@ -801,10 +951,36 @@ INDEX_HTML = r"""<!doctype html>
   .panel dt { font-weight: 650; margin-top: 6px; font-size: 11.5px; }
   .panel dd { margin: 1px 0 0; font: 11.5px ui-monospace, Menlo, monospace; word-break: break-word; }
   .hint { color: var(--muted); font-size: 11.5px; padding: 0 2px 8px; }
+  button.go.step { background: #fff; color: var(--ink); border: 1px solid #d4d9e0; }
+  button.go.step:disabled { opacity: .4; }
+  #tabs { display: flex; gap: 2px; padding: 0 16px; background: #fff; border-bottom: 1px solid var(--line); flex: none; }
+  .tab { border: 0; background: none; padding: 8px 12px; font: 12px ui-monospace, Menlo, monospace;
+         color: var(--muted); cursor: pointer; border-bottom: 2px solid transparent; }
+  .tab:disabled { opacity: .35; cursor: default; }
+  .tab.sel { color: var(--ink); border-bottom-color: #f0b429; font-weight: 600; }
+  .tabpane { padding: 10px 12px 40px; }
+  table.claims { width: 100%; border-collapse: collapse; font: 11.5px ui-monospace, Menlo, monospace; }
+  table.claims th { text-align: left; font-size: 10.5px; text-transform: uppercase; letter-spacing: .04em;
+                    color: var(--muted); padding: 6px 8px; border-bottom: 1px solid var(--line); position: sticky; top: 0; background: #fff; }
+  table.claims td { padding: 6px 8px; border-bottom: 1px solid #f0f1f3; vertical-align: top; }
+  tr.row-other td.metric { color: #7c3aed; }
+  tr.row-flagged { background: #fff7ed; }
+  .pill { display: inline-block; padding: 1px 7px; border-radius: 20px; font-size: 10.5px; white-space: nowrap; }
+  .pill.asserted { background: #eef1f5; color: #55607a; }
+  .pill.observed { background: #e4edea; color: #2b5c56; }
+  .pill.attested { background: #e3f3ea; color: #2e8b57; }
+  .pill.derived  { background: #f6ebd8; color: #a9762e; }
+  .flagmark { color: #b4483c; font-weight: 700; cursor: help; }
+  .cluster { display: inline-block; margin: 8px 10px 8px 0; vertical-align: top; border: 1px solid var(--line); border-radius: 8px; padding: 8px; background: #fafbfc; }
+  .cluster .id { font-size: 10.5px; color: var(--muted); margin-bottom: 4px; max-width: 260px; }
+  .cluster.contra { border-color: #f3c6c6; background: #fef7f7; }
+  .cluster.corro { border-color: #b7e3ca; background: #f3fbf6; }
+  .archrow { display: flex; justify-content: space-between; padding: 5px 0; border-bottom: 1px dashed var(--line); font: 12px ui-monospace, Menlo, monospace; }
+  .archnote { background: #fdf1dc; border: 1px solid #f2ddb0; color: #8a5a00; border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; font-size: 12px; }
 </style></head>
 <body>
 <header>
-  <h1>Physical extraction test</h1>
+  <h1>PANTA pipeline test</h1>
   <span class="badge __MODE_LEVEL__" title="__MODE_DETAIL__">PDF: __MODE_LABEL__</span>
   <input type="file" id="file" accept="__ACCEPT__">
   <select id="engine" class="pages" title="Which PDF model converts each page to markdown. Everything after that step — chunking, locators, fallback — is identical, so this compares models, not pipelines.">
@@ -814,10 +990,18 @@ INDEX_HTML = r"""<!doctype html>
   </select>
   <input type="text" id="pages" class="pages" placeholder="pages e.g. 12-14"
          title="PDF only. Blank = whole document. At ~49s/page on CPU, a range is how you iterate on a long deck.">
-  <button class="go" id="go">Extract</button>
+  <button class="go" id="go">1 · Estrazione fisica</button>
+  <button class="go step" id="go2" disabled title="Chiama il vero L2 (annotate_chunk) su ogni chunk — costa una chiamata API per chunk.">2 · Estrazione semantica + grafo</button>
+  <button class="go step" id="go3" disabled title="Euristica sperimentale, non un classificatore di produzione.">3 · Archetipo di deal</button>
   <span class="spacer"></span>
   <span class="stats" id="stats"></span>
 </header>
+<nav id="tabs">
+  <button class="tab sel" data-tab="chunks">1 · Chunk fisici</button>
+  <button class="tab" data-tab="claims" id="tabClaims" disabled>2 · Claim semantici</button>
+  <button class="tab" data-tab="graph" id="tabGraph" disabled>2 · Grafo</button>
+  <button class="tab" data-tab="archetype" id="tabArchetype" disabled>3 · Archetipo</button>
+</nav>
 <main>
   <section class="pane" id="left">
     <div class="pane-head"><span>original</span><span id="leftname"></span></div>
@@ -825,9 +1009,12 @@ INDEX_HTML = r"""<!doctype html>
   </section>
   <div id="divider"></div>
   <section class="pane" id="right">
-    <div class="pane-head"><span>extraction — parse_source()</span><span id="rightcount"></span></div>
-    <div id="chunks"><div class="drop">Pick a file and hit Extract.<br>
+    <div class="pane-head"><span id="paneheadlabel">extraction — parse_source()</span><span id="rightcount"></span></div>
+    <div id="chunks" class="tabpane"><div class="drop">Pick a file and hit "1 · Estrazione fisica".<br>
       <small>__SUPPORTED__<br><br>Declared unsupported (rejected on purpose): __UNSUPPORTED__</small></div></div>
+    <div id="claims" class="tabpane" hidden><div class="drop">Run step 1, then step 2.</div></div>
+    <div id="graph" class="tabpane" hidden><div class="drop">Run step 2 first.</div></div>
+    <div id="archetype" class="tabpane" hidden><div class="drop">Run step 2, then step 3.</div></div>
   </section>
 </main>
 <script>
@@ -835,7 +1022,23 @@ const $ = (id) => document.getElementById(id);
 let SID = null, KIND = null, PAGEMAP = null;
 
 $('go').onclick = run;
+$('go2').onclick = runSemantic;
+$('go3').onclick = runArchetype;
 $('file').onchange = () => { if ($('file').files.length) run(); };
+
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.onclick = () => {
+    if (tab.disabled) return;
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('sel'));
+    tab.classList.add('sel');
+    const label = { chunks: 'extraction — parse_source()',
+                     claims: 'L2 — annotate_chunk() → validate()',
+                     graph: 'L4 — assemble() + claim_overlap.analyze_claims()',
+                     archetype: 'deal-archetype heuristic (experimental)' }[tab.dataset.tab];
+    $('paneheadlabel').textContent = label;
+    document.querySelectorAll('.tabpane').forEach(p => { p.hidden = (p.id !== tab.dataset.tab); });
+  };
+});
 
 async function run() {
   const f = $('file').files[0];
@@ -916,6 +1119,9 @@ function render(d) {
                            d.chunks.length + ' chunks · ' + words + ' words · ' +
                            d.elapsed_s + 's' + scope;
   $('rightcount').textContent = (d.engine_label || '') + ' · ' + d.chunks.length + ' chunks';
+  $('go2').disabled = false;
+  $('tabClaims').disabled = false;
+  $('tabGraph').disabled = false;
   $('chunks').innerHTML =
     '<div class="hint">Click a chunk to jump the original to where it came from.' +
       (d.page_warning ? ' <b>' + esc(d.page_warning) + '</b>' : '') + '</div>' +
@@ -944,6 +1150,129 @@ function render(d) {
       focusOriginal(d.chunks[+el.dataset.i]);
     };
   });
+}
+
+async function runSemantic() {
+  if (!SID) return;
+  $('go2').disabled = true;
+  const t0 = performance.now();
+  const tick = setInterval(() => {
+    $('stats').textContent = 'semantic extraction… ' + ((performance.now() - t0) / 1000).toFixed(1) + 's';
+  }, 100);
+  $('claims').innerHTML = '<div class="drop">Running annotate_chunk() → validate() → assemble() on every chunk.' +
+    '<br><small>One real API call per chunk — this can take a while on a long document.</small></div>';
+  try {
+    const res = await fetch('/semantic?sid=' + encodeURIComponent(SID), { method: 'POST' });
+    renderSemantic(await res.json());
+  } catch (e) {
+    $('claims').innerHTML = '<div class="panel error"><h2>Request failed</h2><pre>' + esc(String(e)) + '</pre></div>';
+  } finally {
+    clearInterval(tick);
+    $('go2').disabled = false;
+  }
+}
+
+function renderSemantic(d) {
+  if (d.status !== 'ok') {
+    $('claims').innerHTML = '<div class="panel error"><h2>Semantic extraction failed</h2><pre>' +
+      esc(d.error || JSON.stringify(d, null, 2)) +
+      (d.traceback ? '\n\n' + d.traceback : '') + '</pre></div>';
+    return;
+  }
+  const manifest = d.manifest, overlap = d.overlap;
+  const fieldsById = {};
+  manifest.extraction_metadata.compiler_fields_per_claim.forEach(f => { fieldsById[f.claim_id] = f; });
+
+  $('stats').textContent = manifest.claims.length + ' claims admitted · ' +
+    manifest.extraction_metadata.rejected_count + ' rejected · ' +
+    (d.chunk_errors.length ? d.chunk_errors.length + ' chunk errors · ' : '') + d.elapsed_s + 's';
+
+  const errBlock = d.chunk_errors.length
+    ? '<details class="panel reject"><summary><b>' + d.chunk_errors.length +
+      ' chunk(s) failed to annotate</b> — the rest were still processed</summary><pre>' +
+      esc(d.chunk_errors.map(e => e.chunk_id + ': ' + e.error).join('\n')) + '</pre></details>'
+    : '';
+
+  const rows = manifest.claims.map(c => {
+    const f = fieldsById[c.claim_id] || {};
+    const isOther = f.metric === 'Other';
+    const flags = f.nonblocking_validation_errors || [];
+    const rowClasses = ['row-' + (isOther ? 'other' : 'ok'), flags.length ? 'row-flagged' : ''].join(' ').trim();
+    const metricLabel = isOther ? ('Other: ' + esc(f.metric_label || '?')) : esc(f.metric || '');
+    return '<tr class="' + rowClasses + '">' +
+      '<td class="metric">' + metricLabel + '</td>' +
+      '<td>' + esc(c.value ?? '') + (c.unit ? ' ' + esc(c.unit) : '') + '</td>' +
+      '<td><span class="pill ' + esc(c.epistemic_class || '') + '">' + esc(c.epistemic_class || '') + '</span></td>' +
+      '<td>' + esc(f.basis || '') + '</td>' +
+      '<td>' + esc(f.measurement || '') + '</td>' +
+      '<td>' + esc(c.period || '') + '</td>' +
+      '<td title="' + esc(c.statement || '') + '">' + esc((c.statement || '').slice(0, 90)) +
+        ((c.statement || '').length > 90 ? '…' : '') + '</td>' +
+      '<td>' + (flags.length
+        ? '<span class="flagmark" title="' + esc(flags.join(' | ')) + '">⚑</span>' : '') + '</td>' +
+      '</tr>';
+  }).join('');
+
+  $('claims').innerHTML = errBlock +
+    '<div class="hint">Metric in purple = landed on the "Other" escape hatch (PAN-117), not force-fit onto a ' +
+    'lookalike enum value. ⚑ = derivation arithmetic disagrees with the stored value (PAN-125) — flagged, still admitted.</div>' +
+    '<table class="claims"><thead><tr><th>Metric</th><th>Value</th><th>Epistemic</th><th>Basis</th>' +
+    '<th>Measurement</th><th>Period</th><th>Statement</th><th></th></tr></thead><tbody>' + rows + '</tbody></table>';
+
+  $('graph').innerHTML =
+    '<div class="hint">' + overlap.overlap_groups + ' identity group(s) with 2+ claims — ' +
+    overlap.corroboration_groups + ' corroborating, ' + overlap.contradiction_candidate_groups +
+    ' contradiction candidate(s). ' + overlap.claims_skipped_unresolvable +
+    ' claim(s) skipped as unresolvable (missing entity/metric/period). This module never adjudicates — ' +
+    'it only reports what agrees and what does not.</div>' +
+    (overlap.findings.length ? overlap.findings.map(f => {
+      const cls = f.status === 'CORROBORATION' ? 'corro' : 'contra';
+      const idLine = Object.entries(f.identity).filter(([, v]) => v && v !== 'unspecified' && v !== 'none')
+        .map(([k, v]) => k + '=' + v).join(', ');
+      const claimLines = f.claims.map(c =>
+        '<div>' + (c.shows_working ? '<b>shows working</b> · ' : '') +
+        '<span class="pill ' + esc(c.epistemic_class || '') + '">' + esc(c.epistemic_class || '') + '</span> ' +
+        esc(c.value ?? '') + ' — <span title="' + esc(c.statement || '') + '">' +
+        esc((c.statement || '').slice(0, 60)) + '…</span> <small>(' + esc(c.source_id || '') + ')</small></div>'
+      ).join('');
+      return '<div class="cluster ' + cls + '"><div class="id">' + esc(f.status) + ' — ' + esc(idLine) +
+        '</div>' + claimLines + '</div>';
+    }).join('') : '<div class="drop">No overlapping identities found — every claim in this document stands alone.</div>');
+
+  $('go3').disabled = false;
+  $('tabArchetype').disabled = false;
+}
+
+async function runArchetype() {
+  if (!SID) return;
+  $('go3').disabled = true;
+  $('archetype').innerHTML = '<div class="drop">Scanning admitted claims for family keywords…</div>';
+  try {
+    const res = await fetch('/archetype?sid=' + encodeURIComponent(SID), { method: 'POST' });
+    renderArchetype(await res.json());
+  } catch (e) {
+    $('archetype').innerHTML = '<div class="panel error"><h2>Request failed</h2><pre>' + esc(String(e)) + '</pre></div>';
+  } finally {
+    $('go3').disabled = false;
+  }
+}
+
+function renderArchetype(d) {
+  if (d.status !== 'ok') {
+    $('archetype').innerHTML = '<div class="panel error"><h2>Archetype heuristic failed</h2><pre>' +
+      esc(d.error || JSON.stringify(d, null, 2)) + '</pre></div>';
+    return;
+  }
+  const families = Object.entries(d.family_hits).map(([name, hits]) =>
+    '<div class="archrow"><span>' + esc(name) + '</span><span>' +
+    (hits.length ? hits.length + ' hit(s): ' + hits.map(esc).join(', ') : 'no hits') + '</span></div>'
+  ).join('');
+  $('archetype').innerHTML =
+    '<div class="archnote">' + esc(d.note) + '</div>' +
+    '<div class="archrow"><span>Total admitted claims</span><span>' + d.total_claims + '</span></div>' +
+    '<div class="archrow"><span>On the "Other" escape hatch</span><span>' + d.other_count +
+      ' (' + (d.other_ratio === null ? '—' : Math.round(d.other_ratio * 100) + '%') + ')</span></div>' +
+    families;
 }
 
 // Map a chunk back onto the rendered original. Locator first (it is the

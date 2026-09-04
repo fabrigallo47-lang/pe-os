@@ -1046,8 +1046,13 @@ def _normalize_execution_mapping(execution: dict,
             "canonical_current_hash": f"sha256:{canonical_current_hash}",
             "admission_manifest_hash": None,  # computed after manifest is built
         },
-        "lbo_runtime_module": "tools/keystone_model.py",
-        "lbo_runtime_entrypoint": "propagate_claim",
+        # The profile decides which module computes this deal, when it says so.
+        # The literals stay as the fallback: Keystone's profile does not name a
+        # module, so it keeps resolving here exactly as before. Without this,
+        # every deal — Silexara included — silently gets Keystone's workbook
+        # transcription, which is the wrong model rather than a missing one.
+        "lbo_runtime_module": _profile().runtime_module or "tools/keystone_model.py",
+        "lbo_runtime_entrypoint": _profile().runtime_entrypoint or "propagate_claim",
         "model_nodes": nodes_list,
         "directed_model_edges": directed_model_edges,
         "relation_audit": audit_relation_outputs(directed_model_edges),

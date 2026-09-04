@@ -51,6 +51,13 @@ class DealProfile:
         # entity name -> why it is a counterparty (never an economic perimeter)
         self.counterparty_entities: dict[str, str] = d.get("counterparty_entities", {})
         self.underwriting_cutoff: str = d.get("underwriting_cutoff", "")
+        # Which module actually computes this deal's model, and its entrypoint.
+        # Absent means "the caller's own default" — the hardcoded Keystone
+        # module today — so an existing deal behaves exactly as before and only
+        # a profile that names one is routed anywhere else. A deal whose model
+        # is not Keystone's workbook has no business running Keystone's Python.
+        self.runtime_module: str = d.get("runtime_module", "")
+        self.runtime_entrypoint: str = d.get("runtime_entrypoint", "")
         self.cp_institutional: dict[str, dict] = d.get("cp_institutional", {})
         self.mn_unit_canonical: dict[str, str] = d.get("mn_unit_canonical", {})
         self.mn_period_override: dict[str, str] = d.get("mn_period_override", {})

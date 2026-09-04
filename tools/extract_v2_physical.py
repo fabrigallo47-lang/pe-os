@@ -633,7 +633,14 @@ CLAIM_TOOL = {
                                 "revenue-by-customer breakdown) with no adjustment view mentioned "
                                 "is ReportedView, not unspecified — reserve unspecified for when "
                                 "even the unadjusted/statutory reading is unclear, not merely "
-                                "because no basis word appears in the row."
+                                "because no basis word appears in the row. Likewise, a figure "
+                                "explicitly attributed to management — 'management forecasts', "
+                                "'management targets', a base/downside/upside case — is "
+                                "SellerView even when it is a forward-looking forecast rather "
+                                "than a historical EBITDA adjustment: WHO produced the figure is "
+                                "what basis tracks, not only whether the source used the word "
+                                "'adjusted'. unspecified is for when the fragment genuinely does "
+                                "not attribute the figure to anyone."
                             ),
                         },
                         "scenario": {
@@ -801,25 +808,28 @@ SYSTEM_PROMPT = textwrap.dedent("""
       all. Do not emit a claim with a null value just to have something to
       return: "use of funds is product, field operations and certification"
       is not a Capex claim, a Free Cash Flow claim, or any other claim.
-    - An instruction telling YOU how to analyse the fragment's data is not a
-      claim about the company, even though it reads like a rule and sits
-      right next to real numbers. "Aggregate accounts only when their
-      ultimate-parent field is identical; similar customer names alone do
-      not establish common ownership" is not a DEFINITION claim, not any
-      claim — it is telling you how to read the schedule, not stating a fact
-      about the business. Skip only that one instruction sentence; every
-      individual row and every computed total or ratio the schedule
-      actually contains is still a real claim in its own right and must
-      still be extracted.
-    - A sentence stating the RELATIONSHIP between two figures you are
-      already extracting elsewhere — "the restated revenue supersedes the
-      original", "this confirms the prior figure", "this corrects a cut-off
-      error" — restates a value or explains a change, it does not assert a
-      new one. Do not emit a third claim for "$48.0m supersedes $50.0m";
-      you already have the $48.0m claim and the $50.0m claim as their own
-      entries. Extract the two figures themselves, once each, from where
-      each is originally stated; the sentence connecting them is not a
-      third fact.
+    - A sentence ABOUT another claim — how to read it, how it relates to
+      another figure, or what kind of figure it is — is not itself a new
+      claim, even when it sits right next to real numbers and reads like a
+      rule or a fact. Extract the real claim(s) it refers to; skip the
+      sentence that only comments on them. Three shapes this takes:
+        * methodology: "Aggregate accounts only when their ultimate-parent
+          field is identical" tells you how to read the schedule, not a
+          fact about the business.
+        * relationship: "the restated revenue supersedes the original",
+          "this confirms the prior figure" restates or explains a change
+          between two claims you already have; it is not a third fact
+          alongside them.
+        * status/qualifier: "this target is not a historical result" says
+          what KIND of figure the EBITDA target is (forward-looking, not
+          actual) — it qualifies that claim, it is not a second, separate
+          NEGATIVE claim about the business.
+      Getting this wrong doesn't just add noise: it turns one real claim
+      into two or three, which silently hurts precision on every fragment
+      shaped like this. When genuinely unsure whether a sentence is its own
+      fact or commentary on one you're already extracting, ask whether it
+      could be TRUE OR FALSE independent of the claim it sits next to — if
+      not, it's commentary.
 
     EPISTEMIC CLASS — apply strictly by document source and claim type:
     - attested: an INDEPENDENT THIRD PARTY formally certifies someone else's

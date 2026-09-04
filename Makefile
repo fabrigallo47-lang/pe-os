@@ -1,4 +1,4 @@
-.PHONY: setup index report check state watch dev verify dynamics-test baseline stage2-score stage2-score-test document-eval document-information-eval document-eval-validate
+.PHONY: setup index report check state watch dev verify dynamics-test baseline stage2-score stage2-score-test document-eval document-information-eval document-eval-validate semantic-claim-eval semantic-claim-eval-oracle semantic-claim-eval-sol semantic-claim-eval-test semantic-claim-eval-validate
 
 PY := .venv/bin/python3
 
@@ -78,3 +78,24 @@ document-eval: ## Run the bundled multimodal smoke benchmark
 
 document-information-eval: ## Run only structure-independent information extraction cases
 	$(PY) -m evaluation.cli run --cases evaluation/fixtures/cases --predictions evaluation/fixtures/predictions/perfect.ndjson --tag information-graph
+
+semantic-claim-eval-validate: ## Validate semantic cases, oracle predictions and source hashes
+	$(PY) -m evaluation.cli validate --cases evaluation/fixtures/semantic_cases --predictions evaluation/fixtures/semantic_predictions/perfect.json --require-files
+
+semantic-claim-eval-oracle: ## Check semantic metric plumbing against perfect predictions
+	$(PY) -m evaluation.cli run --cases evaluation/fixtures/semantic_cases --predictions evaluation/fixtures/semantic_predictions/perfect.json
+
+semantic-claim-eval-test: ## Run semantic metric degradation tests
+	$(PY) -m unittest evaluation.tests.test_semantic_claim_metrics -v
+
+ifndef SYSTEM_COMMAND
+semantic-claim-eval: ## Evaluate a real extractor (SYSTEM_COMMAND='python ...')
+	@echo "Set SYSTEM_COMMAND to a one-case JSON stdin/stdout extractor command"
+	@false
+else
+semantic-claim-eval: ## Evaluate a real extractor (SYSTEM_COMMAND='python ...')
+	$(PY) -m evaluation.cli run --cases evaluation/fixtures/semantic_cases --system-command "$(SYSTEM_COMMAND)"
+endif
+
+semantic-claim-eval-sol: ## Run the optional GPT-5.6 Sol baseline (uses API; PASSES defaults to 1)
+	PANTA_SEMANTIC_SOL_PASSES=$(or $(PASSES),1) $(PY) -m evaluation.cli run --cases evaluation/fixtures/semantic_cases --system-command "$(PY) -m evaluation.semantic_teacher"

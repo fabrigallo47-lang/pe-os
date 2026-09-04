@@ -7,6 +7,11 @@ This package evaluates two different capabilities without conflating them:
 2. **Document understanding**: question answering, comparisons, summaries,
    cross-document reasoning, grounding and correct abstention.
 
+For semantic claim extraction specifically, see
+[`SEMANTIC_CLAIM_EVAL.md`](SEMANTIC_CLAIM_EVAL.md). It adds claim identity,
+economic basis, provenance, derivations, graph edges, abstention and temporal
+leakage tests over raw synthetic documents.
+
 Every benchmark is converted to one versioned case contract. The original gold
 labels stay intact under canonical fields or `gold.native`; the evaluator then
 applies comparable metrics where that comparison is meaningful. Dataset-specific

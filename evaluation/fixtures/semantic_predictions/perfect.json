@@ -1,0 +1,540 @@
+[
+  {
+    "schema_version": "panta-eval.prediction/1.0",
+    "test_id": "panta-semantic.keystone.identity-and-derivation-001",
+    "status": "success",
+    "claims": [
+      {
+        "claim_id": "P-REV-FY25",
+        "statement": "Alderstone FY2025A consolidated revenue was $74.0 million.",
+        "source_id": "SRC-REPORT",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Reported accounts"
+        },
+        "source_quote": "For FY2025A, Alderstone consolidated revenue was $74.0 million and reported EBITDA was $10.2 million.",
+        "entity": "Alderstone",
+        "metric": "Revenue",
+        "measurement": "total",
+        "value": 74,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "consolidated",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "material",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-EBITDA-REPORTED",
+        "statement": "Alderstone FY2025A reported EBITDA was $10.2 million.",
+        "source_id": "SRC-REPORT",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Reported accounts"
+        },
+        "source_quote": "For FY2025A, Alderstone consolidated revenue was $74.0 million and reported EBITDA was $10.2 million.",
+        "entity": "Alderstone",
+        "metric": "EBITDA",
+        "measurement": "total",
+        "value": 10.2,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "consolidated",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "definition_id": null,
+        "criticality": "decision_critical",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-REV-FY26-SELLER",
+        "statement": "Management forecasts Alderstone FY2025E consolidated revenue of $82.0 million.",
+        "source_id": "SRC-CIM",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Seller CIM"
+        },
+        "source_quote": "Management forecasts FY2025E consolidated revenue of $82.0 million and presents seller-adjusted EBITDA of $12.7 million.",
+        "entity": "Alderstone",
+        "metric": "Revenue",
+        "measurement": "total",
+        "value": 82,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025E",
+        "period_canonical": "FY2025E",
+        "scope": "consolidated",
+        "basis": "SellerView",
+        "scenario": "management",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "material",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-EBITDA-SELLER",
+        "statement": "Management presents Alderstone FY2025E seller-adjusted EBITDA of $12.7 million.",
+        "source_id": "SRC-CIM",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Seller CIM"
+        },
+        "source_quote": "Management forecasts FY2025E consolidated revenue of $82.0 million and presents seller-adjusted EBITDA of $12.7 million.",
+        "entity": "Alderstone",
+        "metric": "EBITDA",
+        "measurement": "total",
+        "value": 12.7,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025E",
+        "period_canonical": "FY2025E",
+        "scope": "consolidated",
+        "basis": "SellerView",
+        "scenario": "seller",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "definition_id": "DEF-SELLER-EBITDA",
+        "criticality": "decision_critical",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-EBITDA-QOE",
+        "statement": "The independent adviser concluded Alderstone FY2025A normalized EBITDA was $11.9 million.",
+        "source_id": "SRC-QOE",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Independent QoE"
+        },
+        "source_quote": "The independent quality-of-earnings adviser concluded that Alderstone's FY2025A normalized EBITDA was $11.9 million.",
+        "entity": "Alderstone",
+        "metric": "EBITDA",
+        "measurement": "total",
+        "value": 11.9,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "consolidated",
+        "basis": "QoEView",
+        "scenario": "base",
+        "epistemic_class": "attested",
+        "claim_kind": "QUANTITATIVE",
+        "definition_id": "DEF-QOE-EBITDA",
+        "criticality": "decision_critical",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-EBITDA-FIRM",
+        "statement": "The investment committee underwrites Alderstone on FY2025A Firm EBITDA of $11.4 million.",
+        "source_id": "SRC-IC",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Firm underwriting"
+        },
+        "source_quote": "The investment committee underwrites Alderstone on FY2025A Firm EBITDA of $11.4 million.",
+        "entity": "Alderstone",
+        "metric": "EBITDA",
+        "measurement": "total",
+        "value": 11.4,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "consolidated",
+        "basis": "FirmView",
+        "scenario": "base",
+        "epistemic_class": "attested",
+        "claim_kind": "QUANTITATIVE",
+        "definition_id": "DEF-FIRM-EBITDA",
+        "criticality": "decision_critical",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-EBITDA-COVENANT",
+        "statement": "Opening covenant EBITDA under the executed credit agreement is $12.2 million.",
+        "source_id": "SRC-CREDIT",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Credit agreement"
+        },
+        "source_quote": "Opening covenant EBITDA under the executed credit agreement is $12.2 million.",
+        "entity": "Alderstone",
+        "metric": "EBITDA",
+        "measurement": "total",
+        "value": 12.2,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "Opening",
+        "period_canonical": "Opening",
+        "scope": "consolidated",
+        "basis": "CovenantView",
+        "scenario": "base",
+        "epistemic_class": "attested",
+        "claim_kind": "QUANTITATIVE",
+        "definition_id": "DEF-COV-EBITDA",
+        "criticality": "decision_critical",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-RIV-001",
+        "statement": "Riverton billing account RIV-001 generated $2.100 million of FY2025A revenue.",
+        "source_id": "SRC-DR",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Customer schedule"
+        },
+        "source_quote": "RIV-001 | 2.100",
+        "entity": "Riverton Industrial Group",
+        "metric": "Revenue",
+        "measurement": "RIV-001 billing account",
+        "value": 2.1,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "customer",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "contextual",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-RIV-002",
+        "statement": "Riverton billing account RIV-002 generated $1.900 million of FY2025A revenue.",
+        "source_id": "SRC-DR",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Customer schedule"
+        },
+        "source_quote": "RIV-002 | 1.900",
+        "entity": "Riverton Industrial Group",
+        "metric": "Revenue",
+        "measurement": "RIV-002 billing account",
+        "value": 1.9,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "customer",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "contextual",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-RIV-003",
+        "statement": "Riverton billing account RIV-003 generated $2.400 million of FY2025A revenue.",
+        "source_id": "SRC-DR",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Customer schedule"
+        },
+        "source_quote": "RIV-003 | 2.400",
+        "entity": "Riverton Industrial Group",
+        "metric": "Revenue",
+        "measurement": "RIV-003 billing account",
+        "value": 2.4,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "customer",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "contextual",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-RIV-004",
+        "statement": "Riverton billing account RIV-004 generated $1.700 million of FY2025A revenue.",
+        "source_id": "SRC-DR",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Customer schedule"
+        },
+        "source_quote": "RIV-004 | 1.700",
+        "entity": "Riverton Industrial Group",
+        "metric": "Revenue",
+        "measurement": "RIV-004 billing account",
+        "value": 1.7,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "customer",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "contextual",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-RIV-005",
+        "statement": "Riverton billing account RIV-005 generated $1.800 million of FY2025A revenue.",
+        "source_id": "SRC-DR",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Customer schedule"
+        },
+        "source_quote": "RIV-005 | 1.800",
+        "entity": "Riverton Industrial Group",
+        "metric": "Revenue",
+        "measurement": "RIV-005 billing account",
+        "value": 1.8,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "customer",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "contextual",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-RIV-006",
+        "statement": "Riverton billing account RIV-006 generated $1.568 million of FY2025A revenue.",
+        "source_id": "SRC-DR",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Customer schedule"
+        },
+        "source_quote": "RIV-006 | 1.568",
+        "entity": "Riverton Industrial Group",
+        "metric": "Revenue",
+        "measurement": "RIV-006 billing account",
+        "value": 1.568,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "customer",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "contextual",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-RIV-007",
+        "statement": "Riverton billing account RIV-007 generated $2.000 million of FY2025A revenue.",
+        "source_id": "SRC-DR",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Customer schedule"
+        },
+        "source_quote": "RIV-007 | 2.000",
+        "entity": "Riverton Industrial Group",
+        "metric": "Revenue",
+        "measurement": "RIV-007 billing account",
+        "value": 2,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "customer",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "contextual",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-RIV-TOTAL",
+        "statement": "The seven Riverton billing accounts generated $13.468 million of FY2025A revenue in total.",
+        "source_id": "SRC-DR",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Customer schedule"
+        },
+        "source_quote": "The seven accounts total $13.468 million.",
+        "entity": "Riverton Industrial Group",
+        "metric": "Revenue",
+        "measurement": "ultimate-parent total",
+        "value": 13.468,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "customer",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "asserted",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "material",
+        "known_at": "2026-03-10T16:30:00Z"
+      },
+      {
+        "claim_id": "P-RIV-CONCENTRATION",
+        "statement": "Riverton Industrial Group represents 18.2% of Alderstone FY2025A revenue.",
+        "source_id": "SRC-DR",
+        "input_id": "keystone-semantic-packet",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_keystone_packet.md::## Customer schedule"
+        },
+        "source_quote": "The seven accounts total $13.468 million. Ultimate-parent concentration is calculated by dividing that total by reported FY2025A revenue and rounding to one decimal place.",
+        "entity": "Riverton Industrial Group",
+        "metric": "CustomerConcentration",
+        "measurement": "ultimate-parent share of total revenue",
+        "value": 18.2,
+        "unit": "%",
+        "bound": "APPROXIMATE",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "customer",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "derived",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "decision_critical",
+        "known_at": "2026-03-10T16:30:00Z",
+        "derivation": {
+          "expression": "round(13.468 / 74.0 * 100, 1)",
+          "operand_claim_ids": [
+            "P-RIV-TOTAL",
+            "P-REV-FY25"
+          ]
+        }
+      }
+    ],
+    "relations": [
+      {
+        "source_claim_id": "P-EBITDA-REPORTED",
+        "relation": "BEARS_ON",
+        "target_type": "question",
+        "target_id": "UQ-CORRECT-EBITDA"
+      },
+      {
+        "source_claim_id": "P-EBITDA-SELLER",
+        "relation": "BEARS_ON",
+        "target_type": "question",
+        "target_id": "UQ-CORRECT-EBITDA"
+      },
+      {
+        "source_claim_id": "P-EBITDA-QOE",
+        "relation": "BEARS_ON",
+        "target_type": "question",
+        "target_id": "UQ-CORRECT-EBITDA"
+      },
+      {
+        "source_claim_id": "P-EBITDA-FIRM",
+        "relation": "BEARS_ON",
+        "target_type": "question",
+        "target_id": "UQ-CORRECT-EBITDA"
+      },
+      {
+        "source_claim_id": "P-EBITDA-COVENANT",
+        "relation": "BEARS_ON",
+        "target_type": "question",
+        "target_id": "UQ-CORRECT-EBITDA"
+      },
+      {
+        "source_claim_id": "P-REV-FY25",
+        "relation": "BEARS_ON",
+        "target_type": "question",
+        "target_id": "UQ-REVENUE"
+      },
+      {
+        "source_claim_id": "P-REV-FY26-SELLER",
+        "relation": "BEARS_ON",
+        "target_type": "question",
+        "target_id": "UQ-REVENUE"
+      },
+      {
+        "source_claim_id": "P-RIV-CONCENTRATION",
+        "relation": "BEARS_ON",
+        "target_type": "question",
+        "target_id": "UQ-CUSTOMER-CONCENTRATION"
+      },
+      {
+        "source_claim_id": "P-RIV-CONCENTRATION",
+        "relation": "DERIVED_FROM",
+        "target_type": "claim",
+        "target_id": "P-RIV-TOTAL"
+      },
+      {
+        "source_claim_id": "P-RIV-CONCENTRATION",
+        "relation": "DERIVED_FROM",
+        "target_type": "claim",
+        "target_id": "P-REV-FY25"
+      }
+    ]
+  },
+  {
+    "schema_version": "panta-eval.prediction/1.0",
+    "test_id": "panta-semantic.marketing.abstention-001",
+    "status": "abstained",
+    "claims": [],
+    "relations": []
+  },
+  {
+    "schema_version": "panta-eval.prediction/1.0",
+    "test_id": "panta-semantic.temporal.as-of-001",
+    "status": "success",
+    "claims": [
+      {
+        "claim_id": "P-ATLAS-REV-FY25",
+        "statement": "Project Atlas FY2025A consolidated revenue was $74.0 million.",
+        "source_id": "SRC-ATLAS-BOARD",
+        "input_id": "atlas-initial",
+        "locator": {
+          "type": "generic",
+          "value": "panta_semantic_initial_snapshot.md"
+        },
+        "source_quote": "On 15 January 2026, the board pack reported FY2025A consolidated revenue of $74.0 million.",
+        "entity": "Project Atlas",
+        "metric": "Revenue",
+        "measurement": "total",
+        "value": 74,
+        "unit": "USDm",
+        "bound": "EXACT",
+        "period": "FY2025A",
+        "period_canonical": "FY2025A",
+        "scope": "consolidated",
+        "basis": "ReportedView",
+        "scenario": "base",
+        "epistemic_class": "attested",
+        "claim_kind": "QUANTITATIVE",
+        "criticality": "material",
+        "known_at": "2026-01-15T00:00:00Z"
+      }
+    ],
+    "relations": []
+  }
+]

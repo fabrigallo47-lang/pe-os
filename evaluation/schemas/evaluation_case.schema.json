@@ -18,7 +18,7 @@
     },
     "query": {"type": ["string", "null"]},
     "evaluation_profile": {
-      "enum": ["schema_strict", "information_graph", "layout_fidelity", "full"]
+      "enum": ["schema_strict", "information_graph", "semantic_claim_graph", "layout_fidelity", "full"]
     },
     "gold": {"$ref": "#/$defs/gold"},
     "evidence": {
@@ -65,7 +65,7 @@
         "field_extraction", "table_extraction", "image_detection", "image_ocr",
         "chart_extraction", "diagram_understanding", "semantic_qa", "visual_qa",
         "mixed_qa", "cross_document_qa", "summarization",
-        "spreadsheet_manipulation", "grounding", "abstention", "robustness"
+        "spreadsheet_manipulation", "semantic_claim_extraction", "grounding", "abstention", "robustness"
       ]
     },
     "format": {
@@ -140,6 +140,77 @@
         "metadata": {"type": "object", "additionalProperties": true}
       }
     },
+    "semantic_claim": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "claim_id", "statement", "source_id", "input_id", "locator",
+        "entity", "metric", "measurement", "value", "unit", "bound",
+        "period_canonical", "scope", "basis", "scenario",
+        "epistemic_class", "claim_kind"
+      ],
+      "properties": {
+        "claim_id": {"type": "string", "minLength": 1},
+        "statement": {"type": "string", "minLength": 1},
+        "source_id": {"type": "string", "minLength": 1},
+        "input_id": {"type": "string", "minLength": 1},
+        "locator": {"$ref": "https://panta.local/evaluation/evidence_locator.schema.json"},
+        "source_quote": {"type": "string"},
+        "entity": {"type": "string", "minLength": 1},
+        "metric": {"type": "string", "minLength": 1},
+        "measurement": {"type": "string", "minLength": 1},
+        "value": {},
+        "unit": {"type": ["string", "null"]},
+        "bound": {"enum": ["EXACT", "AT_LEAST", "AT_MOST", "APPROXIMATE", "RANGE", "NONE"]},
+        "period": {"type": ["string", "null"]},
+        "period_canonical": {"type": "string", "minLength": 1},
+        "scope": {"enum": ["consolidated", "standalone", "customer", "segment", "unspecified"]},
+        "basis": {"enum": ["SellerView", "QoEView", "FirmView", "CovenantView", "ReportedView", "unspecified"]},
+        "scenario": {"enum": ["base", "management", "seller", "upside", "downside", "unspecified"]},
+        "epistemic_class": {"enum": ["asserted", "observed", "derived", "attested", "institutional_act"]},
+        "claim_kind": {"enum": ["QUANTITATIVE", "DEFINITION", "CONDITION", "ATTRIBUTION", "NEGATIVE"]},
+        "definition_id": {"type": ["string", "null"]},
+        "direction": {"enum": ["supports", "contradicts", "context"]},
+        "known_at": {"type": ["string", "null"], "format": "date-time"},
+        "effective_date": {"type": ["string", "null"]},
+        "criticality": {"enum": ["decision_critical", "material", "contextual"]},
+        "derivation": {
+          "type": ["object", "null"],
+          "additionalProperties": false,
+          "required": ["expression", "operand_claim_ids"],
+          "properties": {
+            "expression": {"type": ["string", "null"]},
+            "operand_claim_ids": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {"type": "string", "minLength": 1}
+            }
+          }
+        }
+      }
+    },
+    "semantic_relation": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["source_claim_id", "relation", "target_type", "target_id"],
+      "properties": {
+        "source_claim_id": {"type": "string", "minLength": 1},
+        "relation": {"type": "string", "minLength": 1},
+        "target_type": {"enum": ["claim", "question", "definition", "position"]},
+        "target_id": {"type": "string", "minLength": 1}
+      }
+    },
+    "no_claim_span": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["input_id", "locator", "quote", "reason"],
+      "properties": {
+        "input_id": {"type": "string", "minLength": 1},
+        "locator": {"$ref": "https://panta.local/evaluation/evidence_locator.schema.json"},
+        "quote": {"type": "string", "minLength": 1},
+        "reason": {"type": "string", "minLength": 1}
+      }
+    },
     "assertion": {
       "oneOf": [
         {"type": "string", "minLength": 1},
@@ -166,6 +237,10 @@
         "assertions": {"type": "array", "items": {"$ref": "#/$defs/assertion"}},
         "fields": {"type": "array", "items": {"$ref": "#/$defs/field"}},
         "facts": {"type": "array", "items": {"$ref": "#/$defs/field"}},
+        "claims": {"type": "array", "items": {"$ref": "#/$defs/semantic_claim"}},
+        "relations": {"type": "array", "items": {"$ref": "#/$defs/semantic_relation"}},
+        "no_claim_spans": {"type": "array", "items": {"$ref": "#/$defs/no_claim_span"}},
+        "as_of_known_at": {"type": "string", "format": "date-time"},
         "coverage": {"enum": ["subset", "exhaustive"]},
         "content": {"type": "string"},
         "elements": {"type": "array", "items": {"$ref": "#/$defs/element"}},

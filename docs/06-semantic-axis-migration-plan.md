@@ -43,6 +43,50 @@ certified it" from "the IC decided it", so we invented a fifth class this sessio
 (`institutional_act`) to paper over exactly that collision. Under the target model
 that distinction falls out of two independent axes instead of a new enum value.
 
+## The bigger finding: we emit one object type, the domain needs eight
+
+The venture and growth packs (`PANTA_VENTURE_GROWTH_ARCHETYPES_V1_1`, 49 + 53
+concept seeds) make the real constraint measurable. Venture concept `kind`
+distribution:
+
+| kind | count |
+|---|---|
+| `metric` | **9** |
+| `case_reading` | 5 |
+| `qualitative_topic` | 4 |
+| `metric_or_reading` | 4 |
+| `model_output` | 4 |
+| `condition` | 3 |
+| `assumption` · `risk` · `categorical_observation` · `metric_set` · … | 2 or fewer each |
+
+**Nine of 49 venture concepts are metrics.** The extraction schema emits exactly
+one object shape — metric + value + unit — so ~80% of the venture archetype has
+nowhere to land. This is not the enum being buyout-flavoured; it is the object
+model being one-eighth of the domain. §2.1 says it directly: *"un frammento può
+produrre più oggetti"*.
+
+Measured consequence, on a real corpus (Silexara, venture case):
+
+| document | raw claims | admitted | what was discarded |
+|---|---|---|---|
+| SRC-02 founder call | 27 | 9 (≈90% `Other`) | 16 |
+| SRC-09 IC notes | 7 | 1 | 6, all of them the IC's reasoning |
+
+The IC debrief lost *"the IC believes current product truth is narrower than the
+deck"*, *"…the competitive market is likely denser than management framing"* — as
+`CHARACTERISATION`, which `validate()` hard-rejects. Those are `case_reading` and
+`qualitative_topic` concepts: first-class objects in every archetype pack, deleted
+by us. §3.2 maps `CHARACTERISATION → claim_kind=qualitative`, i.e. keep it.
+
+`V_PRODUCT_STATE` is `categorical_observation` requiring
+`[product_version, use_case, as_of, environment]` — four fields the claim schema
+does not have. The buyout 63-vs-7 identity gap understates the problem: for
+venture it is the wrong object type before it is the wrong fields.
+
+**Sequencing consequence.** Splitting `epistemic_class` into axes while the
+pipeline still deletes the IC's reasoning is optimising the label on the 20% we
+keep. Object-model first, axes second.
+
 ## Why it can't be done in one commit
 
 Three hard constraints, all measured, not assumed:
@@ -112,9 +156,21 @@ Anto's call, not a side effect of a refactor.
   contract means the `attested` vs `institutional_act` collision this migration
   is supposed to dissolve stays unsolved, because that distinction lives
   precisely in `attestation_type` + `evidence_origin_role`. Anto's call.
-- **[DECIDE] Archetype scope.** Only the buyout pack (40 seeds) is in the repo.
-  The dictionary cites venture (49) and growth (53). Migrating the axes without
-  those packs means designing against a third of the evidence.
+- **[RESOLVED] Archetype scope.** The venture (49) and growth (53) packs now
+  exist as `PANTA_VENTURE_GROWTH_ARCHETYPES_V1_1` and should be vendored into
+  `vault/policy/archetypes/` beside the buyout pack, with `PACK_PATHS` in
+  `tools/archetype_pack.py` extended to load all three. Cheap, unblocked, and
+  it is what makes the object-model finding above measurable rather than
+  anecdotal.
+- **[DECIDE] Archetype selection.** `03_archetype_selection_and_shared_grammar_v1_1.yaml`
+  ships a real `selection_rule` over four dimensions (existence_of_engine,
+  capital_role, dominant_evidence, model_centre) with explicit
+  `prohibited_shortcuts`: round label, valuation, company age, technology
+  sector, revenue presence alone. The extraction UI's step 3 currently guesses
+  from keywords including "seed", "series", "pre-money" and "runway" — round
+  labels and valuation, two of the five prohibited shortcuts. That code already
+  says in its own docstring that no production classifier exists; this is the
+  spec for the one that should replace it.
 
 ## What this plan is not
 

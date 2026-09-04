@@ -63,7 +63,9 @@ from tools.llm_provider import (  # noqa: E402
     missing_key_message,
     openrouter_extra_body,
 )
-from tools.archetype_pack import load_pack, workstream_ids  # noqa: E402
+from tools.archetype_pack import (  # noqa: E402
+    load_pack, missing_required_identity, workstream_ids,
+)
 from tools.derivation_verifier import verify_derivation  # noqa: E402
 from tools.object_identity import claim_id as canonical_claim_id  # noqa: E402
 from tools.source_envelope import extractor_source_record  # noqa: E402
@@ -3310,6 +3312,21 @@ def validate(raw: RawClaim) -> CanonicalClaim:
             )
             errors.append(error)
             nonblocking_errors.append(error)
+    # Completeness against the archetype pack's own declaration (dictionary
+    # section 4): a concept states which identity fields a claim of it must
+    # carry, so "basis: unspecified" on a concept whose required_identity
+    # names basis is incomplete by the pack's rule rather than by a rule
+    # anyone wrote into this file. Non-blocking on purpose -- an incomplete
+    # claim is still evidence, and 4.2 is explicit that a claim is never
+    # forced onto a neighbouring concept to make it look complete.
+    incomplete = missing_required_identity(raw)
+    if incomplete:
+        error = (
+            "incomplete identity for this concept: missing "
+            + ", ".join(incomplete)
+        )
+        errors.append(error)
+        nonblocking_errors.append(error)
     # The schema tells the model not to emit a CHARACTERISATION, and the model
     # labels one correctly and emits it anyway — observed on "low capital
     # expenditure", classified CHARACTERISATION and returned regardless.

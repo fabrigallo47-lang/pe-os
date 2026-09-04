@@ -175,3 +175,118 @@ def normalize_workstream(value: Any, pack: dict[str, Any] | None = None) -> str:
     if alias and (alias in canonical or alias == UNASSIGNED_WORKSTREAM):
         return alias
     return UNASSIGNED_WORKSTREAM
+
+
+# ── Canonical concept registry (dictionary section 4) ────────────────────────
+# The pack ships 40 concept seeds, each declaring the identity fields a claim
+# of that concept MUST carry. Nothing read them before this: the pack was
+# loaded only for workstreams and the question spine.
+#
+# Coverage is deliberately partial and visible rather than padded. Section 4.1
+# specifies the registry record as
+#     concept_id · label · family · kind · required_identity[] · aliases[]
+# and the pack ships every field except `aliases[]`, which lives in the
+# companion `01_canonical_concepts_registry.csv` (142 seeds across the three
+# archetypes). Without it only a direct label match resolves -- 11 of the 69
+# METRIC_ENUM labels. The remaining 58 are NOT hand-mapped here on purpose:
+# 4.1 says "il codice non deve mantenere una seconda lista piatta divergente",
+# and a hand-written bridge is exactly that second list, guaranteed to drift
+# from the registry it is imitating. Ship the CSV and this resolves properly.
+
+def canonical_concepts(pack: dict[str, Any] | None = None) -> list[dict[str, Any]]:
+    """The pack's canonical concept seeds, or [] when the pack declares none."""
+    concepts = (pack or load_pack()).get("canonical_concepts")
+    return concepts if isinstance(concepts, list) else []
+
+
+def _concept_key(text: Any) -> str:
+    return "".join(ch for ch in str(text or "").lower() if ch.isalnum())
+
+
+def concept_for_metric(metric: Any, pack: dict[str, Any] | None = None) -> dict[str, Any] | None:
+    """Resolve a metric label to its canonical concept, or None.
+
+    None is a real answer, not a failure to try harder: section 4.2 says an
+    unmatched-but-material concept becomes a candidate/unbound residue and is
+    never forced onto the nearest-looking neighbour.
+    """
+    key = _concept_key(metric)
+    if not key:
+        return None
+    for concept in canonical_concepts(pack):
+        if _concept_key(concept.get("label")) == key or _concept_key(concept.get("id")) == key:
+            return concept
+    return None
+
+
+# Pack identity vocabulary -> extraction-schema attribute. Only clearly
+# equivalent names are mapped; nothing is invented to raise coverage.
+_IDENTITY_FIELD_MAP: dict[str, str] = {
+    "entity": "entity",
+    "period": "period",
+    "scenario": "scenario",
+    "perimeter": "perimeter",
+    "basis": "basis",
+    "scope": "scope",
+    "unit": "unit",
+    "currency": "unit",        # currency is carried as the unit token
+    "measure": "measurement",  # same axis, different name
+}
+
+_IDENTITY_EMPTY = {"", "unspecified", "unknown", "none", "not available"}
+
+
+def _identity_value(claim: Any, attribute: str) -> str:
+    value = getattr(claim, attribute, None)
+    if attribute == "period" and not value:
+        value = getattr(claim, "period_canonical", None)
+    return str(value or "").strip().lower()
+
+
+def missing_required_identity(claim: Any, pack: dict[str, Any] | None = None) -> list[str]:
+    """Identity fields the claim's concept declares mandatory, that the schema
+    CAN carry, and that this claim left empty.
+
+    Deterministic completeness, not a judgement about whether a value is
+    right: `basis` left "unspecified" on a concept whose required_identity
+    names basis is incomplete by the pack's own declaration rather than by a
+    rule someone wrote here. Returns [] for an unresolved concept -- 4.2 is
+    explicit that an unmatched concept becomes residue and is never forced
+    onto a neighbour, and a concept we cannot name cannot tell us what it
+    requires either.
+
+    Fields the schema has no home for are NOT reported here; they are not the
+    claim's fault. See unrepresentable_required_identity().
+    """
+    concept = concept_for_metric(getattr(claim, "metric", None), pack)
+    if not concept:
+        return []
+    missing: list[str] = []
+    for field_name in concept.get("required_identity") or []:
+        attribute = _IDENTITY_FIELD_MAP.get(field_name)
+        if attribute and _identity_value(claim, attribute) in _IDENTITY_EMPTY:
+            missing.append(field_name)
+    return missing
+
+
+def unrepresentable_required_identity(
+    claim_or_metric: Any, pack: dict[str, Any] | None = None,
+) -> list[str]:
+    """Identity fields the concept requires that this schema cannot express.
+
+    The pack declares 63 distinct required_identity names across its concepts
+    (numerator_definition, covenant_basis, cash_flow_dates, valuation_date,
+    ...) and the extraction schema has a field for 7 of them. That gap is not
+    an extraction failure and must never be reported as one -- it measures how
+    much more identity the archetype packs assume than the flat claim object
+    currently carries, which is the concrete case for the section 3 axis
+    migration. Surfacing it keeps the gap countable instead of anecdotal.
+    """
+    metric = getattr(claim_or_metric, "metric", claim_or_metric)
+    concept = concept_for_metric(metric, pack)
+    if not concept:
+        return []
+    return [
+        field_name for field_name in concept.get("required_identity") or []
+        if field_name not in _IDENTITY_FIELD_MAP
+    ]

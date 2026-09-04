@@ -747,6 +747,21 @@ CLAIM_TOOL = {
                             "type": ["string", "null"],
                             "description": "Required when epistemic_class=derived. State the computation.",
                         },
+                        "derivation_operand_indices": {
+                            "type": "array",
+                            "items": {"type": "integer", "minimum": 0},
+                            "description": (
+                                "Only when epistemic_class=derived AND an operand is ITSELF "
+                                "one of the claims you are emitting in this SAME response — "
+                                "the 0-based position of that operand claim in this claims "
+                                "array (position 0 = the first claim you emit here, etc; never "
+                                "your own position). Omit or leave empty when an operand is a "
+                                "plain number stated in the fragment but not extracted as its "
+                                "own claim, or when it isn't in this fragment at all. This is "
+                                "the only place a claim can reference another — claim_id does "
+                                "not exist yet when you are writing this."
+                            ),
+                        },
                         "author": {
                             "type": ["string", "null"],
                             "description": "Party making the claim (e.g. management, QoE provider, IC).",
@@ -835,6 +850,10 @@ SYSTEM_PROMPT = textwrap.dedent("""
     - Only refuse the quantitative claim when an operand is genuinely missing from
       the fragment, not when the fragment gives you everything and simply expects
       you to do the division.
+    - When an operand of a derived claim IS one of the other claims you are
+      emitting right now, set derivation_operand_indices to that operand's
+      position in this same response (see the tool schema) so the derivation
+      chain is machine-checkable, not just prose.
 
     PERIOD EXTRACTION — mandatory for every emitted claim:
     - Never leave period blank. Read the workbook column header, table header,
@@ -2844,6 +2863,13 @@ class RawClaim:
     # The real concept name when `metric` is "Other" — the enum's escape hatch.
     # Defaulted so a cached raw_claims run predating the field still loads.
     metric_label: str | None = None
+    # Which annotate_chunk() call this claim came from, and its position in
+    # that call's own claims array -- lets a derived claim reference another
+    # claim from the SAME tool call before either has a real claim_id (that
+    # only exists after validate() runs). See derive_relations().
+    chunk_id: str = ""
+    batch_index: int = -1
+    derivation_operand_batch_indices: list[int] = field(default_factory=list)
 
 
 def _is_fatal_provider_error(exc: Exception) -> bool:
@@ -2964,7 +2990,17 @@ def annotate_chunk(
     raw_claims: list[RawClaim] = []
     for block in resp.content:
         if block.type == "tool_use" and block.name == "emit_claims":
-            for c in block.input.get("claims", []):
+            batch = block.input.get("claims", [])
+            batch_size = len(batch)
+            for batch_index, c in enumerate(batch):
+                # Indices the model gave must point at another claim IN this
+                # same batch -- not itself, not out of range. A dangling or
+                # self-referencing index is dropped, not fabricated into an
+                # edge to something arbitrary.
+                operand_indices = [
+                    idx for idx in (c.get("derivation_operand_indices") or [])
+                    if isinstance(idx, int) and 0 <= idx < batch_size and idx != batch_index
+                ]
                 period = _non_empty_l2_text(c.get("period"))
                 if period is None:
                     effective_date = _non_empty_l2_text(src.get("effective_date"))
@@ -3022,6 +3058,9 @@ def annotate_chunk(
                     bound=c.get("bound") or "EXACT",
                     basis=c.get("basis") or "unspecified",
                     scenario=c.get("scenario") or "unspecified",
+                    chunk_id=chunk.chunk_id,
+                    batch_index=batch_index,
+                    derivation_operand_batch_indices=operand_indices,
                 ))
     return raw_claims
 
@@ -3102,6 +3141,11 @@ class CanonicalClaim:
     # discard evidence. Keep it visible in validation_errors while preserving
     # the separate admission rule used by the graph assembler.
     nonblocking_validation_errors: list[str] = field(default_factory=list)
+    # Carried through from RawClaim so derive_relations() can resolve
+    # same-batch operand references after claim_id exists. See RawClaim.
+    chunk_id: str = ""
+    batch_index: int = -1
+    derivation_operand_batch_indices: list[int] = field(default_factory=list)
 
 
 def validate(raw: RawClaim) -> CanonicalClaim:
@@ -3217,6 +3261,9 @@ def validate(raw: RawClaim) -> CanonicalClaim:
         metric_label=metric_label,
         validation_errors=errors,
         nonblocking_validation_errors=nonblocking_errors,
+        chunk_id=raw.chunk_id,
+        batch_index=raw.batch_index,
+        derivation_operand_batch_indices=raw.derivation_operand_batch_indices,
     )
 
 
@@ -3274,6 +3321,40 @@ def assemble(claims: list[CanonicalClaim]) -> SubGraph:
         rejected_count=len(rejected),
         conflict_count=len(conflicts),
     )
+
+
+def derive_relations(claims: list[CanonicalClaim]) -> list[dict[str, str]]:
+    """DERIVED_FROM edges from same-batch operand references (see RawClaim /
+    CLAIM_TOOL's derivation_operand_indices).
+
+    Deterministic, not model-trusted: an index has to resolve to a REAL
+    admitted claim from the SAME chunk_id, or it is dropped rather than
+    turned into an edge pointing at something arbitrary or already rejected.
+    Only covers operands the model saw in its own tool call -- a derivation
+    whose operands live in a different chunk produces no edge here, same
+    limitation as the cross-chunk-context gap parse_markdown's merge
+    already narrows but does not eliminate.
+    """
+    by_batch_position = {
+        (c.chunk_id, c.batch_index): c.claim_id
+        for c in claims
+        if c.chunk_id and c.batch_index >= 0
+    }
+    relations: list[dict[str, str]] = []
+    for c in claims:
+        if not c.derivation_operand_batch_indices:
+            continue
+        for operand_index in c.derivation_operand_batch_indices:
+            target_id = by_batch_position.get((c.chunk_id, operand_index))
+            if target_id is None or target_id == c.claim_id:
+                continue
+            relations.append({
+                "source_claim_id": c.claim_id,
+                "relation": "DERIVED_FROM",
+                "target_type": "claim",
+                "target_id": target_id,
+            })
+    return relations
 
 
 # ─────────────────────────────────────────────────────────────────────────────

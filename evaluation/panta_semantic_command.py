@@ -16,13 +16,19 @@ in light of these, they are findings about production, not adapter bugs:
      "Independent QoE" as sections of the same .md file) will score below
      100% on semantic_grounding_accuracy for that reason alone.
   2. derivation is a free-text expression in production ("state the
-     computation"); annotate_chunk never emits structured operand_claim_ids.
-     This adapter passes the expression through and leaves
-     operand_claim_ids empty, so semantic_derivation_accuracy will fail
-     wherever gold expects specific operands.
-  3. relations (BEARS_ON / DERIVED_FROM edges) are not produced by this
-     L2-L4 slice -- that is a downstream question-binding step this adapter
-     does not exercise. relations is always [].
+     computation"); operand_claim_ids is populated ONLY when the operand is
+     another claim in the SAME annotate_chunk tool call (via
+     derivation_operand_indices, resolved by derive_relations() after
+     validate() assigns real claim_ids). An operand from a different chunk,
+     or a plain number in the fragment that was never extracted as its own
+     claim, still leaves operand_claim_ids empty.
+  3. DERIVED_FROM edges ARE produced (see derive_relations(), same-batch
+     operands only). BEARS_ON (claim->question) and the vault's
+     SUPERSEDES/CONTRADICTS/CONFIRMS revision-tracking are NOT -- those
+     require, respectively, tools/binding_proposer.py's real vault question
+     index and the .claude/skills/contradictions agentic workflow, neither
+     of which this eval fixture has an equivalent of. relations only ever
+     contains DERIVED_FROM edges.
   4. annotate_chunk's prompt is deal-name + source metadata + chunk body
      only; it never sees a case's `query` field (the per-case task text
      the optional OpenAI baseline in semantic_teacher.py DOES read). This
@@ -46,7 +52,9 @@ from typing import Any, Mapping
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from tools.extract_v2_physical import MODEL, annotate_chunk, assemble, parse_source, validate  # noqa: E402
+from tools.extract_v2_physical import (  # noqa: E402
+    MODEL, annotate_chunk, assemble, derive_relations, parse_source, validate,
+)
 from tools.llm_provider import anthropic_client_kwargs, configured_api_key  # noqa: E402
 
 
@@ -168,7 +176,7 @@ def main() -> int:
         "test_id": case["test_id"],
         "status": "success" if claims else "abstained",
         "claims": claims,
-        "relations": [],
+        "relations": derive_relations(graph.claims),
         "metadata": {
             "generator": "panta-extract-v2-physical",
             "model": MODEL,

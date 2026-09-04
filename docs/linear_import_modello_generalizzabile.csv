@@ -79,6 +79,8 @@ Indovinare il binding senza revisione umana. Legare male una cella a un concetto
 
 Ma sulla pipeline vera, a densità di chunk reale (219 parole), 3 force-fit sopravvivono: il round da €6.0m torna `Sponsor Equity`, il pre-money €24.0m torna `Enterprise Value` — **e il prompt nomina letteralmente quei due esempi come errori da non fare**. Verificato: sullo stesso testo in un frammento corto sceglie `Other` correttamente; nel chunk vero sbaglia. Una frase nel prompt non regge alla densità.
 
+**RICONFERMATO dopo PAN-117 (04/09), sulla CLI vera**: `tools/extract_v2_physical.py --source SRC-06... --deal silexara` produce ancora `Sponsor Equity`×2, `Enterprise Value`×1 sugli stessi tre claim, con l'escape hatch di PAN-117 già attivo e usato correttamente sulle altre 20/23 claim dello stesso run. Non un residuo teorico: gli stessi tre errori, stessa causa. Conferma che serve esattamente questo task (schema per deal, non un'altra frase di prompt) — alzata priorità.
+
 **Cosa fare**
 Costruire lo schema del tool **per deal**, dal dizionario del tipo di deal, invece che una volta sola globalmente. Così l'enum inviato all'API non contiene le voci non applicabili e l'errore diventa **impossibile**, non scartato a posteriori. Stesso precedente già nel codice per CHARACTERISATION: ""la regola è imposta qui invece che chiesta"".
 
@@ -99,3 +101,17 @@ Una lente che legge lo stato già derivato (eventi, esposizione, blocchi, claim 
 
 **Fatto quando**
 Su un deal qualsiasi restituisce un quadro leggibile, e un test verifica che non scriva nulla.",Todo,3,"agents,ux",3
+"[G8] Registrazione sorgenti per deal nuovi (SOURCE_REGISTRY / source-envelope)","**Perché**
+Testando Silexara sulla pipeline vera si è trovato un buco a monte di tutto il resto. `tools/extract_v2_physical.py::_source_record()` cerca il file in `SOURCE_REGISTRY` (mappa hardcoded per Keystone); quando non trova corrispondenza usa un fallback sintetico: `source_id=""SRC-<nome file>""`, `doc_type=""Other""`, `party=""unknown""`, date vuote.
+
+Conseguenze reali misurate oggi:
+- `doc_type=""Other""` fa perdere la mappatura Source→epistemic_class che il SYSTEM_PROMPT usa (""QoE report → attested"", ""seller CIM → asserted""...). Su Silexara la classificazione epistemica è andata alla cieca.
+- `SRC-06_GTM_and_Terms_Call_2026-05-18.txt` è una **trascrizione di call** ma senza `parser_capability=transcript_export` registrata viene letta come testo semplice: si perde la struttura a turni di parola (chi ha detto cosa), rilevante dato che il corpus stesso traccia gli speaker (Nicolas, Elena, Jonas) e la sua chiave di risposta include gli speech act.
+- Date/party assenti: niente `effective_date`, niente `known_at` reale — solo quello che il documento eventualmente dice nel testo.
+- Il corpus Silexara fornisce già tutto questo pronto: `01_SOURCE_LEDGER/SOURCE_CATALOG.csv` ha `source_id, source_type, effective_at, known_at` per ognuna delle 18 fonti. Va solo letto e trasformato in `source-envelope`.
+
+**Cosa fare**
+Un piccolo generatore che legge un catalogo fonti (formato tipo `SOURCE_CATALOG.csv`, o un CSV/JSON equivalente da compilare a mano per deal senza catalogo) e produce i `source-envelope` che `--source-envelope` già accetta in CLI — nessuna modifica al parser, solo alimentarlo correttamente.
+
+**Fatto quando**
+Silexara rigirato con gli envelope generati: `doc_type` reale per ogni fonte, SRC-06/SRC-02/SRC-03/SRC-05/SRC-08/SRC-12/SRC-15 (le call) instradate a `parse_transcript`, non a `parse_plain_text`.",Todo,1,"extraction,ontology",3

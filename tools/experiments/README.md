@@ -295,3 +295,79 @@ into production as currently built -- the failure mode it was meant to
 help with (missed derivation) barely occurs on real documents, while the
 failure mode it does not help with (identity collision across concurrent,
 structurally-similar concepts) got worse with it, not better.
+
+### A genuinely unstated derivation, finally -- and every mode misses it
+
+Every Keystone fragment above shares one property: the document always
+states its own final total. Two fragments from a different corpus
+(`PANTA_SILEXARA_SYNTHETIC_CASE_CORPUS_v1_1`, a separate synthetic VC/
+growth-equity benchmark downloaded outside this repo -- not committed here,
+licensed test material, tested locally only) don't have that property, and
+the result changes again.
+
+  round_math       a term-sheet call: "raising six million euros. Target
+                   is twenty-four million pre-money." Post-money (30.0)
+                   and the resulting investor ownership % are never
+                   stated -- a genuine two-step derivation, unlike anything
+                   in the Keystone set.
+  revenue_growth   the same call: "roughly one and a half million euros
+                   of revenue in calendar 2027 and twelve million in
+                   2028." Growth (700%, or an 8x multiple) is never
+                   stated.
+
+- **All three modes missed the derivation completely on both fragments** --
+  not "found the wrong number", found *nothing*: no `Post-money`/`Enterprise
+  Value` claim near 30.0, no growth/multiple claim near 700%, in any of the
+  six runs. This directly contradicts the original synthetic EBITDA-bridge
+  test, where the graph-augmented mode DID successfully chain two hops to
+  an unstated total. The difference looks domain-shaped, not
+  mechanism-shaped -- see below.
+- **The schema doesn't have vocabulary for this domain, and papering over
+  that produces bad claims, not missing ones.** `METRIC_ENUM` is built for
+  LBO/buyout underwriting (EBITDA, leverage, covenants, MOIC/IRR) and has
+  nothing for primary-round financing. Forced to pick anyway: the $6.0m
+  raise got labeled `Sponsor Equity` (an LBO term for the PE sponsor's own
+  equity check -- not what a primary investment round is), the $24.0m
+  pre-money got labeled `Enterprise Value` (a different concept, only
+  loosely analogous), and "eighteen to twenty-four months of runway" got
+  turned into a claim named `Exit Horizon` = 21 -- runway is not a holding
+  period, and 21 is not stated anywhere in the text (it looks like the
+  midpoint of 18-24, silently computed and attached to the wrong concept).
+  Three different runs invented three different fabricated claims for the
+  same non-quantitative "use of funds" sentence (`Capex`, `Free Cash Flow`,
+  `Revolver Capacity`, all null-valued) -- the enum forces an answer even
+  when nothing fits, and what it forces is unstable across runs.
+- **Confirmed not a token-budget artifact**: `round_math` alone, checked
+  directly, returned `stop_reason: tool_use` at 869 of 4096 available
+  output tokens -- plenty of room, the model simply didn't attempt the
+  arithmetic.
+- **Even where the right enum concept exists, the arithmetic still didn't
+  happen.** `Revenue Growth` IS a real `METRIC_ENUM` entry -- the assisted
+  mode correctly recognized it belonged here, emitted a claim named
+  `Revenue Growth`... with `value: null`. Recognizing the right shape and
+  actually computing the number are two different failures, and this one
+  isolates the second: it's not only a vocabulary gap.
+- Also reproduced the collision problem from the Keystone leverage
+  fragment, on `revenue_growth`: "eight to twelve paid sites" (a site
+  COUNT, no currency) got labeled `Revenue` and merged with the real
+  revenue figures -- a unit-confusion collision as well as an identity one,
+  the sites-count claims are simply wrong, not just ambiguously named.
+
+### Status, updated
+
+Nine fragments now, seven real documents across two genuinely different
+domains. The picture holds and sharpens: on documents that state their own
+conclusion (all of Keystone), no mode needs help and the graph mode's one
+real contribution -- arithmetic self-verification -- is inconsistent and
+came with a measured accuracy cost elsewhere. On the one domain where a
+derivation is genuinely required and genuinely unstated (Silexara's round
+math), EVERY mode failed outright, and the dominant failure was not
+"couldn't do the arithmetic" so much as "the schema had no correct place to
+put the answer" -- METRIC_ENUM's domain coverage, not the retrieval or
+graph-extraction mechanism this was built to test, is now the more
+consequential gap. That reframes what a next step should be: before
+another prompting variant, either broaden METRIC_ENUM's coverage (or make
+missing-enum an explicit abstain condition instead of a forced wrong pick)
+and re-test the same two fragments, or accept that this approach's real
+value -- if any -- is bounded to the LBO-shaped documents it was designed
+and tested against, not a general derivation capability.

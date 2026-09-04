@@ -371,3 +371,59 @@ missing-enum an explicit abstain condition instead of a forced wrong pick)
 and re-test the same two fragments, or accept that this approach's real
 value -- if any -- is bounded to the LBO-shaped documents it was designed
 and tested against, not a general derivation capability.
+
+---
+
+## Outcome: what this investigation actually shipped
+
+The paper's own idea (retrieve in-context examples by reasoning-graph shape)
+did NOT survive contact with real documents and is not being wired into
+production. What the investigation was worth is the two production bugs it
+surfaced, both now fixed and pinned by tests (PAN-117, commit on `dev`):
+
+- **The metric enum could not decline.** Fixed: `metric: "Other"` plus a
+  required `metric_label`, deliberately excluded from
+  `object_identity.METRIC_VOCABULARY` so such a claim is *unresolvable* --
+  visible in the ledger, never silently matched. Re-measured on the same
+  Silexara fragment that produced the failures: the round, pre-money and
+  runway now come back honestly named, and the fabricated "Exit Horizon =
+  21" and null-valued `Capex` claims are gone.
+- **`measurement` collapsed sibling covenants.** Fixed: a threshold or
+  headroom must name the covenant it belongs to. Re-measured on the real
+  June 2027 compliance fragment: 2 identity collisions before, 0 after.
+
+### The one salvageable idea, and why it does not need a model
+
+Across nine fragments the graph mode contributed exactly one thing of real
+value, once: on `firm_bridge` it proved the document's own printed total
+was internally consistent ($10.20 + $1.70 - $0.20 - $0.15 - $0.10 - $0.05 =
+$11.40) instead of copying it on trust. That is worth having -- it catches a
+document whose own arithmetic doesn't add up, or an extraction that
+corrupted a figure (this repo already has PAN-100 history of exactly that).
+
+But it does not need an LLM, and asking a model for it is what cost accuracy
+elsewhere. Once claims carry a total (`measurement: "total"`) and its
+components (`measurement:` naming each line item) under the same
+metric/basis/period -- which, after the `measurement` fix above, they now
+reliably do -- summing the components and comparing to the stated total is
+deterministic, stdlib-only, and cannot drift between runs. It belongs beside
+the existing deterministic filters in `validate()` / the grounding gate,
+following the precedent already set there for the CHARACTERISATION rule:
+"a deterministic filter is the right home for it in any case: it cannot
+drift between runs, and the claim lands in rejected_claims.json with a
+reason rather than silently never existing."
+
+Not built yet -- it is a new validation surface, not a fix to something
+broken, so it should be a deliberate decision rather than a side effect of
+this investigation.
+
+### Still open, honestly
+
+- **Genuinely unstated derivations don't happen.** Post-money from
+  pre-money + raise, growth from two revenue figures: no mode produced
+  them, including the one built to. Real deal documents state their
+  conclusions often enough that this may simply not be worth solving --
+  but it is unsolved, not solved.
+- The `derived` epistemic class is therefore nearly unexercised on real
+  documents. Worth knowing before anyone builds on the assumption that it
+  fires.

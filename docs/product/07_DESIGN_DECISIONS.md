@@ -177,3 +177,14 @@ Append only material decisions that should survive individual tasks.
 **Applies to:** Trace, Object Lens source references, source drawer, internal source navigation, synthetic fixtures and source-evidence regressions.
 
 **Boundary:** Source addresses and quoted spans come from the existing backend projection. This change introduces no ontology, extraction logic, inferred provenance, document URL, native file viewer, or canonical mutation.
+
+---
+
+### 2026-09-05 — Information cards open the verified original at the cited location
+**Decision:** Object Lens presents concise content and supplied context before its existing causal trace. Source details open a focused original reader in the same drawer, with a return to the citation and a download of the verified bytes. The backend resolves existing case-scoped source envelopes and verifies the cited content hash on each read. A page, range, block, cue or media time retains its actual precision; missing or ambiguous locations are explicit.
+
+**Why:** The investor needs both an immediate explanation and an auditable route to the source. An address alone is insufficient, and a current file cannot silently replace the cited version.
+
+**Applies to:** Shared information summary, Trace supports, source drawer, same-origin source reader, durable claim provenance, isolated native-document lab and regression tests.
+
+**Boundary:** This extends the earlier citation-only UI with original-file access. It adds no ontology, inferred calculation input, quoted text synthesized from a statement, canonical mutation, or full production case adapter. PDF highlighting requires a unique exact source quote. Legacy missing references and unsupported locations remain visible gaps, not successful precise opens.

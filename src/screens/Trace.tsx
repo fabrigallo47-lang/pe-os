@@ -58,7 +58,7 @@ function TraceContent(){
           const evidence=snapshot.claims.find(e=>e.id===id); const finding=snapshot.findings.find(f=>f.id===id); const position=snapshot.humanPositions.find(p=>p.id===id);
           const title=evidence?.label??finding?.title??position?.text??objectLabel(snapshot,id);
           const meta=evidence?(reading.independentSupportObjectIds.includes(id)?'Independent evidence':evidence.type):finding?'PANTA finding':position?'Human view':'';
-          return <button key={id} aria-pressed={selectedSupportId===id} className={`p-trace-support ${selectedSupportId===id?'is-selected':''} ${excluded.includes(id)?'is-excluded':''}`} onClick={()=>setSelectedSupportId(id)}><strong>{title}</strong>{meta&&<span>{meta}</span>}</button>
+          return <button key={id} aria-pressed={selectedSupportId===id} className={`p-trace-support ${selectedSupportId===id?'is-selected':''} ${excluded.includes(id)?'is-excluded':''}`} onClick={()=>{setSelectedSupportId(id);void setActiveObject(id)}}><strong>{title}</strong>{meta&&<span>{meta}</span>}</button>
         })}
       </aside>
 

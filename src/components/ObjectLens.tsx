@@ -6,13 +6,14 @@ import type { Actor } from '../types/domain';
 import { ObjectCausalTrace } from './CausalTrace';
 import { useDialogFocus, useMediaQuery } from './useDialogFocus';
 import { inspectionSourceLocators } from '../app/sourceEvidence';
+import { InformationSummary } from './InformationSummary';
 import '../design/source-evidence.css';
 
 export function ObjectLens({ compact = false }: { compact?: boolean }) {
-  const { snapshot, inspection, activeObjectId, inspecting, setActiveObject } = usePanta();
+  const { snapshot, inspection, activeObjectId, inspecting, setActiveObject, sourcesOpen } = usePanta();
   const mobile = useMediaQuery('(max-width: 760px)');
   const activeActor = snapshot && activeObjectId ? actorById(snapshot, activeObjectId) : undefined;
-  const open = Boolean(snapshot && (activeActor || inspection || (inspecting && activeObjectId)));
+  const open = Boolean(!sourcesOpen && snapshot && (activeActor || inspection || (inspecting && activeObjectId)));
   const close = () => { void setActiveObject(undefined); };
   const dialogRef = useDialogFocus<HTMLElement>(open && mobile, close, undefined, '[data-object-lens-return]');
   if (!snapshot || !open) return null;
@@ -78,6 +79,7 @@ function LensContents({ compact, onClose }: { compact: boolean; onClose: () => v
       <button className="p-icon-btn" onClick={onClose} aria-label="Close inspection">×</button>
     </div>
 
+    <InformationSummary objectId={inspection.objectId} />
     <ObjectCausalTrace
       objectId={inspection.objectId}
       supportIds={inspection.supportObjectIds}

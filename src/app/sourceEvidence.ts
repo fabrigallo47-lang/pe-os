@@ -31,7 +31,7 @@ export function inspectionSourceLocators(snapshot: PantaCaseSnapshot, objectId: 
 export function resolveSourceEvidence(snapshot: PantaCaseSnapshot, target: SourceLocator) {
   const source = snapshot.sources.find(item => item.id === target.sourceId);
   const claim = target.claimId ? snapshot.claims.find(item => item.id === target.claimId) : undefined;
-  const versionId = target.sourceVersionId || claim?.sourceVersionId;
+  const versionId = target.sourceVersionId || claim?.sourceVersionId || (!target.claimId && !target.locator ? source?.currentVersionId : undefined);
   const version = snapshot.sourceVersions.find(item => item.id === versionId);
   const claimVersion = snapshot.sourceVersions.find(item => item.id === claim?.sourceVersionId);
   const conflict = Boolean(

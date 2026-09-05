@@ -14,3 +14,18 @@
 .p-source-statement-links { display: grid; gap: 8px; }
 .p-source-statement-links button { display: grid; gap: 4px; text-align: left; }
 .p-source-statement-links small { color: var(--p-muted); overflow-wrap: anywhere; }
+.p-source-original-action { display: grid; gap: 8px; justify-items: start; }
+.p-source-original-action p { margin: 0; }
+.p-source-drawer.p-source-reader-drawer { width: min(960px, 100vw); display: flex; flex-direction: column; overflow: hidden; }
+.p-source-reader-drawer .p-modal-head { flex-shrink: 0; }
+.p-source-reader { display: flex; flex-direction: column; min-height: 0; flex: 1; }
+.p-source-reader-toolbar { display: flex; justify-content: space-between; flex-wrap: wrap; gap: 12px; padding: 16px 22px 8px; }
+.p-source-reader-position { margin: 0; padding: 6px 22px 14px; color: var(--p-muted); font-size: 13px; overflow-wrap: anywhere; }
+.p-source-reader iframe { width: 100%; flex: 1; min-height: 240px; border: 0; border-top: 1px solid var(--p-line); background: var(--p-bg); }
+.p-information-summary { display: grid; gap: 10px; padding: 14px 0; border-bottom: 1px solid var(--p-line); font-size: 13px; line-height: 1.6; }
+.p-information-summary p { margin: 0; overflow-wrap: anywhere; }
+.p-information-summary dl { margin: 0; display: grid; gap: 8px; }
+.p-information-summary dl div { display: grid; grid-template-columns: 82px minmax(0,1fr); gap: 10px; }
+.p-information-summary dt { color: var(--p-muted); }
+.p-information-summary dd { margin: 0; overflow-wrap: anywhere; }
+.p-information-summary code { white-space: pre-wrap; overflow-wrap: anywhere; font-size: 12px; }

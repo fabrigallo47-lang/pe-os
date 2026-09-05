@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
+import { withSourceDocuments } from '../providers/sourceDocuments';
 import type { PantaBackendAdapter } from '../providers/PantaBackendAdapter';
 import { PantaProvider } from './PantaContext';
 import { PANTA_NAVIGATION_EVENT, parseRoute, type PantaRoute } from './routes';
@@ -22,6 +23,7 @@ export interface PantaAppProps {
 }
 
 export function PantaApp({ adapter, initialCaseId, onStartNewCase, onOpenExistingCase }: PantaAppProps) {
+  const connectedAdapter = useMemo(() => withSourceDocuments(adapter), [adapter]);
   const [route,setRoute]=useState<PantaRoute>(()=>parseRoute(window.location.hash));
   useEffect(()=>{
     const syncRoute=()=>setRoute(parseRoute(window.location.hash));
@@ -36,5 +38,5 @@ export function PantaApp({ adapter, initialCaseId, onStartNewCase, onOpenExistin
     };
   },[]);
   const screen = route==='deal'?<DealHome/>:route==='workstream'?<WorkstreamFocus/>:route==='trace'?<Trace/>:route==='simulate'?<Simulate/>:route==='review'?<ReviewAdmit/>:route==='resolve'?<Resolve/>:route==='formation'?<Formation/>:route==='replay'?<ReplayDecision/>:route==='journal'?<Journal/>:<Outputs/>;
-  return <PantaProvider adapter={adapter} initialCaseId={initialCaseId}><div className="p-app"><GlobalShell route={route} onStartNewCase={onStartNewCase} onOpenExistingCase={onOpenExistingCase}>{screen}</GlobalShell></div></PantaProvider>;
+  return <PantaProvider adapter={connectedAdapter} initialCaseId={initialCaseId}><div className="p-app"><GlobalShell route={route} onStartNewCase={onStartNewCase} onOpenExistingCase={onOpenExistingCase}>{screen}</GlobalShell></div></PantaProvider>;
 }

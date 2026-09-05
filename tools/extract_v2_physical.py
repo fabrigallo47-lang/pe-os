@@ -371,6 +371,15 @@ CLAIM_KIND_ENUM = [
     "CONDITION",        # states a requirement, contingency or covenant
     "ATTRIBUTION",      # states who said, did or decided something
     "NEGATIVE",         # explicitly asserts an absence — checkable, so admissible
+    # A checkable proposition about the business that carries no number: a
+    # capability assessment, a deployment or proof state, a buyer's stance.
+    # Added because CHARACTERISATION had become the residual bucket for
+    # everything non-numeric, and CHARACTERISATION is deleted: measured over
+    # five documents of a venture corpus, 42 of 103 claims died there, and
+    # sampling them found proof states, buyer urgency and milestone
+    # requirements rather than adjectives. Maps to the dictionary's
+    # `claim_kind=qualitative` (section 3.2).
+    "QUALITATIVE",
     "CHARACTERISATION", # a descriptor with no checkable content — DO NOT EMIT
 ]
 
@@ -679,7 +688,26 @@ CLAIM_TOOL = {
                                 "  CONDITION       states a requirement, contingency or covenant\n"
                                 "  ATTRIBUTION     states who said, did or decided something\n"
                                 "  NEGATIVE        explicitly asserts an absence — checkable\n"
+                                "  QUALITATIVE     a checkable statement about the business "
+                                "that carries no number\n"
                                 "  CHARACTERISATION a descriptor with no checkable content\n"
+                                "QUALITATIVE vs CHARACTERISATION is the line between a claim "
+                                "someone could go and check and a word someone chose. Ask what "
+                                "would have to be true for it to be WRONG. If you can name the "
+                                "evidence that would refute it, it is QUALITATIVE — a capability "
+                                "assessment ('classification is not solved for quiet activity'), "
+                                "a deployment or proof state ('installed and streaming, "
+                                "validation still pending'; 'the prototype drove autonomously on "
+                                "a test field but has no customer deployment'), a counterparty's "
+                                "stance ('the customer treats the problem as real but not "
+                                "urgent and will not redesign around it'), a scaling constraint. "
+                                "None of those carry a number and all of them can be refuted by "
+                                "the next site visit or reference call. CHARACTERISATION is for "
+                                "what survives no such test: 'leading', 'scaled', 'attractive "
+                                "momentum', 'strong position' — strip the adjective and there is "
+                                "nothing left to check. When a sentence has substance AND "
+                                "adjectives, keep the substance and label it QUALITATIVE; do not "
+                                "discard a real finding because it was phrased warmly.\n"
                                 "Label honestly; what happens to each kind is not your "
                                 "concern. 'A scaled regional platform', 'low capital "
                                 "expenditure' and 'strong market position' are "

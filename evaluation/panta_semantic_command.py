@@ -47,6 +47,7 @@ import hashlib
 import json
 import sys
 from pathlib import Path
+from functools import lru_cache
 from typing import Any, Mapping
 
 ROOT = Path(__file__).resolve().parent.parent
@@ -108,6 +109,15 @@ def _load_chunks(case: Mapping[str, Any]) -> tuple[list, dict[str, str]]:
             path_to_input[chunk.source_path] = item["input_id"]
         chunks.extend(file_chunks)
     return chunks, path_to_input
+
+
+@lru_cache(maxsize=1)
+def _benchmark_claim_kinds() -> frozenset[str]:
+    """claim_kind values this benchmark's schema can represent."""
+    schema = json.loads(
+        (ROOT / "evaluation" / "schemas" / "evaluation_case.schema.json").read_text(encoding="utf-8")
+    )
+    return frozenset(schema["$defs"]["semantic_claim"]["properties"]["claim_kind"]["enum"])
 
 
 def _claim_to_prediction(claim: Any, input_id: str,
@@ -173,11 +183,24 @@ def main() -> int:
 
     canonicals = [validate(r) for r in raw_claims]
     graph = assemble(canonicals)
+    # Production emits claim kinds this benchmark's schema cannot represent --
+    # QUALITATIVE, added so proof states and capability assessments stop
+    # falling into CHARACTERISATION and being deleted. The gold fixtures are
+    # exhaustive over quantitative claims and model no qualitative ones, and
+    # `claim_kind` is a closed enum there, so emitting one invalidates the
+    # WHOLE prediction (observed: conflict.restatement-002 scored 0.000 on a
+    # single such claim). Withhold them from the prediction and count them,
+    # rather than mislabelling them into an accepted value -- the instrument
+    # cannot score this kind of evidence, which is a fact about the
+    # instrument and belongs in the report, not a reason to lie about the kind.
+    expressible = _benchmark_claim_kinds()
+    withheld = [c for c in graph.claims if c.claim_kind not in expressible]
+    scorable = [c for c in graph.claims if c.claim_kind in expressible]
     operand_ids = resolve_operand_claim_ids(graph.claims)
     claims = [
         _claim_to_prediction(c, path_to_input.get(c.source_path, "unknown-input"),
                              operand_ids.get(c.claim_id))
-        for c in graph.claims
+        for c in scorable
     ]
     # The per-claim eval schema has additionalProperties:false, so a real
     # PAN-125 derivation-disagreement flag (the model's own stated arithmetic
@@ -203,6 +226,11 @@ def main() -> int:
             "rejected_count": graph.rejected_count,
             "chunk_errors": chunk_errors,
             "derivation_warnings": derivation_warnings,
+            "withheld_unrepresentable_claims": [
+                {"claim_id": c.claim_id, "claim_kind": c.claim_kind,
+                 "statement": c.statement[:120]}
+                for c in withheld
+            ],
         },
     }
     print(json.dumps(prediction, ensure_ascii=False))

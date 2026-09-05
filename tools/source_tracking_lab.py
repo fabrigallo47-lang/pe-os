@@ -34,18 +34,22 @@ def main():
         from ic_memo_fixture import build_memo_cases, ACTOR, simulated_writer
         from app.live_outputs import OutputStore
         from app.output_routes import output_router
-        memo_cases = build_memo_cases(root)
-        memo_current = [memo_cases[0]]
+        memo_cases = {
+            'MEMO-TEST': build_memo_cases(root),
+            'MEMO-TEST-SAME-FUND': build_memo_cases(root, 'MEMO-TEST-SAME-FUND'),
+            'MEMO-TEST-OTHER-FUND': build_memo_cases(root, 'MEMO-TEST-OTHER-FUND', {'id': 'TEST-FUND-BETA', 'name': 'Synthetic Beta Fund'}),
+        }
+        memo_current = {identity: cases[0] for identity, cases in memo_cases.items()}
         memo_token = secrets.token_urlsafe(32)
         memo_store = OutputStore(root / 'memo-revisions.sqlite3')
 
         def memo_case(case_id):
-            if case_id != 'MEMO-TEST':
+            if case_id not in memo_cases:
                 raise HTTPException(404, 'Unknown output test case.')
-            return copy.deepcopy(memo_current[0])
+            return copy.deepcopy(memo_current[case_id])
 
         def memo_auth(case_id, actor_id, token):
-            if case_id != 'MEMO-TEST' or actor_id != ACTOR['actorId'] or token != memo_token:
+            if case_id not in memo_cases or actor_id != ACTOR['actorId'] or token != memo_token:
                 raise HTTPException(403, 'Invalid output lab session.')
             return ACTOR
 
@@ -58,11 +62,12 @@ def main():
 
         @app.post('/api/source-tracking-lab/memo/change')
         def memo_change(request: Request, payload: dict):
-            memo_auth('MEMO-TEST', ACTOR['actorId'], request.headers.get('x-panta-session'))
+            case_id = payload.get('caseId', 'MEMO-TEST')
+            memo_auth(case_id, ACTOR['actorId'], request.headers.get('x-panta-session'))
             if payload.get('amount') not in (5, 6):
                 raise HTTPException(422, 'Choose a predefined test scenario.')
-            memo_current[0] = memo_cases[0 if payload['amount'] == 5 else 1]
-            return {'caseVersion': memo_current[0]['caseVersion']}
+            memo_current[case_id] = memo_cases[case_id][0 if payload['amount'] == 5 else 1]
+            return {'caseVersion': memo_current[case_id]['caseVersion']}
         references = {}
         # Source endpoints remain read-only; output mutations are scoped to the fictional case above.
         for route in router.v20.routes:

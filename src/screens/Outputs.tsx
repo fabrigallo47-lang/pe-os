@@ -2,6 +2,7 @@ import React, { useCallback, useEffect, useState } from 'react';
 import { usePanta } from '../app/PantaContext';
 import { EmptyCase } from '../components/EmptyCase';
 import { ObjectLens } from '../components/ObjectLens';
+import { EditorialProfileEditor } from '../components/EditorialProfileEditor';
 import type { Artifact, ArtifactBlock } from '../types/domain';
 import '../design/live-outputs.css';
 
@@ -14,10 +15,11 @@ export function Outputs() {
   const [tab, setTab] = useState<OutputTab>('IC_MEMO');
   const [mode, setMode] = useState<'READ' | 'EDIT'>('READ');
   const [hasDrafts, setHasDrafts] = useState(false);
+  const [profileEditing, setProfileEditing] = useState(false);
   if (!snapshot) return <EmptyCase />;
   const artifact = snapshot.artifacts.find(item => item.type === tab);
   const live = snapshot.outputCapabilities?.versioned === true;
-  const busy = Boolean(pendingAction);
+  const busy = Boolean(pendingAction) || profileEditing;
   const canEdit = !asOf && live && (actor?.entitlements.includes('EDIT_ARTIFACT') ?? false);
   const canSync = !asOf && live && (actor?.entitlements.includes('SYNC_ARTIFACT') ?? false);
   const hasPending = artifact?.blockIds.some(id => snapshot.artifactBlocks.find(block => block.id === id)?.suggestion);
@@ -40,12 +42,13 @@ export function Outputs() {
     {hasDrafts && <p className="p-output-notice" role="status">Save or cancel your passage edits before leaving Edit mode or approving.</p>}
     {!live && <p className="p-output-notice" role="status">Editing requires a connected output service with saved versions and review support.</p>}
     <div id={`output-panel-${tab}`} role="tabpanel" aria-labelledby={`output-tab-${tab}`} tabIndex={0}>
-      {artifact ? <OutputSurface key={artifact.id} artifact={artifact} mode={mode} canEdit={canEdit} canSync={canSync} onDraftsChange={setHasDrafts} /> : <section className="p-empty"><div><h1>{labels[tab]}</h1><p>Create an initial draft from the case. Open questions stay visible, and every passage retains its basis.</p></div></section>}
+      {tab === 'IC_MEMO' && <EditorialProfileEditor artifact={artifact} disabled={hasDrafts} onEditingChange={setProfileEditing} />}
+      {artifact ? <OutputSurface key={artifact.id} artifact={artifact} mode={mode} canEdit={canEdit} canSync={canSync} disabled={profileEditing} onDraftsChange={setHasDrafts} /> : <section className="p-empty"><div><h1>{labels[tab]}</h1><p>Create an initial draft from the case. Open questions stay visible, and every passage retains its basis.</p></div></section>}
     </div>
   </main>;
 }
 
-function OutputSurface({ artifact, mode, canEdit, canSync, onDraftsChange }: { artifact: Artifact; mode: 'READ' | 'EDIT'; canEdit: boolean; canSync: boolean; onDraftsChange: (dirty: boolean) => void }) {
+function OutputSurface({ artifact, mode, canEdit, canSync, disabled, onDraftsChange }: { artifact: Artifact; mode: 'READ' | 'EDIT'; canEdit: boolean; canSync: boolean; disabled: boolean; onDraftsChange: (dirty: boolean) => void }) {
   const { snapshot, execute, setActiveObject, inspection, pendingAction, actor, adapter, asOf } = usePanta();
   const [exporting, setExporting] = useState(false);
   const [exportError, setExportError] = useState('');
@@ -55,7 +58,7 @@ function OutputSurface({ artifact, mode, canEdit, canSync, onDraftsChange }: { a
   if (!snapshot) return null;
   const blocks = artifact.blockIds.flatMap(id => { const block = snapshot.artifactBlocks.find(b => b.id === id); return block ? [block] : []; });
   const pending = blocks.filter(block => block.suggestion).length;
-  const busy = Boolean(pendingAction) || exporting;
+  const busy = Boolean(pendingAction) || exporting || disabled;
   const approved = artifact.approvalStatus === 'APPROVED';
   const canApprove = !asOf && snapshot.outputCapabilities?.versioned && actor?.entitlements.includes('APPROVE_ARTIFACT') && artifact.canApprove && !approved;
   const writer = snapshot.outputCapabilities?.writerLabel;

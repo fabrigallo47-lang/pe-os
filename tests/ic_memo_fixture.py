@@ -3,20 +3,21 @@ import copy
 from app.live_outputs import COLLECTIONS
 from typed_statement_fixture import build_typed_fixture
 
-ACTOR = {'actorId': 'TEST-PARTNER', 'entitlements': ['READ_CASE', 'EDIT_ARTIFACT', 'SYNC_ARTIFACT', 'APPROVE_ARTIFACT']}
+ACTOR = {'actorId': 'TEST-PARTNER', 'entitlements': ['READ_CASE', 'EDIT_ARTIFACT', 'SYNC_ARTIFACT', 'APPROVE_ARTIFACT', 'EDIT_EDITORIAL_PROFILE']}
 
 
-def build_memo_cases(root):
+def build_memo_cases(root, case_id='MEMO-TEST', fund=None):
     cases = []
     for amount in (5, 6):
-        typed = build_typed_fixture(root, 'MEMO-TEST', euro_amount=amount)
+        typed = build_typed_fixture(root, case_id, euro_amount=amount)
         claims = typed['projected']
         euro = next(c for c in claims if 'EUR ' in c['normalizedStatement'])
         verification = next(c for c in claims if 'verification remains' in c['normalizedStatement'])
         version = euro['sourceVersionId']
         case = {key: [] for key in (*COLLECTIONS, 'artifacts', 'artifactBlocks', 'artifactDiffs', 'relations', 'events',
                                    'findings', 'outcomes', 'pendingReviews', 'simulationOptions', 'decisionPaths')}
-        case.update(caseRef={'id': 'MEMO-TEST', 'name': 'Synthetic investment case'}, caseVersion=f'TEST-STATE-{amount}', asOf='2026-01-10T09:00:00Z')
+        case.update(caseRef={'id': case_id, 'name': 'Synthetic investment case'}, caseVersion=f'TEST-STATE-{amount}', asOf='2026-01-10T09:00:00Z',
+                    editorialFund=fund or {'id': 'TEST-FUND-ALPHA', 'name': 'Synthetic Alpha Fund'})
         case['actors'] = [dict(id=ACTOR['actorId'], type='PERSON', displayName='Test partner', role='Partner')]
         case['sources'] = [dict(id='SRC-TYPED', type='document', title=typed['path'].name, currentVersionId=version)]
         case['sourceVersions'] = [dict(id=version, sourceId='SRC-TYPED', contentHash=version, knownAt=case['asOf'], permissionScope='case')]
@@ -38,3 +39,12 @@ def build_memo_cases(root):
 def simulated_writer(blocks):
     # Explicit model stub; genuine numbers/citations/versioning/HTTP remain production code.
     return {b['id']: 'For committee review: ' + b['text'] for b in blocks}
+
+
+def simulated_profile_writer(blocks, profile):
+    # This stub proves profile delivery, not the quality of generated Italian prose.
+    prefix = 'Per il comitato: ' if profile['config']['language'].lower().startswith('ital') else 'For committee review: '
+    return {b['id']: prefix + b['text'] for b in blocks}
+
+
+simulated_writer.redraft_with_profile = simulated_profile_writer

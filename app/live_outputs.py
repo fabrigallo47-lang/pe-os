@@ -15,6 +15,7 @@ from datetime import datetime, timezone
 from pathlib import Path
 
 from fastapi import HTTPException
+from app import editorial_profiles as editorial
 
 KINDS = {'IC_MEMO': 'IC Memo', 'MODEL': 'Case Model', 'DECISION_PACK': 'Decision Pack', 'DECK': 'Investment Deck', 'TRACKER': 'Diligence Tracker'}
 COLLECTIONS = ('questions', 'workstreams', 'caseReadings', 'claims', 'sources', 'sourceVersions', 'quantities',
@@ -135,6 +136,7 @@ class OutputStore:
         with self.connect() as db:
             db.execute('CREATE TABLE IF NOT EXISTS revisions (sequence INTEGER PRIMARY KEY, case_id TEXT NOT NULL, artifact_id TEXT NOT NULL, revision_id TEXT NOT NULL, request_id TEXT NOT NULL, request_hash TEXT NOT NULL, payload TEXT NOT NULL, UNIQUE(case_id, request_id))')
             db.execute('CREATE INDEX IF NOT EXISTS output_case ON revisions(case_id, artifact_id, sequence)')
+            editorial.initialize(db)
 
     @contextmanager
     def connect(self):
@@ -154,7 +156,9 @@ class OutputStore:
         return records.get(artifact_id) if artifact_id else list(records.values())
 
     def project(self, case):
-        outputs = {'artifacts': [], 'artifactBlocks': [], 'artifactDiffs': []}
+        with self.connect() as db:
+            profile_context = editorial.context(case, db)
+        outputs = {'artifacts': [], 'artifactBlocks': [], 'artifactDiffs': [], 'editorialContext': profile_context}
         for saved in self.latest(case['caseRef']['id']):
             artifact, blocks = copy.deepcopy(saved['artifact']), copy.deepcopy(saved['blocks'])
             try:
@@ -182,6 +186,9 @@ class OutputStore:
                             approvalStatus='APPROVED' if saved.get('approval') and not changed and saved['approval']['caseVersion'] == case['caseVersion'] else 'DRAFT',
                             canApprove=bool(blocks) and not changed and not pending,
                             revisionId=saved['revisionId'], approval=saved.get('approval'))
+            if artifact['type'] == 'IC_MEMO':
+                artifact['editorialProfile'] = saved.get('editorialProfile')
+                artifact['editorialUpdateAvailable'] = (saved.get('editorialProfile') or {}).get('versionId') != profile_context['profile']['versionId']
             outputs['artifacts'].append(artifact)
         return outputs
 
@@ -190,14 +197,19 @@ class OutputStore:
         if not isinstance(action, dict):
             raise HTTPException(422, 'An output action object is required.')
         operation = action.get('type')
-        if not isinstance(operation, str) or operation not in {'CREATE_ARTIFACT', 'SYNC_ARTIFACT', 'REDRAFT_ARTIFACT', 'UPDATE_ARTIFACT_BLOCK', 'ACCEPT_ARTIFACT_SUGGESTION', 'DISMISS_ARTIFACT_SUGGESTION', 'APPROVE_ARTIFACT'}:
+        if not isinstance(operation, str) or operation not in {'SAVE_EDITORIAL_PROFILE', 'APPLY_EDITORIAL_PROFILE', 'CREATE_ARTIFACT', 'SYNC_ARTIFACT', 'REDRAFT_ARTIFACT', 'UPDATE_ARTIFACT_BLOCK', 'ACCEPT_ARTIFACT_SUGGESTION', 'DISMISS_ARTIFACT_SUGGESTION', 'APPROVE_ARTIFACT'}:
             raise HTTPException(422, 'Unsupported output command.')
-        needed = 'APPROVE_ARTIFACT' if operation == 'APPROVE_ARTIFACT' else 'SYNC_ARTIFACT' if operation in {'SYNC_ARTIFACT', 'REDRAFT_ARTIFACT'} else 'EDIT_ARTIFACT'
+        needed = 'EDIT_EDITORIAL_PROFILE' if operation == 'SAVE_EDITORIAL_PROFILE' else 'APPROVE_ARTIFACT' if operation == 'APPROVE_ARTIFACT' else 'SYNC_ARTIFACT' if operation in {'SYNC_ARTIFACT', 'REDRAFT_ARTIFACT'} else 'EDIT_ARTIFACT'
         if needed not in actor.get('entitlements', []) or actor.get('actorId') != command.get('actorId'):
             raise HTTPException(403, 'Your authenticated role cannot perform this output action.')
         request_id = command.get('requestId')
         if not isinstance(request_id, str) or not 1 <= len(request_id) <= 180:
             raise HTTPException(422, 'A command request ID is required.')
+        if operation == 'SAVE_EDITORIAL_PROFILE':
+            with self.connect() as db:
+                db.execute('BEGIN IMMEDIATE')
+                saved_profile = editorial.save_profile(case, actor, command, db)
+            return {'revisionId': saved_profile['versionId']}
         case_id, version = case['caseRef']['id'], case['caseVersion']
         request_hash = digest(command)
         suggestions = None
@@ -221,7 +233,11 @@ class OutputStore:
                 raise HTTPException(409, 'Review the case updates before requesting an editorial draft.')
             from app.memo_writer import validate_redraft
             eligible = [b for b in preview['blocks'] if not b.get('editorialLocked')]
-            suggestions = validate_redraft(eligible, writer(eligible))
+            profile = preview.get('editorialProfile')
+            if profile and not callable(getattr(writer, 'redraft_with_profile', None)):
+                raise HTTPException(503, 'The writing assistant must support fund editorial profiles before redrafting this memo.')
+            result = writer.redraft_with_profile(eligible, profile) if profile else writer(eligible)
+            suggestions = validate_redraft(eligible, result)
         with self.connect() as db:
             db.execute('BEGIN IMMEDIATE')
             previous_request = db.execute('SELECT request_hash,payload FROM revisions WHERE case_id=? AND request_id=?', (case_id, request_id)).fetchone()
@@ -241,6 +257,9 @@ class OutputStore:
                     raise HTTPException(409, 'This output already exists. Open its current version.')
                 blocks = compile_blocks(case, kind, artifact_id)
                 saved = dict(artifact=dict(id=artifact_id, type=kind, title=f"{case['caseRef']['name']} — {KINDS[kind]}", quantityIds=[q['id'] for q in case.get('quantities', []) if q.get('institutionalState') in {'CURRENT', 'APPROVED'}], institutionalState='CANDIDATE'), blocks=blocks)
+                if kind == 'IC_MEMO':
+                    saved['editorialProfile'] = editorial.current_profile(case, db)
+                    blocks = saved['blocks'] = editorial.arrange_blocks(blocks, saved['editorialProfile'])
             else:
                 if not previous:
                     raise HTTPException(404, 'Output not found in this case.')
@@ -250,9 +269,22 @@ class OutputStore:
                 blocks = saved['blocks']
             saved.pop('approval', None)
             at = now()
-            if operation == 'SYNC_ARTIFACT':
+            if operation == 'APPLY_EDITORIAL_PROFILE':
+                if saved['artifact']['type'] != 'IC_MEMO':
+                    raise HTTPException(422, 'Editorial fund profiles apply to IC memos.')
+                if any(b.get('suggestion') for b in blocks):
+                    raise HTTPException(409, 'Review the pending passage proposals before applying a profile.')
+                profile = editorial.current_profile(case, db)
+                if action.get('expectedProfileVersion') != profile['versionId']:
+                    raise HTTPException(409, 'The fund profile changed. Reload before applying it.')
+                if (saved.get('editorialProfile') or {}).get('versionId') == profile['versionId']:
+                    raise HTTPException(409, 'This memo already uses the current fund profile.')
+                saved['editorialProfile'] = profile
+                blocks = saved['blocks'] = editorial.arrange_blocks(blocks, profile)
+            elif operation == 'SYNC_ARTIFACT':
                 try:
-                    proposals = {b['id']: b for b in compile_blocks(case, saved['artifact']['type'], artifact_id)}
+                    compiled = compile_blocks(case, saved['artifact']['type'], artifact_id)
+                    proposals = {b['id']: b for b in editorial.arrange_blocks(compiled, saved.get('editorialProfile'))}
                 except HTTPException as exc:
                     if exc.status_code != 422:
                         raise
@@ -312,6 +344,8 @@ class OutputStore:
                                          contentHash=digest(blocks))
             elif operation != 'CREATE_ARTIFACT':
                 raise HTTPException(422, 'Unsupported output command.')
+            if saved.get('editorialProfile'):
+                blocks = saved['blocks'] = editorial.arrange_blocks(blocks, saved['editorialProfile'])
             saved['artifact'].update(lastSyncedCaseVersion=version, lastSyncedAt=at)
             saved.update(caseId=case_id, recordedAt=at, actorId=actor['actorId'], action=operation,
                          priorRevisionId=previous['revisionId'] if previous else None)

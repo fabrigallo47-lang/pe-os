@@ -97,7 +97,19 @@ def production_output_router():
     def load(case_id):
         if not (runtime._case_vault_dir(case_id) / 'deal.md').exists():
             raise HTTPException(404, 'Case not found.')
-        return project_output_case(runtime._build_projection(case_id))
+        case = project_output_case(runtime._build_projection(case_id))
+        # Explicit tenant binding, independent of the strategy/archetype Fund Lens.
+        # Never infer fund identity from a shared default lens or a caller's payload.
+        binding = runtime._case_vault_dir(case_id) / 'editorial_fund.json'
+        if binding.exists():
+            import json
+            from app.editorial_profiles import fund_ref
+            try:
+                case['editorialFund'] = json.loads(binding.read_text(encoding='utf-8'))
+                case['editorialFund'] = fund_ref(case)
+            except (ValueError, OSError) as exc:
+                raise HTTPException(503, 'The editorial fund binding cannot be read.') from exc
+        return case
 
     def authenticate(case_id, actor_id, token):
         runtime._authenticated_principal(case_id, actor_id, query_session_id=None, header_session_id=token)
@@ -107,7 +119,7 @@ def production_output_router():
         if roles & {'WORKSTREAM_REVIEWER', 'DEAL_PARTNER', 'PARTNER'}:
             entitlements += ['EDIT_ARTIFACT', 'SYNC_ARTIFACT']
         if roles & {'DEAL_PARTNER', 'PARTNER'}:
-            entitlements += ['APPROVE_ARTIFACT']
+            entitlements += ['APPROVE_ARTIFACT', 'EDIT_EDITORIAL_PROFILE']
         return dict(actorId=actor_id, entitlements=entitlements)
 
     def store(case_id):

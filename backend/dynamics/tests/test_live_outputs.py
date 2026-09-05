@@ -44,7 +44,9 @@ class OutputTests(unittest.TestCase):
             if token != 'test-session': raise HTTPException(401, 'Session required')
             if case_id != 'MEMO-TEST' or actor != ACTOR['actorId']: raise HTTPException(403, 'Wrong principal or case')
             return self.actor
-        self.app.include_router(output_router(lambda _: copy.deepcopy(self.case), auth, lambda _: self.store, lambda b: self.writer(b)))
+        writer = lambda b: self.writer(b)
+        writer.redraft_with_profile = lambda b, profile: self.writer(b)
+        self.app.include_router(output_router(lambda _: copy.deepcopy(self.case), auth, lambda _: self.store, writer))
         self.headers = {'X-Panta-Actor': ACTOR['actorId'], 'X-Panta-Session': 'test-session'}
 
     def tearDown(self): self.temp.cleanup()
@@ -242,6 +244,7 @@ class OutputTests(unittest.TestCase):
         root = Path(self.temp.name)
         case_dir = root / 'deals' / 'MEMO-TEST'; case_dir.mkdir(parents=True)
         (case_dir / 'deal.md').write_text('# Test case')
+        (case_dir / 'editorial_fund.json').write_text(json.dumps({'id': 'TEST-PRODUCTION-FUND', 'name': 'Synthetic production fund'}))
         projection = {'actor_directory':[{'id':ACTOR['actorId'],'name':'Test partner','role':'DEAL_PARTNER'}],
             'deal':{'case_id':'MEMO-TEST','entity':'Test','as_of_state_id':'S','as_of_date':'2026-01-01','question_spine':[{'id':'Q','label':'Open question'}]}}
         token, _ = runtime._issue_authenticated_session('MEMO-TEST', ACTOR['actorId'])
@@ -252,6 +255,9 @@ class OutputTests(unittest.TestCase):
             self.assertEqual(response.status_code, 200)
             self.case = response.json()['snapshot']
             self.assertIn('APPROVE_ARTIFACT', response.json()['actor']['entitlements'])
+            self.assertIn('EDIT_EDITORIAL_PROFILE', response.json()['actor']['entitlements'])
+            self.assertEqual(self.case['editorialContext']['profile']['fund']['id'], 'TEST-PRODUCTION-FUND')
+            self.assertTrue(self.case['editorialContext']['configurable'])
             self.assertFalse(self.case['outputCapabilities']['aiRedraftAvailable'])
             self.create(); self.command('REDRAFT_ARTIFACT', status=503)
             self.command('APPROVE_ARTIFACT')
@@ -261,6 +267,7 @@ class OutputTests(unittest.TestCase):
             self.assertEqual(self.request(headers={**self.headers, 'X-Panta-Session':other_token}).status_code, 403)
             projection['actor_directory'][0]['role'] = 'WORKSTREAM_REVIEWER'
             self.command('APPROVE_ARTIFACT', status=403)
+            self.assertNotIn('EDIT_EDITORIAL_PROFILE', self.request().json()['actor']['entitlements'])
 
     def test_all_outputs_share_approval_and_export_cycle(self):
         for kind in ['IC_MEMO','MODEL','DECISION_PACK','DECK','TRACKER']:

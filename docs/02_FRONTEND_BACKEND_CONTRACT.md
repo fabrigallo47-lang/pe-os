@@ -94,6 +94,22 @@ supported executable perimeter and acceptance boundaries.
 Commands express user intent; the backend translates allowed commands into authoritative canonical events/relations under current runtime contracts. The frontend does not prescribe raw ledger mutation.
 
 
+## Fund editorial profiles for IC memos
+
+The authenticated Outputs projection adds optional `editorialContext`: latest
+fund profile, version history metadata, and configuration availability/reason.
+`Artifact.editorialProfile` is the immutable brief used by that memo;
+`editorialUpdateAvailable` compares it with the current fund profile without
+changing passage freshness or silently invalidating a previously approved memo.
+
+`SAVE_EDITORIAL_PROFILE` carries the complete `EditorialConfig` and an exact
+`expectedProfileVersion`. The server resolves fund scope from the case and
+requires `EDIT_EDITORIAL_PROFILE`; clients cannot choose a different fund in a
+command. `APPLY_EDITORIAL_PROFILE` also requires the current output revision
+and is rejected while passage proposals remain pending. It creates a draft
+revision with the selected brief, preserving text, evidence and object IDs.
+See `PAN-148_EDITORIAL_PROFILES_ACCEPTANCE.md` for server association and tests.
+
 ## Extended simulation modes
 
 Simulation V1 also accepts `mode: event | inverse | compare` through the same

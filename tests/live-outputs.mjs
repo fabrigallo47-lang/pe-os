@@ -21,6 +21,14 @@ const sent=calls.find(call=>call.init?.method==='POST'); const body=JSON.parse(s
 assert.equal(body.caseVersion,'CASE-V1'); assert.equal(body.expectedRevision,'R1'); assert.ok(body.requestId);
 assert.equal(sent.init.headers['X-Panta-Actor'],'ACTOR'); assert.equal(sent.init.headers['X-Panta-Session'],'SESSION');
 assert.equal(sent.init.credentials,'same-origin');
+const editorial = {name:'Synthetic Alpha profile',language:'Italiano'};
+await adapter.execute('CASE',{actorId:'ACTOR',submittedAt:'2026-01-01',action:{type:'SAVE_EDITORIAL_PROFILE',config:editorial,expectedProfileVersion:'PROFILE-V1'}});
+const profileBody=JSON.parse(calls.at(-1).init.body);
+assert.deepEqual(profileBody.action.config,editorial); assert.equal(profileBody.action.expectedProfileVersion,'PROFILE-V1');
+assert.equal(profileBody.expectedRevision,undefined); assert.equal(profileBody.action.fundId,undefined);
+await adapter.execute('CASE',{actorId:'ACTOR',submittedAt:'2026-01-01',action:{type:'APPLY_EDITORIAL_PROFILE',artifactId:'MEMO',expectedProfileVersion:'PROFILE-V2'}});
+const applyBody=JSON.parse(calls.at(-1).init.body);
+assert.equal(applyBody.expectedRevision,'R2'); assert.equal(applyBody.action.expectedProfileVersion,'PROFILE-V2');
 await assert.rejects(()=>adapter.execute('OTHER',command),/Load the case/);
 await assert.rejects(()=>adapter.loadCase('CASE',{asOf:'past'}),/current case/);
 failure=true; await assert.rejects(()=>adapter.execute('CASE',command),/output changed/);

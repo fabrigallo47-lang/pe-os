@@ -92,6 +92,7 @@ export type Entitlement =
   | 'EDIT_ARTIFACT'
   | 'SYNC_ARTIFACT'
   | 'APPROVE_ARTIFACT'
+  | 'EDIT_EDITORIAL_PROFILE'
   | 'EXTERNAL_ACTION';
 
 export interface Actor {
@@ -485,6 +486,36 @@ export interface ArtifactBlock {
   };
 }
 
+export interface EditorialConfig {
+  name: string;
+  audience: string;
+  decisionPurpose: string;
+  investmentContext: string;
+  language: string;
+  tone: string;
+  lengthGuidance: string;
+  analysisGuidance: string;
+  recommendationGuidance: string;
+  numbersGuidance: string;
+  scenarioGuidance: string;
+  riskGuidance: string;
+  evidenceGuidance: string;
+  citationGuidance: string;
+  presentationGuidance: string;
+  qualityCriteria: string;
+  sections: Array<{ key: string; title: string }>;
+}
+
+export interface EditorialProfile {
+  fund: { id: Id; name: string } | null;
+  versionId: string;
+  version: number;
+  config: EditorialConfig;
+  actorId?: Id;
+  recordedAt?: string;
+  priorVersionId?: string;
+}
+
 export interface Artifact {
   id: Id;
   type: 'IC_MEMO' | 'MODEL' | 'DECISION_PACK' | string;
@@ -500,6 +531,8 @@ export interface Artifact {
   revisionId?: string;
   approvalStatus?: 'DRAFT' | 'APPROVED';
   canApprove?: boolean;
+  editorialProfile?: EditorialProfile | null;
+  editorialUpdateAvailable?: boolean;
   approval?: { actorId: Id; recordedAt: string; caseVersion: string; contentHash: string };
 }
 
@@ -900,6 +933,7 @@ export interface PantaCaseSnapshot {
   caseRef: CaseRef;
   caseVersion: string;
   outputCapabilities?: { versioned: boolean; aiRedraftAvailable: boolean; writerLabel?: string };
+  editorialContext?: { profile: EditorialProfile; history: Array<Omit<EditorialProfile, 'config'>>; configurable: boolean; unavailableReason?: string | null };
   asOf: string;
   decision?: DecisionContext;
   premiseCaseReadingId?: Id;
@@ -957,6 +991,8 @@ export type PantaAction =
   | { type: 'SYNC_ARTIFACT'; artifactId: Id }
   | { type: 'REDRAFT_ARTIFACT'; artifactId: Id }
   | { type: 'APPROVE_ARTIFACT'; artifactId: Id }
+  | { type: 'SAVE_EDITORIAL_PROFILE'; config: EditorialConfig; expectedProfileVersion: string }
+  | { type: 'APPLY_EDITORIAL_PROFILE'; artifactId: Id; expectedProfileVersion: string }
   | { type: 'SYNC_ALL_ARTIFACTS' }
   | { type: 'UPDATE_ARTIFACT_BLOCK'; artifactId: Id; blockId: Id; text: string }
   | { type: 'ACCEPT_ARTIFACT_SUGGESTION'; artifactId: Id; blockId: Id }

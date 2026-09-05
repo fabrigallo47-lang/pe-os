@@ -247,6 +247,17 @@ Append only material decisions that should survive individual tasks.
 
 ---
 
+### 2026-09-05 — IC memo editorial profiles belong to a fund and are frozen per output
+**Problem:** Investment committees require different editorial briefs. A single global template cannot express each fund's audience, style, structure and quality expectations.
+
+**Decision:** Outputs exposes a fund editorial profile editor: audience, decision purpose, strategy/stage, language, tone, length/depth, analysis, recommendations, numbers, scenarios, risks, evidence, citations, presentation and quality criteria. Section titles and order are editable; each supported case content category remains included. Saving creates an immutable fund version with actor/date and optimistic concurrency. New memos freeze the latest profile. Existing memos explicitly apply a newer profile, preserving passage identity, text and citations while returning to draft for review. The writer receives the frozen brief and fixed evidence/authority rules; recommendations, human views and missing facts cannot be invented through preferences.
+
+**Applies to:** PAN-148, the Outputs room, authenticated output commands, fund-scoped persistence, frozen HTML/JSON briefs, and a lab with two Alpha cases and one separate Beta case.
+
+**Boundary:** Editorial preferences do not define a kernel ontology or modify Fund Lens semantics, Current, HumanPositions or Decisions. A trusted server-side case association identifies the fund; a shared strategy/archetype lens is insufficient to establish tenant identity. Partners assigned to the case can edit that fund's profile. Unassociated cases use a frozen default and show why shared configuration is unavailable. Existing approved memos stay valid with their prior profile until explicit application of a newer version. The deterministic compiler changes headings and order; freeform preferences guide the optional passage writer, not an implemented native chart/Office renderer or a guaranteed page count. Live-model quality and complete-memo evaluation remain PAN-149. See `docs/PAN-148_EDITORIAL_PROFILES_ACCEPTANCE.md`.
+
+---
+
 ### 2026-09-05 — Simulation covers events, inverse thresholds and comparable deals
 **Problem:** A single manual input shock cannot answer what a received event means, where a model reaches a threshold, or how two deals differ under the same assumption change.
 

@@ -206,6 +206,33 @@ directly and diff the failure list.
 can pass in a worktree and fail in the main tree for that reason alone — which is
 exactly what happened with `pan58`.
 
+### 5.2b `make verify`: 4 failing stages → 2, and both remaining are diagnosed
+
+Two of the four were **bugs in the harness, not in the code under test**. Both had
+the same root cause: `panta_transition_engine` imports its siblings as a
+top-level `runtime` package (`from runtime.consequence_reasoning import ...`),
+which resolves only with `backend/dynamics` on `sys.path`. The dynamics suite
+gets that free by running with `cwd=backend/dynamics`; anything launched from
+ROOT does not.
+
+- **PAN-36 V2 merge contract** — reported "no unittest result line". It was not a
+  missing line: the import blew up before a single test was collected, and the
+  harness reported the symptom. Now **19/19**.
+- **Embedded dynamics bundle run** — same import, same fix. Now **PASS**
+  (`adapter_alpha: PARTIAL, 6 settled, 0 blocked`).
+
+Remaining two, neither mine:
+
+- **Embedded dynamics unit suite** — the single open `test_v20` above.
+- **PANTA independent validation** — `PASS=44 FAIL=2`. The bundle's *declared*
+  `transition_output.json` diverges from what the independent runtime computes:
+  `mismatched_fields: [affected_set, engine_version, policy_refs,
+  semantic_result_hash]`. **`engine_version` is in that list**, so the engine
+  moved and the committed bundle was never regenerated. Fixing it means
+  regenerating `pipeline_out/e3/K-PRE/adapter_alpha/transition_output.json` — a
+  deliberate act on a committed artifact, and it belongs to whoever moved the
+  engine. Present and identical on the first `make verify` of this session.
+
 ### 5.3 Other open items
 - **Two divergent claim-graph modules (§3.0)** — the highest-value decision here.
   `tools/claim_graph.py` is gitignored and holds an unversioned fix; the tracked

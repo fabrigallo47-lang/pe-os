@@ -15,6 +15,12 @@ from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
+# panta_transition_engine imports its siblings as a top-level `runtime` package,
+# which resolves only with backend/dynamics on the path. The dynamics suite gets
+# that from running with cwd=backend/dynamics; this file runs from ROOT, so it
+# has to add the path itself or the import fails before any test is collected —
+# which reads as "no unittest result line" rather than as an error.
+sys.path.insert(0, str(ROOT / "backend" / "dynamics"))
 
 from backend.dynamics.runtime.extraction_adapter import validate_extraction_graph
 from tools.adapter_alpha import (

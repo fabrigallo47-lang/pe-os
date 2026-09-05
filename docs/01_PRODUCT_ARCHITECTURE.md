@@ -8,7 +8,7 @@ Every room is a different operation over one authoritative investment case:
 - Workstream Focus — what is happening inside one part of the case
 - Trace — why a reading exists
 - Simulate — what changes if an assumption changes
-- Review & Admit — whether new evidence / machine proposal becomes institutional
+- Review changes — whether a material, ambiguous, or judgment-bearing proposal changes the institutional case
 - Resolve — which evidence-producing work can close an uncertainty
 - Formation — how raw material becomes a proposed case
 - Replay — what the case actually looked like at a prior cutoff

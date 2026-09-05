@@ -7,7 +7,7 @@ import { caseLifecycleEntries } from './CaseLifecycle';
 import type { Entitlement } from '../types/domain';
 import { ObjectLens } from './ObjectLens';
 import { useDialogFocus } from './useDialogFocus';
-import { caseOwner, formatCount, isCaseUnformed } from '../app/selectors';
+import { caseOwner, decisionCriticalQuestions, formatCount, isCaseUnformed } from '../app/selectors';
 import { NewEmptyCase, NoCaseSelected } from './EmptyCase';
 
 interface GlobalShellProps {
@@ -35,7 +35,8 @@ export function GlobalShell({ route, children, onStartNewCase, onOpenExistingCas
   const shellRoute: PantaRoute = unformedCase ? 'formation' : route;
   const owner = snapshot ? caseOwner(snapshot) : undefined;
   const decision = snapshot?.decision;
-  const decisionPathSummary = snapshot?.decisionPaths.map(path => humanDecisionPath(path.label)).join(' · ') ?? '';
+  const decisionIssueCount = snapshot ? decisionCriticalQuestions(snapshot).length : 0;
+  const decisionStateSummary = decision?.status === 'RECORDED' ? 'Institutional decision recorded' : formatCount(decisionIssueCount, 'decision-critical issue');
   const decisionTiming = decision?.dueAt ? `Due ${formatDecisionDate(decision.dueAt)}` : 'Date not set';
   const workstream = snapshot?.workstreams.find(w => w.id === focusedWorkstreamId) ?? snapshot?.workstreams[0];
   const question = snapshot?.questions.find(t => t.id === focusedQuestionId) ?? snapshot?.questions.find(t => t.workstreamId === workstream?.id);
@@ -125,10 +126,10 @@ export function GlobalShell({ route, children, onStartNewCase, onOpenExistingCas
         </div> : null}
       </div>
       {snapshot && !unformedCase && <div className="p-top-right">
-        {decision && <button className="p-decision p-decision-link" title={decisionPathSummary ? `Decision paths: ${decisionPathSummary}` : 'Open Replay & Decision'} aria-label={`Open Decision desk for ${decision.label}. ${formatCount(snapshot?.decisionPaths.length ?? 0, 'decision path')}: ${decisionPathSummary || 'none mapped'}. ${decisionTiming}.`} onClick={() => navigate('replay')}>
+        {decision && <button className="p-decision p-decision-link" title="Open Replay & Decision" aria-label={`Open Decision desk for ${decision.label}. ${decisionStateSummary}. ${decisionTiming}.`} onClick={() => navigate('replay')}>
           <span className="p-decision-label">Decision context <em>{decisionTiming}</em></span>
           <strong>{decision.label}</strong>
-          <small><span>{decisionPathSummary || 'No decision paths mapped'}</span><b>Open →</b></small>
+          <small><span>{decisionStateSummary}</span><b>Open →</b></small>
         </button>}
         <div className="p-shell-utilities" role="group" aria-label="Case utilities">
           {route !== 'outputs' && <button className="p-shell-link p-desktop-action" onClick={() => navigate('outputs')}>Outputs</button>}
@@ -195,7 +196,7 @@ function getCrumbs(route: PantaRoute, workstream?: string, question?: string): s
   if (route === 'deal') return ['Deal Home'];
   if (route === 'workstream') return [workstream, 'Workstream Focus'].filter(Boolean) as string[];
   if (route === 'trace' || route === 'simulate' || route === 'resolve') return [workstream, question, route === 'trace' ? 'Trace' : route === 'simulate' ? 'Simulate' : 'Resolve'].filter(Boolean) as string[];
-  if (route === 'review') return ['Review & Admit'];
+  if (route === 'review') return ['Review changes'];
   if (route === 'formation') return ['Formation'];
   if (route === 'replay') return ['Replay & Decision'];
   if (route === 'outputs') return ['Outputs'];
@@ -212,7 +213,6 @@ function AddMaterialModal({ onClose, onSubmit, submitting }: { onClose: () => vo
   </div></div>;
 }
 function formatDecisionDate(v:string){try{return new Intl.DateTimeFormat('en',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(v));}catch{return v}}
-function humanDecisionPath(value:string){return value.toLowerCase().replaceAll('_',' ').replace(/^./,letter=>letter.toUpperCase())}
 
 function CaseLoading({ caseName }: { caseName: string }) {
   return <main className="p-page p-load-state" role="status" aria-live="polite"><div><span className="p-progress-mark" aria-hidden="true"/><div><strong>Loading {caseName}</strong><p>Rebuilding the case view from the authoritative record.</p></div></div></main>;
@@ -224,7 +224,7 @@ function CaseLoadError({ message, onRetry }: { message: string; onRetry: () => v
 
 function actionProgressLabel(action: string): string {
   if (action === 'ADD_MATERIAL') return 'Adding material to the case…';
-  if (action === 'REVIEW_ITEM') return 'Recording the review…';
+  if (action === 'REVIEW_ITEM') return 'Updating the institutional case…';
   if (action === 'RECORD_DECISION') return 'Recording the institutional decision…';
   if (action.includes('ARTIFACT') || action.includes('SYNC')) return 'Updating the connected output…';
   if (action.includes('FORMATION')) return 'Updating the case structure…';

@@ -4,6 +4,7 @@ import { emptyAdapter } from '../src/providers/emptyAdapter.ts';
 import {
   composeLens,
   dealWorkstreamSummary,
+  decisionCriticalQuestions,
   supportSummary,
   humanPositionsForScope,
   eventDisplayLabel,
@@ -39,7 +40,19 @@ assert.equal(await emptyAdapter.execute('CASE-NONE', {
 const adapter = new SyntheticAdapter();
 const snapshot = await adapter.loadCase('CASE-1');
 assert.ok(snapshot);
+const replayMoments = await adapter.listCaseMoments('CASE-1');
+assert.deepEqual(replayMoments.map(moment=>moment.label),['Case created','Customer reference admitted','Technical reading changed']);
+assert.ok(replayMoments.every(moment=>moment.eventId));
+const decisionQuestions = decisionCriticalQuestions(snapshot);
+assert.equal(decisionQuestions.length,4);
+assert.ok(decisionQuestions.every(question=>question.decisionDimensions&&!('score' in question.decisionDimensions)));
 const historicalSnapshot = await adapter.loadCase('CASE-1', { asOf: '2026-01-10T12:00:00Z' });
+const creationSnapshot = await adapter.loadCase('CASE-1', { asOf: replayMoments[0].asOf });
+assert.equal(creationSnapshot.workstreams.length,snapshot.workstreams.length);
+assert.equal(creationSnapshot.questions.length,0);
+assert.equal(creationSnapshot.unknowns.length,0);
+assert.ok(creationSnapshot.caseReadings.every(reading=>reading.epistemicStatus==='UNEXAMINED'));
+assert.ok(creationSnapshot.workstreams.every(workstream=>workstream.openUnknownIds.length===0));
 const technicalWorkstream = snapshot.workstreams.find(item => item.id === 'WS-1');
 const technicalSummary = dealWorkstreamSummary(snapshot, technicalWorkstream);
 assert.equal(technicalSummary.reading?.id, 'CR-1');
@@ -105,10 +118,13 @@ snapshot.decisions = [
   { id: 'DEC-REFERRED', pathId: 'PATH-1', actorOrBodyId: 'ACT-1', rationale: 'Linked decision', recordedAt: '2026-01-11T10:00:00Z', caseVersion: 'v1' },
   { id: 'DEC-NEWER', pathId: 'PATH-1', actorOrBodyId: 'ACT-1', rationale: 'Newer unlinked decision', recordedAt: '2026-01-12T10:00:00Z', caseVersion: 'v2' },
 ];
+snapshot.decision.status = 'RECORDED';
 snapshot.decision.recordedDecisionId = 'DEC-REFERRED';
 assert.equal(recordedDecision(snapshot)?.id, 'DEC-REFERRED');
 delete snapshot.decision.recordedDecisionId;
 assert.equal(recordedDecision(snapshot)?.id, 'DEC-NEWER');
+snapshot.decision.status = 'OPEN';
+assert.equal(recordedDecision(snapshot), undefined);
 
 // Simulation counts and rendered rows share one normalized collection.
 const simulation = await adapter.runSimulation('CASE-1', { optionId: 'SIM-1', originObjectId: 'CR-1', assumption: 'Representative test fails' });

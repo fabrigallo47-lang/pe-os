@@ -43,10 +43,10 @@ Do NOT make every room use the same geometry.
 - Workstream Focus: structured reasoning inside one part of the case.
 - Trace: evidence inspection.
 - Simulate: case sensitivity / propagation.
-- Review & Admit: human governance over machine interpretation.
+- Review changes: exceptional human governance over material, ambiguous, or judgment-bearing case changes.
 - Resolve: evidence-path / mission design.
 - Formation: case assembly.
-- Replay & Decision: time + accountable commitment.
+- Replay & Decision: meaningful ledger replay + question-led accountable commitment.
 - Outputs: live artifact authoring, sync, auditability, and exploration.
 
 ## Change discipline

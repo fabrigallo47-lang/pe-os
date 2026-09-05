@@ -2,46 +2,98 @@ import React, { useEffect, useState } from 'react';
 import { usePanta } from '../app/PantaContext';
 import { EmptyCase } from '../components/EmptyCase';
 import { ObjectLens } from '../components/ObjectLens';
-import { formatCount, objectLabel } from '../app/selectors';
+import { formatCount } from '../app/selectors';
 
 export function ReviewAdmit(){
-  const {snapshot,execute,setActiveObject,openSource,actor,pendingAction}=usePanta();
-  if(!snapshot)return <EmptyCase/>;
-  const items=snapshot.pendingReviews.filter(x=>x.status==='NEW'||x.status==='UNDER_REVIEW');
+  const {snapshot,execute,setActiveObject,actor,pendingAction}=usePanta();
+  const items=snapshot?.pendingReviews.filter(x=>x.status==='NEW'||x.status==='UNDER_REVIEW')??[];
   const [selectedId,setSelectedId]=useState(items[0]?.id);
   const item=items.find(x=>x.id===selectedId)??items[0];
-  const [correcting,setCorrecting]=useState(false);
-  const [corrected,setCorrected]=useState(item?.proposedCaseReading.text??'');
-  const canAdmit=actor?.entitlements.includes('ADMIT_CASE_READING')??false;
-  const source=item?.sourceId?snapshot.sources.find(s=>s.id===item.sourceId):undefined;
-  const finding=item?.findingId?snapshot.findings.find(f=>f.id===item.findingId):undefined;
-  const derivationIds=finding?.derivationObjectIds??[];
-  const changed=item?.effectPreview.filter(x=>x.state!=='HOLDS')??[];
-  const held=item?.effectPreview.filter(x=>x.state==='HOLDS')??[];
-  useEffect(()=>{if(item){setCorrected(item.proposedCaseReading.text);setCorrecting(false)}},[item?.id]);
+  const [editing,setEditing]=useState(false);
+  const [editedProposal,setEditedProposal]=useState(item?.proposedCaseReading.text??'');
 
-  if(!item)return <main className="p-page"><section className="p-empty"><div><h1>Review & Admit</h1><p>No case change is waiting for human review.</p></div></section></main>;
+  useEffect(()=>{
+    if(item){
+      setEditedProposal(item.proposedCaseReading.text);
+      setEditing(false);
+    }
+  },[item?.id]);
 
-  const act=(disposition:'ADMIT'|'CORRECT'|'REJECT')=>execute({type:'REVIEW_ITEM',reviewId:item.id,disposition,correctedText:disposition==='CORRECT'?corrected:undefined});
+  if(!snapshot)return <EmptyCase/>;
+  if(!item)return <main className="p-page"><section className="p-empty"><div><div className="p-kicker">Exceptional review</div><h1>Review changes</h1><p>Nothing needs your judgment. PANTA has applied clear factual updates automatically.</p></div></section></main>;
+
+  const canUpdate=actor?.entitlements.includes('ADMIT_CASE_READING')??false;
+  const finding=item.findingId?snapshot.findings.find(value=>value.id===item.findingId):undefined;
+  const source=item.sourceId?snapshot.sources.find(value=>value.id===item.sourceId):undefined;
+  const changed=item.effectPreview.filter(effect=>effect.state!=='HOLDS');
+  const primaryChange=changed.find(effect=>Boolean(effect.before||effect.after))??changed[0];
+  const relatedChanges=changed.filter(effect=>effect!==primaryChange);
+  const why=finding?.proposition
+    ?? item.proposedCaseReading.supportingLine
+    ?? (source?`PANTA found a material case impact in ${source.title}.`:'This proposal carries material judgment for the institutional case.');
+  const currentText=primaryChange?.before??'No current institutional reading';
+  const proposedText=editing?editedProposal:item.proposedCaseReading.text;
+  const selectedIndex=Math.max(0,items.findIndex(value=>value.id===item.id));
+  const act=(disposition:'ADMIT'|'CORRECT'|'REJECT')=>execute({
+    type:'REVIEW_ITEM',
+    reviewId:item.id,
+    disposition,
+    correctedText:disposition==='CORRECT'?editedProposal:undefined,
+  });
+
   return <main className="p-page p-review-page">
-    <section className="p-review-head"><div><div className="p-kicker">{item.kind==='FINDING'?'PANTA finding':'New evidence'}</div><h1>{item.title}</h1></div><div className="p-review-queue">{items.map(x=><button key={x.id} aria-pressed={x.id===item.id} disabled={Boolean(pendingAction)} className={x.id===item.id?'is-selected':''} onClick={()=>setSelectedId(x.id)}>{x.title}</button>)}</div></section>
+    <header className="p-review-head">
+      <div>
+        <div className="p-kicker">Exceptional review</div>
+        <h1>Review changes</h1>
+        <p>Clear factual updates are already in the case. Only material, ambiguous, or judgment-bearing changes appear here.</p>
+      </div>
+      <span className="p-review-count">{formatCount(items.length,'change')} requiring judgment</span>
+    </header>
 
-    <section className="p-review-field">
-      <section className="p-review-source">
-        <div className="p-section-heading"><strong>{item.kind==='FINDING'?'How PANTA found this':'What arrived'}</strong></div>
-        {source&&<><div className="p-source-summary"><span>{source.type}</span><strong>{source.title}</strong>{source.occurredAt&&<small>{source.occurredAt}</small>}</div>{source.excerpt&&<blockquote>“{source.excerpt}”</blockquote>}{source.limitation&&<div className="p-source-limit"><span>What this doesn't prove</span><p>{source.limitation}</p></div>}<button className="p-btn" onClick={()=>openSource(source.id)}>Open source</button></>}
-        {finding&&<><p className="p-reading-small">{finding.proposition}</p><div className="p-derivation-list">{derivationIds.map(id=><button key={id} onClick={()=>void setActiveObject(id)}>{objectLabel(snapshot,id)}</button>)}</div></>}
+    {items.length>1&&<nav className="p-review-queue" aria-label="Changes requiring review">
+      {items.map((value,index)=><button key={value.id} aria-pressed={value.id===item.id} disabled={Boolean(pendingAction)} className={value.id===item.id?'is-selected':''} onClick={()=>setSelectedId(value.id)}><span>{String(index+1).padStart(2,'0')}</span>{value.title}</button>)}
+    </nav>}
+
+    <article className="p-review-change">
+      <header className="p-review-change-head">
+        <span>{String(selectedIndex+1).padStart(2,'0')} / {String(items.length).padStart(2,'0')}</span>
+        <strong>Requires human judgment</strong>
+      </header>
+
+      <section className="p-review-proposal" aria-labelledby="review-proposal-title">
+        <h2 id="review-proposal-title">What PANTA proposes to change</h2>
+        <p>{item.title}</p>
       </section>
 
-      <section className="p-review-reading">
-        <div className="p-kicker">PANTA proposal · not yet institutional</div>{correcting?<textarea className="p-review-editor" value={corrected} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>)=>setCorrected(e.target.value)} autoFocus/>:<h2>{item.proposedCaseReading.text}</h2>}
-        {item.proposedCaseReading.supportingLine&&<p>{item.proposedCaseReading.supportingLine}</p>}
-        <div className="p-judgment-strip"><button className="p-btn p-btn-primary" disabled={!canAdmit||Boolean(pendingAction)} onClick={()=>void act(correcting?'CORRECT':'ADMIT')}>{pendingAction==='REVIEW_ITEM'?'Recording review…':correcting?'Admit corrected reading':'Admit to case'}</button><button className="p-btn" disabled={Boolean(pendingAction)} aria-pressed={correcting} onClick={()=>setCorrecting(x=>!x)}>{correcting?'Cancel correction':'Correct'}</button><button className="p-btn p-btn-quiet" disabled={!canAdmit||Boolean(pendingAction)} onClick={()=>void act('REJECT')}>Reject</button><span className="p-sandbox-note">{pendingAction==='REVIEW_ITEM'?'Recording the human disposition…':'Live case unchanged · review pending'}</span></div>
+      <section className="p-review-why" aria-labelledby="review-why-title">
+        <h2 id="review-why-title">Why</h2>
+        <p>{why}</p>
       </section>
 
-      <aside className="p-review-effects"><div className="p-section-heading"><strong>What would change</strong><span>{formatCount(changed.length,'change')} · {formatCount(held.length,'hold')}</span></div>{changed.map(e=><button key={e.objectId} className="p-effect-row" onClick={()=>void setActiveObject(e.objectId)}><div><strong>{e.objectLabel}</strong><span>{humanState(e.state)}</span></div>{e.before&&e.after&&<p>{e.before}<b> → </b>{e.after}</p>}</button>)}{held.length>0&&<div className="p-effect-holds"><span>Holds</span>{held.map(e=><button key={e.objectId} onClick={()=>void setActiveObject(e.objectId)}>{e.objectLabel}</button>)}</div>}</aside>
-    </section>
+      <section className="p-review-diff" aria-labelledby="review-diff-title">
+        <h2 id="review-diff-title">Current → Proposed</h2>
+        <div className="p-review-diff-grid">
+          <div><span>Current</span><p>{currentText}</p></div>
+          <b aria-hidden="true">→</b>
+          <div><span>Proposed</span>{editing?<><label className="p-visually-hidden" htmlFor="review-proposal-editor">Edit proposed case reading</label><textarea id="review-proposal-editor" className="p-review-editor" value={editedProposal} onChange={(event:React.ChangeEvent<HTMLTextAreaElement>)=>setEditedProposal(event.target.value)} autoFocus/></>:<p>{proposedText}</p>}</div>
+        </div>
+      </section>
+
+      <section className="p-review-effects" aria-labelledby="review-effects-title">
+        <h2 id="review-effects-title">What else would change</h2>
+        {relatedChanges.length?<div className="p-review-effect-list">{relatedChanges.map(effect=><button key={effect.objectId} onClick={()=>void setActiveObject(effect.objectId)}><strong>{effect.objectLabel}</strong>{effect.before&&effect.after&&<span>{effect.before}<b> → </b>{effect.after}</span>}<small>Inspect in case →</small></button>)}</div>:<p>No other part of the case would change with this proposal.</p>}
+      </section>
+
+      <footer className="p-judgment-strip">
+        <div>
+          <button className="p-btn p-btn-primary" disabled={!canUpdate||Boolean(pendingAction)||!proposedText.trim()} onClick={()=>void act(editing?'CORRECT':'ADMIT')}>{pendingAction==='REVIEW_ITEM'?'Updating case…':'Update case'}</button>
+          <button className="p-btn" disabled={!canUpdate||Boolean(pendingAction)} aria-pressed={editing} onClick={()=>setEditing(value=>!value)}>{editing?'Cancel edit':'Edit'}</button>
+          <button className="p-btn p-btn-quiet" disabled={!canUpdate||Boolean(pendingAction)} onClick={()=>void act('REJECT')}>Dismiss</button>
+        </div>
+        <span className="p-sandbox-note" role="status">{pendingAction==='REVIEW_ITEM'?'Recording the accountable case update…':'The case stays unchanged until you decide.'}</span>
+      </footer>
+    </article>
     <div className="p-floating-lens"><ObjectLens compact/></div>
   </main>;
 }
-function humanState(v:string){return v.toLowerCase().replaceAll('_',' ').replace(/^./,x=>x.toUpperCase())}

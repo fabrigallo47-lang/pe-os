@@ -121,3 +121,25 @@ Append only material decisions that should survive individual tasks.
 **Applies to:** Deal Home workstream composition, contextual actor profiles, workstream routing, Object Lens entry points, and responsive workstream bands.
 
 **Do not infer:** Array order creates a new priority field, a WorkItem owner becomes the Workstream owner, a CaseReading is human-authored, missing actor data means no owner reference exists, or a change may be shown without an explicit event link.
+
+---
+
+### 2026-09-05 — Review is exceptional and organized by case impact
+**Decision:** Review changes replaces the Review & Admit surface. Evidence ingestion and clear factual updates remain automatic; the review queue contains only backend-proposed material, ambiguous, or judgment-bearing changes, aggregated by impact on the institutional case. Each proposal presents what would change, why, the current and proposed reading, downstream changes, and the human actions Update case, Edit, or Dismiss.
+
+**Why:** Investors should govern consequential changes to the investment case, not process every extracted fact or source claim. A large source may therefore produce many machine-level updates but only a few human review proposals.
+
+**Applies to:** Review route naming, lifecycle navigation, exceptional-review composition, synthetic aggregation coverage, and investor-facing action language.
+
+**Do not infer:** The UI may bypass authority, remove audit lineage, merge canonical objects, fabricate HumanPositions, or reinterpret ADMIT/CORRECT/REJECT command dispositions; those remain internal governed contract semantics behind the simplified actions.
+
+---
+
+### 2026-09-05 — Replay and Decision are two different cognitive modes
+**Decision:** Replay is a temporal reconstruction driven only by meaningful ledger-backed CaseMoments and reloads the same case at the selected `asOf` cutoff. Decision is a current-state IC desk organized around backend-selected decision-critical Questions. Their qualitative load-bearingness, severity, fragility, criticality, condition, and canonical basis refs are projection data from the live underwriting graph. Decision paths appear only inside the recording form after every current critical Question has been reviewed. A recorded Decision replaces the undecided desk and exposes actor, timestamp, conditions, case version, and supporting Question refs.
+
+**Why:** Historical understanding and current institutional judgment are different investor acts. Combining them makes Replay leak current choices and makes Decision begin with generic outcomes instead of the few unresolved issues that actually carry the underwriting.
+
+**Applies to:** Replay & Decision composition, meaningful moment fixtures, Question decision projections, deep navigation, decision recording, recorded-decision state, Deal Home and shell decision summaries.
+
+**Do not infer:** The frontend selects, ranks, scores, or authors decision-critical Questions; invents decision dimensions; recommends a path; mutates historical state; or weakens the authority and frozen-snapshot requirements of `RECORD_DECISION`.

@@ -1,6 +1,6 @@
 import React from 'react';
 import { usePanta } from '../app/PantaContext';
-import { recordedDecision } from '../app/selectors';
+import { decisionCriticalQuestions, recordedDecision } from '../app/selectors';
 import { goTo, type PantaRoute } from '../app/routes';
 import type { ActorContext, PantaCaseSnapshot } from '../types/domain';
 
@@ -15,7 +15,7 @@ export function caseLifecycleEntries(snapshot: PantaCaseSnapshot, actor?: ActorC
   const formation = snapshot.formation;
   const pendingReviews = snapshot.pendingReviews.filter(item => item.status === 'NEW' || item.status === 'UNDER_REVIEW').length;
   const decision = recordedDecision(snapshot);
-  const openConditions = snapshot.conditions.filter(condition => condition.status === 'OPEN').length;
+  const decisionIssues = decisionCriticalQuestions(snapshot).length;
 
   const formationState = !formation
     ? 'Not prepared'
@@ -33,20 +33,22 @@ export function caseLifecycleEntries(snapshot: PantaCaseSnapshot, actor?: ActorC
   const reviewState = pendingReviews ? `${pendingReviews} waiting` : 'Clear';
   const reviewPrecondition = pendingReviews
     ? actor?.entitlements.includes('ADMIT_CASE_READING')
-      ? 'A human must admit, correct, or reject each proposed case change.'
-      : 'Admission requires the appropriate human authority.'
-    : 'No proposed case change is waiting for review.';
+      ? 'Material or judgment-bearing case changes need an accountable human decision.'
+      : 'Updating the institutional case requires the appropriate human authority.'
+    : 'Clear factual updates are automatic; nothing exceptional needs review.';
 
-  const decisionState = decision ? 'Recorded' : openConditions ? `${openConditions} open condition${openConditions === 1 ? '' : 's'}` : 'Ready for judgment';
+  const decisionState = decision ? 'Recorded' : decisionIssues ? `${decisionIssues} critical issue${decisionIssues === 1 ? '' : 's'}` : 'Ready for judgment';
   const decisionPrecondition = decision
     ? `Recorded against case version ${decision.caseVersion}.`
     : actor?.entitlements.includes('RECORD_DECISION')
-      ? 'Review the current case and record an accountable human judgment.'
+      ? decisionIssues
+        ? 'Review the decision-critical underwriting questions, then record accountable human judgment.'
+        : 'Record an accountable human judgment against the current case.'
       : 'Recording requires the appropriate human authority.';
 
   return [
     { route: 'formation', label: 'Formation', state: formationState, precondition: formationPrecondition },
-    { route: 'review', label: 'Review & Admit', state: reviewState, precondition: reviewPrecondition },
+    { route: 'review', label: 'Review changes', state: reviewState, precondition: reviewPrecondition },
     { route: 'replay', label: 'Replay & Decision', state: decisionState, precondition: decisionPrecondition },
   ];
 }
@@ -62,7 +64,7 @@ export function CaseLifecycle() {
         <div className="p-kicker">Case lifecycle</div>
         <h2 id="case-lifecycle-title">Continue with the institutional case</h2>
       </div>
-      <p>Formation, admission, and the decision remain explicit human-governed steps.</p>
+      <p>Formation, exceptional case changes, and the decision remain explicit human-governed steps.</p>
     </header>
     <div className="p-lifecycle-list">
       {entries.map((entry, index) => <button key={entry.route} onClick={() => goTo(entry.route)}>

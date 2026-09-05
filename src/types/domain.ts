@@ -212,6 +212,21 @@ export interface Workstream {
   outputArtifactIds?: Id[];
 }
 
+/** Investor-facing decision dimension projected upstream from the live underwriting graph. */
+export interface DecisionDimension {
+  text: string;
+  basisObjectIds: Id[];
+}
+
+/** Optional Decision-desk projection for a backend-selected decision-critical Question. No composite score. */
+export interface DecisionQuestionDimensions {
+  loadBearingness: DecisionDimension;
+  severity: DecisionDimension;
+  fragility: DecisionDimension;
+  decisionCriticality: DecisionDimension;
+  conditionId?: Id;
+}
+
 /** kernel: Question — the decision-relative epistemic unit. */
 export interface Question {
   id: Id;
@@ -226,6 +241,7 @@ export interface Question {
   resolutionCriteria?: string[];
   evidenceNeeded?: string[];
   decisionRelevance?: string;
+  decisionDimensions?: DecisionQuestionDimensions;
 }
 
 export interface Source {

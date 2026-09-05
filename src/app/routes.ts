@@ -25,7 +25,7 @@ export const routeOrder: Array<{ key: PantaRoute; label: string; path: string }>
   { key: 'workstream', label: 'Workstream Focus', path: '#/workstream' },
   { key: 'trace', label: 'Trace', path: '#/trace' },
   { key: 'simulate', label: 'Simulate', path: '#/simulate' },
-  { key: 'review', label: 'Review & Admit', path: '#/review' },
+  { key: 'review', label: 'Review changes', path: '#/review' },
   { key: 'resolve', label: 'Resolve', path: '#/resolve' },
   { key: 'formation', label: 'Formation', path: '#/formation' },
   { key: 'replay', label: 'Replay & Decision', path: '#/replay' },

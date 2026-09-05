@@ -24,7 +24,7 @@ Existing versioned runtime contracts/conformance tests remain binding until expl
 - Workstream Focus
 - Trace
 - Simulate
-- Review & Admit
+- Review changes
 - Resolve
 - Formation
 - Replay & Decision

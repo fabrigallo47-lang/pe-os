@@ -2,6 +2,7 @@
 // Lives outside production src/. Contains no real deal data.
 
 const now='2026-01-10T10:00:00Z';
+const customerAdmittedAt='2026-01-10T14:00:00Z';
 const later='2026-01-11T10:00:00Z';
 const actor={id:'ACT-1',type:'PERSON',displayName:'Mara Bellini',role:'Case Owner'};
 const contributor={id:'ACT-2',type:'PERSON',displayName:'Jonas Reed',role:'Investment Associate'};
@@ -21,7 +22,7 @@ const decision1={id:'DEC-1',pathId:'PATH-1',actorOrBodyId:actor.id,rationale:'Wa
 const decision2={id:'DEC-2',pathId:'PATH-2',actorOrBodyId:actor.id,rationale:'A later unlinked committee note.',recordedAt:'2026-01-11T09:00:00Z',caseVersion:'v1'};
 const base={
   caseRef:{id:'CASE-1',name:'Synthetic Case'},caseVersion:'v1',asOf:now,
-  decision:{id:'DECCTX-1',label:'Commit or decline',dueAt:'2026-01-15T16:00:00Z',status:'RECORDED',requiredEntitlement:'RECORD_DECISION',recordedDecisionId:'DEC-1'},
+  decision:{id:'DECCTX-1',label:'Commit or decline',dueAt:'2026-01-15T16:00:00Z',status:'OPEN',requiredEntitlement:'RECORD_DECISION'},
   actors:[actor,contributor],
   workstreams:[
     {id:'WS-T',name:'Team & Execution',currentCaseReadingId:'CR-T',ownerActorId:'ACT-1',activeWorkItemIds:['WI-T'],openUnknownIds:['U-T'],questionIds:['Q-T']},
@@ -33,11 +34,11 @@ const base={
   ],
   questions:[
     {id:'Q-T',workstreamId:'WS-T',name:'Can this team scale delivery beyond the founders?',questionStatus:'OPEN',currentCaseReadingId:'CR-T',claimIds:['CL-3','CL-4'],workItemIds:['WI-T'],openUnknownIds:['U-T'],chronologyEventIds:[]},
-    {id:'Q-1',workstreamId:'WS-1',name:'Does the product perform reliably in production?',questionStatus:'OPEN',currentCaseReadingId:'CR-1',claimIds:['CL-1','CL-2'],workItemIds:['WI-1'],openUnknownIds:['U-1'],chronologyEventIds:['EV-1']},
-    {id:'Q-M',workstreamId:'WS-M',name:'Is this problem urgent enough to command budget?',questionStatus:'OPEN',currentCaseReadingId:'CR-M',claimIds:['CL-1','CL-5'],workItemIds:['WI-M'],openUnknownIds:['U-M'],chronologyEventIds:[]},
-    {id:'Q-C',workstreamId:'WS-C',name:'Can customer acquisition become repeatable?',questionStatus:'OPEN',currentCaseReadingId:'CR-C',claimIds:['CL-3','CL-6'],workItemIds:['WI-C'],openUnknownIds:['U-C'],chronologyEventIds:[]},
+    {id:'Q-1',workstreamId:'WS-1',name:'Does the product perform reliably in production?',questionStatus:'OPEN',currentCaseReadingId:'CR-1',claimIds:['CL-1','CL-2'],workItemIds:['WI-1'],openUnknownIds:['U-1'],chronologyEventIds:['EV-1'],decisionRelevance:'The underwriting depends on the product delivering its claimed performance in representative production conditions.',decisionDimensions:{loadBearingness:{text:'The product thesis materially depends on reliable performance beyond a single deployment.',basisObjectIds:['CR-1']},severity:{text:'If performance fails, adoption, retention and expansion assumptions all weaken.',basisObjectIds:['U-1']},fragility:{text:'One independent benchmark across representative workloads could materially change the current view.',basisObjectIds:['CL-1','CL-2']},decisionCriticality:{text:'This must be resolved or carried as an explicit closing condition before committing.',basisObjectIds:['COND-1']},conditionId:'COND-1'}},
+    {id:'Q-M',workstreamId:'WS-M',name:'Is this problem urgent enough to command budget?',questionStatus:'OPEN',currentCaseReadingId:'CR-M',claimIds:['CL-1','CL-5'],workItemIds:['WI-M'],openUnknownIds:['U-M'],chronologyEventIds:[],decisionRelevance:'The case requires a buyer problem important enough to survive budget scrutiny and renew.',decisionDimensions:{loadBearingness:{text:'The growth case depends on a durable budget owner, not urgency alone.',basisObjectIds:['CR-M']},severity:{text:'If budget ownership is weak, conversion and renewal can both fall below plan.',basisObjectIds:['U-M']},fragility:{text:'Two buyer conversations could move the view quickly because current budget evidence is thin.',basisObjectIds:['CL-1','U-M']},decisionCriticality:{text:'The budget path needs to be understood before the IC can underwrite repeatable demand.',basisObjectIds:['U-M']}}},
+    {id:'Q-C',workstreamId:'WS-C',name:'Can customer acquisition become repeatable?',questionStatus:'OPEN',currentCaseReadingId:'CR-C',claimIds:['CL-3','CL-6'],workItemIds:['WI-C'],openUnknownIds:['U-C'],chronologyEventIds:[],decisionRelevance:'The operating plan assumes customer acquisition can move beyond founder relationships.',decisionDimensions:{loadBearingness:{text:'The return case materially depends on a repeatable route to deployed customers.',basisObjectIds:['CR-C']},severity:{text:'If acquisition remains founder-led, growth slows and the organization does not scale as planned.',basisObjectIds:['U-C']},fragility:{text:'A reconstruction of the last ten opportunities could materially strengthen or weaken the view.',basisObjectIds:['CL-6','U-C']},decisionCriticality:{text:'IC needs a credible repeatability view before committing to the growth plan.',basisObjectIds:['U-C']}}},
     {id:'Q-D',workstreamId:'WS-D',name:'Will the product remain distinct as incumbents respond?',questionStatus:'OPEN',currentCaseReadingId:'CR-D',claimIds:['CL-5','CL-7'],workItemIds:['WI-D'],openUnknownIds:['U-D'],chronologyEventIds:[]},
-    {id:'Q-F',workstreamId:'WS-F',name:'Do the round and entry terms leave enough room for the plan?',questionStatus:'OPEN',currentCaseReadingId:'CR-F',claimIds:['CL-8','CL-9'],workItemIds:['WI-F'],openUnknownIds:['U-F'],chronologyEventIds:[]}
+    {id:'Q-F',workstreamId:'WS-F',name:'Do the round and entry terms leave enough room for the plan?',questionStatus:'OPEN',currentCaseReadingId:'CR-F',claimIds:['CL-8','CL-9'],workItemIds:['WI-F'],openUnknownIds:['U-F'],chronologyEventIds:[],decisionRelevance:'Entry value depends on the round funding the plan without relying on unverified milestones.',decisionDimensions:{loadBearingness:{text:'The return profile depends on both entry price and sufficient runway to reach the next value inflection.',basisObjectIds:['CR-F']},severity:{text:'If milestones slip, dilution or an earlier financing could impair the underwritten return.',basisObjectIds:['U-F']},fragility:{text:'The current view can move materially when burn, terms and milestone timing are reconciled.',basisObjectIds:['CL-8','CL-9']},decisionCriticality:{text:'IC needs one reconciled financing plan before committing capital.',basisObjectIds:['U-F']}}}
   ],
   caseReadings:[reading0,teamReading,marketReading,commercialReading,defensibilityReading,financingReading],
   unknowns:[
@@ -88,9 +89,9 @@ const base={
   relations:[{id:'REL-1',caseId:'CASE-1',sourceObjectId:'CL-2',sourceObjectType:'claim',targetObjectId:'CR-1',targetObjectType:'caseReading',type:'SUPPORTS',rationale:'The company material states the claimed performance level.',institutionalState:'CURRENT',contractVersion:'0.1.0'},
              {id:'REL-2',caseId:'CASE-1',sourceObjectId:'CR-1',sourceObjectType:'caseReading',targetObjectId:'Q-C',targetObjectType:'question',type:'DRIVES',rationale:'The ability to prove production performance shapes whether the commercial route can become repeatable.',institutionalState:'CURRENT',contractVersion:'0.1.0'}],
   events:[{id:'EV-1',caseId:'CASE-1',eventType:'CASE_READING_RECOMPUTED',objectType:'caseReading',objectId:'CR-1',effectiveAt:now,knownAt:now,recordedAt:now,actorOrPolicyId:'SYSTEM',schemaVersion:'0.1.0',idempotencyKey:'ev1'},
-          {id:'EV-2',caseId:'CASE-1',eventType:'RELATION_ESTABLISHED',objectType:'claim',objectId:'CL-1',effectiveAt:later,knownAt:later,recordedAt:later,actorOrPolicyId:'SYSTEM',schemaVersion:'0.1.0',idempotencyKey:'ev2'},
+          {id:'EV-2',caseId:'CASE-1',eventType:'RELATION_ESTABLISHED',objectType:'claim',objectId:'CL-1',effectiveAt:customerAdmittedAt,knownAt:customerAdmittedAt,recordedAt:customerAdmittedAt,actorOrPolicyId:'SYSTEM',schemaVersion:'0.1.0',idempotencyKey:'ev2'},
           {id:'EV-0',caseId:'CASE-1',eventType:'CASE_CREATED',objectType:'case',objectId:'CASE-1',effectiveAt:'2026-01-09T09:00:00Z',knownAt:'2026-01-09T09:00:00Z',recordedAt:'2026-01-09T09:00:00Z',actorOrPolicyId:'ACT-1',schemaVersion:'0.1.0',idempotencyKey:'ev0'}],
-  pendingReviews:[{id:'REV-1',kind:'FINDING',title:finding.title,findingId:finding.id,proposedCaseReading:{...reading1,id:'CR-PROPOSED',text:'Deployment is confirmed, while performance still requires independent verification.'},effectPreview:[{objectId:'CR-1',objectLabel:'Technical reading',state:'NARROWS',before:reading0.text,after:reading1.text,reasonRelationIds:['REL-1']},{objectId:'WS-1',objectLabel:'Technical Proof',state:'HOLDS',before:'Open',after:'Open',reasonRelationIds:[]}],status:'NEW'}],simulationOptions:[{id:'SIM-1',originObjectId:'CR-1',label:'What if performance fails?',assumption:'Representative test fails',enabled:true}],
+  pendingReviews:[{id:'REV-1',kind:'FINDING',title:'Narrow the product performance view',findingId:finding.id,proposedCaseReading:{...reading1,id:'CR-PROPOSED',text:'Deployment is confirmed, while performance still requires independent verification.'},effectPreview:[{objectId:'CR-1',objectLabel:'Product performance reading',state:'NARROWS',before:reading0.text,after:reading1.text,reasonRelationIds:['REL-1']},{objectId:'WS-1',objectLabel:'Product & Technical Proof',state:'HOLDS',before:'Open',after:'Open',reasonRelationIds:[]}],status:'NEW'}],simulationOptions:[{id:'SIM-1',originObjectId:'CR-1',label:'What if performance fails?',assumption:'Representative test fails',enabled:true}],
   conditions:[{id:'COND-1',label:'Performance verification',targetObjectIds:['DECCTX-1'],status:'OPEN',unknownIds:['U-1'],relatedObjectIds:['CR-1']}],
   decisionPaths:[{id:'PATH-1',label:'DEFER',meaning:'Wait for evidence.'},{id:'PATH-2',label:'COMMIT_WITH_CONDITIONS',meaning:'Proceed only if the verification condition is satisfied.'},{id:'PATH-3',label:'DECLINE',meaning:'Do not proceed on the current case.'}],decisions:[decision1,decision2],
   formation:{premise:'Can this team turn a technically differentiated product into an important, repeatable business at an attractive entry?',materialIds:['SRC-2','SRC-3','SRC-1','SRC-4','SRC-5','SRC-6'],proposedWorkstreamIds:['WS-T','WS-1','WS-M','WS-C','WS-D','WS-F'],blindSpotUnknownIds:['U-T','U-1','U-M','U-C','U-D','U-F'],unplacedSourceIds:[],status:'PROPOSED_NOT_LIVE'},
@@ -122,9 +123,13 @@ export class SyntheticAdapter {
     return {actor:{actorId:this.actorId,entitlements:this.actorId===actor.id?ownerEntitlements:contributorEntitlements},actors:[actor,contributor]};
   }
   async listCases(){return [{id:'CASE-1',name:'Synthetic Case'}];}
-  async listCaseMoments(){return [{id:'M-0',asOf:'2026-01-09T09:00:00Z',label:'Case created',eventId:'EV-0'},{id:'M-1',asOf:now,label:'Day 1',eventId:'EV-1'},{id:'M-2',asOf:later,label:'Technical view updated',eventId:'EV-3'}];}
+  async listCaseMoments(){return [{id:'M-0',asOf:'2026-01-09T09:00:00Z',label:'Case created',eventId:'EV-0'},{id:'M-1',asOf:customerAdmittedAt,label:'Customer reference admitted',eventId:'EV-2'},{id:'M-2',asOf:later,label:'Technical reading changed',eventId:'EV-3'},...this.current.events.filter(event=>event.eventType==='DECISION_RECORDED').map((event,index)=>({id:`M-D${index+1}`,asOf:event.knownAt,label:'IC decision recorded',eventId:event.id}))];}
   async loadCase(_caseId,opts){
-    if(opts?.asOf && opts.asOf < later){const s=clone(base);s.asOf=opts.asOf;s.decision.status='OPEN';delete s.decision.recordedDecisionId;s.decisions=[];return s;}
+    if(opts?.asOf && opts.asOf < later){
+      const s=clone(base);s.asOf=opts.asOf;s.events=s.events.filter(event=>event.knownAt<=opts.asOf);s.decisions=s.decisions.filter(decision=>decision.recordedAt<=opts.asOf);
+      if(opts.asOf<now){s.caseVersion='v0';s.questions=[];s.unknowns=[];s.sources=[];s.sourceVersions=[];s.claims=[];s.humanPositions=[];s.workItems=[];s.conditions=[];s.findings=[];s.pendingReviews=[];s.artifacts=[];s.artifactBlocks=[];s.artifactDiffs=[];delete s.formation;s.formationMaterials=[];s.caseReadings=s.caseReadings.map(reading=>({...reading,questionId:undefined,text:'No case reading had been formed at this point.',epistemicStatus:'UNEXAMINED',supportObjectIds:[],independentSupportObjectIds:[],unknownIds:[],relatedObjectIds:[]}));s.workstreams=s.workstreams.map(workstream=>({...workstream,questionIds:[],activeWorkItemIds:[],openUnknownIds:[]}));}
+      return s;
+    }
     const s=clone(this.current);s.asOf=opts?.asOf??later;return s;
   }
   async inspectObject(_caseId,objectId,opts){
@@ -161,8 +166,12 @@ export class SyntheticAdapter {
   async execute(_caseId,command){
     if(command.action.type==='RECORD_DECISION'){
       const id=`DEC-${this.current.decisions.length+1}`;
-      this.current.decisions.push({id,pathId:command.action.pathId,actorOrBodyId:command.actorId,rationale:command.action.rationale,recordedAt:command.submittedAt,caseVersion:this.current.caseVersion});
+      let conditionIds;
+      if(command.action.conditionText){const conditionId=`COND-${this.current.conditions.length+1}`;this.current.conditions.push({id:conditionId,label:command.action.conditionText,targetObjectIds:[this.current.decision.id],status:'OPEN',unknownIds:[],relatedObjectIds:this.current.questions.filter(question=>question.decisionDimensions).map(question=>question.id)});conditionIds=[conditionId];}
+      const basisObjectIds=this.current.questions.filter(question=>question.decisionDimensions).map(question=>question.id);
+      this.current.decisions.push({id,pathId:command.action.pathId,actorOrBodyId:command.actorId,rationale:command.action.rationale,conditionIds,effectiveAt:command.submittedAt,recordedAt:command.submittedAt,basisObjectIds,caseVersion:this.current.caseVersion});
       this.current.decision.status='RECORDED';this.current.decision.recordedDecisionId=id;
+      this.current.events.push({id:`EV-${id}`,caseId:this.current.caseRef.id,eventType:'DECISION_RECORDED',objectType:'decision',objectId:id,effectiveAt:command.submittedAt,knownAt:command.submittedAt,recordedAt:command.submittedAt,actorOrPolicyId:command.actorId,schemaVersion:'0.1.0',idempotencyKey:`decision-${id}`});
       return clone(this.current);
     }
     if(command.action.type==='ADD_MATERIAL'){

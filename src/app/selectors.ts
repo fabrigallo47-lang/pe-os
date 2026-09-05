@@ -91,6 +91,7 @@ export function dealWorkstreamSummary(snapshot: PantaCaseSnapshot, workstream: W
 
 /** Resolve the canonical decision linked by the decision context before using a deterministic fallback. */
 export function recordedDecision(snapshot: PantaCaseSnapshot): DecisionRecord | undefined {
+  if (snapshot.decision?.status !== 'RECORDED') return undefined;
   const recordedDecisionId = snapshot.decision?.recordedDecisionId;
   if (recordedDecisionId) {
     const linked = snapshot.decisions.find(decision => decision.id === recordedDecisionId);
@@ -99,6 +100,14 @@ export function recordedDecision(snapshot: PantaCaseSnapshot): DecisionRecord | 
   return [...snapshot.decisions].sort((a, b) =>
     b.recordedAt.localeCompare(a.recordedAt) || b.id.localeCompare(a.id)
   )[0];
+}
+
+/** Backend-selected questions only; the frontend neither ranks nor scores the decision frontier. */
+export function decisionCriticalQuestions(snapshot: PantaCaseSnapshot): Question[] {
+  return snapshot.questions.filter(question => question.decisionDimensions
+    && question.questionStatus !== 'RESOLVED'
+    && question.questionStatus !== 'RISK_ACCEPTED'
+    && question.questionStatus !== 'RETIRED');
 }
 
 /** Every simulated object appears once; a material effect wins over a duplicate HOLD. */

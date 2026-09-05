@@ -53,6 +53,9 @@ for (const c of ['metricDefinitions: MetricDefinition[]','metricObservations: Me
 // Recorded Decision conditions are refs; free text exists only as command input before canonicalization.
 requireText('DecisionRecord',domain,'conditionIds?: Id[]');
 forbid('DecisionRecord',domain,/export interface DecisionRecord[\s\S]*?conditions\?\s*:\s*string/);
+for (const dimension of ['loadBearingness: DecisionDimension','severity: DecisionDimension','fragility: DecisionDimension','decisionCriticality: DecisionDimension']) requireText('DecisionQuestionDimensions',domain,dimension);
+requireText('DecisionDimension',domain,'basisObjectIds: Id[]');
+forbid('DecisionQuestionDimensions',domain,/compositeScore|overallScore|decisionScore/i);
 
 // Numeric simulation trust boundary.
 requireText('domain',domain,'export interface Coverage');
@@ -66,6 +69,7 @@ requireText('DealHome',deal,'dealWorkstreamSummary');
 forbid('DealHome',deal,/supportSummary|current supports?|independent evidence/i);
 requireText('Positions',screens,'HumanPositionNote');
 requireText('Replay',screens,'setAsOf');
+requireText('Decision',screens,'decisionCriticalQuestions');
 requireText('Trace',screens,'Test without this');
 requireText('Outputs',screens,'Open source');
 

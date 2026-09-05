@@ -3,7 +3,7 @@ import { usePanta } from '../app/PantaContext';
 import { EmptyCase } from '../components/EmptyCase';
 import { HumanPositionNote } from '../components/HumanPositionNote';
 import { ObjectLens } from '../components/ObjectLens';
-import { caseReadingById, dealWorkstreamSummary, eventDisplayLabel, formatCount, humanState } from '../app/selectors';
+import { caseReadingById, dealWorkstreamSummary, decisionCriticalQuestions, eventDisplayLabel, formatCount, humanState } from '../app/selectors';
 import { goTo } from '../app/routes';
 import type { CaseReading, Id, PantaCaseSnapshot, WorkItem, Workstream } from '../types/domain';
 
@@ -12,7 +12,8 @@ export function DealHome() {
   if (!snapshot) return <EmptyCase />;
   const premise = caseReadingById(snapshot, snapshot.premiseCaseReadingId);
   const findings = snapshot.findings.filter(f => f.status === 'NEW').slice(0, 3);
-  const decisionPaths = snapshot.decisionPaths.map(path => humanDecisionPath(path.label));
+  const decisionIssues = decisionCriticalQuestions(snapshot);
+  const decisionState = snapshot.decision?.status === 'RECORDED' ? 'Institutional decision recorded' : formatCount(decisionIssues.length,'decision-critical issue');
 
   return <main className="p-page p-deal-page">
     <section className="p-deal-head">
@@ -21,7 +22,7 @@ export function DealHome() {
         <div className="p-deal-identity"><h1 className="p-title">{snapshot.caseRef.name}</h1>{snapshot.caseRef.stage&&<span>{snapshot.caseRef.stage}</span>}{snapshot.caseRef.geography&&<span>{snapshot.caseRef.geography}</span>}{snapshot.caseRef.sector&&<span>{snapshot.caseRef.sector}</span>}</div>
         {premise && <button aria-pressed={activeObjectId===premise.id} className="p-premise p-selectable" onClick={()=>void setActiveObject(premise.id)}>{premise.text}</button>}
       </div>
-      <aside className="p-deal-decision"><div className="p-kicker">Decision point</div><div className="p-reading-small">{snapshot.decision?.label ?? 'No decision scheduled'}</div>{snapshot.decision&&<><div className="p-meta">{formatCount(decisionPaths.length,'decision path')} · {snapshot.decision.dueAt?`Due ${formatDecisionDate(snapshot.decision.dueAt)}`:'Date not set'}</div>{decisionPaths.length>0&&<div className="p-deal-decision-options">{decisionPaths.join(' · ')}</div>}</>}<button className="p-inline-route" onClick={() => goTo('replay')}>{snapshot.decision ? 'Open Replay & Decision' : 'Review case history'}<span aria-hidden="true">→</span></button></aside>
+      <aside className="p-deal-decision"><div className="p-kicker">Decision point</div><div className="p-reading-small">{snapshot.decision?.label ?? 'No decision scheduled'}</div>{snapshot.decision&&<><div className="p-meta">{decisionState} · {snapshot.decision.dueAt?`Due ${formatDecisionDate(snapshot.decision.dueAt)}`:'Date not set'}</div>{snapshot.decision.status!=='RECORDED'&&<div className="p-deal-decision-options">Review the underwriting questions that carry the decision.</div>}</>}<button className="p-inline-route" onClick={() => goTo('replay')}>{snapshot.decision ? 'Open Decision desk' : 'Review case history'}<span aria-hidden="true">→</span></button></aside>
     </section>
 
     {!!findings.length && <section className="p-attention-band">
@@ -123,6 +124,5 @@ function readingAttention(reading: CaseReading): string | undefined {
   return undefined;
 }
 
-function humanDecisionPath(value:string){return value.toLowerCase().replaceAll('_',' ').replace(/^./,letter=>letter.toUpperCase())}
 function formatDecisionDate(value:string){try{return new Intl.DateTimeFormat('en',{weekday:'short',day:'numeric',month:'short',hour:'2-digit',minute:'2-digit'}).format(new Date(value));}catch{return value}}
 function formatShortDate(value:string){try{return new Intl.DateTimeFormat('en',{day:'numeric',month:'short',year:'numeric'}).format(new Date(value));}catch{return value}}

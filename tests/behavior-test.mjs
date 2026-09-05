@@ -42,13 +42,18 @@ assert.equal(current.events.find(item=>item.id==='EV-3').objectId,'CR-1');
 assert.ok(session.actor.entitlements.includes('ADD_MATERIAL'));
 assert.ok(session.actor.entitlements.includes('ADMIT_CASE_READING'));
 assert.equal(current.pendingReviews.filter(item=>item.status==='NEW').length,1);
+assert.ok(current.claims.length>current.pendingReviews.length);
+assert.ok(current.findings.find(item=>item.id===current.pendingReviews[0].findingId).derivationObjectIds.length>1);
+assert.equal(current.pendingReviews[0].title,'Narrow the product performance view');
 assert.equal(current.formation.status,'PROPOSED_NOT_LIVE');
 assert.equal(current.formation.materialIds.length,6);
 assert.equal(current.formation.proposedWorkstreamIds.length,6);
 assert.equal(current.unknowns.filter(item=>item.status==='OPEN').length,6);
 assert.equal(current.events.find(item=>item.eventType==='CASE_CREATED').actorOrPolicyId,'ACT-1');
 assert.ok(current.decisions.length>1);
-assert.ok(current.decisions.some(item=>item.id===current.decision.recordedDecisionId));
+assert.equal(current.decision.status,'OPEN');
+assert.equal(current.decision.recordedDecisionId,undefined);
+assert.equal(current.questions.filter(item=>item.decisionDimensions).length,4);
 assert.equal(current.decision.dueAt,'2026-01-15T16:00:00Z');
 assert.equal(current.artifactDiffs.length,1);
 for(const workstream of current.workstreams.filter(item=>item.ownerActorId))assert.ok(current.actors.some(item=>item.id===workstream.ownerActorId));
@@ -100,10 +105,16 @@ assert.equal(synced.artifacts[0].pendingCaseChangeCount,0);
 assert.equal(synced.artifacts[0].syncStatus,'CURRENT');
 
 // Decision recording is actor-attributed and the only tested path to UI RECORDED state.
-const decided=await a.execute('CASE-1',{actorId:'ACT-1',submittedAt:'2026-01-11T12:00:00Z',action:{type:'RECORD_DECISION',pathId:'PATH-1',rationale:'Wait for evidence.'}});
+const decided=await a.execute('CASE-1',{actorId:'ACT-1',submittedAt:'2026-01-11T12:00:00Z',action:{type:'RECORD_DECISION',pathId:'PATH-2',rationale:'Proceed only after independent verification.',conditionText:'Independent production benchmark completed.'}});
 assert.equal(decided.decision.status,'RECORDED');
 const recorded=decided.decisions.find(item=>item.id===decided.decision.recordedDecisionId);
 assert.equal(recorded.actorOrBodyId,'ACT-1');
+assert.equal(recorded.recordedAt,'2026-01-11T12:00:00Z');
+assert.equal(recorded.caseVersion,'v1');
+assert.equal(recorded.basisObjectIds.length,4);
+assert.equal(recorded.conditionIds.length,1);
+assert.equal(decided.conditions.find(item=>item.id===recorded.conditionIds[0]).label,'Independent production benchmark completed.');
+assert.ok(decided.events.some(item=>item.eventType==='DECISION_RECORDED'&&item.objectId===recorded.id));
 assert.equal(decided.decisions.length,3);
 
 const reviewed=await a.execute('CASE-1',{actorId:'ACT-1',submittedAt:'2026-01-11T13:00:00Z',action:{type:'REVIEW_ITEM',reviewId:'REV-1',disposition:'ADMIT'}});

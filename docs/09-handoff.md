@@ -270,3 +270,60 @@ change. Anto regenerated it last on 2026-09-02 alongside their engine work.
 - **Report, never adjudicate.** Contradictions say what doesn't reconcile, not who is right.
 - **Never invent a value.** A missing input stays dark with a written reason.
 - stdlib + PyYAML only in `tools/`.
+
+---
+
+## 7. GLM 5.2 through OpenRouter — first real calls, and what they showed
+
+Everything before 2026-09-05 verified request **shape** with mocks. These were the
+first live calls. The round trip works, and it exposed a bug worth a quarter of
+the benchmark.
+
+### 7.1 Reasoning models burn the output budget before answering
+
+GLM 5.2 is a reasoning model. On a tool-use call it spends the ENTIRE output
+budget thinking and never emits the tool block:
+
+| | stop_reason | out tokens | blocks | claims |
+|---|---|---|---|---|
+| default | `max_tokens` | 8192 | `['thinking']` | **0** |
+| `thinking: {"type":"disabled"}` | `tool_use` | 3255 | `['text','tool_use']` | **17** |
+
+Input was 483 tokens — never a size problem. **It must be the Anthropic-native
+`thinking` field**: through OpenRouter's `/v1/messages` skin,
+`reasoning={"effort":"low"}` and `reasoning={"enabled":False}` were both ignored,
+and forcing `tool_choice` did not help either.
+
+### 7.2 Benchmark (Anto's 11 cases), same pipeline, GLM 5.2
+
+| run | mean | statuses |
+|---|---|---|
+| GLM, before the fix | 51.6% | 7 success, 4 abstained |
+| **GLM, after the fix** | **65.0%** | 9 success, 2 abstained |
+| GLM via the teacher adapter (`semantic_openrouter.py`) | 40.2% | 5 success, 5 abstained, 1 error |
+
+**Do not compare 65.0% to the old 77.2% as a model verdict.** The two numbers are
+not commensurable yet:
+- 77.2% was Haiku on a pipeline that has since changed (G5 vocabulary
+  replacement, G8 source catalog, evidence_state, QUALITATIVE).
+- Haiku **cannot be re-measured right now — the Anthropic key is out of credit**
+  (`"Your credit balance is too low"`). An attempted Haiku baseline scored 12.9%
+  with **11/11 abstained at ~1.3 s latency**; that is the API failing, not a model
+  result, and it must not be quoted as one.
+- The teacher-adapter run is a different *system*, not a different model.
+
+A real head-to-head needs Anthropic credit, then one Haiku run on today's code.
+
+### 7.3 One case still abstains, and it is ours, not GLM's
+
+`panta-semantic.identity.periods-003`. The model returns 3 claims to a raw call
+(`stop=tool_use`, 526 output tokens, temperature irrelevant), but the adapter
+consistently reports `status=abstained, claims=0, rejected_count=0` — claims
+disappearing without being counted as rejected. The difference is the fuller
+prompt `annotate_chunk` builds versus the bare chunk body. Reproducible, two runs
+identical. **Open.**
+
+### 7.4 Cost
+
+GLM 5.2 $0.97/M in, $3.04/M out vs Haiku 4.5 $1.00 / $5.00 — cheaper, though not
+dramatically. Full Keystone K-IC (351 chunks) is roughly $2-4.

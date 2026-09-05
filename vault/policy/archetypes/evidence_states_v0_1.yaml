@@ -1,0 +1,59 @@
+metadata:
+  name: Buyout evidence-state axes
+  version: 0.1.0
+  status: TRANSCRIBED_FROM_DICTIONARY_SECTION_9_4
+  source: PANTA_DIZIONARIO_ESTRAZIONE_FINALE_V1_0 §9.4
+  purpose: >
+    The venture and growth archetype packs ship a proof_ladder; the buyout pack
+    deliberately does not, because §9.4 says buyout must NOT be forced onto one
+    ladder ("non usare una falsa ladder unica") and instead needs several
+    separate typed axes. Those axes exist only as prose in the dictionary, so
+    they are transcribed here to be loadable as data.
+  replace_when: >
+    An official buyout pack ships these axes. This file is the first
+    machine-readable declaration of them, not a second copy of one — but it
+    should defer to a pack the moment a pack exists.
+
+# Ordered low -> high. Position is meaningful: the whole point of a state axis
+# is that two claims about the same thing can be COMPARED, which free text
+# cannot support.
+axes:
+  commercial_commitment_state:
+    description: How committed the commercial relationship actually is.
+    states:
+      - lead
+      - qualified
+      - pipeline
+      - high_probability
+      - contracted
+      - backlog
+      - delivered
+      - recognized
+      - collected
+
+  recurrence_state:
+    description: >
+      Whether the revenue repeats. §9.4 is explicit that `recurring` is NOT a
+      stage of the pipeline — it is a different question from commitment, which
+      is why it is a separate axis rather than more values on the one above.
+    states:
+      - one_off
+      - repeating
+      - recurring
+      - renewal_dependent
+
+  recognition_state:
+    description: Where the amount sits in the revenue-recognition chain.
+    states:
+      - contracted
+      - delivered
+      - recognized
+      - collected
+
+  evidence_attestation:
+    description: How strongly the claim is evidenced, independent of its content.
+    states:
+      - self_reported
+      - documented
+      - contractually_committed
+      - independently_observed

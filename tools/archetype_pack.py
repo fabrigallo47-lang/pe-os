@@ -346,3 +346,76 @@ def extraction_vocabulary(archetype_id: str, baseline: list[str]) -> list[str]:
             seen.add(label.casefold())
             widened.append(label)
     return widened
+
+
+# ── Evidence state (dictionary section 9) ────────────────────────────────────
+# Evidence in private markets is substantially a POSITION ON A LADDER, not a
+# number: "paid pilot" and "production deployment" are different states of the
+# same relationship, and the difference is the finding. Section 9 types these
+# per archetype and says so directly -- "queste sono categorie/progressioni di
+# evidenza, non universal numeric scores".
+#
+# Forced through metric+value+unit a state becomes a null-valued claim or free
+# text, and stops being ORDERABLE, which is the one operation a ladder exists
+# for. This axis exists so that ordering survives extraction.
+_BUYOUT_STATE_FILE = _ARCHETYPE_DIR / "evidence_states_v0_1.yaml"
+
+
+@lru_cache(maxsize=8)
+def evidence_state_axes(archetype_id: str) -> dict[str, list[str]]:
+    """{axis name: states, ordered low->high} for this archetype.
+
+    venture and growth read the pack's own proof_ladder. buyout has none by
+    design (9.4 forbids collapsing it into a single ladder) and reads the
+    transcribed axes file instead.
+    """
+    if archetype_id == DEFAULT_ARCHETYPE:
+        if not _BUYOUT_STATE_FILE.is_file():
+            return {}
+        with _BUYOUT_STATE_FILE.open(encoding="utf-8") as stream:
+            document = yaml.safe_load(stream) or {}
+        return {
+            name: list(spec.get("states") or [])
+            for name, spec in (document.get("axes") or {}).items()
+        }
+    ladder = load_pack(archetype_id).get("proof_ladder") or {}
+    return {
+        name: list(states)
+        for name, states in ladder.items()
+        if isinstance(states, list) and states
+    }
+
+
+def evidence_state_vocabulary(archetype_id: str) -> list[str]:
+    """Every state this archetype can express, de-duplicated, order preserved."""
+    seen: set[str] = set()
+    vocabulary: list[str] = []
+    for states in evidence_state_axes(archetype_id).values():
+        for state in states:
+            if state not in seen:
+                seen.add(state)
+                vocabulary.append(state)
+    return vocabulary
+
+
+def evidence_state_rank(archetype_id: str, state: Any) -> list[tuple[str, int, int]]:
+    """Where a state sits: [(axis, index, axis length), ...].
+
+    Returns every axis the state belongs to rather than picking one, because
+    for buyout some states genuinely sit on two axes -- "contracted" is both a
+    commercial_commitment_state and a recognition_state. Choosing silently
+    would invent precision the source never had; an ambiguous answer is the
+    honest one and the caller can disambiguate with the claim's own metric.
+
+    Empty list means the state is unknown to this archetype, which is a real
+    answer too: states are not portable across archetypes.
+    """
+    needle = str(state or "").strip().casefold()
+    if not needle:
+        return []
+    found: list[tuple[str, int, int]] = []
+    for axis, states in evidence_state_axes(archetype_id).items():
+        for index, candidate in enumerate(states):
+            if candidate.casefold() == needle:
+                found.append((axis, index, len(states)))
+    return found

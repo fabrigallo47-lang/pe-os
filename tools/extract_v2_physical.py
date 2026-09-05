@@ -66,8 +66,8 @@ from tools.llm_provider import (  # noqa: E402
     openrouter_extra_body,
 )
 from tools.archetype_pack import (  # noqa: E402
-    DEFAULT_ARCHETYPE, extraction_vocabulary, load_pack,
-    missing_required_identity, workstream_ids,
+    DEFAULT_ARCHETYPE, evidence_state_vocabulary, extraction_vocabulary,
+    load_pack, missing_required_identity, workstream_ids,
 )
 from tools.derivation_verifier import verify_derivation  # noqa: E402
 from tools.object_identity import claim_id as canonical_claim_id  # noqa: E402
@@ -839,6 +839,21 @@ CLAIM_TOOL = {
                                 "unspecified."
                             ),
                         },
+                        "evidence_state": {
+                            "type": ["string", "null"],
+                            "enum": [None, *evidence_state_vocabulary(DEFAULT_ARCHETYPE)],
+                            "description": (
+                                "WHERE ON THE LADDER this evidence sits, when the fragment says. "
+                                "Much of what matters in diligence is a state, not a number: a "
+                                "relationship at 'paid pilot' and one at 'production deployment' "
+                                "differ in the way that decides the case, and revenue that is "
+                                "'contracted' is not revenue that is 'collected'. Pick the state "
+                                "the source actually evidences, never the one it hopes for — a "
+                                "signed pilot is not a deployment. Null when the fragment does "
+                                "not place it, which is common and fine; do not infer a state "
+                                "from optimism or from the document's tone."
+                            ),
+                        },
                         "author": {
                             "type": ["string", "null"],
                             "description": "Party making the claim (e.g. management, QoE provider, IC).",
@@ -878,9 +893,16 @@ def claim_tool_for(archetype_id: str = DEFAULT_ARCHETYPE) -> dict:
     if archetype_id == DEFAULT_ARCHETYPE:
         return CLAIM_TOOL
     tool = copy.deepcopy(CLAIM_TOOL)
-    tool["input_schema"]["properties"]["claims"]["items"]["properties"]["metric"]["enum"] = (
-        metric_vocabulary(archetype_id)
-    )
+    properties = tool["input_schema"]["properties"]["claims"]["items"]["properties"]
+    properties["metric"]["enum"] = metric_vocabulary(archetype_id)
+    # States are archetype-specific and NOT portable: "paid pilot" is a venture
+    # state and means nothing on a buyout ladder. Swapping the vocabulary is
+    # what keeps a state comparable to its own kind.
+    states = evidence_state_vocabulary(archetype_id)
+    if states:
+        properties["evidence_state"]["enum"] = [None, *states]
+    else:
+        properties["evidence_state"].pop("enum", None)
     return tool
 
 
@@ -3045,6 +3067,8 @@ class RawClaim:
     batch_index: int = -1
     derivation_operand_batch_indices: list[int] = field(default_factory=list)
     alternative_to_batch_index: int | None = None
+    # Position on this archetype's evidence ladder. See archetype_pack.
+    evidence_state: str | None = None
 
 
 def _is_fatal_provider_error(exc: Exception) -> bool:
@@ -3239,6 +3263,7 @@ def annotate_chunk(
                     batch_index=batch_index,
                     derivation_operand_batch_indices=operand_indices,
                     alternative_to_batch_index=alt_idx,
+                    evidence_state=_non_empty_l2_text(c.get("evidence_state")),
                 ))
     return raw_claims
 
@@ -3353,6 +3378,8 @@ class CanonicalClaim:
     batch_index: int = -1
     derivation_operand_batch_indices: list[int] = field(default_factory=list)
     alternative_to_batch_index: int | None = None
+    # Position on this archetype's evidence ladder. See archetype_pack.
+    evidence_state: str | None = None
 
 
 def validate(raw: RawClaim, archetype: str = DEFAULT_ARCHETYPE) -> CanonicalClaim:
@@ -3487,6 +3514,7 @@ def validate(raw: RawClaim, archetype: str = DEFAULT_ARCHETYPE) -> CanonicalClai
         batch_index=raw.batch_index,
         derivation_operand_batch_indices=raw.derivation_operand_batch_indices,
         alternative_to_batch_index=raw.alternative_to_batch_index,
+        evidence_state=raw.evidence_state,
     )
 
 

@@ -81,5 +81,45 @@ class QualitativeClaimTests(unittest.TestCase):
         )
 
 
+
+class EvidenceStateTests(unittest.TestCase):
+    """The state axis exists so evidence stays ORDERABLE through extraction."""
+
+    def test_each_archetype_declares_its_own_axes(self) -> None:
+        from tools.archetype_pack import evidence_state_axes
+        self.assertEqual(set(evidence_state_axes("venture")),
+                         {"commercial_progression", "technical_progression"})
+        self.assertEqual(set(evidence_state_axes("growth")), {"progression"})
+        # 9.4: buyout must NOT be collapsed onto one ladder.
+        self.assertGreater(len(evidence_state_axes("buyout")), 1)
+
+    def test_a_state_carries_a_position_so_two_claims_can_be_compared(self) -> None:
+        from tools.archetype_pack import evidence_state_rank
+        pilot = evidence_state_rank("venture", "paid pilot")[0]
+        deployed = evidence_state_rank("venture", "production deployment")[0]
+        self.assertEqual(pilot[0], deployed[0], "same ladder")
+        self.assertLess(pilot[1], deployed[1], "a paid pilot is earlier than a deployment")
+
+    def test_states_are_not_portable_between_archetypes(self) -> None:
+        from tools.archetype_pack import evidence_state_rank
+        self.assertEqual(evidence_state_rank("venture", "collected"), [])
+        self.assertTrue(evidence_state_rank("buyout", "collected"))
+
+    def test_genuinely_ambiguous_states_report_every_axis(self) -> None:
+        """"contracted" is both a commitment state and a recognition state.
+        Picking one silently would invent precision the source never had."""
+        from tools.archetype_pack import evidence_state_rank
+        axes = {axis for axis, _, _ in evidence_state_rank("buyout", "contracted")}
+        self.assertEqual(axes, {"commercial_commitment_state", "recognition_state"})
+
+    def test_tool_schema_offers_only_this_archetype_states(self) -> None:
+        from tools.extract_v2_physical import claim_tool_for
+        props = claim_tool_for("venture")["input_schema"]["properties"]["claims"]["items"]["properties"]
+        enum = props["evidence_state"]["enum"]
+        self.assertIn("paid pilot", enum)
+        self.assertNotIn("collected", enum, "buyout states must not leak into venture")
+        self.assertIn(None, enum, "a claim that names no state must stay expressible")
+
+
 if __name__ == "__main__":
     unittest.main(verbosity=2)

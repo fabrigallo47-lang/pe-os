@@ -9,9 +9,11 @@ import type {
   SessionContext,
   SimulationRequest,
   SimulationResult,
+  SourceLocator,
 } from '../types/domain';
 import type { InspectOptions, PantaBackendAdapter, SearchResult } from '../providers/PantaBackendAdapter';
 import { PANTA_NAVIGATION_EVENT, parseRouteLocation, updateRouteContext } from './routes';
+import { projectionInspection } from './trackingLinks';
 
 interface CaseOption { id: Id; name: string }
 
@@ -38,6 +40,7 @@ interface PantaContextValue {
   searchResults: SearchResult[];
   simulationResult?: SimulationResult | null;
   selectedSourceId?: Id;
+  selectedSourceLocator?: SourceLocator;
   sourcesOpen: boolean;
   setCase: (id: Id) => Promise<void>;
   setAsOf: (asOf?: string) => Promise<void>;
@@ -51,7 +54,7 @@ interface PantaContextValue {
   runSimulation: (request: SimulationRequest) => Promise<SimulationResult | null>;
   clearSimulation: () => void;
   clearOperationError: () => void;
-  openSource: (sourceId?: Id) => void;
+  openSource: (source?: Id | SourceLocator) => void;
   closeSources: () => void;
 }
 
@@ -80,6 +83,7 @@ export function PantaProvider({ adapter, initialCaseId, children }: { adapter: P
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [simulationResult, setSimulationResult] = useState<SimulationResult | null>(null);
   const [selectedSourceId, setSelectedSourceId] = useState<Id>();
+  const [selectedSourceLocator, setSelectedSourceLocator] = useState<SourceLocator>();
   const [sourcesOpen, setSourcesOpen] = useState(false);
   const loadRequestId = useRef(0);
   const scheduledLoadKey = useRef<string>();
@@ -113,6 +117,7 @@ export function PantaProvider({ adapter, initialCaseId, children }: { adapter: P
         ++searchRequestId.current;
         ++inspectionRequestId.current;
         ++simulationRequestId.current;
+        simulationInFlight.current = false;
         ++commandRequestId.current;
         commandInFlight.current = false;
         setSnapshot(null);
@@ -127,6 +132,9 @@ export function PantaProvider({ adapter, initialCaseId, children }: { adapter: P
         setInspecting(false);
         setSimulationResult(null);
         setSimulationRunning(false);
+        setSourcesOpen(false);
+        setSelectedSourceId(undefined);
+        setSelectedSourceLocator(undefined);
       }
     };
     window.addEventListener('hashchange', syncContext);
@@ -151,6 +159,11 @@ export function PantaProvider({ adapter, initialCaseId, children }: { adapter: P
       if (requestId !== loadRequestId.current) return;
       setSnapshot(loaded);
       if (!loaded) return;
+      // Recover bootstrap metadata after a transient startup failure or case switch.
+      const metadata = await Promise.allSettled([adapter.getSession(), adapter.listCases()]);
+      if (requestId !== loadRequestId.current) return;
+      if (metadata[0].status === 'fulfilled') setSession(metadata[0].value);
+      if (metadata[1].status === 'fulfilled') setCases(metadata[1].value);
 
       const routeContext = parseRouteLocation(window.location.hash).context;
       const workstreamId = routeContext.workstreamId && loaded.workstreams.some(item => item.id === routeContext.workstreamId)
@@ -232,7 +245,7 @@ export function PantaProvider({ adapter, initialCaseId, children }: { adapter: P
     inspectionInFlight.current = requestSignature;
     try {
       const nextInspection = await adapter.inspectObject(snapshot.caseRef.id, id, options);
-      if (requestId === inspectionRequestId.current) setInspection(nextInspection);
+      if (requestId === inspectionRequestId.current) setInspection(nextInspection ?? projectionInspection(snapshot, id));
     } catch (caught) {
       if (requestId === inspectionRequestId.current) {
         setInspection(null);
@@ -321,30 +334,37 @@ export function PantaProvider({ adapter, initialCaseId, children }: { adapter: P
       }
       return null;
     } finally {
-      simulationInFlight.current = false;
-      if (requestId === simulationRequestId.current) setSimulationRunning(false);
+      if (requestId === simulationRequestId.current) {
+        simulationInFlight.current = false;
+        setSimulationRunning(false);
+      }
     }
   }, [adapter, snapshot]);
 
   const clearSimulation = useCallback(() => {
     ++simulationRequestId.current;
+    simulationInFlight.current = false;
     setSimulationResult(null);
     setSimulationRunning(false);
   }, []);
   const clearOperationError = useCallback(() => setOperationError(undefined), []);
-  const openSource = useCallback((sourceId?: Id) => { setSelectedSourceId(sourceId); setSourcesOpen(true); }, []);
-  const closeSources = useCallback(() => { setSourcesOpen(false); setSelectedSourceId(undefined); }, []);
+  const openSource = useCallback((source?: Id | SourceLocator) => {
+    setSelectedSourceId(typeof source === 'string' ? source : source?.sourceId);
+    setSelectedSourceLocator(typeof source === 'object' ? { ...source } : undefined);
+    setSourcesOpen(true);
+  }, []);
+  const closeSources = useCallback(() => { setSourcesOpen(false); setSelectedSourceId(undefined); setSelectedSourceLocator(undefined); }, []);
 
   const value = useMemo(() => ({
     adapter, session, actor: session?.actor, snapshot, cases, moments, loading, error, pendingAction,
     simulationRunning, searching, inspecting, operationError, caseId, asOf,
     focusedWorkstreamId, focusedQuestionId, activeObjectId, inspection, searchResults, simulationResult,
-    selectedSourceId, sourcesOpen,
+    selectedSourceId, selectedSourceLocator, sourcesOpen,
     setCase, setAsOf, returnToCurrent, setFocusedWorkstream, setFocusedQuestion, setActiveObject,
     refresh, execute, search, runSimulation, clearSimulation, clearOperationError, openSource, closeSources,
   }), [adapter, session, snapshot, cases, moments, loading, error, pendingAction, simulationRunning, searching,
     inspecting, operationError, caseId, asOf, focusedWorkstreamId, focusedQuestionId, activeObjectId,
-    inspection, searchResults, simulationResult, selectedSourceId, sourcesOpen, setCase, setAsOf,
+    inspection, searchResults, simulationResult, selectedSourceId, selectedSourceLocator, sourcesOpen, setCase, setAsOf,
     returnToCurrent, setFocusedWorkstream, setFocusedQuestion, setActiveObject, refresh, execute, search,
     runSimulation, clearSimulation, clearOperationError, openSource, closeSources]);
 

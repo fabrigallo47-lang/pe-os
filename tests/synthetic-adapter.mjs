@@ -66,7 +66,7 @@ const base={
     {id:'SV-6',sourceId:'SRC-6',contentHash:'h6',knownAt:now,permissionScope:'case'}
   ],
   claims:[claim1,claim2,
-    {id:'CL-3',sourceId:'SRC-3',sourceVersionId:'SV-3',locator:'Call notes · team',type:'founder',label:'Founder-led delivery',normalizedStatement:'Founders lead the largest customer implementations.'},
+    {id:'CL-3',sourceId:'SRC-3',sourceVersionId:'SV-3',locator:'00:03:12–00:03:29',type:'founder',label:'Founder-led delivery',normalizedStatement:'Founders lead the largest customer implementations.',verbatimOrLosslessSpan:'For our largest customers, one of the founders still leads the implementation.'},
     {id:'CL-4',sourceId:'SRC-4',sourceVersionId:'SV-4',locator:'Team note',type:'internal',label:'Execution bench concern',normalizedStatement:'The senior delivery bench has not been tested at the planned scale.'},
     {id:'CL-5',sourceId:'SRC-5',sourceVersionId:'SV-5',locator:'Buyer map',type:'market',label:'Operational urgency',normalizedStatement:'Target buyers treat the workflow as urgent when failure risk is visible.'},
     {id:'CL-6',sourceId:'SRC-4',sourceVersionId:'SV-4',locator:'Pipeline review',type:'internal',label:'Founder-led pipeline',normalizedStatement:'Most qualified opportunities originated through founder relationships.'},

@@ -5,12 +5,15 @@ import { goTo } from '../app/routes';
 import type { Actor } from '../types/domain';
 import { ObjectCausalTrace } from './CausalTrace';
 import { useDialogFocus, useMediaQuery } from './useDialogFocus';
+import { inspectionSourceLocators } from '../app/sourceEvidence';
+import { InformationSummary } from './InformationSummary';
+import '../design/source-evidence.css';
 
 export function ObjectLens({ compact = false }: { compact?: boolean }) {
-  const { snapshot, inspection, activeObjectId, inspecting, setActiveObject } = usePanta();
+  const { snapshot, inspection, activeObjectId, inspecting, setActiveObject, sourcesOpen } = usePanta();
   const mobile = useMediaQuery('(max-width: 760px)');
   const activeActor = snapshot && activeObjectId ? actorById(snapshot, activeObjectId) : undefined;
-  const open = Boolean(snapshot && (activeActor || inspection || (inspecting && activeObjectId)));
+  const open = Boolean(!sourcesOpen && snapshot && (activeActor || inspection || (inspecting && activeObjectId)));
   const close = () => { void setActiveObject(undefined); };
   const dialogRef = useDialogFocus<HTMLElement>(open && mobile, close, undefined, '[data-object-lens-return]');
   if (!snapshot || !open) return null;
@@ -64,9 +67,13 @@ function ActorLensContents({ actor, onClose }: { actor: Actor; onClose: () => vo
 }
 
 function LensContents({ compact, onClose }: { compact: boolean; onClose: () => void }) {
-  const { snapshot, inspection, inspecting, setActiveObject, openSource } = usePanta();
+  const { snapshot, inspection, inspecting, setActiveObject, openSource, simulationResult } = usePanta();
   if (!snapshot || !inspection) return null;
   const vm = composeLens(snapshot, inspection);
+  const sourceLocators = inspectionSourceLocators(snapshot, inspection.objectId, inspection.sourceLocators);
+  const currentSimulation = simulationResult?.scopeVersion === snapshot.simulationScope?.version && simulationResult?.caseVersion === snapshot.caseVersion ? simulationResult : undefined;
+  const simulatedEffect = currentSimulation?.effects.find(effect => effect.objectId === inspection.objectId);
+  const simulationLimit = currentSimulation?.limits?.find(limit => limit.objectId === inspection.objectId) ?? snapshot.simulationScope?.limits.find(limit => limit.objectId === inspection.objectId);
   const inspect = (id: string) => { if (!inspecting) void setActiveObject(id); };
 
   return <>
@@ -75,16 +82,20 @@ function LensContents({ compact, onClose }: { compact: boolean; onClose: () => v
       <button className="p-icon-btn" onClick={onClose} aria-label="Close inspection">×</button>
     </div>
 
-    <ObjectCausalTrace
+    <InformationSummary objectId={inspection.objectId} />
+    {simulatedEffect && <LensSection title="This simulation"><p>Current: {simulatedEffect.before}</p><p>Hypothetical: {simulatedEffect.after}</p><p>The recorded case value is unchanged.</p></LensSection>}
+    {(inspection.supportObjectIds.length > 0 || inspection.dependentObjectIds.length > 0 || vm.actions.includes('TRACE')) && <ObjectCausalTrace
+      key={inspection.objectId}
       objectId={inspection.objectId}
       supportIds={inspection.supportObjectIds}
       independentSupportIds={inspection.independentSupportObjectIds}
       dependentIds={inspection.dependentObjectIds}
       compact={compact}
-    />
+    />}
 
     <LensSection title="Still missing">
-      {vm.unknowns.length ? vm.unknowns.slice(0, 3).map(item => <button key={item.id} disabled={inspecting} className="p-related-link" onClick={() => inspect(item.id)}>{item.label}</button>) : <p>Nothing material is currently mapped as missing.</p>}
+      {simulationLimit && <p>{simulationLimit.reason}</p>}
+      {vm.unknowns.length ? vm.unknowns.slice(0, 3).map(item => <button key={item.id} disabled={inspecting} className="p-related-link" onClick={() => inspect(item.id)}>{item.label}</button>) : !simulationLimit && <p>Nothing material is currently mapped as missing.</p>}
     </LensSection>
 
     <LensSection title="What changed">
@@ -96,11 +107,15 @@ function LensContents({ compact, onClose }: { compact: boolean; onClose: () => v
       {vm.related.slice(0, 5).map(item => <button key={item.id} disabled={inspecting} className="p-related-link" onClick={() => inspect(item.id)}>{item.label}</button>)}
     </LensSection>}
 
+    {vm.actions.includes('OPEN_SOURCE') && sourceLocators.length > 0 && <LensSection title="Source passages">
+      <div className="p-source-statement-links">{sourceLocators.map((ref, index) => <button key={index} className="p-related-link" onClick={() => openSource(ref)}><span>{snapshot.sources.find(source => source.id === ref.sourceId)?.title ?? 'Source unavailable'}</span><small>{ref.locator || snapshot.claims.find(claim => claim.id === ref.claimId)?.locator || 'Exact location not supplied'}</small></button>)}</div>
+    </LensSection>}
+
     <div className="p-lens-actions">
       {vm.actions.includes('TRACE') && <button className="p-btn" onClick={() => goTo('trace')}>Trace</button>}
       {vm.actions.includes('SIMULATE') && <button className="p-btn" onClick={() => goTo('simulate')}>Simulate</button>}
       {vm.actions.includes('RESOLVE') && <button className="p-btn" onClick={() => goTo('resolve')}>Resolve</button>}
-      {vm.actions.includes('OPEN_SOURCE') && vm.sourceRefs[0] && <button className="p-btn" onClick={() => openSource(vm.sourceRefs[0].id)}>Open source</button>}
+      {vm.actions.includes('OPEN_SOURCE') && sourceLocators[0] && <button className="p-btn" onClick={() => openSource(sourceLocators[0])}>Open source</button>}
       {vm.actions.includes('VIEW_IN_CASE') && <button className="p-btn p-btn-quiet" onClick={() => goTo('deal')}>View in case</button>}
     </div>
   </>;

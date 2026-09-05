@@ -52,7 +52,7 @@ from runtime.consequence_reasoning import (
 )
 
 
-ENGINE_VERSION = "0.10.0-conformance"
+ENGINE_VERSION = "0.10.1-conformance"
 OUTPUT_SCHEMA_VERSION = "transition-output-1.0"
 RUNTIME_STATE_VERSION = "runtime-state-1.0"
 
@@ -4095,6 +4095,12 @@ def _evaluate_routes_and_formulas(
             "invalid": False,
             "reason_codes": [],
         }
+        if runtime_flags.get(route_id, {}).get("lifecycle") == "RETRACTED":
+            proof_graph.ensure_fact(route_proposition_id, EvidenceState.FALSE, evidence_token=route_id)
+            result.update(state="FALSE", support_satisfied="FALSE", reason_codes=["SUPPORT_ROUTE_RETRACTED"])
+            settled_ids.add(route_id)
+            route_results.append(result)
+            continue
         if route_id in circular_route_ids:
             proof_graph.derive_or(
                 route_proposition_id,
@@ -4511,6 +4517,13 @@ def _reconcile_output_freshness(
     def effective_member_state(member_id: str) -> EvidenceState:
         if member_id in output_ids and member_id not in fresh_ids:
             return EvidenceState.NEITHER
+        if member_id in position_ids:
+            item = registry[member_id]["object"]
+            if runtime_flags.get(member_id, {}).get("lifecycle") == "RETRACTED" or item.get("usable") is False or item.get("validation_only") is True:
+                return EvidenceState.FALSE
+            # A current support result is a computational input. The recorded
+            # human decision remains immutable and cannot substitute for it.
+            return final_combined_evidence.get(member_id, EvidenceState.NEITHER)
         return EvidenceState.from_public(
             _member_usability(
                 member_id,
@@ -4537,6 +4550,8 @@ def _reconcile_output_freshness(
             member_id in output_ids and member_id not in fresh_ids
             for member_id in member_ids + counter_ids
         )
+        if runtime_flags.get(str(result.get("route_id", "")), {}).get("lifecycle") == "RETRACTED":
+            return EvidenceState.FALSE, support, counter, False
         if result.get("invalid") is True:
             return EvidenceState.NEITHER, support, counter, unresolved_dependency
 

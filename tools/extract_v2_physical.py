@@ -37,6 +37,7 @@ import csv
 import hashlib
 import json
 import mailbox
+import math
 import os
 import re
 import sys
@@ -3290,7 +3291,8 @@ def _parse_float(v: Any) -> float | None:
     if v is None or v == "":
         return None
     try:
-        return float(str(v).replace(",", "").replace("%", "").strip())
+        value = float(str(v).replace(",", "").replace("%", "").strip())
+        return value if math.isfinite(value) else None
     except (TypeError, ValueError):
         return None
 
@@ -3412,6 +3414,15 @@ def validate(raw: RawClaim, archetype: str = DEFAULT_ARCHETYPE) -> CanonicalClai
             f"metric_label '{metric_label}' set on non-Other metric '{raw.metric}'"
         )
     value = _parse_float(raw.value)
+    try:
+        if not math.isfinite(float(str(raw.value).replace(",", "").replace("%", "").strip())):
+            errors.append("non-finite numeric value")
+    except (TypeError, ValueError):
+        pass  # Textual quantities and ranges are valid; keep their raw value.
+    if raw.claim_kind not in CLAIM_KIND_ENUM:
+        errors.append(f"invalid claim_kind: '{raw.claim_kind}'")
+    if raw.bound not in BOUND_ENUM:
+        errors.append(f"invalid bound: '{raw.bound}'")
     period_iso = _normalize_period(raw.period)
     # RAW: prefix means period didn't match PERIOD_MAP — store as-is, no longer reject.
     # period_iso carries the raw label for non-standard periods.
@@ -3704,6 +3715,7 @@ def _to_e3_manifest(graph: SubGraph, deal: str, manifest: str,
                     "claim_id": c.claim_id,
                     "metric": c.metric,
                     "metric_label": c.metric_label,
+                    "value_raw": c.value_raw,
                     "known_at": c.known_at,
                     "direction": c.direction,
                     "topic": c.topic,

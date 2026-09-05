@@ -1,0 +1,687 @@
+{
+  "schema": "source-tracking-audit/1.0",
+  "captured_at": "2026-09-05T12:23:33.231232+00:00",
+  "case_id": "REPOSITORY-TRACKING-TEST",
+  "scope": "Existing test graphs and original test documents; no extraction score and no Current adoption",
+  "canonical_graph": "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/canonical/PANTA_Keystone_Canonical_Investment_Case_v1.1.json",
+  "execution_mapping": "/Users/immanuel/Desktop/PANTA/GOLD/keystone_execution_mapping_v1 (3).json",
+  "semantic_graph": "/Users/immanuel/Desktop/PANTA/GOLD/keystone_semantic_financial_graph_v1 (5).json",
+  "workbook_hash_verified": "sha256:856d6deb512cd6e40ea4db17d9e2e8c3eac456a6f371e498e7b439ff48e55bd1",
+  "source_count": 19,
+  "canonical_claim_count": 75,
+  "evaluation_reference_count": 36,
+  "model_node_count": 14318,
+  "declared_edge_count": 30996,
+  "direct_reference_counts": {
+    "LOCATED": 14360,
+    "UNRESOLVED": 30
+  },
+  "canonical_location_counts": {
+    "LOCATED": 45,
+    "UNRESOLVED": 30
+  },
+  "evaluation_location_counts": {
+    "LOCATED": 36
+  },
+  "model_location_counts": {
+    "LOCATED": 14279
+  },
+  "nodes_without_direct_locator": [
+    "SEM:ACQUISITION_BASE:PRE_MIP_SPONSOR_MOIC",
+    "SEM:ACQUISITION_BASE:PRE_MIP_SPONSOR_OWNERSHIP",
+    "SEM:ACQUISITION_BASE:RETURN_CASH_FLOW_VECTOR",
+    "SEM:COMBINED_RISK:PRE_MIP_SPONSOR_MOIC",
+    "SEM:COMBINED_RISK:PRE_MIP_SPONSOR_OWNERSHIP",
+    "SEM:COMBINED_RISK:RETURN_CASH_FLOW_VECTOR",
+    "SEM:ENTRY:ACQUIRED_CASH",
+    "SEM:ENTRY:CASH_CONSIDERATION",
+    "SEM:ENTRY:GROSS_DEBTLIKE_SETTLEMENT",
+    "SEM:ENTRY:MULTIPLE_ON_FIRM_EBITDA",
+    "SEM:ENTRY:NET_LEVERAGE_ON_FIRM_EBITDA",
+    "SEM:ENTRY:SELLER_EQUITY",
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2026",
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2027",
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2028",
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2029",
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2030",
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2031",
+    "SEM:STANDALONE_BASE:PRE_MIP_SPONSOR_MOIC",
+    "SEM:STANDALONE_BASE:PRE_MIP_SPONSOR_OWNERSHIP",
+    "SEM:STANDALONE_BASE:RETURN_CASH_FLOW_VECTOR",
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2026",
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2027",
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2028",
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2029",
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2030",
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2031",
+    "SEM:STANDALONE_DOWNSIDE:PRE_MIP_SPONSOR_MOIC",
+    "SEM:STANDALONE_DOWNSIDE:PRE_MIP_SPONSOR_OWNERSHIP",
+    "SEM:STANDALONE_DOWNSIDE:RETURN_CASH_FLOW_VECTOR",
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2026",
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2027",
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2028",
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2029",
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2030",
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2031",
+    "SEM:STANDALONE_UPSIDE:PRE_MIP_SPONSOR_MOIC",
+    "SEM:STANDALONE_UPSIDE:PRE_MIP_SPONSOR_OWNERSHIP",
+    "SEM:STANDALONE_UPSIDE:RETURN_CASH_FLOW_VECTOR"
+  ],
+  "nodes_with_source_overview_only": [
+    "SEM:ACQUISITION_BASE:RETURN_CASH_FLOW_VECTOR",
+    "SEM:COMBINED_RISK:RETURN_CASH_FLOW_VECTOR",
+    "SEM:ENTRY:MULTIPLE_ON_FIRM_EBITDA",
+    "SEM:ENTRY:NET_LEVERAGE_ON_FIRM_EBITDA",
+    "SEM:STANDALONE_BASE:RETURN_CASH_FLOW_VECTOR",
+    "SEM:STANDALONE_DOWNSIDE:RETURN_CASH_FLOW_VECTOR",
+    "SEM:STANDALONE_UPSIDE:RETURN_CASH_FLOW_VECTOR"
+  ],
+  "indirect_paths": {
+    "SEM:ACQUISITION_BASE:PRE_MIP_SPONSOR_MOIC": [
+      "SEM:ACQUISITION_BASE:PRE_MIP_SPONSOR_MOIC",
+      "CELL:Ownership_Returns!G7"
+    ],
+    "SEM:ACQUISITION_BASE:PRE_MIP_SPONSOR_OWNERSHIP": [
+      "SEM:ACQUISITION_BASE:PRE_MIP_SPONSOR_OWNERSHIP",
+      "CELL:Ownership_Returns!H7"
+    ],
+    "SEM:COMBINED_RISK:PRE_MIP_SPONSOR_MOIC": [
+      "SEM:COMBINED_RISK:PRE_MIP_SPONSOR_MOIC",
+      "CELL:Ownership_Returns!G8"
+    ],
+    "SEM:COMBINED_RISK:PRE_MIP_SPONSOR_OWNERSHIP": [
+      "SEM:COMBINED_RISK:PRE_MIP_SPONSOR_OWNERSHIP",
+      "CELL:Ownership_Returns!H8"
+    ],
+    "SEM:ENTRY:ACQUIRED_CASH": [
+      "SEM:ENTRY:ACQUIRED_CASH",
+      "CELL:S&U_Opening!F8"
+    ],
+    "SEM:ENTRY:CASH_CONSIDERATION": [
+      "SEM:ENTRY:CASH_CONSIDERATION",
+      "MN-ROLLOVER"
+    ],
+    "SEM:ENTRY:GROSS_DEBTLIKE_SETTLEMENT": [
+      "SEM:ENTRY:GROSS_DEBTLIKE_SETTLEMENT",
+      "CELL:S&U_Opening!H6"
+    ],
+    "SEM:ENTRY:SELLER_EQUITY": [
+      "SEM:ENTRY:SELLER_EQUITY",
+      "MN-EV"
+    ],
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2026": [
+      "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2026",
+      "CELL:Hist_3Stmt!E4"
+    ],
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2027": [
+      "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2027",
+      "CELL:Inputs!D40"
+    ],
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2028": [
+      "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2028",
+      "CELL:Inputs!E40"
+    ],
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2029": [
+      "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2029",
+      "CELL:Inputs!F40"
+    ],
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2030": [
+      "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2030",
+      "CELL:Inputs!G40"
+    ],
+    "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2031": [
+      "SEM:STANDALONE_BASE:ANNUAL_REVENUE:2031",
+      "CELL:Inputs!H40"
+    ],
+    "SEM:STANDALONE_BASE:PRE_MIP_SPONSOR_MOIC": [
+      "SEM:STANDALONE_BASE:PRE_MIP_SPONSOR_MOIC",
+      "CELL:Ownership_Returns!G4"
+    ],
+    "SEM:STANDALONE_BASE:PRE_MIP_SPONSOR_OWNERSHIP": [
+      "SEM:STANDALONE_BASE:PRE_MIP_SPONSOR_OWNERSHIP",
+      "CELL:Ownership_Returns!H4"
+    ],
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2026": [
+      "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2026",
+      "CELL:Hist_3Stmt!E4"
+    ],
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2027": [
+      "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2027",
+      "CELL:Inputs!D47"
+    ],
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2028": [
+      "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2028",
+      "CELL:Inputs!E47"
+    ],
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2029": [
+      "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2029",
+      "CELL:Inputs!F47"
+    ],
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2030": [
+      "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2030",
+      "CELL:Inputs!G47"
+    ],
+    "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2031": [
+      "SEM:STANDALONE_DOWNSIDE:ANNUAL_REVENUE:2031",
+      "CELL:Inputs!H47"
+    ],
+    "SEM:STANDALONE_DOWNSIDE:PRE_MIP_SPONSOR_MOIC": [
+      "SEM:STANDALONE_DOWNSIDE:PRE_MIP_SPONSOR_MOIC",
+      "CELL:Ownership_Returns!G5"
+    ],
+    "SEM:STANDALONE_DOWNSIDE:PRE_MIP_SPONSOR_OWNERSHIP": [
+      "SEM:STANDALONE_DOWNSIDE:PRE_MIP_SPONSOR_OWNERSHIP",
+      "CELL:Ownership_Returns!H5"
+    ],
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2026": [
+      "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2026",
+      "CELL:Hist_3Stmt!E4"
+    ],
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2027": [
+      "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2027",
+      "CELL:Inputs!D54"
+    ],
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2028": [
+      "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2028",
+      "CELL:Inputs!E54"
+    ],
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2029": [
+      "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2029",
+      "CELL:Inputs!F54"
+    ],
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2030": [
+      "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2030",
+      "CELL:Inputs!G54"
+    ],
+    "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2031": [
+      "SEM:STANDALONE_UPSIDE:ANNUAL_REVENUE:2031",
+      "CELL:Inputs!H54"
+    ],
+    "SEM:STANDALONE_UPSIDE:PRE_MIP_SPONSOR_MOIC": [
+      "SEM:STANDALONE_UPSIDE:PRE_MIP_SPONSOR_MOIC",
+      "CELL:Ownership_Returns!G6"
+    ],
+    "SEM:STANDALONE_UPSIDE:PRE_MIP_SPONSOR_OWNERSHIP": [
+      "SEM:STANDALONE_UPSIDE:PRE_MIP_SPONSOR_OWNERSHIP",
+      "CELL:Ownership_Returns!H6"
+    ]
+  },
+  "nodes_without_source_path": [],
+  "unresolved_references": [
+    {
+      "id": "CL-011",
+      "source_id": "SRC-DR",
+      "locator": "Customer_Data: rows with Ultimate Parent = Riverton Industrial Group",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-012",
+      "source_id": "SRC-DR",
+      "locator": "Customer_Data: RIV-DEC, RIV-CORP, RIV-GRN, RIV-MIL, RIV-CHEM, RIV-LOG, RIV-WST",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-013",
+      "source_id": "SRC-DR",
+      "locator": "Customer_Data: Riverton rows",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-014",
+      "source_id": "SRC-DR",
+      "locator": "Customer_Data concentration summary",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-015",
+      "source_id": "SRC-DR",
+      "locator": "Customer_Data: Minimum Volume column",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-016",
+      "source_id": "SRC-DR",
+      "locator": "Customer_Data: Recurring / Repeat / Project aggregation",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-017",
+      "source_id": "SRC-DR",
+      "locator": "Project_Data: Expected Recurring Revenue aggregation",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-018",
+      "source_id": "SRC-DR",
+      "locator": "Project_Data: System column",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-019",
+      "source_id": "SRC-DR",
+      "locator": "AR_WIP: Unbilled WIP Detail",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-020",
+      "source_id": "SRC-DR",
+      "locator": "AR_WIP: Accounts Receivable Detail",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-021",
+      "source_id": "SRC-DR",
+      "locator": "Employees schedule",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 911
+      }
+    },
+    {
+      "id": "CL-027",
+      "source_id": "SRC-QL",
+      "locator": "Diligence Question List",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 36
+      }
+    },
+    {
+      "id": "CL-040",
+      "source_id": "SRC-MODEL-SUM",
+      "locator": "Case logic - Standalone base",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 84
+      }
+    },
+    {
+      "id": "CL-041",
+      "source_id": "SRC-MODEL-SUM",
+      "locator": "Audited model outputs - Standalone Base",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 84
+      }
+    },
+    {
+      "id": "CL-042",
+      "source_id": "SRC-MODEL-SUM",
+      "locator": "Audited model outputs - Standalone Downside",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 84
+      }
+    },
+    {
+      "id": "CL-048",
+      "source_id": "SRC-IC",
+      "locator": "Risk debate - integration and execution / IC conditions",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 93
+      }
+    },
+    {
+      "id": "CL-050",
+      "source_id": "SRC-IC",
+      "locator": "IC conditions 1-4",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 93
+      }
+    },
+    {
+      "id": "CL-051",
+      "source_id": "SRC-IC",
+      "locator": "IC condition 7",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 93
+      }
+    },
+    {
+      "id": "CL-052",
+      "source_id": "SRC-IC",
+      "locator": "IC condition 8",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 93
+      }
+    },
+    {
+      "id": "CL-053",
+      "source_id": "SRC-IC",
+      "locator": "IC conditions 9, 11 and 13",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 93
+      }
+    },
+    {
+      "id": "CL-054",
+      "source_id": "SRC-IC",
+      "locator": "IC condition 12",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 93
+      }
+    },
+    {
+      "id": "CL-M01",
+      "source_id": "SRC-BP1",
+      "locator": "Slides 7-8",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 293
+      }
+    },
+    {
+      "id": "CL-M02",
+      "source_id": "SRC-BP1",
+      "locator": "Slides 4 and 8",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 293
+      }
+    },
+    {
+      "id": "CL-M03",
+      "source_id": "SRC-BP1",
+      "locator": "Slides 4, 9 and 10",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 293
+      }
+    },
+    {
+      "id": "CL-M05",
+      "source_id": "SRC-BP2",
+      "locator": "Slides 12 and 15",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 227
+      }
+    },
+    {
+      "id": "CL-M07",
+      "source_id": "SRC-BP2",
+      "locator": "Slides 14 and 16",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 227
+      }
+    },
+    {
+      "id": "CL-M13",
+      "source_id": "SRC-JUN27",
+      "locator": "Slides 22-23",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 117
+      }
+    },
+    {
+      "id": "CL-M18",
+      "source_id": "SRC-EXIT31",
+      "locator": "Slides 29-31",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 165
+      }
+    },
+    {
+      "id": "CL-M19",
+      "source_id": "SRC-EXIT31",
+      "locator": "Slides 30-31",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 165
+      }
+    },
+    {
+      "id": "CL-M20",
+      "source_id": "SRC-EXIT31",
+      "locator": "Slide 32 / answer-key causal conclusion",
+      "status": "UNRESOLVED",
+      "position": {
+        "kind": "text",
+        "status": "UNRESOLVED",
+        "label": "Exact passage could not be located",
+        "start": null,
+        "end": null,
+        "spans": [],
+        "line_count": 165
+      }
+    }
+  ],
+  "source_hashes": {
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/canonical/PANTA_Keystone_Canonical_Investment_Case_v1.1.json": "sha256:185aa8d4d917528bbcefb0699818ff89d3ad7a56f8ceef348f111753c39cc231",
+    "/Users/immanuel/Desktop/PANTA/GOLD/keystone_execution_mapping_v1 (3).json": "sha256:0445f9b473f59aca7fc4a8b95798a4c378ea1cce3b1ced1cab795503f4171409",
+    "/Users/immanuel/Desktop/PANTA/GOLD/keystone_semantic_financial_graph_v1 (5).json": "sha256:22e09dca8b12969a8339ecfd337f8bb2c4b1227a27979a35d380bb9c7770569e",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_1_ingested/keystone_seller_cim.md": "sha256:cc97ce577f38ff780c72ee00e2a181d1632f90d4761ccddad6a4d96eedd6d48e",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_1_ingested/keystone_data_room_extract.md": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_1_ingested/keystone_firm_initial_assessment.md": "sha256:557bed36b760aec85a396db0d07a5f4fd5dbe467a6f2e6c4f18019da32426b51",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_1_ingested/keystone_question_list.md": "sha256:30ac6acc8e1477104a2cbf4d2ccb27fdf70cb79671f66d18dd8925e986edc25b",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_1_ingested/keystone_qoe_report.md": "sha256:15a11b81da6d7e1650da099d202d52ac6d3fb94cf10f22be77431dfde207810a",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_1_ingested/keystone_lbo_model_working.xlsx": "sha256:856d6deb512cd6e40ea4db17d9e2e8c3eac456a6f371e498e7b439ff48e55bd1",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_1_ingested/keystone_firm_model_summary.md": "sha256:45e9cafc457bb00c17b26f6bd7a5028f75a0b41dd71b170029d215567348be85",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_1_ingested/keystone_ic_memo.md": "sha256:269878aec4f227a849262fceb46cd1799598d7ff68c6583b70feb5ebf64af8e6",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_2_monitoring/keystone_monitoring_boardpack1_dec2026.md": "sha256:69c65d44bf7ca5e67f4bbbd20bec26642e809250518197cf4c60a7176c74b2ac",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_2_monitoring/keystone_monitoring_boardpack2_mar2027.md": "sha256:1ef2606c2f4381fe9904e99d820d0afbeee915d693d8d1ca552316da952b3b71",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_2_monitoring/keystone_monitoring_junecompliance2027.md": "sha256:af4abfadf5da8d9961f6e4a9c27e7ffde52901e1e1344de4c991cce226bb95ff",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_2_monitoring/keystone_monitoring_augustamendment2027.md": "sha256:639bdc793ca9e63d5aa5d2946bdf7c7d830df603c689539149e9172935cc3870",
+    "/Users/immanuel/Desktop/PANTA/PANTA_Keystone_Canonical_Investment_Case_v1_1/source_materials/layer_2_monitoring/keystone_monitoring_recovery_exit2031.md": "sha256:8a1bf2e1e34ebe60c2b32768fa9bd2c628e10b31e2ac60eb747531d2f980e6b2",
+    "/Users/immanuel/Desktop/PANTA/pe-os/evaluation/fixtures/documents/panta_investment_report.pdf": "sha256:e3697a9d6db04842174db55d77f878836f5e596029853ea55842cce6f67c7076",
+    "/Users/immanuel/Desktop/PANTA/pe-os/evaluation/fixtures/documents/panta_acquisition_review.docx": "sha256:18a8d7ff722ca83efa8c689881ae48ca4562e078b3ba7d2e63c06512ad4fb86b",
+    "/Users/immanuel/Desktop/PANTA/pe-os/evaluation/fixtures/documents/panta_revenue_review.pptx": "sha256:84d8d320d3823e6371dc1236b75f03d7ba829ff2da0f49b8cc1aee47b05aee5d",
+    "/Users/immanuel/Desktop/PANTA/pe-os/evaluation/fixtures/documents/panta_financial_model.xlsx": "sha256:8f0a16dc2956545f6ad835d715f81f5e16e190a944e000350d708456f4f14c9d",
+    "/Users/immanuel/Desktop/PANTA/pe-os/evaluation/fixtures/documents/panta_approval.eml": "sha256:04a609e56307ec9c3de26c11d9de6682b45e88b030dec40a94c94471d4bdd3c6",
+    "/Users/immanuel/Desktop/PANTA/pe-os/evaluation/fixtures/documents/panta_test_visual.png": "sha256:b50d2d8d280b0bd1a471fb094428cc130857c714980c48df3057b7d62dc11faf"
+  },
+  "originals_unchanged": true
+}

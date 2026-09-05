@@ -1,0 +1,1600 @@
+{
+  "snapshots": {
+    "SIMULATION-TEST": {
+      "actors": [
+        {
+          "id": "SIM-REVIEWER",
+          "type": "PERSON",
+          "displayName": "Test reviewer"
+        }
+      ],
+      "workstreams": [
+        {
+          "id": "MODEL-WS",
+          "name": "Operating model",
+          "currentCaseReadingId": "MODEL-READING",
+          "questionIds": [
+            "MODEL-Q"
+          ],
+          "activeWorkItemIds": [],
+          "openUnknownIds": []
+        }
+      ],
+      "questions": [
+        {
+          "id": "MODEL-Q",
+          "name": "How sensitive are earnings and leverage to revenue?",
+          "workstreamId": "MODEL-WS",
+          "currentCaseReadingId": "MODEL-READING",
+          "questionStatus": "OPEN",
+          "claimIds": [],
+          "workItemIds": [],
+          "openUnknownIds": [],
+          "chronologyEventIds": []
+        }
+      ],
+      "caseReadings": [
+        {
+          "id": "MODEL-READING",
+          "questionId": "MODEL-Q",
+          "text": "The declared model links revenue to earnings and leverage.",
+          "institutionalState": "CURRENT",
+          "epistemicStatus": "UNEXAMINED",
+          "freshnessStatus": "CURRENT",
+          "decisionLinkStatus": "NO_DECISION",
+          "supportObjectIds": [
+            "REVENUE",
+            "PROFIT",
+            "LEVERAGE"
+          ],
+          "independentSupportObjectIds": [],
+          "unknownIds": [],
+          "relatedObjectIds": []
+        }
+      ],
+      "claims": [
+        {
+          "id": "CLAIM-REVENUE",
+          "label": "Latest operating update: revenue 90 EUR m.",
+          "normalizedStatement": "The admitted update reports 90 EUR m for revenue.",
+          "institutionalState": "CURRENT"
+        },
+        {
+          "id": "CLAIM-COST",
+          "label": "Latest operating update: cost 65 EUR m.",
+          "normalizedStatement": "The admitted update reports 65 EUR m for cost.",
+          "institutionalState": "CURRENT"
+        }
+      ],
+      "sources": [],
+      "sourceVersions": [],
+      "metricDefinitions": [],
+      "metricObservations": [],
+      "quantities": [],
+      "assumptions": [],
+      "risks": [],
+      "modelNodes": [
+        {
+          "id": "REVENUE",
+          "modelId": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+          "label": "Revenue assumption",
+          "currentValue": 100,
+          "unit": "EUR m",
+          "nodeRole": "DIRECT_INPUT",
+          "valueOrFormulaRef": null,
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "COST",
+          "modelId": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+          "label": "Operating costs",
+          "currentValue": 60,
+          "unit": "EUR m",
+          "nodeRole": "DIRECT_INPUT",
+          "valueOrFormulaRef": null,
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "DEBT",
+          "modelId": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+          "label": "Net debt",
+          "currentValue": 80,
+          "unit": "EUR m",
+          "nodeRole": "DIRECT_INPUT",
+          "valueOrFormulaRef": null,
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "PROFIT",
+          "modelId": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+          "label": "Operating earnings",
+          "currentValue": 40,
+          "unit": "EUR m",
+          "nodeRole": "DIRECT_FORMULA",
+          "valueOrFormulaRef": "F-PROFIT",
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "LEVERAGE",
+          "modelId": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+          "label": "Net debt / operating earnings",
+          "currentValue": 2,
+          "unit": "x",
+          "nodeRole": "DIRECT_FORMULA",
+          "valueOrFormulaRef": "F-LEVERAGE",
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "CAP",
+          "modelId": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+          "label": "Capped distribution",
+          "currentValue": 30,
+          "unit": "EUR m",
+          "nodeRole": "DIRECT_FORMULA",
+          "valueOrFormulaRef": "F-CAP",
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "IRR",
+          "modelId": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+          "label": "Return with an unconfigured solver",
+          "currentValue": 0.2,
+          "unit": "ratio",
+          "nodeRole": "DIRECT_FORMULA",
+          "valueOrFormulaRef": "F-IRR",
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "UNAVAILABLE"
+        }
+      ],
+      "unknowns": [],
+      "humanPositions": [],
+      "workItems": [],
+      "artifacts": [],
+      "artifactBlocks": [],
+      "artifactDiffs": [],
+      "events": [],
+      "outcomes": [],
+      "findings": [],
+      "pendingReviews": [],
+      "simulationOptions": [
+        {
+          "id": "COST",
+          "originObjectId": "COST",
+          "label": "Operating costs",
+          "assumption": "Change this input within the declared model.",
+          "enabled": true,
+          "disabledReason": null,
+          "input": {
+            "value": "60",
+            "unit": "EUR m",
+            "period": "FY2027",
+            "scope": "Group"
+          },
+          "scope": {
+            "coveredObjectIds": [
+              "CAP",
+              "LEVERAGE",
+              "PROFIT"
+            ],
+            "limitedObjectIds": [
+              "IRR"
+            ]
+          }
+        },
+        {
+          "id": "DEBT",
+          "originObjectId": "DEBT",
+          "label": "Net debt",
+          "assumption": "Change this input within the declared model.",
+          "enabled": true,
+          "disabledReason": null,
+          "input": {
+            "value": "80",
+            "unit": "EUR m",
+            "period": "FY2027",
+            "scope": "Group"
+          },
+          "scope": {
+            "coveredObjectIds": [
+              "LEVERAGE"
+            ],
+            "limitedObjectIds": []
+          }
+        },
+        {
+          "id": "REVENUE",
+          "originObjectId": "REVENUE",
+          "label": "Revenue assumption",
+          "assumption": "Change this input within the declared model.",
+          "enabled": true,
+          "disabledReason": null,
+          "input": {
+            "value": "100",
+            "unit": "EUR m",
+            "period": "FY2027",
+            "scope": "Group"
+          },
+          "scope": {
+            "coveredObjectIds": [
+              "CAP",
+              "LEVERAGE",
+              "PROFIT"
+            ],
+            "limitedObjectIds": [
+              "IRR"
+            ]
+          }
+        }
+      ],
+      "decisionPaths": [],
+      "decisions": [],
+      "conditions": [],
+      "relations": [
+        {
+          "id": "F-CAP:PROFIT:CAP",
+          "caseId": "SIMULATION-TEST",
+          "sourceObjectId": "PROFIT",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "CAP",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "MIN(profit, 30)"
+        },
+        {
+          "id": "F-IRR:PROFIT:IRR",
+          "caseId": "SIMULATION-TEST",
+          "sourceObjectId": "PROFIT",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "IRR",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "profit"
+        },
+        {
+          "id": "F-LEVERAGE:DEBT:LEVERAGE",
+          "caseId": "SIMULATION-TEST",
+          "sourceObjectId": "DEBT",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "LEVERAGE",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "debt / profit"
+        },
+        {
+          "id": "F-LEVERAGE:PROFIT:LEVERAGE",
+          "caseId": "SIMULATION-TEST",
+          "sourceObjectId": "PROFIT",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "LEVERAGE",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "debt / profit"
+        },
+        {
+          "id": "F-PROFIT:REVENUE:PROFIT",
+          "caseId": "SIMULATION-TEST",
+          "sourceObjectId": "REVENUE",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "PROFIT",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "revenue - cost"
+        },
+        {
+          "id": "F-PROFIT:COST:PROFIT",
+          "caseId": "SIMULATION-TEST",
+          "sourceObjectId": "COST",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "PROFIT",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "revenue - cost"
+        }
+      ],
+      "caseRef": {
+        "id": "SIMULATION-TEST",
+        "name": "Example A \u00b7 fictional model"
+      },
+      "caseVersion": "SIMULATION-TEST-V1",
+      "asOf": "2026-09-05",
+      "simulationScope": {
+        "schemaVersion": "simulation/1.0",
+        "version": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+        "caseId": "SIMULATION-TEST",
+        "caseVersion": "SIMULATION-TEST-V1",
+        "modelNodeCount": 7,
+        "computableCount": 6,
+        "limits": [
+          {
+            "objectId": "IRR",
+            "label": "Return with an unconfigured solver",
+            "reason": "This calculation needs a runtime that is not available in this simulation."
+          }
+        ],
+        "options": [
+          {
+            "id": "COST",
+            "originObjectId": "COST",
+            "label": "Operating costs",
+            "assumption": "Change this input within the declared model.",
+            "enabled": true,
+            "disabledReason": null,
+            "input": {
+              "value": "60",
+              "unit": "EUR m",
+              "period": "FY2027",
+              "scope": "Group"
+            },
+            "scope": {
+              "coveredObjectIds": [
+                "CAP",
+                "LEVERAGE",
+                "PROFIT"
+              ],
+              "limitedObjectIds": [
+                "IRR"
+              ]
+            }
+          },
+          {
+            "id": "DEBT",
+            "originObjectId": "DEBT",
+            "label": "Net debt",
+            "assumption": "Change this input within the declared model.",
+            "enabled": true,
+            "disabledReason": null,
+            "input": {
+              "value": "80",
+              "unit": "EUR m",
+              "period": "FY2027",
+              "scope": "Group"
+            },
+            "scope": {
+              "coveredObjectIds": [
+                "LEVERAGE"
+              ],
+              "limitedObjectIds": []
+            }
+          },
+          {
+            "id": "REVENUE",
+            "originObjectId": "REVENUE",
+            "label": "Revenue assumption",
+            "assumption": "Change this input within the declared model.",
+            "enabled": true,
+            "disabledReason": null,
+            "input": {
+              "value": "100",
+              "unit": "EUR m",
+              "period": "FY2027",
+              "scope": "Group"
+            },
+            "scope": {
+              "coveredObjectIds": [
+                "CAP",
+                "LEVERAGE",
+                "PROFIT"
+              ],
+              "limitedObjectIds": [
+                "IRR"
+              ]
+            }
+          }
+        ],
+        "notes": []
+      },
+      "simulationScenarios": [
+        {
+          "id": "sha256:c04a785de2eff9060e5bf1bfc028a561ba6502b961e3ef8201e0db80c2211bbd",
+          "schemaVersion": "simulation/1.0",
+          "caseId": "SIMULATION-TEST",
+          "caseVersion": "SIMULATION-TEST-V1",
+          "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+          "request": {
+            "mode": "event",
+            "optionId": "COST",
+            "originObjectId": "COST",
+            "value": "65",
+            "assumption": "Operating update: revenue down, costs up",
+            "caseVersion": "SIMULATION-TEST-V1",
+            "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+            "scenarioId": "sha256:c04a785de2eff9060e5bf1bfc028a561ba6502b961e3ef8201e0db80c2211bbd"
+          },
+          "effects": [
+            {
+              "objectId": "COST",
+              "objectLabel": "Operating costs",
+              "state": "CHANGES",
+              "before": "60 EUR m",
+              "after": "65 EUR m",
+              "explanation": "Hypothetical input supplied for this test.",
+              "reasonRelationIds": [],
+              "magnitude": {
+                "before": "60",
+                "after": "65",
+                "delta": "5",
+                "unit": "EUR m",
+                "percent": "8.333333333333333333333333333"
+              }
+            },
+            {
+              "objectId": "REVENUE",
+              "objectLabel": "Revenue assumption",
+              "state": "CHANGES",
+              "before": "100 EUR m",
+              "after": "90 EUR m",
+              "explanation": "Hypothetical input supplied for this test.",
+              "reasonRelationIds": [],
+              "magnitude": {
+                "before": "100",
+                "after": "90",
+                "delta": "-10",
+                "unit": "EUR m",
+                "percent": "-10.0"
+              }
+            },
+            {
+              "objectId": "PROFIT",
+              "objectLabel": "Operating earnings",
+              "state": "CHANGES",
+              "before": "40.0 EUR m",
+              "after": "25.0 EUR m",
+              "explanation": null,
+              "reasonRelationIds": [
+                "F-PROFIT:REVENUE:PROFIT",
+                "F-PROFIT:COST:PROFIT"
+              ],
+              "magnitude": {
+                "before": "40.0",
+                "after": "25.0",
+                "delta": "-15.0",
+                "unit": "EUR m",
+                "percent": "-37.500"
+              }
+            },
+            {
+              "objectId": "CAP",
+              "objectLabel": "Capped distribution",
+              "state": "CHANGES",
+              "before": "30.0 EUR m",
+              "after": "25.0 EUR m",
+              "explanation": null,
+              "reasonRelationIds": [
+                "F-CAP:PROFIT:CAP"
+              ],
+              "magnitude": {
+                "before": "30.0",
+                "after": "25.0",
+                "delta": "-5.0",
+                "unit": "EUR m",
+                "percent": "-16.66666666666666666666666667"
+              }
+            },
+            {
+              "objectId": "LEVERAGE",
+              "objectLabel": "Net debt / operating earnings",
+              "state": "CHANGES",
+              "before": "2.0 x",
+              "after": "3.2 x",
+              "explanation": null,
+              "reasonRelationIds": [
+                "F-LEVERAGE:DEBT:LEVERAGE",
+                "F-LEVERAGE:PROFIT:LEVERAGE"
+              ],
+              "magnitude": {
+                "before": "2.0",
+                "after": "3.2",
+                "delta": "1.2",
+                "unit": "x",
+                "percent": "60.0"
+              }
+            }
+          ],
+          "limits": [
+            {
+              "objectId": "IRR",
+              "label": "Return with an unconfigured solver",
+              "reason": "This calculation needs a runtime that is not available in this simulation."
+            }
+          ],
+          "coverage": {
+            "examinedCount": 6,
+            "changedCount": 5,
+            "heldCount": 0,
+            "unmappedCount": 1
+          },
+          "liveCaseUnchanged": true,
+          "event": {
+            "eventId": "EVENT-OPERATING-UPDATE",
+            "eventHash": "sha256:10ab0bfef8ccf644152f6055dc42cfcaa2bdb15ae4bd8ff56c013b0d6919e975",
+            "label": "Operating update: revenue down, costs up",
+            "knownAt": "2026-09-05T09:00:00Z",
+            "effectiveAt": "2026-09-04",
+            "recordedAt": "2026-09-05T09:01:00Z",
+            "sourceIds": [
+              "SOURCE-UPDATE"
+            ],
+            "changes": [
+              {
+                "ruleId": "RULE-REVENUE",
+                "claimId": "CLAIM-REVENUE",
+                "inputId": "REVENUE",
+                "value": "90",
+                "sourceId": "SOURCE-UPDATE"
+              },
+              {
+                "ruleId": "RULE-COST",
+                "claimId": "CLAIM-COST",
+                "inputId": "COST",
+                "value": "65",
+                "sourceId": "SOURCE-UPDATE"
+              }
+            ],
+            "basis": "CURRENT_CASE"
+          }
+        }
+      ],
+      "simulationEventLimits": []
+    },
+    "SIMULATION-PEER": {
+      "actors": [
+        {
+          "id": "SIM-REVIEWER",
+          "type": "PERSON",
+          "displayName": "Test reviewer"
+        }
+      ],
+      "workstreams": [
+        {
+          "id": "MODEL-WS",
+          "name": "Operating model",
+          "currentCaseReadingId": "MODEL-READING",
+          "questionIds": [
+            "MODEL-Q"
+          ],
+          "activeWorkItemIds": [],
+          "openUnknownIds": []
+        }
+      ],
+      "questions": [
+        {
+          "id": "MODEL-Q",
+          "name": "How sensitive are earnings and leverage to revenue?",
+          "workstreamId": "MODEL-WS",
+          "currentCaseReadingId": "MODEL-READING",
+          "questionStatus": "OPEN",
+          "claimIds": [],
+          "workItemIds": [],
+          "openUnknownIds": [],
+          "chronologyEventIds": []
+        }
+      ],
+      "caseReadings": [
+        {
+          "id": "MODEL-READING",
+          "questionId": "MODEL-Q",
+          "text": "The declared model links revenue to earnings and leverage.",
+          "institutionalState": "CURRENT",
+          "epistemicStatus": "UNEXAMINED",
+          "freshnessStatus": "CURRENT",
+          "decisionLinkStatus": "NO_DECISION",
+          "supportObjectIds": [
+            "REVENUE",
+            "PROFIT",
+            "LEVERAGE"
+          ],
+          "independentSupportObjectIds": [],
+          "unknownIds": [],
+          "relatedObjectIds": []
+        }
+      ],
+      "claims": [],
+      "sources": [],
+      "sourceVersions": [],
+      "metricDefinitions": [],
+      "metricObservations": [],
+      "quantities": [],
+      "assumptions": [],
+      "risks": [],
+      "modelNodes": [
+        {
+          "id": "REVENUE",
+          "modelId": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e",
+          "label": "Revenue assumption",
+          "currentValue": 120,
+          "unit": "EUR m",
+          "nodeRole": "DIRECT_INPUT",
+          "valueOrFormulaRef": null,
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "COST",
+          "modelId": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e",
+          "label": "Operating costs",
+          "currentValue": 90,
+          "unit": "EUR m",
+          "nodeRole": "DIRECT_INPUT",
+          "valueOrFormulaRef": null,
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "DEBT",
+          "modelId": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e",
+          "label": "Net debt",
+          "currentValue": 60,
+          "unit": "EUR m",
+          "nodeRole": "DIRECT_INPUT",
+          "valueOrFormulaRef": null,
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "PROFIT",
+          "modelId": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e",
+          "label": "Operating earnings",
+          "currentValue": 30,
+          "unit": "EUR m",
+          "nodeRole": "DIRECT_FORMULA",
+          "valueOrFormulaRef": "F-PROFIT",
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "LEVERAGE",
+          "modelId": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e",
+          "label": "Net debt / operating earnings",
+          "currentValue": 2,
+          "unit": "x",
+          "nodeRole": "DIRECT_FORMULA",
+          "valueOrFormulaRef": "F-LEVERAGE",
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "CAP",
+          "modelId": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e",
+          "label": "Capped distribution",
+          "currentValue": 30,
+          "unit": "EUR m",
+          "nodeRole": "DIRECT_FORMULA",
+          "valueOrFormulaRef": "F-CAP",
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "READY"
+        },
+        {
+          "id": "IRR",
+          "modelId": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e",
+          "label": "Return with an unconfigured solver",
+          "currentValue": 0.2,
+          "unit": "ratio",
+          "nodeRole": "DIRECT_FORMULA",
+          "valueOrFormulaRef": "F-IRR",
+          "freshnessStatus": "CURRENT",
+          "executionStatus": "UNAVAILABLE"
+        }
+      ],
+      "unknowns": [],
+      "humanPositions": [],
+      "workItems": [],
+      "artifacts": [],
+      "artifactBlocks": [],
+      "artifactDiffs": [],
+      "events": [],
+      "outcomes": [],
+      "findings": [],
+      "pendingReviews": [],
+      "simulationOptions": [
+        {
+          "id": "COST",
+          "originObjectId": "COST",
+          "label": "Operating costs",
+          "assumption": "Change this input within the declared model.",
+          "enabled": true,
+          "disabledReason": null,
+          "input": {
+            "value": "90",
+            "unit": "EUR m",
+            "period": "FY2027",
+            "scope": "Group"
+          },
+          "scope": {
+            "coveredObjectIds": [
+              "CAP",
+              "LEVERAGE",
+              "PROFIT"
+            ],
+            "limitedObjectIds": [
+              "IRR"
+            ]
+          }
+        },
+        {
+          "id": "DEBT",
+          "originObjectId": "DEBT",
+          "label": "Net debt",
+          "assumption": "Change this input within the declared model.",
+          "enabled": true,
+          "disabledReason": null,
+          "input": {
+            "value": "60",
+            "unit": "EUR m",
+            "period": "FY2027",
+            "scope": "Group"
+          },
+          "scope": {
+            "coveredObjectIds": [
+              "LEVERAGE"
+            ],
+            "limitedObjectIds": []
+          }
+        },
+        {
+          "id": "REVENUE",
+          "originObjectId": "REVENUE",
+          "label": "Revenue assumption",
+          "assumption": "Change this input within the declared model.",
+          "enabled": true,
+          "disabledReason": null,
+          "input": {
+            "value": "120",
+            "unit": "EUR m",
+            "period": "FY2027",
+            "scope": "Group"
+          },
+          "scope": {
+            "coveredObjectIds": [
+              "CAP",
+              "LEVERAGE",
+              "PROFIT"
+            ],
+            "limitedObjectIds": [
+              "IRR"
+            ]
+          }
+        }
+      ],
+      "decisionPaths": [],
+      "decisions": [],
+      "conditions": [],
+      "relations": [
+        {
+          "id": "F-CAP:PROFIT:CAP",
+          "caseId": "SIMULATION-PEER",
+          "sourceObjectId": "PROFIT",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "CAP",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "MIN(profit, 30)"
+        },
+        {
+          "id": "F-IRR:PROFIT:IRR",
+          "caseId": "SIMULATION-PEER",
+          "sourceObjectId": "PROFIT",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "IRR",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "profit"
+        },
+        {
+          "id": "F-LEVERAGE:DEBT:LEVERAGE",
+          "caseId": "SIMULATION-PEER",
+          "sourceObjectId": "DEBT",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "LEVERAGE",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "debt / profit"
+        },
+        {
+          "id": "F-LEVERAGE:PROFIT:LEVERAGE",
+          "caseId": "SIMULATION-PEER",
+          "sourceObjectId": "PROFIT",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "LEVERAGE",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "debt / profit"
+        },
+        {
+          "id": "F-PROFIT:REVENUE:PROFIT",
+          "caseId": "SIMULATION-PEER",
+          "sourceObjectId": "REVENUE",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "PROFIT",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "revenue - cost"
+        },
+        {
+          "id": "F-PROFIT:COST:PROFIT",
+          "caseId": "SIMULATION-PEER",
+          "sourceObjectId": "COST",
+          "sourceObjectType": "ModelNode",
+          "targetObjectId": "PROFIT",
+          "targetObjectType": "ModelNode",
+          "type": "DRIVES",
+          "institutionalState": "CURRENT",
+          "contractVersion": "simulation/1.0",
+          "rationale": "revenue - cost"
+        }
+      ],
+      "caseRef": {
+        "id": "SIMULATION-PEER",
+        "name": "Example B \u00b7 fictional model"
+      },
+      "caseVersion": "SIMULATION-PEER-V1",
+      "asOf": "2026-09-05",
+      "simulationScope": {
+        "schemaVersion": "simulation/1.0",
+        "version": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e",
+        "caseId": "SIMULATION-PEER",
+        "caseVersion": "SIMULATION-PEER-V1",
+        "modelNodeCount": 7,
+        "computableCount": 6,
+        "limits": [
+          {
+            "objectId": "IRR",
+            "label": "Return with an unconfigured solver",
+            "reason": "This calculation needs a runtime that is not available in this simulation."
+          }
+        ],
+        "options": [
+          {
+            "id": "COST",
+            "originObjectId": "COST",
+            "label": "Operating costs",
+            "assumption": "Change this input within the declared model.",
+            "enabled": true,
+            "disabledReason": null,
+            "input": {
+              "value": "90",
+              "unit": "EUR m",
+              "period": "FY2027",
+              "scope": "Group"
+            },
+            "scope": {
+              "coveredObjectIds": [
+                "CAP",
+                "LEVERAGE",
+                "PROFIT"
+              ],
+              "limitedObjectIds": [
+                "IRR"
+              ]
+            }
+          },
+          {
+            "id": "DEBT",
+            "originObjectId": "DEBT",
+            "label": "Net debt",
+            "assumption": "Change this input within the declared model.",
+            "enabled": true,
+            "disabledReason": null,
+            "input": {
+              "value": "60",
+              "unit": "EUR m",
+              "period": "FY2027",
+              "scope": "Group"
+            },
+            "scope": {
+              "coveredObjectIds": [
+                "LEVERAGE"
+              ],
+              "limitedObjectIds": []
+            }
+          },
+          {
+            "id": "REVENUE",
+            "originObjectId": "REVENUE",
+            "label": "Revenue assumption",
+            "assumption": "Change this input within the declared model.",
+            "enabled": true,
+            "disabledReason": null,
+            "input": {
+              "value": "120",
+              "unit": "EUR m",
+              "period": "FY2027",
+              "scope": "Group"
+            },
+            "scope": {
+              "coveredObjectIds": [
+                "CAP",
+                "LEVERAGE",
+                "PROFIT"
+              ],
+              "limitedObjectIds": [
+                "IRR"
+              ]
+            }
+          }
+        ],
+        "notes": []
+      }
+    }
+  },
+  "requests": {
+    "inverse": {
+      "optionId": "REVENUE",
+      "originObjectId": "REVENUE",
+      "assumption": "Test",
+      "caseVersion": "SIMULATION-TEST-V1",
+      "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+      "mode": "inverse",
+      "inverse": {
+        "outputId": "LEVERAGE",
+        "target": "3",
+        "lower": "70",
+        "upper": "100"
+      }
+    },
+    "compare": {
+      "optionId": "REVENUE",
+      "originObjectId": "REVENUE",
+      "assumption": "Test",
+      "caseVersion": "SIMULATION-TEST-V1",
+      "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+      "mode": "compare",
+      "percent": "-10",
+      "peerCaseId": "SIMULATION-PEER",
+      "peerCaseVersion": "SIMULATION-PEER-V1",
+      "peerScopeVersion": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e"
+    },
+    "event": {
+      "mode": "event",
+      "optionId": "COST",
+      "originObjectId": "COST",
+      "assumption": "Operating update: revenue down, costs up",
+      "caseVersion": "SIMULATION-TEST-V1",
+      "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+      "scenarioId": "sha256:c04a785de2eff9060e5bf1bfc028a561ba6502b961e3ef8201e0db80c2211bbd"
+    }
+  },
+  "results": {
+    "inverse": {
+      "id": "sha256:82103d365b0e2f46d8f552a6bf1c093b94555f929696c4f468b2d39984af0993",
+      "schemaVersion": "simulation/1.0",
+      "caseId": "SIMULATION-TEST",
+      "caseVersion": "SIMULATION-TEST-V1",
+      "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+      "request": {
+        "optionId": "REVENUE",
+        "originObjectId": "REVENUE",
+        "assumption": "Revenue assumption: 100 \u2192 86.6666666790843009948730469 EUR m",
+        "value": "86.6666666790843009948730469",
+        "caseVersion": "SIMULATION-TEST-V1",
+        "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+        "mode": "inverse",
+        "inverse": {
+          "outputId": "LEVERAGE",
+          "target": "3",
+          "lower": "70",
+          "upper": "100"
+        }
+      },
+      "effects": [
+        {
+          "objectId": "REVENUE",
+          "objectLabel": "Revenue assumption",
+          "state": "CHANGES",
+          "before": "100 EUR m",
+          "after": "86.666667 EUR m",
+          "explanation": "Hypothetical input supplied for this test.",
+          "reasonRelationIds": [],
+          "magnitude": {
+            "before": "100",
+            "after": "86.6666666790843009948730469",
+            "delta": "-13.3333333209156990051269531",
+            "unit": "EUR m",
+            "percent": "-13.33333332091569900512695310"
+          }
+        },
+        {
+          "objectId": "PROFIT",
+          "objectLabel": "Operating earnings",
+          "state": "CHANGES",
+          "before": "40.0 EUR m",
+          "after": "26.666667 EUR m",
+          "explanation": null,
+          "reasonRelationIds": [
+            "F-PROFIT:REVENUE:PROFIT",
+            "F-PROFIT:COST:PROFIT"
+          ],
+          "magnitude": {
+            "before": "40.0",
+            "after": "26.6666666790843009948730469",
+            "delta": "-13.3333333209156990051269531",
+            "unit": "EUR m",
+            "percent": "-33.33333330228924751281738275"
+          }
+        },
+        {
+          "objectId": "CAP",
+          "objectLabel": "Capped distribution",
+          "state": "CHANGES",
+          "before": "30.0 EUR m",
+          "after": "26.666667 EUR m",
+          "explanation": null,
+          "reasonRelationIds": [
+            "F-CAP:PROFIT:CAP"
+          ],
+          "magnitude": {
+            "before": "30.0",
+            "after": "26.6666666790843009948730469",
+            "delta": "-3.3333333209156990051269531",
+            "unit": "EUR m",
+            "percent": "-11.11111106971899668375651033"
+          }
+        },
+        {
+          "objectId": "LEVERAGE",
+          "objectLabel": "Net debt / operating earnings",
+          "state": "CHANGES",
+          "before": "2.0 x",
+          "after": "3.0000000 x",
+          "explanation": null,
+          "reasonRelationIds": [
+            "F-LEVERAGE:DEBT:LEVERAGE",
+            "F-LEVERAGE:PROFIT:LEVERAGE"
+          ],
+          "magnitude": {
+            "before": "2.0",
+            "after": "2.999999998603016138727303527",
+            "delta": "0.999999998603016138727303527",
+            "unit": "x",
+            "percent": "49.99999993015080693636517635"
+          }
+        }
+      ],
+      "limits": [
+        {
+          "objectId": "IRR",
+          "label": "Return with an unconfigured solver",
+          "reason": "This calculation needs a runtime that is not available in this simulation."
+        }
+      ],
+      "coverage": {
+        "examinedCount": 5,
+        "changedCount": 4,
+        "heldCount": 0,
+        "unmappedCount": 1
+      },
+      "liveCaseUnchanged": true,
+      "inverse": {
+        "outputId": "LEVERAGE",
+        "target": "3",
+        "lower": "70",
+        "upper": "100",
+        "status": "FOUND",
+        "iterations": 28,
+        "direction": "DECREASING",
+        "outputAtLower": "8.0",
+        "outputAtUpper": "2.0",
+        "inputValue": "86.6666666790843009948730469",
+        "actual": "2.999999998603016138727303527",
+        "residual": "-1.396983861272696473E-9",
+        "tolerance": "3E-9"
+      }
+    },
+    "compare": {
+      "id": "sha256:e0b54028d72bfbf8b22d28d440a4307e4ee0ea7eb6a6c5c526c63b0e8e8c8994",
+      "schemaVersion": "simulation/1.0",
+      "caseId": "SIMULATION-TEST",
+      "caseVersion": "SIMULATION-TEST-V1",
+      "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+      "request": {
+        "optionId": "REVENUE",
+        "originObjectId": "REVENUE",
+        "assumption": "Revenue assumption: 100 \u2192 90.0 EUR m",
+        "value": "90.0",
+        "caseVersion": "SIMULATION-TEST-V1",
+        "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+        "mode": "compare",
+        "percent": "-10",
+        "peerCaseId": "SIMULATION-PEER",
+        "peerCaseVersion": "SIMULATION-PEER-V1",
+        "peerScopeVersion": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e"
+      },
+      "effects": [
+        {
+          "objectId": "REVENUE",
+          "objectLabel": "Revenue assumption",
+          "state": "CHANGES",
+          "before": "100 EUR m",
+          "after": "90.0 EUR m",
+          "explanation": "Hypothetical input supplied for this test.",
+          "reasonRelationIds": [],
+          "magnitude": {
+            "before": "100",
+            "after": "90.0",
+            "delta": "-10.0",
+            "unit": "EUR m",
+            "percent": "-10.0"
+          }
+        },
+        {
+          "objectId": "PROFIT",
+          "objectLabel": "Operating earnings",
+          "state": "CHANGES",
+          "before": "40.0 EUR m",
+          "after": "30.0 EUR m",
+          "explanation": null,
+          "reasonRelationIds": [
+            "F-PROFIT:REVENUE:PROFIT",
+            "F-PROFIT:COST:PROFIT"
+          ],
+          "magnitude": {
+            "before": "40.0",
+            "after": "30.0",
+            "delta": "-10.0",
+            "unit": "EUR m",
+            "percent": "-25.00"
+          }
+        },
+        {
+          "objectId": "CAP",
+          "objectLabel": "Capped distribution",
+          "state": "HOLDS",
+          "before": "30.0 EUR m",
+          "after": "30.0 EUR m",
+          "explanation": null,
+          "reasonRelationIds": [
+            "F-CAP:PROFIT:CAP"
+          ],
+          "magnitude": {
+            "before": "30.0",
+            "after": "30.0",
+            "delta": "0.0",
+            "unit": "EUR m",
+            "percent": "0"
+          }
+        },
+        {
+          "objectId": "LEVERAGE",
+          "objectLabel": "Net debt / operating earnings",
+          "state": "CHANGES",
+          "before": "2.0 x",
+          "after": "2.6666667 x",
+          "explanation": null,
+          "reasonRelationIds": [
+            "F-LEVERAGE:DEBT:LEVERAGE",
+            "F-LEVERAGE:PROFIT:LEVERAGE"
+          ],
+          "magnitude": {
+            "before": "2.0",
+            "after": "2.666666666666666666666666667",
+            "delta": "0.666666666666666666666666667",
+            "unit": "x",
+            "percent": "33.33333333333333333333333335"
+          }
+        }
+      ],
+      "limits": [
+        {
+          "objectId": "IRR",
+          "label": "Return with an unconfigured solver",
+          "reason": "This calculation needs a runtime that is not available in this simulation."
+        }
+      ],
+      "coverage": {
+        "examinedCount": 5,
+        "changedCount": 3,
+        "heldCount": 1,
+        "unmappedCount": 1
+      },
+      "liveCaseUnchanged": true,
+      "comparison": {
+        "peerCaseId": "SIMULATION-PEER",
+        "peerName": "Example B \u00b7 fictional model",
+        "peerCaseVersion": "SIMULATION-PEER-V1",
+        "peerScopeVersion": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e",
+        "percent": "-10",
+        "rows": [
+          {
+            "label": "Capped distribution",
+            "objectId": "CAP",
+            "peerObjectId": "CAP",
+            "identity": {
+              "comparison_key": "example-definition:CAP",
+              "unit": "EUR m",
+              "currency": "EUR",
+              "period": "FY2027",
+              "perimeter": "Group",
+              "basis": "REPORTED",
+              "scenario": "BASE"
+            },
+            "current": {
+              "before": "30.0",
+              "after": "30.0",
+              "delta": "0.0",
+              "unit": "EUR m",
+              "percent": "0"
+            },
+            "peer": {
+              "before": "30.0",
+              "after": "18.0",
+              "delta": "-12.0",
+              "unit": "EUR m",
+              "percent": "-40.0"
+            }
+          },
+          {
+            "label": "Net debt / operating earnings",
+            "objectId": "LEVERAGE",
+            "peerObjectId": "LEVERAGE",
+            "identity": {
+              "comparison_key": "example-definition:LEVERAGE",
+              "unit": "x",
+              "currency": "EUR",
+              "period": "FY2027",
+              "perimeter": "Group",
+              "basis": "REPORTED",
+              "scenario": "BASE"
+            },
+            "current": {
+              "before": "2.0",
+              "after": "2.666666666666666666666666667",
+              "delta": "0.666666666666666666666666667",
+              "unit": "x",
+              "percent": "33.33333333333333333333333335"
+            },
+            "peer": {
+              "before": "2.0",
+              "after": "3.333333333333333333333333333",
+              "delta": "1.333333333333333333333333333",
+              "unit": "x",
+              "percent": "66.66666666666666666666666665"
+            }
+          },
+          {
+            "label": "Operating earnings",
+            "objectId": "PROFIT",
+            "peerObjectId": "PROFIT",
+            "identity": {
+              "comparison_key": "example-definition:PROFIT",
+              "unit": "EUR m",
+              "currency": "EUR",
+              "period": "FY2027",
+              "perimeter": "Group",
+              "basis": "REPORTED",
+              "scenario": "BASE"
+            },
+            "current": {
+              "before": "40.0",
+              "after": "30.0",
+              "delta": "-10.0",
+              "unit": "EUR m",
+              "percent": "-25.00"
+            },
+            "peer": {
+              "before": "30.0",
+              "after": "18.0",
+              "delta": "-12.0",
+              "unit": "EUR m",
+              "percent": "-40.0"
+            }
+          },
+          {
+            "label": "Revenue assumption",
+            "objectId": "REVENUE",
+            "peerObjectId": "REVENUE",
+            "identity": {
+              "comparison_key": "example-definition:REVENUE",
+              "unit": "EUR m",
+              "currency": "EUR",
+              "period": "FY2027",
+              "perimeter": "Group",
+              "basis": "REPORTED",
+              "scenario": "BASE"
+            },
+            "current": {
+              "before": "100",
+              "after": "90.0",
+              "delta": "-10.0",
+              "unit": "EUR m",
+              "percent": "-10.0"
+            },
+            "peer": {
+              "before": "120",
+              "after": "108.0",
+              "delta": "-12.0",
+              "unit": "EUR m",
+              "percent": "-10.0"
+            }
+          }
+        ],
+        "exclusions": [
+          {
+            "caseId": "SIMULATION-TEST",
+            "objectId": "IRR",
+            "label": "Return with an unconfigured solver",
+            "reason": "This calculation is unavailable in one or both cases."
+          }
+        ],
+        "peerResult": {
+          "id": "sha256:b7844a9b0e9b6d141c2dd376574bff6926856cfe37062cd83d0de8cd9b7eabd1",
+          "schemaVersion": "simulation/1.0",
+          "caseId": "SIMULATION-PEER",
+          "caseVersion": "SIMULATION-PEER-V1",
+          "scopeVersion": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e",
+          "request": {
+            "optionId": "REVENUE",
+            "originObjectId": "REVENUE",
+            "assumption": "Revenue assumption: 120 \u2192 108.0 EUR m",
+            "value": "108.0",
+            "caseVersion": "SIMULATION-PEER-V1",
+            "scopeVersion": "sha256:999069b4f76f93c5c763133397afdf5f1f05262b3d25b886962708e0e0f0425e"
+          },
+          "effects": [
+            {
+              "objectId": "REVENUE",
+              "objectLabel": "Revenue assumption",
+              "state": "CHANGES",
+              "before": "120 EUR m",
+              "after": "108.0 EUR m",
+              "explanation": "Hypothetical input supplied for this test.",
+              "reasonRelationIds": [],
+              "magnitude": {
+                "before": "120",
+                "after": "108.0",
+                "delta": "-12.0",
+                "unit": "EUR m",
+                "percent": "-10.0"
+              }
+            },
+            {
+              "objectId": "PROFIT",
+              "objectLabel": "Operating earnings",
+              "state": "CHANGES",
+              "before": "30.0 EUR m",
+              "after": "18.0 EUR m",
+              "explanation": null,
+              "reasonRelationIds": [
+                "F-PROFIT:REVENUE:PROFIT",
+                "F-PROFIT:COST:PROFIT"
+              ],
+              "magnitude": {
+                "before": "30.0",
+                "after": "18.0",
+                "delta": "-12.0",
+                "unit": "EUR m",
+                "percent": "-40.0"
+              }
+            },
+            {
+              "objectId": "CAP",
+              "objectLabel": "Capped distribution",
+              "state": "CHANGES",
+              "before": "30.0 EUR m",
+              "after": "18.0 EUR m",
+              "explanation": null,
+              "reasonRelationIds": [
+                "F-CAP:PROFIT:CAP"
+              ],
+              "magnitude": {
+                "before": "30.0",
+                "after": "18.0",
+                "delta": "-12.0",
+                "unit": "EUR m",
+                "percent": "-40.0"
+              }
+            },
+            {
+              "objectId": "LEVERAGE",
+              "objectLabel": "Net debt / operating earnings",
+              "state": "CHANGES",
+              "before": "2.0 x",
+              "after": "3.3333333 x",
+              "explanation": null,
+              "reasonRelationIds": [
+                "F-LEVERAGE:DEBT:LEVERAGE",
+                "F-LEVERAGE:PROFIT:LEVERAGE"
+              ],
+              "magnitude": {
+                "before": "2.0",
+                "after": "3.333333333333333333333333333",
+                "delta": "1.333333333333333333333333333",
+                "unit": "x",
+                "percent": "66.66666666666666666666666665"
+              }
+            }
+          ],
+          "limits": [
+            {
+              "objectId": "IRR",
+              "label": "Return with an unconfigured solver",
+              "reason": "This calculation needs a runtime that is not available in this simulation."
+            }
+          ],
+          "coverage": {
+            "examinedCount": 5,
+            "changedCount": 4,
+            "heldCount": 0,
+            "unmappedCount": 1
+          },
+          "liveCaseUnchanged": true
+        }
+      }
+    },
+    "event": {
+      "id": "sha256:c04a785de2eff9060e5bf1bfc028a561ba6502b961e3ef8201e0db80c2211bbd",
+      "schemaVersion": "simulation/1.0",
+      "caseId": "SIMULATION-TEST",
+      "caseVersion": "SIMULATION-TEST-V1",
+      "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+      "request": {
+        "mode": "event",
+        "optionId": "COST",
+        "originObjectId": "COST",
+        "value": "65",
+        "assumption": "Operating update: revenue down, costs up",
+        "caseVersion": "SIMULATION-TEST-V1",
+        "scopeVersion": "sha256:7edae17f767642d3b9f319d4cec8dd8f987346422a05dbcb51758f1aa64726fc",
+        "scenarioId": "sha256:c04a785de2eff9060e5bf1bfc028a561ba6502b961e3ef8201e0db80c2211bbd"
+      },
+      "effects": [
+        {
+          "objectId": "COST",
+          "objectLabel": "Operating costs",
+          "state": "CHANGES",
+          "before": "60 EUR m",
+          "after": "65 EUR m",
+          "explanation": "Hypothetical input supplied for this test.",
+          "reasonRelationIds": [],
+          "magnitude": {
+            "before": "60",
+            "after": "65",
+            "delta": "5",
+            "unit": "EUR m",
+            "percent": "8.333333333333333333333333333"
+          }
+        },
+        {
+          "objectId": "REVENUE",
+          "objectLabel": "Revenue assumption",
+          "state": "CHANGES",
+          "before": "100 EUR m",
+          "after": "90 EUR m",
+          "explanation": "Hypothetical input supplied for this test.",
+          "reasonRelationIds": [],
+          "magnitude": {
+            "before": "100",
+            "after": "90",
+            "delta": "-10",
+            "unit": "EUR m",
+            "percent": "-10.0"
+          }
+        },
+        {
+          "objectId": "PROFIT",
+          "objectLabel": "Operating earnings",
+          "state": "CHANGES",
+          "before": "40.0 EUR m",
+          "after": "25.0 EUR m",
+          "explanation": null,
+          "reasonRelationIds": [
+            "F-PROFIT:REVENUE:PROFIT",
+            "F-PROFIT:COST:PROFIT"
+          ],
+          "magnitude": {
+            "before": "40.0",
+            "after": "25.0",
+            "delta": "-15.0",
+            "unit": "EUR m",
+            "percent": "-37.500"
+          }
+        },
+        {
+          "objectId": "CAP",
+          "objectLabel": "Capped distribution",
+          "state": "CHANGES",
+          "before": "30.0 EUR m",
+          "after": "25.0 EUR m",
+          "explanation": null,
+          "reasonRelationIds": [
+            "F-CAP:PROFIT:CAP"
+          ],
+          "magnitude": {
+            "before": "30.0",
+            "after": "25.0",
+            "delta": "-5.0",
+            "unit": "EUR m",
+            "percent": "-16.66666666666666666666666667"
+          }
+        },
+        {
+          "objectId": "LEVERAGE",
+          "objectLabel": "Net debt / operating earnings",
+          "state": "CHANGES",
+          "before": "2.0 x",
+          "after": "3.2 x",
+          "explanation": null,
+          "reasonRelationIds": [
+            "F-LEVERAGE:DEBT:LEVERAGE",
+            "F-LEVERAGE:PROFIT:LEVERAGE"
+          ],
+          "magnitude": {
+            "before": "2.0",
+            "after": "3.2",
+            "delta": "1.2",
+            "unit": "x",
+            "percent": "60.0"
+          }
+        }
+      ],
+      "limits": [
+        {
+          "objectId": "IRR",
+          "label": "Return with an unconfigured solver",
+          "reason": "This calculation needs a runtime that is not available in this simulation."
+        }
+      ],
+      "coverage": {
+        "examinedCount": 6,
+        "changedCount": 5,
+        "heldCount": 0,
+        "unmappedCount": 1
+      },
+      "liveCaseUnchanged": true,
+      "event": {
+        "eventId": "EVENT-OPERATING-UPDATE",
+        "eventHash": "sha256:10ab0bfef8ccf644152f6055dc42cfcaa2bdb15ae4bd8ff56c013b0d6919e975",
+        "label": "Operating update: revenue down, costs up",
+        "knownAt": "2026-09-05T09:00:00Z",
+        "effectiveAt": "2026-09-04",
+        "recordedAt": "2026-09-05T09:01:00Z",
+        "sourceIds": [
+          "SOURCE-UPDATE"
+        ],
+        "changes": [
+          {
+            "ruleId": "RULE-REVENUE",
+            "claimId": "CLAIM-REVENUE",
+            "inputId": "REVENUE",
+            "value": "90",
+            "sourceId": "SOURCE-UPDATE"
+          },
+          {
+            "ruleId": "RULE-COST",
+            "claimId": "CLAIM-COST",
+            "inputId": "COST",
+            "value": "65",
+            "sourceId": "SOURCE-UPDATE"
+          }
+        ],
+        "basis": "CURRENT_CASE"
+      }
+    }
+  }
+}

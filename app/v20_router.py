@@ -48,7 +48,7 @@ from cryptography.hazmat.primitives.asymmetric.ed25519 import (
     Ed25519PublicKey,
 )
 from fastapi import APIRouter, BackgroundTasks, Header, HTTPException, Request, UploadFile
-from fastapi.responses import JSONResponse
+from fastapi.responses import HTMLResponse, JSONResponse, Response
 
 from backend.dynamics import (
     DynamicsBundleError,
@@ -59,6 +59,7 @@ from backend.dynamics import (
 from backend.dynamics.runtime import ledger_store
 from backend.dynamics.runtime.case_journal import build_case_journal
 from tools.source_envelope import build_source_envelope
+from app.statement_tracking import statement_context
 from tools.relation_rules import annotate_edge, audit_relation_outputs, relation_rule
 from tools.decision_criticality import next_position_work, rank_decision_criticality
 from tools.archetype_pack import (
@@ -109,6 +110,7 @@ V20_ACTION_CAPABILITIES: dict[str, dict[str, str]] = {
     "search": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/search"},
     "getObject": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/objects/{object_id:path}"},
     "listSources": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/sources"},
+    "loadSourceDocument": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/source-document"},
     "listInbox": {"status": "AVAILABLE", "method": "GET", "path": "/cases/{case_id}/inbox"},
     "ingest": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest"},
     "bulkIngest": {"status": "AVAILABLE", "method": "POST", "path": "/cases/{case_id}/ingest/batches"},
@@ -1677,17 +1679,24 @@ def _persist_claims_to_vault(case_id: str, claims: list[dict], source_filename: 
             "direction": claim.get("direction", "context"),
             "source": {
                 "artifact": f"vault/inbox/{source_filename}" if source_filename else None,
+                "source_id": claim.get("source_id"),
+                "source_version_id": claim.get("source_version_id"),
                 "locator": claim.get("locator", ""),
                 "author": claim.get("author"),
                 "date": claim.get("period"),
             },
-            "derivation": None,
-            "rests-on": [],
-            "extracted-by": "extract_v1",
+            "derivation": claim.get("derivation"),
+            "rests-on": claim.get("rests_on", claim.get("rests-on", [])),
+            "extracted-by": claim.get("extractor", "unspecified"),
             "extracted": _today(),
             "period": claim.get("period"),
             "perimeter": claim.get("perimeter"),
+            **{key: claim.get(key) for key in ("unit", "currency", "definition_id", "metric", "metric_label", "entity", "scope", "basis", "measurement", "scenario", "period_canonical", "claim_kind", "bound", "value_raw")},
+            "statement-context": statement_context(claim),
             "source-id": claim.get("source_id"),
+            "source-version-id": claim.get("source_version_id"),
+            "known-at": claim.get("known_at"),
+            "verbatim-or-lossless-span": claim.get("verbatim_or_lossless_span") or claim.get("verbatimOrLosslessSpan"),
         }
         path = claims_dir / f"c-{case_id}-{safe_id}.md"
         body = str(claim.get("statement") or claim_id).strip() + "\n"
@@ -4888,6 +4897,7 @@ def _enrich_claims(raw: list[dict], bears_on_map: dict) -> list[dict]:
             **c,
             "claim_id": cid,
             "id": cid,
+            "tracking": statement_context(c),
             "bears_on": bears_on_map.get(cid, c.get("bears_on", [])),
             "locator": c.get("locator", ""),
             "epistemic_type": c.get("epistemic", c.get("epistemic_type", "asserted")),
@@ -5739,6 +5749,92 @@ def reunderwrite(
         baseline_state_id=baseline_state_id,
         current_state_id=current_state_id,
     )
+
+
+def _original_source_document(case_id: str, source_id: str, source_version_id: str):
+    from app.source_documents import resolve_document
+    if not re.fullmatch(r"[A-Za-z0-9_-][A-Za-z0-9._-]*", case_id):
+        raise HTTPException(400, "Invalid case reference.")
+    records = list(_read_inbox_manifest())
+    proposals = _pipeline_out_for_case(case_id) / "proposals"
+    if proposals.exists():
+        for path in proposals.glob("evidence-*.json"):
+            record = _load_json_safe(path)
+            if isinstance(record, dict):
+                records.append(record)
+    return resolve_document(VAULT, records, case_id, source_id, source_version_id)
+
+
+@v20.get("/cases/{case_id}/source-document")
+def get_source_document(case_id: str, source_id: str, source_version_id: str,
+                        locator: str = "", claim_id: str = ""):
+    from app.source_documents import SCHEMA, HEADERS, document_url, locate_document
+    document = _original_source_document(case_id, source_id, source_version_id)
+    try:
+        position = locate_document(document, locator)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Original source reader failed: %s", type(exc).__name__)
+        raise HTTPException(422, "The original file could not be opened by this reader.") from exc
+    return JSONResponse({
+        "schema_version": SCHEMA, "case_id": case_id, "source_id": source_id,
+        "source_version_id": source_version_id, "filename": document.filename,
+        "media_type": document.media_type, "locator": locator, "position": position,
+        "view_url": document_url(document, "view", locator, claim_id) + "#selection",
+        "download_url": document_url(document, "file") + "&download=true",
+    }, headers=HEADERS)
+
+
+@v20.get("/cases/{case_id}/source-document/view", response_class=HTMLResponse)
+def view_source_document(case_id: str, source_id: str, source_version_id: str,
+                         locator: str = "", claim_id: str = ""):
+    from app.source_documents import HEADERS, locate_document, render_document
+    document = _original_source_document(case_id, source_id, source_version_id)
+    quote = ""
+    if claim_id:
+        claim = next((item for item in _load_claims(case_id)
+                      if str(item.get("claim_id") or item.get("id")) == claim_id), None)
+        if (claim and claim.get("source_id") == source_id
+                and claim.get("source_version_id") == source_version_id
+                and claim.get("locator") == locator):
+            quote = str(claim.get("verbatim_or_lossless_span") or claim.get("verbatimOrLosslessSpan")
+                        or claim.get("excerpt") or "")
+    try:
+        page = render_document(document, locator, locate_document(document, locator), quote)
+    except HTTPException:
+        raise
+    except Exception as exc:
+        logger.warning("Original source rendering failed: %s", type(exc).__name__)
+        raise HTTPException(422, "The original file could not be rendered by this reader.") from exc
+    return HTMLResponse(page, headers={
+        **HEADERS,
+        "Content-Security-Policy": "default-src 'none'; style-src 'unsafe-inline'; img-src data:; media-src 'self'; frame-ancestors 'self'; base-uri 'none'; form-action 'none'",
+    })
+
+
+@v20.get("/cases/{case_id}/source-document/file")
+def original_source_file(case_id: str, source_id: str, source_version_id: str,
+                         download: bool = False, range_header: str | None = Header(None, alias="Range")):
+    from urllib.parse import quote
+    from app.source_documents import HEADERS
+    document = _original_source_document(case_id, source_id, source_version_id)
+    data = document.data
+    size = len(data)
+    disposition = "attachment" if download or document.media_type == "application/octet-stream" else "inline"
+    headers = {**HEADERS, "Accept-Ranges": "bytes",
+               "Content-Disposition": f"{disposition}; filename*=UTF-8''{quote(document.filename, safe='')}"}
+    if range_header:
+        match = re.fullmatch(r"bytes=(\d*)-(\d*)", range_header)
+        if not match or not any(match.groups()):
+            raise HTTPException(416, "Invalid byte range.", headers={"Content-Range": f"bytes */{size}"})
+        start = int(match[1]) if match[1] else max(0, size - int(match[2]))
+        end = min(size - 1, int(match[2])) if match[1] and match[2] else size - 1
+        if start > end or start >= size:
+            raise HTTPException(416, "Byte range is outside the source.", headers={"Content-Range": f"bytes */{size}"})
+        headers["Content-Range"] = f"bytes {start}-{end}/{size}"
+        return Response(data[start:end + 1], status_code=206, media_type=document.media_type, headers=headers)
+    return Response(data, media_type=document.media_type, headers=headers)
 
 
 @v20.get("/cases/{case_id}/sources")

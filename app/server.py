@@ -87,6 +87,14 @@ app.add_middleware(
 # ── V20 router (the contract the frontend speaks) ─────────────────────────────
 from app.v20_router import v20  # noqa: E402
 app.include_router(v20)
+from app.output_case import production_output_router  # noqa: E402
+app.include_router(production_output_router())
+from app.simulation_routes import production_simulation_router  # noqa: E402
+app.include_router(production_simulation_router())
+
+# Built React workspace uses the same authenticated API origin.
+if (ROOT / "dist").exists():
+    app.mount("/workspace", StaticFiles(directory=str(ROOT / "dist"), html=True), name="react-workspace")
 
 # ── V20 frontend — served at /ui so API routes always win ─────────────────────
 _UI_DIR = ROOT / "ui" / "01_PRODUCT_BUILD" / "app"

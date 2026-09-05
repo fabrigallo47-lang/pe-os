@@ -91,6 +91,8 @@ export type Entitlement =
   | 'RECORD_DECISION'
   | 'EDIT_ARTIFACT'
   | 'SYNC_ARTIFACT'
+  | 'APPROVE_ARTIFACT'
+  | 'EDIT_EDITORIAL_PROFILE'
   | 'EXTERNAL_ACTION';
 
 export interface Actor {
@@ -141,6 +143,8 @@ export interface SourceLocator {
   sourceVersionId?: Id;
   locator?: string;
   claimId?: Id;
+  /** Read a citation frozen inside this saved output passage, without replacing Current. */
+  artifactBlockId?: Id;
 }
 
 /** UI projection of the canonical relation contract. */
@@ -277,7 +281,28 @@ export interface Claim {
   knownAt?: string;
   type: string; // investor-facing evidence/source class
   label: string;
-  claimKind?: 'QUALITATIVE' | 'QUANTITATIVE' | 'DEFINITION' | 'FORECAST' | 'ESTIMATE' | 'COMMITMENT' | 'CONDITION' | 'DECISION_OBSERVATION' | 'OTHER';
+  claimKind?: 'QUALITATIVE' | 'QUANTITATIVE' | 'DEFINITION' | 'FORECAST' | 'ESTIMATE' | 'COMMITMENT' | 'CONDITION' | 'ATTRIBUTION' | 'NEGATIVE' | 'DECISION_OBSERVATION' | 'OTHER';
+  /** Read-only extraction metadata, alongside the frozen canonical claim. */
+  tracking?: {
+    claimKind?: string | null;
+    metric?: string | null;
+    definition?: string | null;
+    entity?: string;
+    period?: string;
+    scope?: string;
+    basis?: string;
+    measurement?: string;
+    scenario?: string;
+    unit?: string;
+    currency?: string;
+    value?: number | string | boolean | null;
+    rawValue?: number | string | boolean | null;
+    valueType: 'NUMBER' | 'TEXT' | 'BOOLEAN' | 'MISSING';
+    bound?: string | null;
+    derivation?: string | null;
+    missingFields: string[];
+    validationNotes: string[];
+  };
   normalizedStatement: string;
   semanticIdentity?: string;
   verbatimOrLosslessSpan?: string;
@@ -446,11 +471,49 @@ export interface ArtifactBlock {
   authorActorId?: Id;
   recordedAt?: string;
   boundObjectIds: Id[];
+  freshnessStatus?: 'CURRENT' | 'STALE' | 'MISSING_BASIS';
+  editorialLocked?: boolean;
+  frozenBasis?: Array<{ objectId: Id; text: string; sourceLocator?: SourceLocator | null }>;
+  writerModel?: string;
+  draftedAt?: string;
+  reviewedBy?: Id;
+  reviewedAt?: string;
   suggestion?: {
     signal: string;
     suggestedText: string;
     reasonObjectIds: Id[];
+    remove?: boolean;
   };
+}
+
+export interface EditorialConfig {
+  name: string;
+  audience: string;
+  decisionPurpose: string;
+  investmentContext: string;
+  language: string;
+  tone: string;
+  lengthGuidance: string;
+  analysisGuidance: string;
+  recommendationGuidance: string;
+  numbersGuidance: string;
+  scenarioGuidance: string;
+  riskGuidance: string;
+  evidenceGuidance: string;
+  citationGuidance: string;
+  presentationGuidance: string;
+  qualityCriteria: string;
+  sections: Array<{ key: string; title: string }>;
+}
+
+export interface EditorialProfile {
+  fund: { id: Id; name: string } | null;
+  versionId: string;
+  version: number;
+  config: EditorialConfig;
+  actorId?: Id;
+  recordedAt?: string;
+  priorVersionId?: string;
 }
 
 export interface Artifact {
@@ -465,6 +528,12 @@ export interface Artifact {
   syncStatus: ArtifactSyncStatus;
   blockIds: Id[];
   quantityIds: Id[];
+  revisionId?: string;
+  approvalStatus?: 'DRAFT' | 'APPROVED';
+  canApprove?: boolean;
+  editorialProfile?: EditorialProfile | null;
+  editorialUpdateAvailable?: boolean;
+  approval?: { actorId: Id; recordedAt: string; caseVersion: string; contentHash: string };
 }
 
 export interface ArtifactDiff {
@@ -490,7 +559,7 @@ export interface ReviewItem {
 }
 
 /** UI impact language; not kernel state. */
-export type ImpactState = 'STRENGTHENS' | 'WEAKENS' | 'HOLDS' | 'NARROWS' | 'RISK_WORSENS' | 'BECOMES_STALE';
+export type ImpactState = 'STRENGTHENS' | 'WEAKENS' | 'HOLDS' | 'NARROWS' | 'RISK_WORSENS' | 'BECOMES_STALE' | 'CHANGES';
 
 export interface ImpactChange {
   objectId: Id;
@@ -499,6 +568,8 @@ export interface ImpactChange {
   before?: string;
   after?: string;
   reasonRelationIds: Id[];
+  magnitude?: { before: string; after: string; delta: string; percent: string | null; unit: string };
+  explanation?: string;
 }
 
 /** Affected does not mean changed. Every touched object is counted exactly once. */
@@ -515,19 +586,111 @@ export interface SimulationOption {
   label: string;
   assumption: string;
   enabled: boolean;
+  disabledReason?: string;
+  input?: { value: string | null; unit?: string; period?: string; scope?: string };
+  scope?: { coveredObjectIds: Id[]; limitedObjectIds: Id[] };
+}
+
+export interface SimulationLimit { objectId: Id; label: string; reason: string }
+
+/** A disposable projection of the server-owned execution perimeter, not a kernel object. */
+export interface SimulationScope {
+  schemaVersion: 'simulation/1.0';
+  version: string;
+  caseId: Id;
+  caseVersion: string;
+  modelNodeCount: number;
+  computableCount: number;
+  limits: SimulationLimit[];
+  notes?: string[];
+  options: SimulationOption[];
 }
 
 export interface SimulationRequest {
+  mode?: 'manual' | 'event' | 'inverse' | 'compare' | 'graph' | 'graph_event';
+  graphVersion?: string;
+  mutations?: GraphMutation[];
+  eventId?: Id;
+  eventHash?: string;
+  scenarioId?: Id;
+  inverse?: { outputId: Id; target: string; lower: string; upper: string };
+  percent?: string;
+  peerCaseId?: Id;
+  peerCaseVersion?: string;
+  peerScopeVersion?: string;
   optionId: Id;
   originObjectId: Id;
   assumption: string;
+  value?: string;
+  scopeVersion?: string;
+  caseVersion?: string;
+}
+
+export interface SimulationProposalRequest { text: string; caseVersion: string; graphVersion: string }
+/** Reviewable interpretation of user text; it is not an admitted event. */
+export interface SimulationProposal extends SimulationProposalRequest {
+  id: Id; schemaVersion: 'simulation-proposal/1.0'; caseId: Id;
+  interpreter: 'GUIDED' | 'ASSISTED'; status: 'READY' | 'NEEDS_CLARIFICATION';
+  items: { id: Id; objectId: Id; label: string; changeLabel: string; before: unknown; after: unknown;
+    sourceText: string; rationale: string; mutations: GraphMutation[] }[];
+  questions: { question: string; objectIds: Id[] }[];
+  limits: string[];
 }
 
 export interface SimulationResult {
+  graph?: GraphSimulationReport;
+  event?: { eventId: Id; eventHash: string; label: string; knownAt: string; effectiveAt?: string; recordedAt?: string; sourceIds: Id[]; changes: { ruleId: Id; claimId: Id; inputId: Id; value: string; sourceId: Id }[]; basis: 'CURRENT_CASE' };
+  inverse?: { status: 'FOUND' | 'UNREACHABLE' | 'UNSUPPORTED' | 'NON_CONVERGENT'; outputId: Id; target: string; lower: string; upper: string; inputValue?: string; actual?: string; residual?: string; tolerance?: string; iterations: number; direction?: string; reason?: string };
+  comparison?: {
+    peerCaseId: Id; peerName: string; peerCaseVersion: string; peerScopeVersion: string; percent: string;
+    rows: { label: string; objectId: Id; peerObjectId: Id; identity: Record<string, string>; current: NonNullable<ImpactChange['magnitude']>; peer: NonNullable<ImpactChange['magnitude']> }[];
+    exclusions: { caseId: Id; objectId: Id; label: string; reason: string }[];
+    peerResult: SimulationResult;
+  };
   id: Id;
   request: SimulationRequest;
   effects: ImpactChange[];
   coverage: Coverage;
+  schemaVersion?: 'simulation/1.0';
+  caseId?: Id;
+  caseVersion?: string;
+  scopeVersion?: string;
+  liveCaseUnchanged?: boolean;
+  limits?: SimulationLimit[];
+}
+
+/** Disposable UI projections of the existing transition runtime, never kernel objects. */
+export interface GraphMutation {
+  operation: 'CORRECT' | 'OBSERVE' | 'SUPERSEDE' | 'RETRACT' | 'ADD';
+  object_type: string; object_id: Id;
+  field?: string; from?: unknown; to?: unknown;
+  statement?: string; relation_type?: 'SUPPORTS' | 'CONTRADICTS'; target_position_id?: Id;
+}
+export interface GraphSimulationObject {
+  id: Id; label: string; kind: string; kindLabel: string; canRetract: boolean; limitation?: string;
+  current: Record<string, unknown>; currentFlags: Record<string, unknown>;
+  fields: { id: string; label: string; value: unknown; control: 'references' | 'boolean' | 'choice' | 'text'; choices?: string[]; referenceKind?: string }[];
+}
+export interface GraphSimulationScope {
+  schemaVersion: 'graph-simulation/1.0'; version: string; engineVersion: string;
+  caseId: Id; caseVersion: string; asOf: string; objects: GraphSimulationObject[];
+  notes: string[]; coverageLimits: Record<string, unknown>[];
+}
+export interface GraphSimulationReport {
+  schemaVersion: 'graph-simulation/1.0'; version: string; engineVersion: string;
+  event: { event_id: Id; event: string; label?: string; effective_date: string; known_at: string; source_ids: Id[]; mutations: GraphMutation[] };
+  rows: { id: Id; label: string; kind: string; kindLabel: string; status: 'CHANGED' | 'HELD' | 'UNAVAILABLE';
+    before: Record<string, unknown> | null; after: Record<string, unknown> | null; unresolved: boolean;
+    changes: { field: string; before: unknown; after: unknown }[];
+    beforeSupport?: string; afterSupport?: string; isOrigin: boolean; reachedVia: string[]; reasons: string[] }[];
+  edges: { id: Id; source: Id; target: Id; relation: string; label: string; version: 'CURRENT' | 'HYPOTHETICAL' }[];
+  labels: Record<string, string>;
+  issues: { category: string; objectIds: Id[]; reason: string; raw: Record<string, unknown> }[];
+  counts: { examined: number; changed: number; held: number; unavailable: number };
+  currentGraph: Record<string, unknown>; currentFlags: Record<string, unknown>;
+  baselineSupport: Record<Id, string>;
+  engineResult: { candidate_state: Record<string, unknown>; transition_output: Record<string, unknown>; normalized_event_batch: unknown; history_append: unknown };
+  materiality: Record<string, unknown>; governance: Record<string, unknown>;
 }
 
 /** Exact kernel event vocabulary from panta.universal_investment_kernel@0.1.0. */
@@ -769,6 +932,8 @@ export interface InspectionPayload {
 export interface PantaCaseSnapshot {
   caseRef: CaseRef;
   caseVersion: string;
+  outputCapabilities?: { versioned: boolean; aiRedraftAvailable: boolean; writerLabel?: string };
+  editorialContext?: { profile: EditorialProfile; history: Array<Omit<EditorialProfile, 'config'>>; configurable: boolean; unavailableReason?: string | null };
   asOf: string;
   decision?: DecisionContext;
   premiseCaseReadingId?: Id;
@@ -797,6 +962,14 @@ export interface PantaCaseSnapshot {
   events: CaseEvent[];
   pendingReviews: ReviewItem[];
   simulationOptions: SimulationOption[];
+  simulationScope?: SimulationScope;
+  simulationScenarios?: SimulationResult[];
+  simulationEventLimits?: { eventId: Id; label: string; reason: string }[];
+  graphSimulationScope?: GraphSimulationScope;
+  graphSimulationScenarios?: SimulationResult[];
+  graphSimulationEventLimits?: { eventId: Id; label: string; reason: string }[];
+  graphSimulationUnavailable?: string;
+  simulationTextInput?: { mode: 'GUIDED' | 'ASSISTED'; message: string; examples: { label: string; text: string }[] };
   conditions: Condition[];
   decisionPaths: DecisionPath[];
   decisions: DecisionRecord[];
@@ -816,6 +989,10 @@ export type PantaAction =
   | { type: 'RECORD_DECISION'; pathId: Id; rationale: string; conditionText?: string }
   | { type: 'CREATE_ARTIFACT'; artifactType: string }
   | { type: 'SYNC_ARTIFACT'; artifactId: Id }
+  | { type: 'REDRAFT_ARTIFACT'; artifactId: Id }
+  | { type: 'APPROVE_ARTIFACT'; artifactId: Id }
+  | { type: 'SAVE_EDITORIAL_PROFILE'; config: EditorialConfig; expectedProfileVersion: string }
+  | { type: 'APPLY_EDITORIAL_PROFILE'; artifactId: Id; expectedProfileVersion: string }
   | { type: 'SYNC_ALL_ARTIFACTS' }
   | { type: 'UPDATE_ARTIFACT_BLOCK'; artifactId: Id; blockId: Id; text: string }
   | { type: 'ACCEPT_ARTIFACT_SUGGESTION'; artifactId: Id; blockId: Id }

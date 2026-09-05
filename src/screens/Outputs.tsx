@@ -1,89 +1,104 @@
-import React, { useMemo, useState } from 'react';
+import React, { useCallback, useEffect, useState } from 'react';
 import { usePanta } from '../app/PantaContext';
 import { EmptyCase } from '../components/EmptyCase';
 import { ObjectLens } from '../components/ObjectLens';
-import { CaseLifecycle } from '../components/CaseLifecycle';
-import { eventById, eventDisplayLabel, caseReadingById, quantityDisplayState, recordedDecision } from '../app/selectors';
-import type { Artifact, ArtifactBlock, Quantity } from '../types/domain';
+import { EditorialProfileEditor } from '../components/EditorialProfileEditor';
+import type { Artifact, ArtifactBlock } from '../types/domain';
+import '../design/live-outputs.css';
 
-const TABS=['IC_MEMO','MODEL','DECISION_PACK'] as const;
-type OutputTab=typeof TABS[number];
+const TABS = ['IC_MEMO', 'MODEL', 'DECISION_PACK', 'DECK', 'TRACKER'] as const;
+type OutputTab = typeof TABS[number];
+const labels = { IC_MEMO: 'IC Memo', MODEL: 'Model', DECISION_PACK: 'Decision Pack', DECK: 'Deck', TRACKER: 'Tracker' };
 
-export function Outputs(){
-  const {snapshot,execute,actor,setActiveObject,pendingAction}=usePanta();
-  const [tab,setTab]=useState<OutputTab>('IC_MEMO');
-  const [mode,setMode]=useState<'READ'|'EDIT'>('READ');
-  const [reviewDiff,setReviewDiff]=useState(false);
-  if(!snapshot)return <EmptyCase/>;
-  const artifact=snapshot.artifacts.find(a=>a.type===tab);
-  const totalPending=snapshot.artifacts.reduce((n,a)=>n+a.pendingCaseChangeCount,0);
-  const canSync=actor?.entitlements.includes('SYNC_ARTIFACT')??false;
-  const canEdit=actor?.entitlements.includes('EDIT_ARTIFACT')??false;
-  const diffCount=artifact?snapshot.artifactDiffs.filter(diff=>diff.artifactId===artifact.id).length:0;
-  const hasDiffDetails=diffCount>0;
-  const busy=Boolean(pendingAction);
-  const sync=async()=>{if(!artifact)return;if(await execute({type:'SYNC_ARTIFACT',artifactId:artifact.id}))setReviewDiff(true)};
-  const selectTab=(next:OutputTab)=>{setTab(next);setMode('READ');setReviewDiff(false);void setActiveObject(undefined)};
-  const moveTab=(event:React.KeyboardEvent<HTMLDivElement>)=>{
-    if(!['ArrowLeft','ArrowRight','Home','End'].includes(event.key))return;
+export function Outputs() {
+  const { snapshot, execute, actor, pendingAction, setActiveObject, refresh, asOf } = usePanta();
+  const [tab, setTab] = useState<OutputTab>('IC_MEMO');
+  const [mode, setMode] = useState<'READ' | 'EDIT'>('READ');
+  const [hasDrafts, setHasDrafts] = useState(false);
+  const [profileEditing, setProfileEditing] = useState(false);
+  if (!snapshot) return <EmptyCase />;
+  const artifact = snapshot.artifacts.find(item => item.type === tab);
+  const live = snapshot.outputCapabilities?.versioned === true;
+  const busy = Boolean(pendingAction) || profileEditing;
+  const canEdit = !asOf && live && (actor?.entitlements.includes('EDIT_ARTIFACT') ?? false);
+  const canSync = !asOf && live && (actor?.entitlements.includes('SYNC_ARTIFACT') ?? false);
+  const hasPending = artifact?.blockIds.some(id => snapshot.artifactBlocks.find(block => block.id === id)?.suggestion);
+  function select(next: OutputTab) { if (hasDrafts || busy) return; setTab(next); setMode('READ'); void setActiveObject(undefined); }
+  function move(event: React.KeyboardEvent) {
+    if (!['ArrowLeft', 'ArrowRight', 'Home', 'End'].includes(event.key)) return;
     event.preventDefault();
-    const currentIndex=TABS.indexOf(tab);
-    const nextIndex=event.key==='Home'?0:event.key==='End'?TABS.length-1:event.key==='ArrowRight'?(currentIndex+1)%TABS.length:(currentIndex-1+TABS.length)%TABS.length;
-    const next=TABS[nextIndex];selectTab(next);window.requestAnimationFrame(()=>document.getElementById(`output-tab-${next}`)?.focus());
-  };
-
+    const index = TABS.indexOf(tab);
+    const next = TABS[event.key === 'Home' ? 0 : event.key === 'End' ? TABS.length - 1 : (index + (event.key === 'ArrowRight' ? 1 : TABS.length - 1)) % TABS.length];
+    select(next); requestAnimationFrame(() => document.getElementById(`output-tab-${next}`)?.focus());
+  }
   return <main className="p-page p-output-page">
     <header className="p-output-toolbar">
-      <div className="p-output-tabs" role="tablist" aria-label="Outputs" onKeyDown={moveTab}>{TABS.map(t=><button key={t} id={`output-tab-${t}`} role="tab" aria-selected={tab===t} aria-controls={`output-panel-${t}`} tabIndex={tab===t?0:-1} className={tab===t?'is-active':''} onClick={()=>selectTab(t)}>{label(t)}</button>)}</div>
-      <div className="p-output-actions">{artifact&&artifact.pendingCaseChangeCount>0&&<><button className="p-change-count" aria-pressed={hasDiffDetails?reviewDiff:undefined} disabled={!hasDiffDetails} title={!hasDiffDetails?'The backend did not provide artifact diff details':undefined} onClick={()=>setReviewDiff(x=>!x)}>{artifact.pendingCaseChangeCount} case change{artifact.pendingCaseChangeCount===1?'':'s'}</button>{!hasDiffDetails&&<span className="p-diff-unavailable">Change details unavailable</span>}</>}{artifact?<button className="p-btn p-btn-accent" disabled={!canSync||busy} onClick={()=>void sync()}>{pendingAction==='SYNC_ARTIFACT'?'Syncing…':'Sync with case'}</button>:<button className="p-btn p-btn-primary" disabled={!canEdit||busy} onClick={()=>void execute({type:'CREATE_ARTIFACT',artifactType:tab})}>Create from case</button>}{totalPending>0&&<button className="p-btn" disabled={!canSync||busy} onClick={()=>void execute({type:'SYNC_ALL_ARTIFACTS'})}>{pendingAction==='SYNC_ALL_ARTIFACTS'?'Syncing all…':'Sync all outputs'}</button>}{tab==='IC_MEMO'&&<div className="p-segmented" aria-label="Memo mode"><button aria-pressed={mode==='READ'} className={mode==='READ'?'is-active':''} onClick={()=>setMode('READ')}>Read</button><button aria-pressed={mode==='EDIT'} disabled={!canEdit||busy} className={mode==='EDIT'?'is-active':''} onClick={()=>setMode('EDIT')}>Edit</button></div>}</div>
+      <div className="p-output-tabs" role="tablist" aria-label="Outputs" onKeyDown={move}>{TABS.map(type => <button key={type} id={`output-tab-${type}`} role="tab" aria-selected={tab === type} aria-controls={`output-panel-${type}`} tabIndex={tab === type ? 0 : -1} className={tab === type ? 'is-active' : ''} disabled={hasDrafts || busy} onClick={() => select(type)}>{labels[type]}</button>)}</div>
+      <div className="p-output-actions"><button className="p-btn" disabled={busy || hasDrafts} onClick={() => void refresh()}>Reload case</button>
+        {artifact ? <button className="p-btn p-btn-accent" disabled={!canSync || busy || hasDrafts || Boolean(hasPending)} title={hasPending ? 'Review the pending proposals first.' : undefined} onClick={() => void execute({ type: 'SYNC_ARTIFACT', artifactId: artifact.id })}>{pendingAction === 'SYNC_ARTIFACT' ? 'Preparing updates…' : 'Review case updates'}</button> : <button className="p-btn p-btn-primary" disabled={!canEdit || busy} onClick={() => void execute({ type: 'CREATE_ARTIFACT', artifactType: tab })}>Create from case</button>}
+        {artifact && <div className="p-segmented" aria-label="Output mode"><button aria-pressed={mode === 'READ'} className={mode === 'READ' ? 'is-active' : ''} disabled={busy || hasDrafts} onClick={() => setMode('READ')}>Read</button><button aria-pressed={mode === 'EDIT'} className={mode === 'EDIT' ? 'is-active' : ''} disabled={!canEdit || busy} onClick={() => setMode('EDIT')}>Edit</button></div>}
+      </div>
     </header>
-
+    {hasDrafts && <p className="p-output-notice" role="status">Save or cancel your passage edits before leaving Edit mode or approving.</p>}
+    {!live && <p className="p-output-notice" role="status">Editing requires a connected output service with saved versions and review support.</p>}
     <div id={`output-panel-${tab}`} role="tabpanel" aria-labelledby={`output-tab-${tab}`} tabIndex={0}>
-      {tab==='IC_MEMO'&&<MemoSurface artifact={artifact} mode={mode} reviewDiff={reviewDiff}/>}
-      {tab==='MODEL'&&<ModelSurface artifact={artifact} quantities={snapshot.quantities} reviewDiff={reviewDiff}/>}
-      {tab==='DECISION_PACK'&&<DecisionPackSurface artifact={artifact} reviewDiff={reviewDiff}/>}
+      {tab === 'IC_MEMO' && <EditorialProfileEditor artifact={artifact} disabled={hasDrafts} onEditingChange={setProfileEditing} />}
+      {artifact ? <OutputSurface key={artifact.id} artifact={artifact} mode={mode} canEdit={canEdit} canSync={canSync} disabled={profileEditing} onDraftsChange={setHasDrafts} /> : <section className="p-empty"><div><h1>{labels[tab]}</h1><p>Create an initial draft from the case. Open questions stay visible, and every passage retains its basis.</p></div></section>}
     </div>
   </main>;
 }
 
-function MemoSurface({artifact,mode,reviewDiff}:{artifact?:Artifact;mode:'READ'|'EDIT';reviewDiff:boolean}){
-  const {snapshot,execute,setActiveObject,inspection,pendingAction}=usePanta();
-  const blocks=artifact?.blockIds.map(id=>snapshot?.artifactBlocks.find(b=>b.id===id)).filter(Boolean) as ArtifactBlock[]|undefined;
-  const [drafts,setDrafts]=useState<Record<string,string>>({});
-  if(!snapshot)return <EmptyCase/>;
-  if(!artifact)return <OutputEmpty title="IC Memo" artifactType="IC_MEMO"/>;
-  const diffs=snapshot.artifactDiffs.filter(d=>d.artifactId===artifact.id);
-  return <div className={`p-output-stage ${inspection?'has-lens':''}`}>
-    <article className="p-memo-paper">
-      <header className="p-memo-title-block"><div><h1>{artifact.title}</h1><span>Investment Committee Memorandum</span></div><div className="p-meta">{artifact.lastSyncedAt?`Synced · ${artifact.lastSyncedAt}`:'Connected to current case'}</div></header>
-      {reviewDiff&&diffs.length>0&&<div className="p-sync-review"><strong>{diffs.length} synchronized change{diffs.length===1?'':'s'}</strong>{diffs.slice(0,4).map(d=>{const event=eventById(snapshot,d.causeEventId);return <div key={d.id} className="p-sync-change">{d.before&&<del>{d.before}</del>}<b>→</b>{d.after&&<ins>{d.after}</ins>}<small>{event?eventDisplayLabel(snapshot,event):'Case change'}</small></div>})}</div>}
-      {reviewDiff&&!diffs.length&&<DiffUnavailable/>}
-      <div className="p-memo-content">{blocks?.map((b,i)=><MemoBlock key={b.id} block={b} index={i+1} mode={mode} value={drafts[b.id]??b.text??''} disabled={Boolean(pendingAction)} onChange={text=>setDrafts(d=>({...d,[b.id]:text}))} onSave={text=>void execute({type:'UPDATE_ARTIFACT_BLOCK',artifactId:artifact.id,blockId:b.id,text})} onSelect={()=>void setActiveObject(b.boundObjectIds[0]??b.id)} onAccept={()=>void execute({type:'ACCEPT_ARTIFACT_SUGGESTION',artifactId:artifact.id,blockId:b.id})} onDismiss={()=>void execute({type:'DISMISS_ARTIFACT_SUGGESTION',artifactId:artifact.id,blockId:b.id})}/>)}</div>
-    </article>
-    {inspection&&<aside className="p-output-lens"><ObjectLens/></aside>}
-  </div>;
+function OutputSurface({ artifact, mode, canEdit, canSync, disabled, onDraftsChange }: { artifact: Artifact; mode: 'READ' | 'EDIT'; canEdit: boolean; canSync: boolean; disabled: boolean; onDraftsChange: (dirty: boolean) => void }) {
+  const { snapshot, execute, setActiveObject, inspection, pendingAction, actor, adapter, asOf } = usePanta();
+  const [exporting, setExporting] = useState(false);
+  const [exportError, setExportError] = useState('');
+  const [dirtyIds, setDirtyIds] = useState<Set<string>>(new Set());
+  const onDirtyChange = useCallback((id: string, dirty: boolean) => setDirtyIds(previous => { const next = new Set(previous); if (dirty) next.add(id); else next.delete(id); return next; }), []);
+  useEffect(() => onDraftsChange(dirtyIds.size > 0), [dirtyIds, onDraftsChange]);
+  if (!snapshot) return null;
+  const blocks = artifact.blockIds.flatMap(id => { const block = snapshot.artifactBlocks.find(b => b.id === id); return block ? [block] : []; });
+  const pending = blocks.filter(block => block.suggestion).length;
+  const busy = Boolean(pendingAction) || exporting || disabled;
+  const approved = artifact.approvalStatus === 'APPROVED';
+  const canApprove = !asOf && snapshot.outputCapabilities?.versioned && actor?.entitlements.includes('APPROVE_ARTIFACT') && artifact.canApprove && !approved;
+  const writer = snapshot.outputCapabilities?.writerLabel;
+  const canRedraft = canSync && snapshot.outputCapabilities?.aiRedraftAvailable && !pending && !artifact.pendingCaseChangeCount;
+  async function download(format: 'html' | 'json' | 'csv') {
+    if (!snapshot || !artifact.revisionId || !adapter.exportArtifact) return;
+    setExporting(true); setExportError('');
+    try {
+      const result = await adapter.exportArtifact(snapshot.caseRef.id, artifact.id, artifact.revisionId, format);
+      const url = URL.createObjectURL(result.blob); const anchor = document.createElement('a');
+      anchor.href = url; anchor.download = result.filename; document.body.appendChild(anchor); anchor.click(); anchor.remove();
+      window.setTimeout(() => URL.revokeObjectURL(url), 1000);
+    } catch (error) { setExportError(error instanceof Error ? error.message : 'Export failed.'); }
+    finally { setExporting(false); }
+  }
+  return <>
+    <div className="p-output-status" role="status">
+      <div><strong>{approved ? 'Approved version' : 'Draft for review'}</strong><span>{artifact.pendingCaseChangeCount ? `${artifact.pendingCaseChangeCount} passages need review against the current case` : 'Aligned with the current case'}{pending ? ` · ${pending} proposals to review` : ''}</span></div>
+      <div className="p-action-row"><button className="p-btn" disabled={busy || dirtyIds.size > 0 || !canRedraft} title={!snapshot.outputCapabilities?.aiRedraftAvailable ? 'Configure the writing model on the server to request a draft.' : 'Editorial suggestions remain subject to your review.'} onClick={() => void execute({ type: 'REDRAFT_ARTIFACT', artifactId: artifact.id })}>{pendingAction === 'REDRAFT_ARTIFACT' ? 'Drafting…' : 'Suggest redraft'}</button><button className="p-btn p-btn-primary" disabled={busy || dirtyIds.size > 0 || mode === 'EDIT' || !canApprove} title={!artifact.canApprove ? 'Resolve missing basis and review every proposal before approving.' : 'Approve this work product, with your name and the current case version.'} onClick={() => void execute({ type: 'APPROVE_ARTIFACT', artifactId: artifact.id })}>Approve this version</button></div>
+    </div>
+    <div className={`p-output-stage ${inspection ? 'has-lens' : ''}`}>
+      <article className={`p-memo-paper p-output-${artifact.type.toLowerCase()}`}>
+        <header className="p-memo-title-block"><div><h1>{artifact.title}</h1><span>{artifact.type === 'MODEL' ? 'Recorded model values and calculations' : artifact.type === 'DECK' ? 'Presentation draft' : artifact.type === 'TRACKER' ? 'Open diligence and conditions' : 'Case-backed work product'}</span></div><div className="p-meta">{writer ? `Writing assistant · ${writer}` : 'Writing assistant not configured'}</div></header>
+        <div className="p-memo-content">{blocks.map((block, index) => <MemoBlock key={`${block.id}-${block.text}`} onDirtyChange={onDirtyChange} block={block} index={index + 1} mode={mode} disabled={busy} canEdit={canEdit} onSelect={() => void setActiveObject(block.id)} onSave={text => execute({ type: 'UPDATE_ARTIFACT_BLOCK', artifactId: artifact.id, blockId: block.id, text })} onAccept={() => void execute({ type: 'ACCEPT_ARTIFACT_SUGGESTION', artifactId: artifact.id, blockId: block.id })} onDismiss={() => void execute({ type: 'DISMISS_ARTIFACT_SUGGESTION', artifactId: artifact.id, blockId: block.id })} />)}</div>
+        <footer className="p-output-export"><p>{approved ? `Approved by ${snapshot.actors.find(a => a.id === artifact.approval?.actorId)?.displayName ?? artifact.approval?.actorId} · ${artifact.approval?.recordedAt}` : 'Review and approve this version to export it.'}</p><div className="p-action-row"><button className="p-btn" disabled={busy || dirtyIds.size > 0 || !approved || !adapter.exportArtifact} onClick={() => void download('html')}>Export HTML</button><button className="p-btn" disabled={busy || dirtyIds.size > 0 || !approved || !adapter.exportArtifact} onClick={() => void download('json')}>Export with full basis</button>{['MODEL', 'TRACKER'].includes(artifact.type) && <button className="p-btn" disabled={busy || dirtyIds.size > 0 || !approved || !adapter.exportArtifact} onClick={() => void download('csv')}>Export CSV</button>}</div><small>Approval applies to this work product. Investment decisions remain separately recorded in the case.</small>{exportError && <p role="alert">{exportError}</p>}</footer>
+      </article>
+      {inspection && <aside className="p-output-lens"><ObjectLens /></aside>}
+    </div>
+  </>;
 }
 
-function MemoBlock({block,index,mode,value,disabled,onChange,onSave,onSelect,onAccept,onDismiss}:{block:ArtifactBlock;index:number;mode:'READ'|'EDIT';value:string;disabled:boolean;onChange:(x:string)=>void;onSave:(x:string)=>void;onSelect:()=>void;onAccept:()=>void;onDismiss:()=>void}){
-  return <section className={`p-memo-block ${block.authorship==='HUMAN_AUTHORED'?'is-human':''}`}><div className="p-memo-block-head"><span>{String(index).padStart(2,'0')}</span>{block.title&&<strong>{block.title}</strong>}{block.authorship==='HUMAN_AUTHORED'&&<small>Human-authored{block.recordedAt?` · ${block.recordedAt}`:''}</small>}</div>{mode==='EDIT'?<textarea className="p-memo-editor" disabled={disabled} value={value} onChange={(e: React.ChangeEvent<HTMLTextAreaElement>)=>onChange(e.target.value)} onBlur={()=>onSave(value)}/>:<button className="p-memo-sentence" disabled={disabled} onClick={onSelect}>{block.text??'—'}</button>}{block.suggestion&&<aside className="p-anchored-suggestion"><strong>{block.suggestion.signal}</strong><p>{block.suggestion.suggestedText}</p><div className="p-action-row"><button className="p-btn p-btn-accent" disabled={disabled} onClick={onAccept}>Accept</button><button className="p-btn" disabled={disabled} onClick={onSelect}>Inspect why</button><button className="p-btn p-btn-quiet" disabled={disabled} onClick={onDismiss}>Dismiss</button></div></aside>}</section>;
+function MemoBlock({ block, index, mode, disabled, canEdit, onSelect, onSave, onAccept, onDismiss, onDirtyChange }: { onDirtyChange: (id: string, dirty: boolean) => void; block: ArtifactBlock; index: number; mode: 'READ' | 'EDIT'; disabled: boolean; canEdit: boolean; onSelect: () => void; onSave: (text: string) => Promise<boolean>; onAccept: () => void; onDismiss: () => void }) {
+  const [text, setText] = useState(block.text ?? '');
+  const changed = text !== (block.text ?? '');
+  useEffect(() => { onDirtyChange(block.id, changed); return () => onDirtyChange(block.id, false); }, [block.id, changed, onDirtyChange]);
+  const editing = mode === 'EDIT' && !block.editorialLocked;
+  return <section className={`p-memo-block ${block.authorship === 'HUMAN_AUTHORED' ? 'is-human' : ''}`}>
+    <div className="p-memo-block-head"><span>{String(index).padStart(2, '0')}</span><strong>{block.title}</strong>{block.authorship === 'HUMAN_AUTHORED' && <small>Edited by a reviewer</small>}{block.authorship === 'PANTA_SUGGESTION' && <small>AI draft{block.reviewedBy ? ' · reviewed' : ''}</small>}{block.freshnessStatus && block.freshnessStatus !== 'CURRENT' && <em className="p-output-stale">{block.freshnessStatus === 'MISSING_BASIS' ? 'Basis missing' : 'Needs update'}</em>}</div>
+    {editing ? <><textarea aria-label={`Edit ${block.title}`} className="p-memo-editor" disabled={disabled || !canEdit} value={text} onChange={event => setText(event.target.value)} /><div className="p-action-row"><button className="p-btn p-btn-accent" disabled={disabled || !canEdit || !changed || !text.trim()} onClick={() => void onSave(text)}>Save passage</button><button className="p-btn" disabled={disabled || !changed} onClick={() => setText(block.text ?? '')}>Cancel edit</button><button className="p-btn" onClick={onSelect}>Inspect basis</button></div></> : <button className="p-memo-sentence" onClick={onSelect}>{block.text ?? '—'}</button>}
+    {block.editorialLocked && mode === 'EDIT' && <p className="p-meta">This attributed view is changed in the case, then updated here.</p>}
+    {block.suggestion && <aside className="p-anchored-suggestion"><strong>{block.suggestion.signal}</strong><p><del>{block.text}</del></p><p><ins>{block.suggestion.suggestedText}</ins></p><div className="p-action-row"><button className="p-btn p-btn-accent" disabled={disabled || !canEdit} onClick={onAccept}>{block.suggestion.remove ? 'Accept removal' : 'Accept proposal'}</button><button className="p-btn" onClick={onSelect}>Inspect why</button><button className="p-btn p-btn-quiet" disabled={disabled || !canEdit} onClick={onDismiss}>Dismiss</button></div></aside>}
+  </section>;
 }
-
-function ModelSurface({artifact,quantities,reviewDiff}:{artifact?:Artifact;quantities:Quantity[];reviewDiff:boolean}){
-  const {snapshot,setActiveObject,inspection}=usePanta();
-  if(!snapshot)return <EmptyCase/>;
-  const rows=(artifact?.quantityIds.length?artifact.quantityIds.map(id=>quantities.find(q=>q.id===id)).filter(Boolean):quantities) as Quantity[];
-  if(!artifact&&!rows.length)return <OutputEmpty title="Model" artifactType="MODEL"/>;
-  const diffs=artifact?snapshot.artifactDiffs.filter(d=>d.artifactId===artifact.id):[];
-  return <div className={`p-output-stage ${inspection?'has-lens':''}`}><section className="p-model-sheet"><header className="p-model-head"><div><h1>{artifact?.title??'Case Model'}</h1><p>Mapped quantities only · unknown inputs remain unknown</p></div><span className="p-meta">Select a cell to inspect or simulate</span></header><div className="p-formula-bar"><b>fx</b><span>Object-aware financial surface</span></div><div className="p-model-grid p-model-grid-head"><span></span><span>Metric</span><span>Current value</span><span>Unit / scope</span><span>Case state</span></div>{rows.map((q,i)=><button key={q.id} className="p-model-grid p-model-row" onClick={()=>void setActiveObject(q.id)}><span>{i+1}</span><strong>{q.label}</strong><b>{q.display??q.value??'Not yet established'}</b><span>{q.unit??q.currency??q.perimeter.scope??'—'}</span><span>{quantityDisplayState(q)}</span></button>)}</section>{reviewDiff&&diffs.length>0&&<div className="p-inline-review">{diffs.map(d=><div key={d.id}>{d.before&&<del>{d.before}</del>}<b> → </b>{d.after&&<ins>{d.after}</ins>}</div>)}</div>}{reviewDiff&&!diffs.length&&<DiffUnavailable/>}{inspection&&<aside className="p-output-lens"><ObjectLens/></aside>}</div>;
-}
-
-function DecisionPackSurface({artifact,reviewDiff}:{artifact?:Artifact;reviewDiff:boolean}){
-  const {snapshot,setActiveObject,inspection}=usePanta(); if(!snapshot)return <EmptyCase/>; if(!artifact)return <div><OutputEmpty title="Decision Pack" artifactType="DECISION_PACK"/><CaseLifecycle/></div>;
-  const open=snapshot.conditions.filter(c=>c.status==='OPEN'); const diffs=snapshot.artifactDiffs.filter(d=>d.artifactId===artifact.id); const recorded=recordedDecision(snapshot);
-  return <div className={`p-output-stage ${inspection?'has-lens':''}`}><div><section className="p-decision-pack"><header><div className="p-kicker">Decision Pack</div><h1>{artifact.title}</h1><p>{snapshot.decision?.label}</p></header><div className="p-decision-pack-grid"><div><strong>Current case</strong>{snapshot.premiseCaseReadingId&&<button onClick={()=>void setActiveObject(snapshot.premiseCaseReadingId)}>{caseReadingById(snapshot,snapshot.premiseCaseReadingId)?.text}</button>}</div><div><strong>Decision frontier</strong>{open.map(c=><button key={c.id} onClick={()=>void setActiveObject(c.id)}>{c.label}<span>→</span></button>)}</div></div><section className="p-decision-branches"><strong>Human branches</strong><div>{snapshot.decisionPaths.map(p=><span className="p-branch-label" key={p.id}>{humanState(p.label)}</span>)}</div></section><footer><strong>Recorded decision</strong><p>{recorded?recorded.rationale:'No institutional decision recorded.'}</p></footer></section>{reviewDiff&&diffs.length>0&&<div className="p-inline-review">{diffs.map(d=><div key={d.id}>{d.before&&<del>{d.before}</del>}<b> → </b>{d.after&&<ins>{d.after}</ins>}</div>)}</div>}{reviewDiff&&!diffs.length&&<DiffUnavailable/>}<CaseLifecycle/></div>{inspection&&<aside className="p-output-lens"><ObjectLens/></aside>}</div>;
-}
-
-function OutputEmpty({title,artifactType}:{title:string;artifactType:string}){const {execute,actor,pendingAction}=usePanta();const can=actor?.entitlements.includes('EDIT_ARTIFACT')??false;return <section className="p-empty"><div><h1>{title}</h1><p>This artifact has not been created from the current case.</p><button className="p-btn p-btn-primary" disabled={!can||Boolean(pendingAction)} onClick={()=>void execute({type:'CREATE_ARTIFACT',artifactType})}>Create from case</button></div></section>}
-function DiffUnavailable(){return <div className="p-inline-review p-diff-empty" role="status"><strong>Change details unavailable</strong><p>This backend reported pending case changes but did not provide artifact diff details for this output.</p></div>}
-function label(k:OutputTab){return k==='IC_MEMO'?'IC Memo':k==='MODEL'?'Model':'Decision Pack'}
-function humanState(v:string){return v.toLowerCase().replaceAll('_',' ').replace(/^./,x=>x.toUpperCase())}

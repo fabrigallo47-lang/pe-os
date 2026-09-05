@@ -1,0 +1,38 @@
+import assert from 'node:assert/strict';
+import fs from 'node:fs';
+import ts from 'typescript';
+// Runtime adapter test with its actual transport code; no browser globals or live credentials.
+const transport = fs.readFileSync('src/providers/liveOutputs.ts','utf8').replace("import { withSourceDocuments } from './sourceDocuments';", 'const withSourceDocuments = adapter => adapter;');
+const code = ts.transpileModule(transport,{compilerOptions:{module:ts.ModuleKind.ESNext,target:ts.ScriptTarget.ES2022}}).outputText;
+const {createOutputsAdapter} = await import('data:text/javascript;base64,'+Buffer.from(code).toString('base64'));
+let snapshot = {caseRef:{id:'CASE',name:'Synthetic output'},caseVersion:'CASE-V1',artifacts:[{id:'MEMO',revisionId:'R1'}],artifactBlocks:[],outputCapabilities:{versioned:true}};
+const calls = []; let failure = false;
+const adapter = createOutputsAdapter('CASE',async()=>({actorId:'ACTOR',sessionId:'SESSION'}),{fetchImpl:async(url,init)=>{
+  calls.push({url,init});
+  if(url.includes('/export?'))return new Response('approved',{headers:{'Content-Disposition':'attachment; filename="memo.html"'}});
+  if(failure)return new Response(JSON.stringify({detail:'The output changed. Refresh before saving.'}),{status:409});
+  if(init?.method==='POST')snapshot={...snapshot,artifacts:[{id:'MEMO',revisionId:'R2'}]};
+  return new Response(JSON.stringify({snapshot,actor:{actorId:'ACTOR',entitlements:['READ_CASE','EDIT_ARTIFACT']}}));
+}});
+await adapter.getSession(); await adapter.loadCase('CASE');
+const command={actorId:'ACTOR',submittedAt:'2026-01-01',action:{type:'SYNC_ARTIFACT',artifactId:'MEMO'}};
+await adapter.execute('CASE',command);
+const sent=calls.find(call=>call.init?.method==='POST'); const body=JSON.parse(sent.init.body);
+assert.equal(body.caseVersion,'CASE-V1'); assert.equal(body.expectedRevision,'R1'); assert.ok(body.requestId);
+assert.equal(sent.init.headers['X-Panta-Actor'],'ACTOR'); assert.equal(sent.init.headers['X-Panta-Session'],'SESSION');
+assert.equal(sent.init.credentials,'same-origin');
+const editorial = {name:'Synthetic Alpha profile',language:'Italiano'};
+await adapter.execute('CASE',{actorId:'ACTOR',submittedAt:'2026-01-01',action:{type:'SAVE_EDITORIAL_PROFILE',config:editorial,expectedProfileVersion:'PROFILE-V1'}});
+const profileBody=JSON.parse(calls.at(-1).init.body);
+assert.deepEqual(profileBody.action.config,editorial); assert.equal(profileBody.action.expectedProfileVersion,'PROFILE-V1');
+assert.equal(profileBody.expectedRevision,undefined); assert.equal(profileBody.action.fundId,undefined);
+await adapter.execute('CASE',{actorId:'ACTOR',submittedAt:'2026-01-01',action:{type:'APPLY_EDITORIAL_PROFILE',artifactId:'MEMO',expectedProfileVersion:'PROFILE-V2'}});
+const applyBody=JSON.parse(calls.at(-1).init.body);
+assert.equal(applyBody.expectedRevision,'R2'); assert.equal(applyBody.action.expectedProfileVersion,'PROFILE-V2');
+await assert.rejects(()=>adapter.execute('OTHER',command),/Load the case/);
+await assert.rejects(()=>adapter.loadCase('CASE',{asOf:'past'}),/current case/);
+failure=true; await assert.rejects(()=>adapter.execute('CASE',command),/output changed/);
+const exported=await adapter.exportArtifact('CASE','MEMO','R2','html'); assert.equal(exported.filename,'memo.html'); assert.equal(await exported.blob.text(),'approved');
+assert.ok(calls.at(-1).url.includes('revision=R2'));
+await assert.rejects(()=>adapter.exportArtifact('OTHER','MEMO','R2','html'),/different case/);
+console.log('Live outputs adapter PASS — authenticated transport, case/revision guards, conflicts and export');

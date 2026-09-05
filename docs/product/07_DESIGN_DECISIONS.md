@@ -165,3 +165,136 @@ Append only material decisions that should survive individual tasks.
 **Applies to:** Case changes navigation, Journal filters, immutable state selectors, event timeline, state-difference summary, post-close movement, adapter codec, empty and synthetic Product Lab adapters, and fail-closed error states.
 
 **Do not infer:** The frontend computes differences, decides whether movement is positive, treats disappearance as resolution, collapses temporal axes, invents actor attribution, mutates the live case, or labels ordinary Current movement as post-close drift.
+
+
+---
+
+### 2026-09-05 — Statement inspection preserves the cited source version and passage
+**Decision:** Trace and Object Lens carry the full existing SourceLocator into the source drawer. The drawer separates the statement in the case from its original passage, displays the exact address and cited version, and exposes other statements from that version. Conflicting or unresolvable source lineage shows an explicit unavailable state. General source browsing keeps its document overview.
+
+**Why:** An investor opening a statement needs its actual evidence, including an earlier cited version, without losing the address or seeing newer document content substituted for the original passage.
+
+**Applies to:** Trace, Object Lens source references, source drawer, internal source navigation, synthetic fixtures and source-evidence regressions.
+
+**Boundary:** Source addresses and quoted spans come from the existing backend projection. This change introduces no ontology, extraction logic, inferred provenance, document URL, native file viewer, or canonical mutation.
+
+---
+
+### 2026-09-05 — Information cards open the verified original at the cited location
+**Decision:** Object Lens presents concise content and supplied context before its existing causal trace. Source details open a focused original reader in the same drawer, with a return to the citation and a download of the verified bytes. The backend resolves existing case-scoped source envelopes and verifies the cited content hash on each read. A page, range, block, cue or media time retains its actual precision; missing or ambiguous locations are explicit.
+
+**Why:** The investor needs both an immediate explanation and an auditable route to the source. An address alone is insufficient, and a current file cannot silently replace the cited version.
+
+**Applies to:** Shared information summary, Trace supports, source drawer, same-origin source reader, durable claim provenance, isolated native-document lab and regression tests.
+
+**Boundary:** This extends the earlier citation-only UI with original-file access. It adds no ontology, inferred calculation input, quoted text synthesized from a statement, canonical mutation, or full production case adapter. PDF highlighting requires a unique exact source quote. Legacy missing references and unsupported locations remain visible gaps, not successful precise opens.
+
+---
+
+### 2026-09-05 — Tracking can be verified on supplied test graphs and native originals
+**Decision:** A read-only repository lab connects the existing Keystone execution graph and canonical statements to their actual test documents through the shared information card and source reader. It preserves declared input edges and exposes unresolved text addresses in a dedicated filter. Multiple explicit cells or headings can open together; Word sections, PowerPoint slide content, email parts and image/PDF regions retain their actual source precision.
+
+**Why:** Testing the complete click-to-source journey should use the documents and graphs already available. Missing real cases do not prevent validation, while generic references must remain distinguishable from precise source locations.
+
+**Applies to:** Isolated repository tracking lab, original-document readers, source-address audit report and native-document regression coverage. The supplied corpus contains 19 originals, 14,318 model nodes and 30,996 declared links; 30 of 75 canonical textual references still lack a resolved passage.
+
+**Boundary:** Test-import hashes identify copied original bytes, not retroactive ingestion history. The lab does not adopt Current, fabricate HumanPositions, infer missing graph edges, rewrite original gold data, or claim extraction accuracy from gold reference addresses. PowerPoint and Word content readers do not promise native page layout. Address resolution verifies where to look, not whether a claim is true.
+
+---
+
+### 2026-09-05 — Explicit simulations can complete source-navigation acceptance
+**Decision:** The tracking lab offers a separately identified simulated case whose 30 previously generic references have audited, hash-locked source ranges. The same case can run inside the production PantaApp shell and Trace screen through a read-only test adapter. Multiple disjoint lines stay within one citation and are all highlighted; the original reference is retained. Source inspection exposes the statements citing that source.
+
+**Why:** The user asked to simulate the remaining conditions and proceed if the complete journey worked. A verified test case can establish that the reader and app integration work before live cases exist.
+
+**Applies to:** V1 source-navigation acceptance, test-reference mappings, multi-range text reader, repository test adapter and application preview. All 75 canonical test references resolve in the simulated case, including the 30 previously unresolved ones.
+
+**Boundary:** This is explicit test normalization, not an automatic extraction score, real ingestion history, or institutional adoption. The original corpus and raw audit are preserved. The simulation's question and system reading exist only to exercise the room. It creates no attributed HumanPosition or investment Decision and does not close unrelated macro-task requirements.
+
+---
+
+### 2026-09-05 — Typed statements retain context through the complete recorded trace
+**Decision:** Statement cards expose the existing extractor's kind, typed value, original value, precision, definition, period, scope, basis, unit and currency. Missing dimensions and validation notes remain visible. Durable notes retain this context and the actual derivation. Recorded connections let an investor navigate explicit source/version, input, reading, attributed view, decision-basis and output-section references in both directions; longer branches can be expanded.
+
+**Why:** A precise source address is insufficient if a number loses its units in transport or if the investor cannot continue from a calculation to its recorded use. The same card should preserve the content and the chain without claiming that navigation computes investment consequences.
+
+**Applies to:** V1 tracking acceptance, shared Object Lens, source versions, extraction metadata, durable indexing, and the isolated source-tracking application lab.
+
+**Boundary:** Canonical CAP-003 fields and stored identities remain unchanged. The projection uses existing normalization and declared references; it creates no graph edges, causal conclusions, adoption or human judgment. The identity drift gate also restores three existing extractor metric names missing from the normalizer (Customer Churn, Total Net Leverage Ratio, Minimum Liquidity); new extractions use their proper metric identity, with no automatic migration of stored unresolved claims. Candidate and other-case relations do not become Current links. A decision's older basis is unavailable in a newer case projection instead of silently opening newer content. An existing visible object may have a basic inspection without backend analysis; only its existing source reference enables source reading. A separate, visibly simulated lab fixture supplies fictional analyst and decision records to test this complete chain. Model responses are simulated; this acceptance does not score live extraction on unseen documents.
+
+---
+
+### 2026-09-05 — Outputs retain their basis, require review, and export an approved revision
+**Decision:** IC memo, model snapshot, decision pack, presentation draft and diligence tracker use one versioned output service. Creation renders admitted case content mechanically. Every passage opens its own information card, including saved citations and the current case connections. Case updates prepare before/after proposals; they do not overwrite editorial text. Saving is explicit, and unsaved edits block switching modes, synchronizing or approving. An attributed case view or decision is edited in the case, never in the output. AI suggestions retain their model origin and the identity of the accepting reviewer.
+
+**Why:** An IC memo must remain reviewable when the case changes. A downloaded file without its evidence or an apparent sync that only clears a badge cannot establish which case, text and reviewer the committee actually saw.
+
+**Applies to:** Outputs room, authenticated output adapter and HTTP service, immutable output revisions, passage freshness/missing-basis states, optional writing assistant, approved HTML/JSON and model/tracker CSV, and isolated IC memo acceptance lab. Unconnected adapters expose a reason for disabled editing controls.
+
+**Boundary:** Output revisions and approvals are work-product records, not adoption of Current or investment decisions. The server resolves both case content and actor authority; caller-supplied snapshots, roles and timestamps cannot approve a version. Source citations frozen in a passage can open earlier originals even after the statement leaves Current; the source reader still verifies the exact bytes and location. The writing model is optional GPT-5.6 Sol through the Responses API. Numeric checks and schema validation do not establish semantic truth; reviewer acceptance remains required. HTML is a portable, printable export; this slice does not generate native Office files or deploy the product. The production entry's host/case bootstrap integration remains a separate integration boundary.
+
+---
+
+### 2026-09-05 — Simulation declares its perimeter before an editable assumption shock
+**Problem:** An investor must know which calculations can be tested and distinguish a hypothetical movement from a change to the institutional case.
+
+**Decision:** Simulate shows the server-owned executable perimeter, semantic input context and limitations before a run. A numeric assumption can be edited; the backend recomputes declared formulas with the transition runtime's Decimal evaluator. Absolute/relative amounts, affected-but-held outputs and stopped branches remain explicit. Object Lens distinguishes Current from the hypothetical. Case/model versions are checked, and changing the setup clears old results. Numeric movement is neutral, without a fabricated judgment that a higher value strengthens the case.
+
+**Applies to:** PAN-132 and PAN-136; numeric extension of PAN-133, authenticated simulation transport, the shared inspection card and the isolated fictional-model lab.
+
+**Boundary:** The case, HumanPositions and Decisions remain unchanged. Missing data, semantic scope, formula bindings, solver configuration and baseline consistency prevent unsupported calculation. Supported coverage is a numerical slice, not certification of the whole investment case. Event triggers, inverse/cross-deal questions and production host bootstrap integration remain separate work.
+
+
+---
+
+### 2026-09-05 — IC memo editorial profiles belong to a fund and are frozen per output
+**Problem:** Investment committees require different editorial briefs. A single global template cannot express each fund's audience, style, structure and quality expectations.
+
+**Decision:** Outputs exposes a fund editorial profile editor: audience, decision purpose, strategy/stage, language, tone, length/depth, analysis, recommendations, numbers, scenarios, risks, evidence, citations, presentation and quality criteria. Section titles and order are editable; each supported case content category remains included. Saving creates an immutable fund version with actor/date and optimistic concurrency. New memos freeze the latest profile. Existing memos explicitly apply a newer profile, preserving passage identity, text and citations while returning to draft for review. The writer receives the frozen brief and fixed evidence/authority rules; recommendations, human views and missing facts cannot be invented through preferences.
+
+**Applies to:** PAN-148, the Outputs room, authenticated output commands, fund-scoped persistence, frozen HTML/JSON briefs, and a lab with two Alpha cases and one separate Beta case.
+
+**Boundary:** Editorial preferences do not define a kernel ontology or modify Fund Lens semantics, Current, HumanPositions or Decisions. A trusted server-side case association identifies the fund; a shared strategy/archetype lens is insufficient to establish tenant identity. Partners assigned to the case can edit that fund's profile. Unassociated cases use a frozen default and show why shared configuration is unavailable. Existing approved memos stay valid with their prior profile until explicit application of a newer version. The deterministic compiler changes headings and order; freeform preferences guide the optional passage writer, not an implemented native chart/Office renderer or a guaranteed page count. Live-model quality and complete-memo evaluation remain PAN-149. See `docs/PAN-148_EDITORIAL_PROFILES_ACCEPTANCE.md`.
+
+---
+
+### 2026-09-05 — Simulation covers events, inverse thresholds and comparable deals
+**Problem:** A single manual input shock cannot answer what a received event means, where a model reaches a threshold, or how two deals differ under the same assumption change.
+
+**Decision:** Simulate provides four explicit modes within the existing room. Admitted events automatically prepare atomic scenarios on load/refresh; source claim and input references are inspectable and scenario evidence/model/results are archived immutably. Inverse questions return a threshold and its forward trace only after a bounded continuous, strictly monotone path and output residual are verified. Comparison applies the same percentage shock to explicitly equivalent inputs in separately authenticated cases, showing both baselines and impacts plus exclusions. Editing the setup, refreshing or switching case clears the displayed result. Production bootstrap now supplies case sessions to this workspace, replacing its empty adapter.
+
+**Applies to:** PAN-135 and PAN-134, completing the five functional PAN-111 V1 tasks. Supersedes the earlier simulation decision's pending event/inverse/comparison/bootstrap boundary.
+
+**Boundary:** Event prose does not become an invented economic model. Each case supplies its own admitted numeric model, explicit event rules and shared comparison definitions. Event preparation is driven by reads/refresh, without a background scheduler. Inverse V1 is one variable and a verified threshold on a declared interval; piecewise, nonmonotone, cyclic and singular paths return limitations. Comparisons do not infer FX conversion, period alignment, deal rankings or an investment recommendation. Scenario archives are separate from the institutional ledger. Current, HumanPositions and Decisions remain unchanged. Other rooms' command transport integrations and product deployment are outside this simulation task.
+
+
+---
+
+### 2026-09-05 — Correct simulation scope: hypothetical graph transition
+**Problem:** The numerical simulation workspace was incorrectly treated as the full simulation V1. The user clarified that the requirement is the effect of introducing a change into the investment-case graph, including qualitative and structural changes.
+
+**Decision:** Simulate must run the existing state-transition engine against an isolated graph with hypothetical changes, and expose the same propagation, survivors, limitations and human-review requirements as the real transition path. Numerical sensitivity, event-to-number rules, inverse numeric thresholds and financial comparisons remain useful subsets. They do not satisfy the general graph requirement by themselves.
+
+**Status:** This corrects the completion claim in the earlier simulation decision and acceptance note. PAN-111, PAN-132, PAN-136 and PAN-135 are reopened. General transition adapter/UI integration and equivalence/nonmutation tests remain required; this note does not claim that implementation has been delivered.
+
+**Boundary:** The hypothetical must not adopt Current, settle Approved, write the institutional ledger or fabricate attributed human judgments. Valid graph changes are bounded by the versioned runtime contract. Missing support for a change or its propagation must be disclosed rather than replaced by guessed numerical or qualitative effects.
+
+---
+
+### 2026-09-05 — General graph simulation uses the real transition engine
+**Problem:** Investors need to test changes in evidence and case reasoning, including changes to connections and support, as well as financial assumptions.
+
+**Decision:** Simulate defaults to Case changes: a server-declared editor batches current-object changes, evidence-path membership/logic, withdrawals and temporary supporting or contrary evidence. The actual transition engine runs on a copy of the complete Current runtime state with its existing execution and governance policies. The graph displays only real relationships, including independent support outside the affected set. Before/after inspection distinguishes changed support from unchanged recorded decisions. Changed, held and unresolved outcomes, stops and human review remain explicit. Admitted events prepare scenarios on load/refresh; both manual and event scenarios retain immutable inputs and results. Financial sensitivities remains a separate workspace for numeric thresholds and comparable-case analysis.
+
+**Applies to:** PAN-111, PAN-132, PAN-136 and PAN-135, extending PAN-133's impact inspection. This completes the general adapter/UI and equivalence/nonmutation work reopened by the preceding scope correction. Acceptance evidence and executable boundaries are in `docs/PAN-111_GRAPH_SIMULATION_ACCEPTANCE.md`.
+
+**Boundary:** There is no separate simulation ontology or consequence evaluator. New hypothetical Claims and changes to existing route members are supported by the runtime; unsupported arbitrary object creation or route retargeting is not offered. Prose does not invent semantic consequences. Missing execution coverage remains a limit. The complete graph/state/policy/engine basis is version pinned, and production reads fail closed when it differs from the displayed case. Only the separate scenario archive is persisted: Current, Approved, institutional ledger and human attribution remain unchanged. Two shared-engine corrections make withdrawn routes unusable and propagate recomputed conclusion support downstream without rewriting decisions; existing conformance schema and all runtime regressions remain valid.
+
+---
+
+### 2026-09-05 — Write a scenario before editing graph details
+**Problem:** The investor should be able to describe a hypothetical directly, without first navigating object types and fields.
+
+**Decision:** Describe a change is the default Simulate entry. Text becomes a reviewable proposal of concrete Current-to-hypothetical changes, with object inspection, original wording, proposed interpretation and explicit clarification where needed. The investor starts the simulation from this preview. Exact-name insertion and case-derived examples support input without exposing technical IDs. Explicit Italian/English commands run through a local grounded interpreter. An optional configured model handles open-ended phrasing, using a bounded current-object catalog and validated typed actions. It never computes consequences: reviewed mutations run through the existing graph transition path.
+
+**Boundary:** Guided input and model interpretation are labelled separately. No model credentials were present during acceptance, so the live guided flow and controlled model-response tests are verified; live-model quality remains unverified. Ambiguous, unsupported, incomplete or conflicting proposals cannot be run from the preview. The text is preserved with the executed scenario; proposals themselves do not modify Current, Approved, attributed views or the ledger. Reset/edit/case changes discard stale proposals and late responses. See `docs/SIMULATION_TEXT_INPUT_ACCEPTANCE.md`.

@@ -1,0 +1,718 @@
+{
+  "schema": "tracking-location-simulation/1.0",
+  "scope": "User-authorized simulation of precise reference capture on copied test data; originals unchanged; no extraction accuracy claim.",
+  "canonical_graph_hash": "sha256:185aa8d4d917528bbcefb0699818ff89d3ad7a56f8ceef348f111753c39cc231",
+  "entries": [
+    {
+      "claim_id": "CL-011",
+      "source_id": "SRC-DR",
+      "original_locator": "Customer_Data: rows with Ultimate Parent = Riverton Industrial Group",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:94-96,97-97,101-101,104-104,107-107,108-108,109-109,110-110,156-161",
+      "line_spans": [
+        [
+          94,
+          96
+        ],
+        [
+          97,
+          97
+        ],
+        [
+          101,
+          101
+        ],
+        [
+          104,
+          104
+        ],
+        [
+          107,
+          107
+        ],
+        [
+          108,
+          108
+        ],
+        [
+          109,
+          109
+        ],
+        [
+          110,
+          110
+        ],
+        [
+          156,
+          161
+        ]
+      ],
+      "span_hashes": [
+        "sha256:1c670299635826372bb9d314642d1311efa97b843537b98d208e3f6bfb31d6b3",
+        "sha256:ad9f44a136177b465d25018083519a89d9c2d272e9fccc92f59184b532f5d3bb",
+        "sha256:5fefc371ab861bc3828b49a696292fb1320926793278a59d442cadcbfd2d117f",
+        "sha256:2f0fbbc2d16356b313dec338833ff84dc950843f9b589638ce341a07d62903bd",
+        "sha256:36fa6a1d4dfc93503089d2db72ac4cc40c0659eb045fc5574a9e590af12f75a2",
+        "sha256:51c47fe46b2bf689f676315c48757dcf1d0da7d4c6b1fc7335f1e29f95ddb8e8",
+        "sha256:8b5256435511db6388af0d52c99c34653806f1abb22da0a0b931606f3a689a14",
+        "sha256:ca4541a73b9ffc08723ce1b3c6482daf825f6d6329394153fc94680e7e078f10",
+        "sha256:ade987ace3ea71a26f42ab5518d52028f9f3b1511fb84d32fb5bc10361832c8f"
+      ],
+      "method": "Exact seven named customer rows, column headings and supplied concentration summary where cited."
+    },
+    {
+      "claim_id": "CL-012",
+      "source_id": "SRC-DR",
+      "original_locator": "Customer_Data: RIV-DEC, RIV-CORP, RIV-GRN, RIV-MIL, RIV-CHEM, RIV-LOG, RIV-WST",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:94-96,97-97,101-101,104-104,107-107,108-108,109-109,110-110",
+      "line_spans": [
+        [
+          94,
+          96
+        ],
+        [
+          97,
+          97
+        ],
+        [
+          101,
+          101
+        ],
+        [
+          104,
+          104
+        ],
+        [
+          107,
+          107
+        ],
+        [
+          108,
+          108
+        ],
+        [
+          109,
+          109
+        ],
+        [
+          110,
+          110
+        ]
+      ],
+      "span_hashes": [
+        "sha256:1c670299635826372bb9d314642d1311efa97b843537b98d208e3f6bfb31d6b3",
+        "sha256:ad9f44a136177b465d25018083519a89d9c2d272e9fccc92f59184b532f5d3bb",
+        "sha256:5fefc371ab861bc3828b49a696292fb1320926793278a59d442cadcbfd2d117f",
+        "sha256:2f0fbbc2d16356b313dec338833ff84dc950843f9b589638ce341a07d62903bd",
+        "sha256:36fa6a1d4dfc93503089d2db72ac4cc40c0659eb045fc5574a9e590af12f75a2",
+        "sha256:51c47fe46b2bf689f676315c48757dcf1d0da7d4c6b1fc7335f1e29f95ddb8e8",
+        "sha256:8b5256435511db6388af0d52c99c34653806f1abb22da0a0b931606f3a689a14",
+        "sha256:ca4541a73b9ffc08723ce1b3c6482daf825f6d6329394153fc94680e7e078f10"
+      ],
+      "method": "Exact seven named customer rows, column headings and supplied concentration summary where cited."
+    },
+    {
+      "claim_id": "CL-013",
+      "source_id": "SRC-DR",
+      "original_locator": "Customer_Data: Riverton rows",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:94-96,97-97,101-101,104-104,107-107,108-108,109-109,110-110",
+      "line_spans": [
+        [
+          94,
+          96
+        ],
+        [
+          97,
+          97
+        ],
+        [
+          101,
+          101
+        ],
+        [
+          104,
+          104
+        ],
+        [
+          107,
+          107
+        ],
+        [
+          108,
+          108
+        ],
+        [
+          109,
+          109
+        ],
+        [
+          110,
+          110
+        ]
+      ],
+      "span_hashes": [
+        "sha256:1c670299635826372bb9d314642d1311efa97b843537b98d208e3f6bfb31d6b3",
+        "sha256:ad9f44a136177b465d25018083519a89d9c2d272e9fccc92f59184b532f5d3bb",
+        "sha256:5fefc371ab861bc3828b49a696292fb1320926793278a59d442cadcbfd2d117f",
+        "sha256:2f0fbbc2d16356b313dec338833ff84dc950843f9b589638ce341a07d62903bd",
+        "sha256:36fa6a1d4dfc93503089d2db72ac4cc40c0659eb045fc5574a9e590af12f75a2",
+        "sha256:51c47fe46b2bf689f676315c48757dcf1d0da7d4c6b1fc7335f1e29f95ddb8e8",
+        "sha256:8b5256435511db6388af0d52c99c34653806f1abb22da0a0b931606f3a689a14",
+        "sha256:ca4541a73b9ffc08723ce1b3c6482daf825f6d6329394153fc94680e7e078f10"
+      ],
+      "method": "Exact seven named customer rows, column headings and supplied concentration summary where cited."
+    },
+    {
+      "claim_id": "CL-014",
+      "source_id": "SRC-DR",
+      "original_locator": "Customer_Data concentration summary",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:156-160",
+      "line_spans": [
+        [
+          156,
+          160
+        ]
+      ],
+      "span_hashes": [
+        "sha256:0a7b0c6481a8fef41b18293f50e784b5ca57b3d022a467c1d8f3c04f83534f21"
+      ],
+      "method": "Exact concentration summary and parent-view columns."
+    },
+    {
+      "claim_id": "CL-015",
+      "source_id": "SRC-DR",
+      "original_locator": "Customer_Data: Minimum Volume column",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:94-155",
+      "line_spans": [
+        [
+          94,
+          155
+        ]
+      ],
+      "span_hashes": [
+        "sha256:13bc34dc70f9b237708d50826ba38873eed2f874738e07afb4e9e8f83ff42e1e"
+      ],
+      "method": "Complete customer input table; derived statement remains separate from the source rows."
+    },
+    {
+      "claim_id": "CL-016",
+      "source_id": "SRC-DR",
+      "original_locator": "Customer_Data: Recurring / Repeat / Project aggregation",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:94-155",
+      "line_spans": [
+        [
+          94,
+          155
+        ]
+      ],
+      "span_hashes": [
+        "sha256:13bc34dc70f9b237708d50826ba38873eed2f874738e07afb4e9e8f83ff42e1e"
+      ],
+      "method": "Complete customer input table; derived statement remains separate from the source rows."
+    },
+    {
+      "claim_id": "CL-017",
+      "source_id": "SRC-DR",
+      "original_locator": "Project_Data: Expected Recurring Revenue aggregation",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:167-284",
+      "line_spans": [
+        [
+          167,
+          284
+        ]
+      ],
+      "span_hashes": [
+        "sha256:fccf57e4e4d2460fa985c5c2a60a6aba0086af03a47813b035ae7eb89bf206b3"
+      ],
+      "method": "Complete project input table with its original column headings."
+    },
+    {
+      "claim_id": "CL-018",
+      "source_id": "SRC-DR",
+      "original_locator": "Project_Data: System column",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:167-284",
+      "line_spans": [
+        [
+          167,
+          284
+        ]
+      ],
+      "span_hashes": [
+        "sha256:fccf57e4e4d2460fa985c5c2a60a6aba0086af03a47813b035ae7eb89bf206b3"
+      ],
+      "method": "Complete project input table with its original column headings."
+    },
+    {
+      "claim_id": "CL-019",
+      "source_id": "SRC-DR",
+      "original_locator": "AR_WIP: Unbilled WIP Detail",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:850-911",
+      "line_spans": [
+        [
+          850,
+          911
+        ]
+      ],
+      "span_hashes": [
+        "sha256:a6038feb6cd1c57ecf6a4f1c3f4f63605c39ae134e96825eb898fcf1a09a2975"
+      ],
+      "method": "Exact WIP detail input table."
+    },
+    {
+      "claim_id": "CL-020",
+      "source_id": "SRC-DR",
+      "original_locator": "AR_WIP: Accounts Receivable Detail",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:768-849",
+      "line_spans": [
+        [
+          768,
+          849
+        ]
+      ],
+      "span_hashes": [
+        "sha256:cd556b31d9429a43c645d9d5e8bf2b56c6909d73169981dd9e328478c8dd7663"
+      ],
+      "method": "Exact receivables detail input table."
+    },
+    {
+      "claim_id": "CL-021",
+      "source_id": "SRC-DR",
+      "original_locator": "Employees schedule",
+      "source_version_id": "sha256:8cd897f0c42304cbeb2c18d645e7eafb1cdc0925237df868a774f87d56d49509",
+      "locator": "lines:290-760",
+      "line_spans": [
+        [
+          290,
+          760
+        ]
+      ],
+      "span_hashes": [
+        "sha256:23818d3a3af54b5df2b739d5e0a3652edb7604464b97e71681d7576b590d48c4"
+      ],
+      "method": "Exact employee and utilization input table."
+    },
+    {
+      "claim_id": "CL-027",
+      "source_id": "SRC-QL",
+      "original_locator": "Diligence Question List",
+      "source_version_id": "sha256:30ac6acc8e1477104a2cbf4d2ccb27fdf70cb79671f66d18dd8925e986edc25b",
+      "locator": "lines:11-36",
+      "line_spans": [
+        [
+          11,
+          36
+        ]
+      ],
+      "span_hashes": [
+        "sha256:53a46df03d127cc271d41d34e93d81162e7d3f8c7a1c31395d0c42798434bfd0"
+      ],
+      "method": "Complete, unique original document heading."
+    },
+    {
+      "claim_id": "CL-040",
+      "source_id": "SRC-MODEL-SUM",
+      "original_locator": "Case logic - Standalone base",
+      "source_version_id": "sha256:45e9cafc457bb00c17b26f6bd7a5028f75a0b41dd71b170029d215567348be85",
+      "locator": "lines:44-51",
+      "line_spans": [
+        [
+          44,
+          51
+        ]
+      ],
+      "span_hashes": [
+        "sha256:1fe4e408ce2d051e28c33e2bcb4b2ed240a89e3c95948fc46bf3bef4a01e813f"
+      ],
+      "method": "Exact nested scenario heading."
+    },
+    {
+      "claim_id": "CL-041",
+      "source_id": "SRC-MODEL-SUM",
+      "original_locator": "Audited model outputs - Standalone Base",
+      "source_version_id": "sha256:45e9cafc457bb00c17b26f6bd7a5028f75a0b41dd71b170029d215567348be85",
+      "locator": "lines:70-70,72-72",
+      "line_spans": [
+        [
+          70,
+          70
+        ],
+        [
+          72,
+          72
+        ]
+      ],
+      "span_hashes": [
+        "sha256:f80e5ac1c08dda19b52582ba9dd245ce2f6fd3cf865c75ce661c60afb91480b3",
+        "sha256:4814707cc36341daf506c5087db400bdcc5f5ee7c588058db5efc616928ed3e2"
+      ],
+      "method": "Exact scenario output row with its column headings."
+    },
+    {
+      "claim_id": "CL-042",
+      "source_id": "SRC-MODEL-SUM",
+      "original_locator": "Audited model outputs - Standalone Downside",
+      "source_version_id": "sha256:45e9cafc457bb00c17b26f6bd7a5028f75a0b41dd71b170029d215567348be85",
+      "locator": "lines:70-70,73-73",
+      "line_spans": [
+        [
+          70,
+          70
+        ],
+        [
+          73,
+          73
+        ]
+      ],
+      "span_hashes": [
+        "sha256:f80e5ac1c08dda19b52582ba9dd245ce2f6fd3cf865c75ce661c60afb91480b3",
+        "sha256:d52d578beb000333a687d10d7f9fe659dafca937e822a78b0672e193a35914a7"
+      ],
+      "method": "Exact scenario output row with its column headings."
+    },
+    {
+      "claim_id": "CL-048",
+      "source_id": "SRC-IC",
+      "original_locator": "Risk debate - integration and execution / IC conditions",
+      "source_version_id": "sha256:269878aec4f227a849262fceb46cd1799598d7ff68c6583b70feb5ebf64af8e6",
+      "locator": "lines:54-61,66-81",
+      "line_spans": [
+        [
+          54,
+          61
+        ],
+        [
+          66,
+          81
+        ]
+      ],
+      "span_hashes": [
+        "sha256:39c2e8c7fe7b1dae5cb66520afa20b26aa07477ba6aab9e0abb13c09686c8e55",
+        "sha256:c33c36af0808d3ffa5432a79c9ad3687357e1d64edc48cd0db3da68d83b28671"
+      ],
+      "method": "Both explicitly referenced sections."
+    },
+    {
+      "claim_id": "CL-050",
+      "source_id": "SRC-IC",
+      "original_locator": "IC conditions 1-4",
+      "source_version_id": "sha256:269878aec4f227a849262fceb46cd1799598d7ff68c6583b70feb5ebf64af8e6",
+      "locator": "lines:68-68,69-69,70-70,71-71",
+      "line_spans": [
+        [
+          68,
+          68
+        ],
+        [
+          69,
+          69
+        ],
+        [
+          70,
+          70
+        ],
+        [
+          71,
+          71
+        ]
+      ],
+      "span_hashes": [
+        "sha256:f25eba8ffafcd5c35c538dc8a2d3995c4b7ec6d01d489e4602d4312396a18eca",
+        "sha256:7af427a212c21ece2c5b77e7db9bc57ef6edfb21b84f44a09f71904bf13be19f",
+        "sha256:bb9652bd58bdf8f4c68df0dc9e0eeef664ad6ee393d0133129bf4bd2434b78b7",
+        "sha256:472a2ec37a0cd89f13109b0cb441bd394e800a622e8e863876e76dcfad995d4f"
+      ],
+      "method": "Exact numbered IC conditions within the unique conditions section."
+    },
+    {
+      "claim_id": "CL-051",
+      "source_id": "SRC-IC",
+      "original_locator": "IC condition 7",
+      "source_version_id": "sha256:269878aec4f227a849262fceb46cd1799598d7ff68c6583b70feb5ebf64af8e6",
+      "locator": "lines:74-74",
+      "line_spans": [
+        [
+          74,
+          74
+        ]
+      ],
+      "span_hashes": [
+        "sha256:2a75c66c3e8213cbf34bb67cb4ba7b1a43a340427a678e0ebafac6fdef352cb0"
+      ],
+      "method": "Exact numbered IC conditions within the unique conditions section."
+    },
+    {
+      "claim_id": "CL-052",
+      "source_id": "SRC-IC",
+      "original_locator": "IC condition 8",
+      "source_version_id": "sha256:269878aec4f227a849262fceb46cd1799598d7ff68c6583b70feb5ebf64af8e6",
+      "locator": "lines:75-75",
+      "line_spans": [
+        [
+          75,
+          75
+        ]
+      ],
+      "span_hashes": [
+        "sha256:100037637783b725fe9f1cce1442f7d00a729b579c56bbb15a52a792821d4f68"
+      ],
+      "method": "Exact numbered IC conditions within the unique conditions section."
+    },
+    {
+      "claim_id": "CL-053",
+      "source_id": "SRC-IC",
+      "original_locator": "IC conditions 9, 11 and 13",
+      "source_version_id": "sha256:269878aec4f227a849262fceb46cd1799598d7ff68c6583b70feb5ebf64af8e6",
+      "locator": "lines:76-76,78-78,80-80",
+      "line_spans": [
+        [
+          76,
+          76
+        ],
+        [
+          78,
+          78
+        ],
+        [
+          80,
+          80
+        ]
+      ],
+      "span_hashes": [
+        "sha256:64ceb2371483f47a63cf0cb92960308cff37a8497c600e19a43b7c58ef87091c",
+        "sha256:602be6fe2bbe99bb3177f037fda85957b7cb9265bb3bd0aa1103d1034f6f8d7d",
+        "sha256:d691ca756716366ec7cb46026743047fc06207bd91968df70be39c44683dc83a"
+      ],
+      "method": "Exact numbered IC conditions within the unique conditions section."
+    },
+    {
+      "claim_id": "CL-054",
+      "source_id": "SRC-IC",
+      "original_locator": "IC condition 12",
+      "source_version_id": "sha256:269878aec4f227a849262fceb46cd1799598d7ff68c6583b70feb5ebf64af8e6",
+      "locator": "lines:79-79",
+      "line_spans": [
+        [
+          79,
+          79
+        ]
+      ],
+      "span_hashes": [
+        "sha256:3f96e67fc70fc97124dd5acbfd51e2280463fe90d3e11347df76952757fddac2"
+      ],
+      "method": "Exact numbered IC conditions within the unique conditions section."
+    },
+    {
+      "claim_id": "CL-M01",
+      "source_id": "SRC-BP1",
+      "original_locator": "Slides 7-8",
+      "source_version_id": "sha256:69c65d44bf7ca5e67f4bbbd20bec26642e809250518197cf4c60a7176c74b2ac",
+      "locator": "lines:143-173,174-221",
+      "line_spans": [
+        [
+          143,
+          173
+        ],
+        [
+          174,
+          221
+        ]
+      ],
+      "span_hashes": [
+        "sha256:4a5c5db9711d5555c6a4a4c01cb5d8497a573f8efa8bbac0e26afb6da017b4e8",
+        "sha256:f53e3a0cd33ba9edabaeeef2ac5445a72bdc15a679665541185a22f6cdd2736d"
+      ],
+      "method": "Exact numbered slide sections in the supplied Markdown original."
+    },
+    {
+      "claim_id": "CL-M02",
+      "source_id": "SRC-BP1",
+      "original_locator": "Slides 4 and 8",
+      "source_version_id": "sha256:69c65d44bf7ca5e67f4bbbd20bec26642e809250518197cf4c60a7176c74b2ac",
+      "locator": "lines:22-77,174-221",
+      "line_spans": [
+        [
+          22,
+          77
+        ],
+        [
+          174,
+          221
+        ]
+      ],
+      "span_hashes": [
+        "sha256:f5d7aaafc246357897f30f7e629948e4c8467cd4489a849be10e7fd9cd0f27a4",
+        "sha256:f53e3a0cd33ba9edabaeeef2ac5445a72bdc15a679665541185a22f6cdd2736d"
+      ],
+      "method": "Exact numbered slide sections in the supplied Markdown original."
+    },
+    {
+      "claim_id": "CL-M03",
+      "source_id": "SRC-BP1",
+      "original_locator": "Slides 4, 9 and 10",
+      "source_version_id": "sha256:69c65d44bf7ca5e67f4bbbd20bec26642e809250518197cf4c60a7176c74b2ac",
+      "locator": "lines:22-77,222-243,244-272",
+      "line_spans": [
+        [
+          22,
+          77
+        ],
+        [
+          222,
+          243
+        ],
+        [
+          244,
+          272
+        ]
+      ],
+      "span_hashes": [
+        "sha256:f5d7aaafc246357897f30f7e629948e4c8467cd4489a849be10e7fd9cd0f27a4",
+        "sha256:866459028a4ad4a49932175f89e2c0e1a03574d5a908112017bcd0f3b06c2390",
+        "sha256:d8807942965879c1e88db764867e783d3a3ccc9127fca45da5f9a021181fb5ea"
+      ],
+      "method": "Exact numbered slide sections in the supplied Markdown original."
+    },
+    {
+      "claim_id": "CL-M05",
+      "source_id": "SRC-BP2",
+      "original_locator": "Slides 12 and 15",
+      "source_version_id": "sha256:1ef2606c2f4381fe9904e99d820d0afbeee915d693d8d1ca552316da952b3b71",
+      "locator": "lines:14-21,90-131",
+      "line_spans": [
+        [
+          14,
+          21
+        ],
+        [
+          90,
+          131
+        ]
+      ],
+      "span_hashes": [
+        "sha256:9fee125c77ed0bed4169d766dbe8bd6858458f177c6a0a99e630b5eea9c77fdc",
+        "sha256:aa2ac592c7141e816892501872b734042755eb8e890720523009ac7016281e40"
+      ],
+      "method": "Exact numbered slide sections in the supplied Markdown original."
+    },
+    {
+      "claim_id": "CL-M07",
+      "source_id": "SRC-BP2",
+      "original_locator": "Slides 14 and 16",
+      "source_version_id": "sha256:1ef2606c2f4381fe9904e99d820d0afbeee915d693d8d1ca552316da952b3b71",
+      "locator": "lines:69-89,132-143",
+      "line_spans": [
+        [
+          69,
+          89
+        ],
+        [
+          132,
+          143
+        ]
+      ],
+      "span_hashes": [
+        "sha256:930aa1a50894f6baa1269a3f68a81f464d2fd4e83cad11c3e8b581b2dd76ff91",
+        "sha256:d07fe4efde4780c81757ae0824ccd079c83830bdbb3ffb01e2b233db8d4e22bb"
+      ],
+      "method": "Exact numbered slide sections in the supplied Markdown original."
+    },
+    {
+      "claim_id": "CL-M13",
+      "source_id": "SRC-JUN27",
+      "original_locator": "Slides 22-23",
+      "source_version_id": "sha256:af4abfadf5da8d9961f6e4a9c27e7ffde52901e1e1344de4c991cce226bb95ff",
+      "locator": "lines:50-97,98-117",
+      "line_spans": [
+        [
+          50,
+          97
+        ],
+        [
+          98,
+          117
+        ]
+      ],
+      "span_hashes": [
+        "sha256:b155295e60cba0f47c0217a2de4af1ce8634f6529219c7ebfe1cbdefb9698906",
+        "sha256:d60a21108d348e1a279559727fbf2d1feaa2a0a724e4426767bd9f3f7c644479"
+      ],
+      "method": "Exact numbered slide sections in the supplied Markdown original."
+    },
+    {
+      "claim_id": "CL-M18",
+      "source_id": "SRC-EXIT31",
+      "original_locator": "Slides 29-31",
+      "source_version_id": "sha256:8a1bf2e1e34ebe60c2b32768fa9bd2c628e10b31e2ac60eb747531d2f980e6b2",
+      "locator": "lines:42-57,58-108,109-146",
+      "line_spans": [
+        [
+          42,
+          57
+        ],
+        [
+          58,
+          108
+        ],
+        [
+          109,
+          146
+        ]
+      ],
+      "span_hashes": [
+        "sha256:b01e07d08c52ced0432b77c230a79c095d14782194f5d5b18a20afc47c9e814e",
+        "sha256:6e80bc681a31c3db4eb22ac5d1976a340ceb75090a8cb7fb6e84df7ec7ec7e88",
+        "sha256:60f3c8572547d2f841b518dd29b3f694bd921f0822b46244b22fa4e5336c176d"
+      ],
+      "method": "Exact numbered slide sections in the supplied Markdown original."
+    },
+    {
+      "claim_id": "CL-M19",
+      "source_id": "SRC-EXIT31",
+      "original_locator": "Slides 30-31",
+      "source_version_id": "sha256:8a1bf2e1e34ebe60c2b32768fa9bd2c628e10b31e2ac60eb747531d2f980e6b2",
+      "locator": "lines:58-108,109-146",
+      "line_spans": [
+        [
+          58,
+          108
+        ],
+        [
+          109,
+          146
+        ]
+      ],
+      "span_hashes": [
+        "sha256:6e80bc681a31c3db4eb22ac5d1976a340ceb75090a8cb7fb6e84df7ec7ec7e88",
+        "sha256:60f3c8572547d2f841b518dd29b3f694bd921f0822b46244b22fa4e5336c176d"
+      ],
+      "method": "Exact numbered slide sections in the supplied Markdown original."
+    },
+    {
+      "claim_id": "CL-M20",
+      "source_id": "SRC-EXIT31",
+      "original_locator": "Slide 32 / answer-key causal conclusion",
+      "source_version_id": "sha256:8a1bf2e1e34ebe60c2b32768fa9bd2c628e10b31e2ac60eb747531d2f980e6b2",
+      "locator": "lines:147-165",
+      "line_spans": [
+        [
+          147,
+          165
+        ]
+      ],
+      "span_hashes": [
+        "sha256:90364b041185de97d1f0b5753a437528a89ebf99dac1392881f706d9c54443dc"
+      ],
+      "method": "Exact numbered slide sections in the supplied Markdown original.",
+      "limitation": "Only the cited Slide 32 is opened. The validation answer key is excluded; source location does not independently validate this causal conclusion."
+    }
+  ]
+}

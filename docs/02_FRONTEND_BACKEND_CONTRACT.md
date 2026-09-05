@@ -81,6 +81,77 @@ Return numeric `Coverage`:
 
 Affected does not mean changed. Survivors are explicit.
 
+The optional `simulationScope` projection uses `simulation/1.0`. Numeric
+`SimulationRequest` fields add `value`, `caseVersion` and `scopeVersion` to the
+existing option/origin contract. The authenticated `/simulations` endpoint
+returns exact numeric magnitudes and explicit limitations. `CHANGES` is neutral
+UI impact language, not a new kernel state. Older qualitative adapters retain
+their original interface. See `PAN-132_SIMULATION_ACCEPTANCE.md` for the
+supported executable perimeter and acceptance boundaries.
+
 ## Commands
 
 Commands express user intent; the backend translates allowed commands into authoritative canonical events/relations under current runtime contracts. The frontend does not prescribe raw ledger mutation.
+
+
+## Fund editorial profiles for IC memos
+
+The authenticated Outputs projection adds optional `editorialContext`: latest
+fund profile, version history metadata, and configuration availability/reason.
+`Artifact.editorialProfile` is the immutable brief used by that memo;
+`editorialUpdateAvailable` compares it with the current fund profile without
+changing passage freshness or silently invalidating a previously approved memo.
+
+`SAVE_EDITORIAL_PROFILE` carries the complete `EditorialConfig` and an exact
+`expectedProfileVersion`. The server resolves fund scope from the case and
+requires `EDIT_EDITORIAL_PROFILE`; clients cannot choose a different fund in a
+command. `APPLY_EDITORIAL_PROFILE` also requires the current output revision
+and is rejected while passage proposals remain pending. It creates a draft
+revision with the selected brief, preserving text, evidence and object IDs.
+See `PAN-148_EDITORIAL_PROFILES_ACCEPTANCE.md` for server association and tests.
+
+## Extended simulation modes
+
+Simulation V1 also accepts `mode: event | inverse | compare` through the same
+adapter method. Event requests carry a server-prepared `scenarioId`; inverse
+requests carry output/target/input bounds; comparisons pin both cases/scopes
+and pass a percentage shock. Peer credentials are injected only by the transport.
+`simulationScenarios` and `simulationEventLimits` are read projections over
+admitted ledger evidence and explicit execution rules. Event scenario archives
+retain frozen evidence/model/result envelopes; no hypothetical changes Current.
+The production entry now obtains server-issued sessions through V20 bootstrap.
+Detailed field requirements, comparison identity and solver boundaries are in
+`PAN-132_SIMULATION_ACCEPTANCE.md`.
+
+### General graph simulation projection
+
+The simulation GET can expose `graphSimulationScope`, `graphSimulationScenarios`
+and event limits, or an explicit `graphSimulationUnavailable` reason. The scope
+catalog projects existing runtime objects and fields; it does not extend kernel
+ObjectKind. POST modes `graph` and `graph_event` require `caseVersion` and
+`graphVersion`. The manual body supplies only declared mutations; the event body
+supplies `eventId` and `eventHash` for a server-owned admitted event. The graph
+version pins full prior state, mapping, both policies and engine version.
+
+`SimulationResult.graph` contains changed/held rows with an independent unresolved
+flag, actual Current/hypothetical edges, witness labels, runtime stops, evaluated
+baseline support and the full transition result. Counts of unresolved items may
+overlap changed items. Frontend validation checks case, mode, versions, requested
+mutations, executed event, object references and coverage counts. No simulation
+result replaces the live snapshot. The authenticated immutable archive freezes
+`transitionInputs`, evidence and result for reproducibility. See
+`docs/PAN-111_GRAPH_SIMULATION_ACCEPTANCE.md` for runtime/authority boundaries and
+verification.
+
+### Text-to-scenario proposal
+
+An optional `proposeSimulation` adapter method calls the authenticated simulation
+`/propose` subroute with `text`, `caseVersion`, `graphVersion`. The GET projection
+advertises `simulationTextInput` (GUIDED/ASSISTED and case-derived examples).
+`SimulationProposal` is a disposable interpretation, never a kernel event. Its
+items resolve to current canonical objects and include validated mutations,
+source-text quotes, before/after values and rationale. Questions keep a partial
+proposal in NEEDS_CLARIFICATION. Creating a proposal never executes the transition.
+The frontend validates scope, description, references and readiness, then an
+explicit review action sends mutations to the existing graph POST. That request's
+`assumption` preserves the reviewed text in the immutable scenario archive.

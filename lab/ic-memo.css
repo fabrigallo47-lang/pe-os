@@ -1,0 +1,5 @@
+.p-memo-lab .p-lab-mode-bar{position:static;display:flex;flex-wrap:wrap;justify-content:space-between;height:auto;min-height:60px;padding:14px 24px;gap:12px}
+.p-memo-lab .p-lab-identity{flex-basis:100%;font-size:11px}.p-memo-lab .p-lab-mode-bar>span{font-size:12px;color:var(--p-muted)}.p-memo-lab .p-lab-mode-bar a{font-size:12px;color:var(--p-accent)}
+.p-memo-lab .p-output-toolbar{top:0}.p-memo-lab .p-output-lens{top:90px}.p-memo-lab .p-output-page{padding-bottom:80px}.p-memo-lab .p-output-status{margin-top:20px}
+
+.p-memo-lab nav{display:flex;gap:18px;flex-wrap:wrap}.p-memo-lab nav a[aria-current="page"]{font-weight:700;text-decoration:underline}

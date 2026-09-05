@@ -4,8 +4,19 @@ import { EmptyCase } from '../components/EmptyCase';
 import { HumanPositionNote } from '../components/HumanPositionNote';
 import { unknownById, objectLabel, humanPositionsForScope, caseReadingById, supportSummary, questionById, workstreamById, formatCount, formatRemaining } from '../app/selectors';
 import { goTo } from '../app/routes';
+import { resolveSourceEvidence, sourceLocatorForClaim } from '../app/sourceEvidence';
 
 export function Trace(){
+  const {snapshot,focusedQuestionId,focusedWorkstreamId}=usePanta();
+  if(!snapshot)return <EmptyCase/>;
+  const workstream=workstreamById(snapshot,focusedWorkstreamId)??snapshot.workstreams[0];
+  const question=questionById(snapshot,focusedQuestionId)??snapshot.questions.find(item=>item.workstreamId===workstream?.id);
+  const reading=question&&caseReadingById(snapshot,question.currentCaseReadingId);
+  if(!question||!reading)return <EmptyCase/>;
+  return <TraceContent key={`${snapshot.caseRef.id}|${snapshot.asOf}|${question.id}|${reading.id}`}/>;
+}
+
+function TraceContent(){
   const {snapshot,focusedQuestionId,focusedWorkstreamId,setActiveObject,openSource}=usePanta();
   if(!snapshot)return <EmptyCase/>;
   const workstream=workstreamById(snapshot,focusedWorkstreamId)??snapshot.workstreams[0];
@@ -17,7 +28,9 @@ export function Trace(){
   const [excluded,setExcluded]=useState<string[]>([]);
   const activeSupports=supports.filter(id=>!excluded.includes(id));
   const selectedClaim=snapshot.claims.find(e=>e.id===selectedSupportId);
-  const selectedSource=selectedClaim?.sourceId?snapshot.sources.find(s=>s.id===selectedClaim.sourceId):snapshot.sources.find(s=>s.id===selectedSupportId);
+  const selectedLocator=selectedClaim?sourceLocatorForClaim(snapshot,selectedClaim):undefined;
+  const selectedEvidence=selectedLocator?resolveSourceEvidence(snapshot,selectedLocator):undefined;
+  const selectedSource=snapshot.sources.find(s=>s.id===(selectedLocator?.sourceId??selectedSupportId));
   const selectedFinding=snapshot.findings.find(f=>f.id===selectedSupportId);
   const selectedPosition=snapshot.humanPositions.find(p=>p.id===selectedSupportId);
   const stats=useMemo(()=>supportSummary(snapshot,{...reading,supportObjectIds:activeSupports}),[snapshot,reading,activeSupports]);
@@ -45,12 +58,12 @@ export function Trace(){
           const evidence=snapshot.claims.find(e=>e.id===id); const finding=snapshot.findings.find(f=>f.id===id); const position=snapshot.humanPositions.find(p=>p.id===id);
           const title=evidence?.label??finding?.title??position?.text??objectLabel(snapshot,id);
           const meta=evidence?(reading.independentSupportObjectIds.includes(id)?'Independent evidence':evidence.type):finding?'PANTA finding':position?'Human view':'';
-          return <button key={id} aria-pressed={selectedSupportId===id} className={`p-trace-support ${selectedSupportId===id?'is-selected':''} ${excluded.includes(id)?'is-excluded':''}`} onClick={()=>setSelectedSupportId(id)}><strong>{title}</strong>{meta&&<span>{meta}</span>}</button>
+          return <button key={id} aria-pressed={selectedSupportId===id} className={`p-trace-support ${selectedSupportId===id?'is-selected':''} ${excluded.includes(id)?'is-excluded':''}`} onClick={()=>{setSelectedSupportId(id);void setActiveObject(id)}}><strong>{title}</strong>{meta&&<span>{meta}</span>}</button>
         })}
       </aside>
 
       <section className="p-source-aperture">
-        {selectedClaim&&<><div className="p-source-aperture-head"><div><strong>{selectedSource?.title??selectedClaim.label}</strong><span>{selectedSource?.occurredAt??selectedClaim.type}</span></div>{selectedSource&&<button className="p-shell-link" onClick={()=>openSource(selectedSource.id)}>Open source</button>}</div>{selectedClaim.contribution&&<p>{selectedClaim.contribution}</p>}{selectedClaim.excerpt&&<blockquote>“{selectedClaim.excerpt}”</blockquote>}{selectedClaim.limitation&&<div className="p-source-limit"><span>What this doesn't prove</span><p>{selectedClaim.limitation}</p></div>}</>}
+        {selectedClaim&&<><div className="p-source-aperture-head"><div><strong>{selectedSource?.title??selectedClaim.label}</strong><span>{selectedClaim.locator||'Exact location not supplied'}</span></div><button className="p-shell-link" disabled={!selectedLocator} onClick={()=>selectedLocator&&openSource(selectedLocator)}>Open source</button></div>{!selectedLocator&&<p className="p-muted">The source reference is missing or inconsistent.</p>}{selectedEvidence?.issue&&<p className="p-muted">{selectedEvidence.issue}</p>}{selectedClaim.contribution&&<p>{selectedClaim.contribution}</p>}{selectedEvidence?.excerpt&&<blockquote>“{selectedEvidence.excerpt}”</blockquote>}{selectedClaim.limitation&&<div className="p-source-limit"><span>What this doesn't prove</span><p>{selectedClaim.limitation}</p></div>}</>}
         {selectedFinding&&<><div className="p-source-aperture-head"><strong>{selectedFinding.title}</strong><span>PANTA finding</span></div><p>{selectedFinding.proposition}</p><div className="p-source-limit"><span>How PANTA found this</span>{selectedFinding.derivationObjectIds.map(id=><button key={id} onClick={()=>void setActiveObject(id)}>{objectLabel(snapshot,id)}</button>)}</div></>}
         {selectedPosition&&<HumanPositionNote position={selectedPosition}/>} 
         {!selectedClaim&&!selectedFinding&&!selectedPosition&&<p className="p-muted">Select a mapped support object.</p>}

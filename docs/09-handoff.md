@@ -5,6 +5,11 @@ only part that goes stale by design.
 
 Session branch: `dev` · baseline for attribution: `abe3e4e`
 
+**Extraction now runs on GLM 5.2 via OpenRouter** (`PEOS_LLM_PROVIDER=openrouter`
+→ `z-ai/glm-5.2`), with `zdr: true` and `data_collection: "deny"` sent on every
+call. Anthropic/Haiku remains the fallback provider. Resolve the model through
+`llm_provider.configured_model()` — never hardcode one.
+
 ---
 
 ## 1. What this session set out to do
@@ -182,7 +187,7 @@ The claim→model_node link **does not exist as an artifact**:
 supplies them. Wiring it is **G7/R6** work. Faking it means inventing numbers into
 a financial model.
 
-### 5.2 Dynamics suite: 390/391 — three fixed, one open
+### 5.2 Dynamics suite: 393/393 — all four failures fixed
 
 Started at 4 failures. **Attribution matters here and I got it wrong twice
 before running it down properly**, so the method is recorded: a worktree at the
@@ -193,7 +198,7 @@ session baseline, then at Anto's `5910515`, then a commit-by-commit sweep.
 | `test_pan63_claim_identity_migration` | **real bug, mine.** Three metrics added to `METRIC_ENUM` never reached `METRIC_VOCABULARY`, so claims about them became unresolvable. | **fixed** |
 | `test_llm_provider` | **mine, deliberate.** Pinned `max_tokens == 4096`; it is 8192 because 4096 silently truncated (3/3: `stop_reason=max_tokens`, 0 claims, no exception). Test now asserts against the module constant. | **fixed** |
 | `test_pan58_clean_case_bootstrap` | **not a code regression.** Test-isolation bug: it repoints `PIPELINE_OUT` but `_pipeline_out_for_case()` uses `PIPELINE_OUT` only for keystone and `CASE_PIPELINE_ROOT / case_id` otherwise — so it read the developer's real `pipeline_out/cases/clean/` (a gitignored artifact dated **Aug 31**, before this session). Now isolates `CASE_PIPELINE_ROOT`. | **fixed** |
-| `test_v20_live_evidence_loop` | `mapped_claim_count` is 0, expected 1. A claim maps only when `_claim_mapping_is_applicable(claim, position)` passes for some edge in `edges_by_claim`; either no edge exists for it or none is applicable. Not caused by `object_identity`, `tools/claim_graph.py`, or the artifacts (unchanged, clean). The same `CASE_PIPELINE_ROOT` isolation fix was applied but did not resolve it. | **OPEN** |
+| `test_v20_live_evidence_loop` | **real contract-boundary bug.** The bridge had already emitted a governed claim→position edge, but the router and runtime rechecked the extractor's descriptive perimeter against the canonical position perimeter. The event now carries explicit `mapping_target_semantics`: applicability is checked against the canonical target identity while the admitted claim retains its own source period/perimeter/unit. | **fixed** |
 
 **Method note worth keeping:** `make verify` reported "suite failed" both before
 and after my changes, so an identical `make verify` result could **not**
@@ -206,32 +211,40 @@ directly and diff the failure list.
 can pass in a worktree and fail in the main tree for that reason alone — which is
 exactly what happened with `pan58`.
 
-### 5.2b `make verify`: 4 failing stages → 2, and both remaining are diagnosed
+### 5.2b `make verify`: 4 failing stages → 1
 
-Two of the four were **bugs in the harness, not in the code under test**. Both had
-the same root cause: `panta_transition_engine` imports its siblings as a
-top-level `runtime` package (`from runtime.consequence_reasoning import ...`),
-which resolves only with `backend/dynamics` on `sys.path`. The dynamics suite
-gets that free by running with `cwd=backend/dynamics`; anything launched from
-ROOT does not.
+Three were fixed; the fourth is a data question, not a code one.
 
-- **PAN-36 V2 merge contract** — reported "no unittest result line". It was not a
-  missing line: the import blew up before a single test was collected, and the
-  harness reported the symptom. Now **19/19**.
-- **Embedded dynamics bundle run** — same import, same fix. Now **PASS**
-  (`adapter_alpha: PARTIAL, 6 settled, 0 blocked`).
+- **PAN-36** and **dynamics bundle run** were *harness* bugs, same root cause:
+  `panta_transition_engine` imports its siblings as a top-level `runtime`
+  package (for standalone serverless packaging), which resolves only with
+  `backend/dynamics` on `sys.path`. The suite gets that from
+  `cwd=backend/dynamics`; anything launched from the repo root does not. After a
+  **third** tool hit it (`bundle_assemble.py`), the fix moved to the package
+  boundary in `backend/dynamics/__init__.py` — one place, all callers, flat
+  imports untouched.
+- **Dynamics unit suite** — now **394/394**. The last failure
+  (`test_v20`, `mapped_claim_count 0 != 1`) was fixed properly:
+  `_claim_mapping_is_applicable` compared the RAW CLAIM against the profiled
+  position, which is redundant *and* wrong — the bridge has already applied the
+  governed binding rule, and extractor perimeter text is more descriptive than
+  the canonical position perimeter, so correct claims never matched.
+  `_position_mapping_is_applicable` now compares compiled vs baseline position
+  identity. The test was strengthened, not relaxed.
 
-Remaining two, neither mine:
+**Still failing — needs a decision, not a fix:** `PANTA independent validation`,
+`PASS=44 FAIL=2`. The bundle's declared `transition_output.json` diverges from
+the independent runtime on `[affected_set, engine_version, policy_refs,
+semantic_result_hash]`. `engine_version` is in that list, so the engine moved and
+the bundle was never regenerated — and it moved again with the
+`_position_mapping_is_applicable` fix.
 
-- **Embedded dynamics unit suite** — the single open `test_v20` above.
-- **PANTA independent validation** — `PASS=44 FAIL=2`. The bundle's *declared*
-  `transition_output.json` diverges from what the independent runtime computes:
-  `mismatched_fields: [affected_set, engine_version, policy_refs,
-  semantic_result_hash]`. **`engine_version` is in that list**, so the engine
-  moved and the committed bundle was never regenerated. Fixing it means
-  regenerating `pipeline_out/e3/K-PRE/adapter_alpha/transition_output.json` — a
-  deliberate act on a committed artifact, and it belongs to whoever moved the
-  engine. Present and identical on the first `make verify` of this session.
+Regenerating is the right repair, but `bundle_assemble.py` refuses to run
+standalone (*"richiede il dict del bridge; usare adapter_alpha.py"*): it must be
+driven by a full `adapter_alpha` run, which rewrites all 16 sealed files. The V7
+acceptance stage (176/176) hashes that bundle. **Not done here** — rewriting a
+sealed bundle other passing tests depend on belongs to whoever owns the engine
+change. Anto regenerated it last on 2026-09-02 alongside their engine work.
 
 ### 5.3 Other open items
 - **Two divergent claim-graph modules (§3.0)** — the highest-value decision here.

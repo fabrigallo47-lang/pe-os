@@ -15,6 +15,6 @@ export default defineConfig({
   build: {
     outDir: '../dist-lab',
     emptyOutDir: true,
-    rollupOptions: { input: { main: 'lab/index.html', sourceTracking: 'lab/source-tracking.html', repositoryTracking: 'lab/repository-tracking.html' } },
+    rollupOptions: { input: { main: 'lab/index.html', sourceTracking: 'lab/source-tracking.html', repositoryTracking: 'lab/repository-tracking.html', icMemo: 'lab/ic-memo.html' } },
   },
 });

@@ -51,6 +51,7 @@ export async function fetchSourceDocument(caseId: string, target: SourceLocator,
 /** Preserve adapter method receivers, including stateful adapters. */
 export function withSourceDocuments(adapter: PantaBackendAdapter, options?: SourceDocumentHttpOptions): PantaBackendAdapter {
   return {
+    exportArtifact: adapter.exportArtifact?.bind(adapter),
     getSession: adapter.getSession.bind(adapter),
     listCases: adapter.listCases.bind(adapter),
     loadCase: adapter.loadCase.bind(adapter),

@@ -16,7 +16,7 @@ export function SourceEvidence({ target, onOpenOriginal }: { target: SourceLocat
     return ref?.sourceId === target.sourceId && (!versionId || ref.sourceVersionId === versionId) ? [{ claim: item, ref }] : [];
   });
   return <section className="p-source-evidence" aria-label="Source evidence">
-    {claim && <div className="p-source-statement"><span className="p-field-label">Statement in the case</span><p>{claim.normalizedStatement || claim.label}</p></div>}
+    {claim && <div className="p-source-statement"><span className="p-field-label">{evidence.frozen ? 'Statement saved with the output' : 'Statement in the case'}</span><p>{claim.normalizedStatement || claim.label}</p></div>}
     <dl className="p-source-citation">
       {evidence.source?.origin && <div><dt>Origin</dt><dd>{evidence.source.origin}</dd></div>}
       <div><dt>Source location</dt><dd>{locator || 'Exact location not supplied'}</dd></div>

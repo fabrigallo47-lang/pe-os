@@ -91,6 +91,7 @@ export type Entitlement =
   | 'RECORD_DECISION'
   | 'EDIT_ARTIFACT'
   | 'SYNC_ARTIFACT'
+  | 'APPROVE_ARTIFACT'
   | 'EXTERNAL_ACTION';
 
 export interface Actor {
@@ -141,6 +142,8 @@ export interface SourceLocator {
   sourceVersionId?: Id;
   locator?: string;
   claimId?: Id;
+  /** Read a citation frozen inside this saved output passage, without replacing Current. */
+  artifactBlockId?: Id;
 }
 
 /** UI projection of the canonical relation contract. */
@@ -467,10 +470,18 @@ export interface ArtifactBlock {
   authorActorId?: Id;
   recordedAt?: string;
   boundObjectIds: Id[];
+  freshnessStatus?: 'CURRENT' | 'STALE' | 'MISSING_BASIS';
+  editorialLocked?: boolean;
+  frozenBasis?: Array<{ objectId: Id; text: string; sourceLocator?: SourceLocator | null }>;
+  writerModel?: string;
+  draftedAt?: string;
+  reviewedBy?: Id;
+  reviewedAt?: string;
   suggestion?: {
     signal: string;
     suggestedText: string;
     reasonObjectIds: Id[];
+    remove?: boolean;
   };
 }
 
@@ -486,6 +497,10 @@ export interface Artifact {
   syncStatus: ArtifactSyncStatus;
   blockIds: Id[];
   quantityIds: Id[];
+  revisionId?: string;
+  approvalStatus?: 'DRAFT' | 'APPROVED';
+  canApprove?: boolean;
+  approval?: { actorId: Id; recordedAt: string; caseVersion: string; contentHash: string };
 }
 
 export interface ArtifactDiff {
@@ -790,6 +805,7 @@ export interface InspectionPayload {
 export interface PantaCaseSnapshot {
   caseRef: CaseRef;
   caseVersion: string;
+  outputCapabilities?: { versioned: boolean; aiRedraftAvailable: boolean; writerLabel?: string };
   asOf: string;
   decision?: DecisionContext;
   premiseCaseReadingId?: Id;
@@ -837,6 +853,8 @@ export type PantaAction =
   | { type: 'RECORD_DECISION'; pathId: Id; rationale: string; conditionText?: string }
   | { type: 'CREATE_ARTIFACT'; artifactType: string }
   | { type: 'SYNC_ARTIFACT'; artifactId: Id }
+  | { type: 'REDRAFT_ARTIFACT'; artifactId: Id }
+  | { type: 'APPROVE_ARTIFACT'; artifactId: Id }
   | { type: 'SYNC_ALL_ARTIFACTS' }
   | { type: 'UPDATE_ARTIFACT_BLOCK'; artifactId: Id; blockId: Id; text: string }
   | { type: 'ACCEPT_ARTIFACT_SUGGESTION'; artifactId: Id; blockId: Id }

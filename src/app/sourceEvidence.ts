@@ -29,6 +29,17 @@ export function inspectionSourceLocators(snapshot: PantaCaseSnapshot, objectId: 
 }
 
 export function resolveSourceEvidence(snapshot: PantaCaseSnapshot, target: SourceLocator) {
+  if (target.artifactBlockId) {
+    const block = snapshot.artifactBlocks.find(item => item.id === target.artifactBlockId);
+    const frozen = target.sourceVersionId && target.claimId ? block?.frozenBasis?.find(item => {
+      const ref = item.sourceLocator;
+      return ref && ref.sourceId === target.sourceId && ref.sourceVersionId === target.sourceVersionId && ref.claimId === target.claimId && ref.locator === target.locator;
+    }) : undefined;
+    const issue = frozen ? undefined : 'This citation does not match the source saved with the output passage.';
+    const source = snapshot.sources.find(item => item.id === target.sourceId) ?? { id: target.sourceId, title: 'Source saved with the output', type: 'document' };
+    const claim: Claim | undefined = frozen && target.claimId && target.sourceVersionId ? { id: target.claimId, label: frozen.text, normalizedStatement: frozen.text, type: 'Saved statement', sourceId: target.sourceId, sourceVersionId: target.sourceVersionId, locator: target.locator ?? '' } : undefined;
+    return { source, claim, version: undefined, versionId: target.sourceVersionId, locator: target.locator, excerpt: undefined, issue, exact: true, historical: true, frozen: true };
+  }
   const source = snapshot.sources.find(item => item.id === target.sourceId);
   const claim = target.claimId ? snapshot.claims.find(item => item.id === target.claimId) : undefined;
   const versionId = target.sourceVersionId || claim?.sourceVersionId || (!target.claimId && !target.locator ? source?.currentVersionId : undefined);
@@ -55,5 +66,5 @@ export function resolveSourceEvidence(snapshot: PantaCaseSnapshot, target: Sourc
     : missingLineage ? 'The statement’s source version is not available. Its source cannot be verified.'
     : undefined;
   return { source, claim: issue ? undefined : claim, version, versionId, locator, excerpt: issue ? undefined : excerpt, issue, exact,
-    historical: Boolean(versionId && source?.currentVersionId && versionId !== source.currentVersionId) };
+    historical: Boolean(versionId && source?.currentVersionId && versionId !== source.currentVersionId), frozen: false };
 }

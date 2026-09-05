@@ -16,7 +16,7 @@
     "closed-loop-check": "node scripts/closed-loop-check.mjs",
     "kernel-check": "node scripts/kernel-alignment-check.mjs",
     "behavior-test": "node tests/behavior-test.mjs",
-    "projection-test": "node --no-warnings=ExperimentalWarning --experimental-strip-types tests/projection-behavior.mjs && node --no-warnings=ExperimentalWarning --experimental-strip-types tests/source-evidence.mjs && node --no-warnings=ExperimentalWarning --experimental-strip-types tests/source-documents.mjs && node --no-warnings=ExperimentalWarning --experimental-strip-types tests/tracking-links.mjs",
+    "projection-test": "node --no-warnings=ExperimentalWarning --experimental-strip-types tests/projection-behavior.mjs && node --no-warnings=ExperimentalWarning --experimental-strip-types tests/source-evidence.mjs && node --no-warnings=ExperimentalWarning --experimental-strip-types tests/source-documents.mjs && node --no-warnings=ExperimentalWarning --experimental-strip-types tests/tracking-links.mjs && node tests/live-outputs.mjs",
     "lab": "vite --config vite.lab.config.ts",
     "lab:build": "vite build --config vite.lab.config.ts",
     "check:all": "npm run validate && npm run typecheck && npm run build && npm run lab:build"

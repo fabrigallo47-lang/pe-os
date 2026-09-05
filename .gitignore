@@ -25,6 +25,8 @@ settings.local.json
 vault/deals/
 vault/inbox/
 vault/audit/
+# Private, persistent work-product revisions and SQLite sidecars.
+vault/output-revisions.sqlite3*
 vault/entities/people/
 
 # Domain source documents and private research

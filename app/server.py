@@ -87,6 +87,8 @@ app.add_middleware(
 # ── V20 router (the contract the frontend speaks) ─────────────────────────────
 from app.v20_router import v20  # noqa: E402
 app.include_router(v20)
+from app.output_case import production_output_router  # noqa: E402
+app.include_router(production_output_router())
 
 # ── V20 frontend — served at /ui so API routes always win ─────────────────────
 _UI_DIR = ROOT / "ui" / "01_PRODUCT_BUILD" / "app"

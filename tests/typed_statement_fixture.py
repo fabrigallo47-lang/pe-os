@@ -28,11 +28,13 @@ def annotations():
     return [{**base, **patch, "statement": text, "locator_hint": "## " + heading} for heading, text, patch in rows]
 
 
-def build_typed_fixture(root: Path, case_id="CASE-1"):
+def build_typed_fixture(root: Path, case_id="CASE-1", *, euro_amount=5):
     rows = annotations()
+    if euro_amount != 5:
+        rows[0] = {**rows[0], 'value': str(euro_amount), 'statement': rows[0]['statement'].replace('EUR 5 million', f'EUR {euro_amount} million')}
     inbox = root / "vault" / "inbox"
     inbox.mkdir(parents=True, exist_ok=True)
-    path = inbox / "typed-tracking.md"
+    path = inbox / ("typed-tracking.md" if euro_amount == 5 else f"typed-tracking-{euro_amount}.md")
     path.write_text("# Synthetic tracking acceptance\n\n" + "\n\n".join(row["locator_hint"] + "\n" + row["statement"] for row in rows))
     version = "sha256:" + hashlib.sha256(path.read_bytes()).hexdigest()
     envelope = dict(schema_version="panta.source-envelope/1.0", case_id=case_id, source_id="SRC-TYPED",

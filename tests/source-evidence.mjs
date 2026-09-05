@@ -59,3 +59,18 @@ assert.deepEqual(inspectionSourceLocators(snapshot, 'STATEMENT', []), [ref]);
 assert.deepEqual(inspectionSourceLocators(snapshot, 'STATEMENT', [{ sourceId: 'DOCUMENT', claimId: 'STATEMENT' }]), [ref]);
 assert.deepEqual(snapshot, original, 'Evidence inspection never mutates the case');
 console.log('Source evidence PASS — version lineage, exact addresses, quotations, missing references, multiple passages, immutable state');
+
+const frozenRef = { sourceId: 'DOCUMENT', sourceVersionId: 'OLD', claimId: 'REMOVED-CLAIM', locator: 'p2', artifactBlockId: 'PASSAGE' };
+const frozenCase = { ...snapshot, artifactBlocks: [{ id: 'PASSAGE', frozenBasis: [{ objectId: 'REMOVED-CLAIM', text: 'Saved statement, not a quotation.', sourceLocator: frozenRef }] }] };
+const frozenEvidence = resolveSourceEvidence(frozenCase, frozenRef);
+assert.equal(frozenEvidence.issue, undefined);
+assert.equal(frozenEvidence.claim.normalizedStatement, 'Saved statement, not a quotation.');
+assert.equal(frozenEvidence.excerpt, undefined);
+assert.equal(frozenEvidence.versionId, 'OLD');
+assert.equal(frozenEvidence.frozen, true);
+assert.equal(resolveSourceEvidence({ ...frozenCase, sources: [] }, frozenRef).issue, undefined, 'Saved source remains addressable after leaving Current');
+for (const patch of [{ artifactBlockId: 'OTHER' }, { sourceVersionId: 'NEW' }, { locator: 'p3' }, { claimId: 'FORGED' }, { sourceId: 'WORKBOOK' }]) {
+  assert.ok(resolveSourceEvidence(frozenCase, { ...frozenRef, ...patch }).issue, 'A frozen citation must match every saved identity field');
+}
+assert.deepEqual(snapshot, original);
+console.log('Frozen output source evidence PASS — original versions outside Current, no quotation invention, exact identity checks');

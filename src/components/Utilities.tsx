@@ -61,7 +61,7 @@ export function SourceDrawer() {
   };
 
   return <div className="p-drawer-backdrop" onMouseDown={(event: React.MouseEvent<HTMLDivElement>) => { if (event.target === event.currentTarget) closeSources(); }}><aside ref={dialogRef} tabIndex={-1} className={`p-source-drawer ${original ? 'p-source-reader-drawer' : ''}`} role="dialog" aria-modal="true" aria-labelledby="source-drawer-title">
-    <div className="p-modal-head"><div><strong id="source-drawer-title">{source?.title ?? 'Sources'}</strong><div className="p-meta">{source ? source.type : `${formatCount(snapshot.sources.length,'source')} mapped`}</div></div><button className="p-btn p-btn-quiet" onClick={closeSources}>Close</button></div>
+    <div className="p-modal-head"><div><strong id="source-drawer-title">{original?.filename ?? (selectedSourceLocator?.artifactBlockId ? 'Source saved with the output' : source?.title ?? 'Sources')}</strong><div className="p-meta">{source ? source.type : `${formatCount(snapshot.sources.length,'source')} mapped`}</div></div><button className="p-btn p-btn-quiet" onClick={closeSources}>Close</button></div>
     {original ? <div className="p-source-reader">
       <div className="p-source-reader-toolbar"><button ref={readerBackRef} className="p-shell-link" onClick={() => { setReader(undefined); window.requestAnimationFrame(() => sourceBackRef.current?.focus()); }}>← Back to source details</button><a className="p-shell-link" href={original.downloadUrl} download>Download original</a></div>
       <p className="p-source-reader-position" role="status">{original.position.label}{original.position.status === 'UNRESOLVED' && ' · No verified passage selection'}</p>

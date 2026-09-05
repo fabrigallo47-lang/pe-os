@@ -41,6 +41,7 @@ export interface JournalQuery {
 }
 
 export interface PantaBackendAdapter {
+  exportArtifact?(caseId: Id, artifactId: Id, revision: string, format: 'html' | 'json' | 'csv'): Promise<{ filename: string; blob: Blob }>;
   /** Read the original bytes at the cited version; the app supplies a same-origin HTTP default. */
   loadSourceDocument?(caseId: Id, target: SourceLocator): Promise<SourceDocument>;
   getSession(): Promise<SessionContext>;

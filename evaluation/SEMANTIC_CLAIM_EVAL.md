@@ -100,6 +100,17 @@ accuracy number for general text comprehension does not establish correctness on
 PANTA's ontology, basis distinctions, abstention rules or temporal policy. Also,
 using the same model to create labels and to score itself would be circular.
 
+The same contract can be run through OpenRouter with GLM 5.2:
+
+```bash
+OPENROUTER_API_KEY=sk-or-... make semantic-claim-eval-glm
+OPENROUTER_API_KEY=sk-or-... make semantic-claim-eval-glm PASSES=2
+```
+
+This uses `z-ai/glm-5.2` by default, strict JSON Schema output, and deny-by-default
+OpenRouter data routing. Override the exact slug with
+`PANTA_SEMANTIC_OPENROUTER_MODEL` when comparing another model.
+
 ## Growing the dataset
 
 Add examples by failure mode, not by random document count. Keep a mix of:

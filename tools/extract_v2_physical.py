@@ -19,7 +19,8 @@ Manifest modes prevent temporal leakage between knowledge snapshots:
 Usage:
   python3 tools/extract_v2_physical.py --manifest K-IC --deal keystone --dry-run
 
-  export ANTHROPIC_API_KEY=sk-...  # or OPENROUTER_API_KEY with PEOS_LLM_PROVIDER=openrouter
+  export OPENROUTER_API_KEY=sk-or-...
+  export PEOS_LLM_PROVIDER=openrouter  # defaults to z-ai/glm-5.2
   python3 tools/extract_v2_physical.py --manifest K-PRE --deal keystone \\
       --output pipeline_out/e3/k_pre
 

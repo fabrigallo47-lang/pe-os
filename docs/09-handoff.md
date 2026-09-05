@@ -83,7 +83,30 @@ the vault already does this for `events/`. Good debugging lens; not the UI.
 
 ## 3. Defects found and fixed
 
+### 3.0 ⚠️ There are TWO divergent claim-graph modules — read this first
+
+This is the most important structural finding of the session.
+
+| module | tracked? | used by | prose-derivation handling |
+|---|---|---|---|
+| `vercel/api/_claim_graph.py` | **yes** | `app/v20_router.py` (the running app) | **already correct** |
+| `tools/claim_graph.py` | **no** (gitignored) | offline `pipeline_out/graph/*` builds | had the defect in §3.1 |
+
+The tracked module already separates the two cases properly: an explicit
+`derivation_claim_ids` input becomes `DERIVES_FROM` with `canonical: True`
+(`EXPLICIT_DERIVATION_INPUT`, DETERMINISTIC), while a prose metric-name match
+becomes a **proposal** — `canonical: False`, `proposal_status:
+PENDING_HUMAN_REVIEW`, `llm_authority: PROPOSE_ONLY`, `adjudication:
+HUMAN_REQUIRED`.
+
+**So the §3.1 fix was applied to the stale, gitignored duplicate, and the
+production path was never broken.** The fix there is still correct, but the real
+issue is the divergence itself: two copies of the graph logic, one of them
+invisible to git. **Decide whether `tools/claim_graph.py` should be deleted,
+re-pointed at the tracked module, or brought under version control.**
+
 ### 3.1 `DERIVES_FROM` edges bound by metric *name*, not by operand
+*(in `tools/claim_graph.py` only — see §3.0)*
 
 `claim_graph.py` matched an operand by substring of the metric name against the
 derivation prose. `"Gross profit $1.455m ÷ Revenue $4.26m"` names Revenue once, so
@@ -159,20 +182,34 @@ The claim→model_node link **does not exist as an artifact**:
 supplies them. Wiring it is **G7/R6** work. Faking it means inventing numbers into
 a financial model.
 
-### 5.2 Three dynamics tests fail, all from this session
-Baseline `abe3e4e`: 320 tests, all pass. Now 391 tests, 3 fail. All three pin
-pre-session behaviour that was deliberately changed:
+### 5.2 Dynamics suite: 390/391 — three fixed, one open
 
-1. `test_llm_provider` asserts `max_tokens == 4096`. Changed to **8192** because
-   4096 silently truncated — reproduced 3/3 (`stop_reason=max_tokens`, 0 claims,
-   no exception). **The fix is right; the test pins a stale constant.**
-2. `test_pan58_clean_case_bootstrap` — a "clean case" now carries 20
-   `condition:coverage-Q-*` entries where it expected `[]`. **Not yet diagnosed.**
-3. `test_v20_live_evidence_loop` — `mapped_claim_count` is 0, expected 1.
-   **Not yet diagnosed.**
+Started at 4 failures. **Attribution matters here and I got it wrong twice
+before running it down properly**, so the method is recorded: a worktree at the
+session baseline, then at Anto's `5910515`, then a commit-by-commit sweep.
+
+| test | cause | status |
+|---|---|---|
+| `test_pan63_claim_identity_migration` | **real bug, mine.** Three metrics added to `METRIC_ENUM` never reached `METRIC_VOCABULARY`, so claims about them became unresolvable. | **fixed** |
+| `test_llm_provider` | **mine, deliberate.** Pinned `max_tokens == 4096`; it is 8192 because 4096 silently truncated (3/3: `stop_reason=max_tokens`, 0 claims, no exception). Test now asserts against the module constant. | **fixed** |
+| `test_pan58_clean_case_bootstrap` | **not a code regression.** Test-isolation bug: it repoints `PIPELINE_OUT` but `_pipeline_out_for_case()` uses `PIPELINE_OUT` only for keystone and `CASE_PIPELINE_ROOT / case_id` otherwise — so it read the developer's real `pipeline_out/cases/clean/` (a gitignored artifact dated **Aug 31**, before this session). Now isolates `CASE_PIPELINE_ROOT`. | **fixed** |
+| `test_v20_live_evidence_loop` | `mapped_claim_count` is 0, expected 1. A claim maps only when `_claim_mapping_is_applicable(claim, position)` passes for some edge in `edges_by_claim`; either no edge exists for it or none is applicable. Not caused by `object_identity`, `tools/claim_graph.py`, or the artifacts (unchanged, clean). The same `CASE_PIPELINE_ROOT` isolation fix was applied but did not resolve it. | **OPEN** |
+
+**Method note worth keeping:** `make verify` reported "suite failed" both before
+and after my changes, so an identical `make verify` result could **not**
+distinguish "no new failure" from "one more failure inside an already-failing
+suite". Comparing whole-suite pass/fail is not attribution. Run the suite
+directly and diff the failure list.
+
+**Worktree caveat:** a `git worktree` does **not** carry gitignored files, so
+`tools/claim_graph.py` and local `pipeline_out/cases/*` are absent there. A test
+can pass in a worktree and fail in the main tree for that reason alone — which is
+exactly what happened with `pan58`.
 
 ### 5.3 Other open items
-- **`claim_graph.py` is gitignored** and holds an uncommitted fix (§3.1).
+- **Two divergent claim-graph modules (§3.0)** — the highest-value decision here.
+  `tools/claim_graph.py` is gitignored and holds an unversioned fix; the tracked
+  `vercel/api/_claim_graph.py` already implements the correct discipline.
 - **Four exit-multiple value disagreements** need a modelling decision (§3.2).
 - **G3 stays Todo on purpose** — its "done when" needs G7 bindings *admitted*, and
   admission is a human act.

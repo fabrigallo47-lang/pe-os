@@ -94,7 +94,14 @@ class LLMProviderTests(unittest.TestCase):
             )
 
         self.assertEqual(claims, [])
-        self.assertEqual(captured["max_tokens"], 4096)
+        # 8192, not 4096. At 4096 a full Excel tool output hit the ceiling and
+        # the call returned stop_reason=max_tokens with ZERO claims and no
+        # exception -- reproduced 3/3 on real chunks, so the truncation was
+        # silent and looked like an empty document. Assert against the module's
+        # own constant so this pins the wiring, not a number that has to be
+        # edited every time the budget changes.
+        self.assertEqual(captured["max_tokens"], extract_v2.MAX_TOKENS)
+        self.assertGreaterEqual(extract_v2.MAX_TOKENS, 8192)
         self.assertIn(
             "EFFECTIVE DATE: 2026-03-05",
             captured["messages"][0]["content"],

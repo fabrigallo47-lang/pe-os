@@ -57,12 +57,17 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
         )
 
         self.previous_bundle = router.PIPELINE_OUT
+        # _pipeline_out_for_case() only honours PIPELINE_OUT for keystone;
+        # every other case resolves under CASE_PIPELINE_ROOT, so without this
+        # the test reads whatever the developer has in pipeline_out/cases/.
+        self.previous_case_root = router.CASE_PIPELINE_ROOT
         self.previous_vault = router.VAULT
         self.previous_jobs_log = router.INGEST_JOBS_LOG
         self.previous_runs_log = router.RUNS_LOG
         self.previous_jobs = dict(router._jobs)
         self.previous_runs = dict(router._runs)
         router.PIPELINE_OUT = self.bundle
+        router.CASE_PIPELINE_ROOT = self.root / "pipeline_out" / "cases"
         router.VAULT = self.root / "vault"
         router.INGEST_JOBS_LOG = self.root / "logs" / "ingest_jobs.json"
         router.RUNS_LOG = self.root / "logs" / "runs.json"
@@ -74,6 +79,7 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
     def tearDown(self):
         self.index_patch.stop()
         router.PIPELINE_OUT = self.previous_bundle
+        router.CASE_PIPELINE_ROOT = self.previous_case_root
         router.VAULT = self.previous_vault
         router.INGEST_JOBS_LOG = self.previous_jobs_log
         router.RUNS_LOG = self.previous_runs_log

@@ -100,7 +100,7 @@ Metà del lavoro c'è già: `vault/roles/` ha tre desk (analyst, diligence-coord
 Una lente che legge lo stato già derivato (eventi, esposizione, blocchi, claim non legati, contraddizioni aperte, nodi del modello ancora limite dichiarato) e lo racconta su richiesta. Nessuna autorità: non ammette, non settla, non scrive nel grafo.
 
 **Fatto quando**
-Su un deal qualsiasi restituisce un quadro leggibile, e un test verifica che non scriva nulla.",Todo,3,"agents,ux",3
+Su un deal qualsiasi restituisce un quadro leggibile, e un test verifica che non scriva nulla.",Done,3,"agents,ux",3
 [G8] Registrazione sorgenti per deal nuovi (SOURCE_REGISTRY / source-envelope),"**Perché**
 Testando Silexara sulla pipeline vera si è trovato un buco a monte di tutto il resto. `tools/extract_v2_physical.py::_source_record()` cerca il file in `SOURCE_REGISTRY` (mappa hardcoded per Keystone); quando non trova corrispondenza usa un fallback sintetico: `source_id=""SRC-<nome file>""`, `doc_type=""Other""`, `party=""unknown""`, date vuote.
 

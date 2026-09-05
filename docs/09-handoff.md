@@ -327,3 +327,41 @@ identical. **Open.**
 
 GLM 5.2 $0.97/M in, $3.04/M out vs Haiku 4.5 $1.00 / $5.00 — cheaper, though not
 dramatically. Full Keystone K-IC (351 chunks) is roughly $2-4.
+
+
+### 7.5 Raising GLM: 51.6% → 78.0%, three measured steps
+
+Two of the three levers were provider bugs, not model limits. Each was found by
+reading the RAW response instead of the adapter's summary.
+
+| step | change | score |
+|---|---|---|
+| 0 | GLM as first wired | 51.6% |
+| 1 | `thinking: {"type":"disabled"}` — it burned the whole budget reasoning | 65.0% |
+| 2 | stop pinning `tool_choice` — pinned, GLM never terminates the tool call | 75.1% |
+| 3 | context padding — read wider than you write | **78.0%** |
+
+Step 3 hit exactly what it was designed to hit:
+
+    derivation_accuracy   25.0% -> 100.0%
+    identity_accuracy     50.0% ->  66.7%
+    measurement_accuracy  37.0% ->  52.6%
+    relation_recall       10.0% ->  20.0%
+
+A derivation cannot be stated without its operands in view, and before the
+padding they were routinely in the next chunk.
+
+**Reasoning space, tested separately (`PEOS_OPENROUTER_THINKING=true`):** 77.6%
+against 78.0%, at 28s per case instead of 9s. A trade, not a win — it buys
+relation_precision (22.2% -> 100%) and scenario accuracy, and loses exact_match
+(48.5% -> 43.8%) and identity accuracy. Default stays off; the switch is real.
+The follow-up worth trying is selective rather than global: reason about
+relations, not about the identity tuple.
+
+**Where GLM still loses** (per-field, on the extracted cases): `exact_match`
+48.5% is the ceiling on everything, dragged by `measurement` 52.6% and
+`identity` 66.7%. `relation_f1` 40.2%. Claim finding itself is not the problem —
+precision and recall are both 100%.
+
+**Not yet comparable to Haiku.** Haiku cannot be re-measured while the Anthropic
+key is out of credit; 78.0% vs the old 77.2% is suggestive, not a verdict.

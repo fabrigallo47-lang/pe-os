@@ -143,12 +143,6 @@ METRIC_VOCABULARY: tuple[str, ...] = (
     "Operational Risk", "Key Person Risk", "Regulatory Risk", "Competition Risk",
     "IC Conditions", "IC Vote", "Decision Coherence",
     "EBITDA Add-back",
-    # Added to METRIC_ENUM when the extractor gained covenant and churn claims.
-    # They belong here for the same reason as every entry above: a metric the
-    # extractor can emit but identity cannot resolve would silently fall back to
-    # unresolvable, and two claims about the same covenant would stop being
-    # comparable. The PAN-63 drift guard is what caught the omission.
-    "Total Net Leverage Ratio", "Minimum Liquidity", "Customer Churn",
 )
 
 

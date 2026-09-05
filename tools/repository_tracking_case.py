@@ -52,7 +52,8 @@ def evaluation_addresses(case):
             yield item, locator
 
 
-def build_repository_case(temporary: Path, workspace: Path | None = None):
+def build_repository_case(temporary: Path, workspace: Path | None = None, *, simulate_locations=False):
+    case_id = CASE_ID + '-SIMULATED' if simulate_locations else CASE_ID
     workspace = workspace or ROOT.parent
     package = workspace / PACKAGE_NAME
     graph_path = package / 'canonical/PANTA_Keystone_Canonical_Investment_Case_v1.1.json'
@@ -75,12 +76,12 @@ def build_repository_case(temporary: Path, workspace: Path | None = None):
         destination = inbox / path.name
         shutil.copyfile(path, destination)
         meta = metadata or {}
-        envelope = build_source_envelope(destination, CASE_ID, captured_at, declared_metadata={
+        envelope = build_source_envelope(destination, case_id, captured_at, declared_metadata={
             'source_id': source_id, 'issuer': meta.get('party'), 'effective_date': meta.get('date'),
             'provenance': 'explicit_test_fixture_import', 'document_type': meta.get('type')})
-        records.append({'case_id': CASE_ID, 'source_envelope': envelope})
+        records.append({'case_id': case_id, 'source_envelope': envelope})
         original_paths.append(path)
-        doc = SourceDocument(CASE_ID, source_id, actual_hash, path.name, path.suffix.lower(), destination.read_bytes())
+        doc = SourceDocument(case_id, source_id, actual_hash, path.name, path.suffix.lower(), destination.read_bytes())
         documents[source_id] = doc
         sources.append({'id': source_id, 'title': path.name, 'type': meta.get('type', path.suffix[1:]),
                         'origin': meta.get('party', 'Repository test fixture'), 'currentVersionId': actual_hash,
@@ -122,6 +123,10 @@ def build_repository_case(temporary: Path, workspace: Path | None = None):
                                     'statement': statement, 'verbatim_or_lossless_span': item.get('quote')})
 
     claims = [dict(c) for c in graph['claims'] if not c.get('validation_only') and c['source_id'] in documents] + evidence_claims
+    simulated_mappings = []
+    if simulate_locations:
+        from tools.tracking_location_simulation import apply_location_simulation
+        simulated_mappings = apply_location_simulation(claims, documents, digest(graph_path))
     refs, entries, audit = {}, [], []
     def source_ref(source_id, locator, claim_id=None):
         ref = {'sourceId': source_id, 'sourceVersionId': documents[source_id].version_id, 'locator': locator}
@@ -150,7 +155,7 @@ def build_repository_case(temporary: Path, workspace: Path | None = None):
             raise ValueError(f'Broken declared edge: {edge["edge_id"]}')
         upstream[target].append(source)
         downstream[source].append(target)
-        relations.append({'id': edge['edge_id'], 'caseId': CASE_ID, 'sourceObjectId': source, 'sourceObjectType': 'modelNode',
+        relations.append({'id': edge['edge_id'], 'caseId': case_id, 'sourceObjectId': source, 'sourceObjectType': 'modelNode',
                           'targetObjectId': target, 'targetObjectType': 'modelNode', 'type': 'DRIVES',
                           'rationale': edge.get('source_locator'), 'institutionalState': 'CANDIDATE', 'contractVersion': '0.1.0'})
     quantities = []
@@ -178,13 +183,35 @@ def build_repository_case(temporary: Path, workspace: Path | None = None):
                            'editable': False, 'institutionalState': 'CANDIDATE', 'freshnessStatus': 'UNKNOWN'})
 
     snapshot = {key: [] for key in ('actors workstreams questions caseReadings unknowns metricDefinitions metricObservations assumptions risks modelNodes outcomes findings humanPositions workItems artifacts artifactBlocks artifactDiffs events pendingReviews simulationOptions conditions decisionPaths decisions').split()}
-    snapshot.update(caseRef={'id': CASE_ID, 'name': 'Keystone · repository test graph'}, caseVersion=digest(graph_path), asOf=captured_at,
+    snapshot.update(caseRef={'id': case_id, 'name': 'Keystone · simulated tracking' if simulate_locations else 'Keystone · repository test graph'}, caseVersion=digest(graph_path), asOf=captured_at,
                     sources=sources, sourceVersions=versions, quantities=quantities, relations=relations,
                     claims=[{'id': c['claim_id'], 'sourceId': c['source_id'], 'sourceVersionId': c['source_version_id'],
                              'locator': c['locator'], 'label': c['statement'], 'normalizedStatement': c['statement'],
-                             'verbatimOrLosslessSpan': c.get('verbatim_or_lossless_span'), 'type': 'Repository fixture statement'} for c in claims])
+                             'verbatimOrLosslessSpan': c.get('verbatim_or_lossless_span'), 'limitation': c.get('limitation'),
+                             'contribution': 'Original test reference: ' + c['original_locator'] if c.get('original_locator') else None,
+                             'type': 'Repository fixture statement'} for c in claims])
     for source in sources:
         refs[source['id']] = [source_ref(source['id'], '')]
+        downstream[source['id']] = [c['claim_id'] for c in claims if c['source_id'] == source['id']]
+    if simulate_locations:
+        # Explicit test-room context, not an investment judgment or adopted case.
+        selected_claims = [entry['claim_id'] for entry in simulated_mappings]
+        reading_id, question_id, workstream_id = 'SIM-READING', 'SIM-QUESTION', 'SIM-WORKSTREAM'
+        snapshot['workstreams'] = [{'id':workstream_id,'name':'Source tracking simulation','currentCaseReadingId':reading_id,
+            'activeWorkItemIds':[],'openUnknownIds':[],'questionIds':[question_id]}]
+        snapshot['questions'] = [{'id':question_id,'workstreamId':workstream_id,'name':'Can every simulated reference reach its original?',
+            'questionStatus':'OPEN','currentCaseReadingId':reading_id,'claimIds':selected_claims,'workItemIds':[],
+            'openUnknownIds':[],'chronologyEventIds':[]}]
+        snapshot['caseReadings'] = [{'id':reading_id,'questionId':question_id,
+            'text':'Simulated source references are ready for inspection.',
+            'supportingLine':'This room tests source navigation using existing documents. It makes no investment judgment.',
+            'epistemicStatus':'UNEXAMINED','freshnessStatus':'UNKNOWN','decisionLinkStatus':'NO_DECISION',
+            'supportObjectIds':selected_claims,'independentSupportObjectIds':[], 'unknownIds':[], 'relatedObjectIds':[]}]
+        entries.append({'id':reading_id,'label':'Simulated source references are ready for inspection.','kind':'caseReading'})
+        upstream[reading_id] = selected_claims
+        refs[reading_id] = [ref for identity in selected_claims for ref in refs[identity]]
+        for identity in selected_claims:
+            downstream[identity].append(reading_id)
     counts = collections.Counter(item['status'] for item in audit)
     indirect_paths = {}
     for identity in nodes:
@@ -200,7 +227,8 @@ def build_repository_case(temporary: Path, workspace: Path | None = None):
                 if parent not in visited:
                     visited.add(parent)
                     queue.append(path + [parent])
-    report = {'schema': 'source-tracking-audit/1.0', 'captured_at': captured_at, 'case_id': CASE_ID,
+    report = {'schema': 'source-tracking-audit/1.0', 'captured_at': captured_at, 'case_id': case_id,
+              'simulated_location_mappings': simulated_mappings,
               'scope': 'Existing test graphs and original test documents; no extraction score and no Current adoption',
               'canonical_graph': str(graph_path), 'execution_mapping': str(mapping_path), 'semantic_graph': str(semantic_path),
               'workbook_hash_verified': documents['SRC-MODEL'].version_id, 'source_count': len(sources),
@@ -217,8 +245,8 @@ def build_repository_case(temporary: Path, workspace: Path | None = None):
               'source_hashes': {str(path): digest(path) for path in dict.fromkeys(original_paths)}}
     manifest_path = inbox / '.ingest-manifest.json'
     existing = json.loads(manifest_path.read_text()).get('items', []) if manifest_path.exists() else []
-    manifest_path.write_text(json.dumps({'items': [item for item in existing if item.get('case_id') != CASE_ID] + records}))
-    bundle = temporary / 'cases' / CASE_ID
+    manifest_path.write_text(json.dumps({'items': [item for item in existing if item.get('case_id') != case_id] + records}))
+    bundle = temporary / 'cases' / case_id
     bundle.mkdir(parents=True, exist_ok=True)
     (bundle / 'claims.json').write_text(json.dumps(claims))
     valid_ids = {row['id'] for row in entries} | {row['id'] for row in sources}

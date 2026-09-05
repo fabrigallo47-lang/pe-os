@@ -237,6 +237,15 @@ def locate_document(document: SourceDocument, locator: str) -> dict:
         return {"kind": "download", "status": "UNRESOLVED",
                 "label": "A focused reader is not available for this file type"}
     lines = _document_lines(document)
+    address = locator.split("::", 1)[-1]
+    if re.fullmatch(r"lines:[1-9]\d*-[1-9]\d*(?:,[1-9]\d*-[1-9]\d*)+", address):
+        spans = [[int(value) for value in part.split("-")] for part in address.removeprefix("lines:").split(",")]
+        if any(end < start or end > len(lines) for start, end in spans):
+            raise HTTPException(422, "The cited passage is outside this source version.")
+        return {"kind": "text", "status": "LOCATED", "label": locator,
+                "start": spans[0][0], "end": spans[0][1], "spans": spans, "line_count": len(lines)}
+    if address.startswith("lines:") and "," in address:
+        raise HTTPException(422, "The cited passage ranges are malformed.")
     span = re.search(r"(?:^|::)(?:lines|blocks):([1-9]\d*)-([1-9]\d*)(?=:|$)", locator)
     if not span:
         span = re.fullmatch(r"L([1-9]\d*)(?:-L?([1-9]\d*))?", locator)

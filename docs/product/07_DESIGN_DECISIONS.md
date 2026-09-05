@@ -199,3 +199,14 @@ Append only material decisions that should survive individual tasks.
 **Applies to:** Isolated repository tracking lab, original-document readers, source-address audit report and native-document regression coverage. The supplied corpus contains 19 originals, 14,318 model nodes and 30,996 declared links; 30 of 75 canonical textual references still lack a resolved passage.
 
 **Boundary:** Test-import hashes identify copied original bytes, not retroactive ingestion history. The lab does not adopt Current, fabricate HumanPositions, infer missing graph edges, rewrite original gold data, or claim extraction accuracy from gold reference addresses. PowerPoint and Word content readers do not promise native page layout. Address resolution verifies where to look, not whether a claim is true.
+
+---
+
+### 2026-09-05 — Explicit simulations can complete source-navigation acceptance
+**Decision:** The tracking lab offers a separately identified simulated case whose 30 previously generic references have audited, hash-locked source ranges. The same case can run inside the production PantaApp shell and Trace screen through a read-only test adapter. Multiple disjoint lines stay within one citation and are all highlighted; the original reference is retained. Source inspection exposes the statements citing that source.
+
+**Why:** The user asked to simulate the remaining conditions and proceed if the complete journey worked. A verified test case can establish that the reader and app integration work before live cases exist.
+
+**Applies to:** V1 source-navigation acceptance, test-reference mappings, multi-range text reader, repository test adapter and application preview. All 75 canonical test references resolve in the simulated case, including the 30 previously unresolved ones.
+
+**Boundary:** This is explicit test normalization, not an automatic extraction score, real ingestion history, or institutional adoption. The original corpus and raw audit are preserved. The simulation's question and system reading exist only to exercise the room. It creates no attributed HumanPosition or investment Decision and does not close unrelated macro-task requirements.

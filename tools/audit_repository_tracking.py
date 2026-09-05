@@ -16,9 +16,10 @@ def main():
     parser = argparse.ArgumentParser()
     parser.add_argument('--workspace', type=Path, default=ROOT.parent)
     parser.add_argument('--output', type=Path, default=ROOT / 'docs/verification/repository-source-tracking.json')
+    parser.add_argument('--simulate-locations', action='store_true')
     args = parser.parse_args()
     with tempfile.TemporaryDirectory(prefix='panta-reference-audit-') as temporary:
-        case = build_repository_case(Path(temporary), args.workspace)
+        case = build_repository_case(Path(temporary), args.workspace, simulate_locations=args.simulate_locations)
         report = case['report']
         report['originals_unchanged'] = all(digest(Path(path)) == expected for path, expected in report['source_hashes'].items())
         if not report['originals_unchanged']:

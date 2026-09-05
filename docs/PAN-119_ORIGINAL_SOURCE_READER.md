@@ -138,12 +138,55 @@ It records file hashes, all unresolved references and the declared indirect
 paths. Full graph tests use the supplied sibling folders and skip when they are
 absent; native-document tests always use tracked repository fixtures.
 
-## Remaining PAN-119 scope
+## Simulated V1 acceptance — 5 September 2026
 
-The concrete gap in the supplied corpus is 30 canonical text locators requiring
-provenance-preserving normalization to actual sections, lines or table rows.
-Universal capture is not claimed complete: older claims without verifiable
-source versions also need migration or re-extraction. Scanned PDFs require an
-explicit region or a separately verified text span for passage precision.
-The reader makes these gaps visible. PAN-119 and the PAN-109 tracking macro
-remain in progress; availability of real cases is not a blocker for testing.
+The user explicitly requested simulating the remaining references and application
+integration, and moving on if the simulation worked. That acceptance run passes.
+
+`tests/fixtures/tracking-location-simulation.json` records 30 explicit test
+normalizations: the original locator, source version, exact line ranges, hashes
+of each selected passage, and the reason for the mapping. This is an auditable
+simulation of precise capture, not an automatic extraction result. Source and
+graph changes invalidate it. Originals and the earlier unresolved audit remain
+unchanged. The reader now supports multiple disjoint line ranges in one citation
+and rejects malformed or out-of-document ranges as a whole.
+
+The simulated run resolves **75/75 canonical references, 36/36 native evaluation
+references and 14,279/14,279 direct model addresses**. All 30 converted references
+are round-tripped through the real HTTP descriptor and renderer, checking the
+selected lines and their original-text hashes. `CL-M20` opens only source Slide
+32 and explicitly excludes the answer-key conclusion from source validation.
+
+The exact production `PantaApp`, `GlobalShell`, `Trace`, information card, search
+and source drawer now run against a read-only test adapter on the same local
+backend. An explicitly simulated question/reading supplies room context; no
+HumanPosition or institutional Decision is fabricated. No production fixture
+fallback is introduced.
+
+Browser verification in that application covered:
+
+- `CL-011` → card → the seven original Riverton rows plus column headings and
+  the concentration summary, with all 16 selected lines confirmed in the iframe.
+- App search → `MN-FIRM-EBITDA` → value/unit/period/perimeter → bridge formula
+  and inputs → **Where it matters** → the original EBITDA node.
+
+Validation: `npm run check:all`; **42 Python tests** covering original readers,
+the supplied graph, all 30 simulated locations, rejected provenance changes,
+invalid multiple ranges, XLSX semantic context, qualitative claim typing and
+the extraction/runtime adapter. These tests do not score live model extraction
+on unseen documents.
+
+Reproduce:
+
+1. `.venv/bin/python tools/source_tracking_lab.py`
+2. `npm run lab -- --host 127.0.0.1 --port 5174`
+3. Open `/repository-tracking.html?simulate=true&app=true#/trace` for PANTA,
+   or `/repository-tracking.html?simulate=true` for the test-result explorer.
+4. `.venv/bin/python tools/audit_repository_tracking.py --simulate-locations --output docs/verification/tracking-simulation.json`
+
+The full result is in [`verification/tracking-simulation.json`](verification/tracking-simulation.json).
+PAN-119's V1 source-navigation acceptance can be closed on this evidence without
+waiting for real cases. Generating these precise references automatically for
+unseen documents and deploying a production case adapter are separate claims;
+the simulation does not certify them. Other PAN-109 subtasks must retain their
+own acceptance status.

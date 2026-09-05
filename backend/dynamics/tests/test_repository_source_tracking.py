@@ -158,5 +158,52 @@ class RepositoryGraphTrackingTests(unittest.TestCase):
             view=self.client.get(data['view_url'])
             for text in expected:self.assertIn(text,view.text)
 
+    def test_simulated_precise_capture_opens_all_thirty_original_passages(self):
+        simulation=build_repository_case(self.root,simulate_locations=True)
+        report=simulation['report']
+        self.assertEqual(report['canonical_location_counts'],{'LOCATED':75})
+        self.assertEqual(report['unresolved_references'],[])
+        self.assertEqual(self.case['report']['canonical_location_counts'],{'LOCATED':45,'UNRESOLVED':30})
+        self.assertEqual(len(report['simulated_location_mappings']),30)
+        for entry in report['simulated_location_mappings']:
+            with self.subTest(claim=entry['claim_id']):
+                ref=simulation['refs'][entry['claim_id']][0]
+                response=self.client.get('/api/v20/cases/'+report['case_id']+'/source-document',params={
+                    'source_id':ref['sourceId'],'source_version_id':ref['sourceVersionId'],
+                    'locator':ref['locator'],'claim_id':ref['claimId']})
+                self.assertEqual(response.status_code,200,response.text)
+                descriptor=response.json()
+                self.assertEqual(descriptor['position']['spans'],entry['line_spans'])
+                view=self.client.get(descriptor['view_url'])
+                self.assertEqual(view.status_code,200)
+                selected={i for a,b in entry['line_spans'] for i in range(a,b+1)}
+                self.assertEqual(view.text.count('class="text-line selected"'),len(selected))
+                lines=simulation['documents'][entry['source_id']].data.decode().splitlines()
+                hashes=['sha256:'+hashlib.sha256('\n'.join(lines[a-1:b]).encode()).hexdigest() for a,b in entry['line_spans']]
+                self.assertEqual(hashes,entry['span_hashes'])
+        self.assertIn('validation answer key is excluded',next(c for c in simulation['snapshot']['claims'] if c['id']=='CL-M20')['limitation'])
+        for source in simulation['snapshot']['sources']:
+            source_claims=simulation['inspect'](source['id'])['dependentObjectIds']
+            self.assertEqual(set(source_claims),{c['id'] for c in simulation['snapshot']['claims'] if c['sourceId']==source['id']})
+
+    def test_simulation_fails_if_source_graph_or_recorded_reference_changed(self):
+        from copy import deepcopy
+        from dataclasses import replace
+        from tools.tracking_location_simulation import apply_location_simulation
+        claims=[{'claim_id':c['id'],'source_id':c['sourceId'],'locator':c['locator']} for c in self.case['snapshot']['claims']]
+        graph_hash=self.case['snapshot']['caseVersion']
+        with self.assertRaises(ValueError):apply_location_simulation(deepcopy(claims),self.case['documents'],'sha256:'+'0'*64)
+        wrong=deepcopy(claims);next(c for c in wrong if c['claim_id']=='CL-011')['locator']='Other reference'
+        with self.assertRaises(ValueError):apply_location_simulation(wrong,self.case['documents'],graph_hash)
+        docs=dict(self.case['documents']);docs['SRC-DR']=replace(docs['SRC-DR'],data=b'changed text')
+        with self.assertRaises(ValueError):apply_location_simulation(deepcopy(claims),docs,graph_hash)
+
+    def test_multiple_line_ranges_reject_partial_or_invalid_selections(self):
+        ref=self.case['refs']['CL-011'][0]
+        for locator in ('lines:94-96,99999-100000','lines:94-96,97-96','lines:94-96,garbage'):
+            response=self.client.get('/api/v20/cases/'+CASE_ID+'/source-document',params={
+                'source_id':ref['sourceId'],'source_version_id':ref['sourceVersionId'],'locator':locator})
+            self.assertEqual(response.status_code,422,response.text)
+
 
 if __name__=='__main__':unittest.main()

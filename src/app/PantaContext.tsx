@@ -117,6 +117,7 @@ export function PantaProvider({ adapter, initialCaseId, children }: { adapter: P
         ++searchRequestId.current;
         ++inspectionRequestId.current;
         ++simulationRequestId.current;
+        simulationInFlight.current = false;
         ++commandRequestId.current;
         commandInFlight.current = false;
         setSnapshot(null);
@@ -158,6 +159,11 @@ export function PantaProvider({ adapter, initialCaseId, children }: { adapter: P
       if (requestId !== loadRequestId.current) return;
       setSnapshot(loaded);
       if (!loaded) return;
+      // Recover bootstrap metadata after a transient startup failure or case switch.
+      const metadata = await Promise.allSettled([adapter.getSession(), adapter.listCases()]);
+      if (requestId !== loadRequestId.current) return;
+      if (metadata[0].status === 'fulfilled') setSession(metadata[0].value);
+      if (metadata[1].status === 'fulfilled') setCases(metadata[1].value);
 
       const routeContext = parseRouteLocation(window.location.hash).context;
       const workstreamId = routeContext.workstreamId && loaded.workstreams.some(item => item.id === routeContext.workstreamId)
@@ -328,13 +334,16 @@ export function PantaProvider({ adapter, initialCaseId, children }: { adapter: P
       }
       return null;
     } finally {
-      simulationInFlight.current = false;
-      if (requestId === simulationRequestId.current) setSimulationRunning(false);
+      if (requestId === simulationRequestId.current) {
+        simulationInFlight.current = false;
+        setSimulationRunning(false);
+      }
     }
   }, [adapter, snapshot]);
 
   const clearSimulation = useCallback(() => {
     ++simulationRequestId.current;
+    simulationInFlight.current = false;
     setSimulationResult(null);
     setSimulationRunning(false);
   }, []);

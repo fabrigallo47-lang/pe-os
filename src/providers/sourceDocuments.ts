@@ -61,6 +61,7 @@ export function withSourceDocuments(adapter: PantaBackendAdapter, options?: Sour
     inspectObject: adapter.inspectObject.bind(adapter),
     searchCase: adapter.searchCase.bind(adapter),
     runSimulation: adapter.runSimulation.bind(adapter),
+    proposeSimulation: adapter.proposeSimulation?.bind(adapter),
     execute: adapter.execute.bind(adapter),
     loadSourceDocument: adapter.loadSourceDocument?.bind(adapter) ?? ((caseId, target) => fetchSourceDocument(caseId, target, options)),
   };

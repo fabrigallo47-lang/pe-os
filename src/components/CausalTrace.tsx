@@ -109,7 +109,7 @@ export function ImpactTrace({ title, originLabel, originDetail, effects, current
           <span className="p-impact-effect-state">{humanState(effect.state)}</span>
           <strong>{effect.objectLabel}</strong>
           <span className="p-impact-ripple-diff"><small>{currentLabel}</small>{effect.before ?? 'Not supplied'}<b>→</b><small>{changedLabel}</small>{effect.after ?? (effect.state === 'HOLDS' ? effect.before ?? 'Held' : 'Changed')}</span>
-          {snapshot && <ReasonPath snapshot={snapshot} relationIds={effect.reasonRelationIds} />}
+          {effect.explanation ? <span className="p-impact-reason-path">{effect.explanation}</span> : snapshot && <ReasonPath snapshot={snapshot} relationIds={effect.reasonRelationIds} />}
         </button>
       </li>)}</ol>
     </div> : <div className="p-impact-audit-wrap"><table className="p-impact-audit">
@@ -119,7 +119,7 @@ export function ImpactTrace({ title, originLabel, originDetail, effects, current
         <td>{humanState(effect.state)}</td>
         <td>{effect.before ?? '—'}</td>
         <td>{effect.after ?? (effect.state === 'HOLDS' ? effect.before ?? 'Held' : 'Changed')}</td>
-        <td>{snapshot ? relationSummary(snapshot, effect.reasonRelationIds) : '—'}</td>
+        <td>{effect.explanation ?? (snapshot ? relationSummary(snapshot, effect.reasonRelationIds) : '—')}</td>
       </tr>)}</tbody>
     </table></div>}
   </section>;

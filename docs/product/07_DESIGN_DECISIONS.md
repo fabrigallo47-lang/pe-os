@@ -232,3 +232,58 @@ Append only material decisions that should survive individual tasks.
 **Applies to:** Outputs room, authenticated output adapter and HTTP service, immutable output revisions, passage freshness/missing-basis states, optional writing assistant, approved HTML/JSON and model/tracker CSV, and isolated IC memo acceptance lab. Unconnected adapters expose a reason for disabled editing controls.
 
 **Boundary:** Output revisions and approvals are work-product records, not adoption of Current or investment decisions. The server resolves both case content and actor authority; caller-supplied snapshots, roles and timestamps cannot approve a version. Source citations frozen in a passage can open earlier originals even after the statement leaves Current; the source reader still verifies the exact bytes and location. The writing model is optional GPT-5.6 Sol through the Responses API. Numeric checks and schema validation do not establish semantic truth; reviewer acceptance remains required. HTML is a portable, printable export; this slice does not generate native Office files or deploy the product. The production entry's host/case bootstrap integration remains a separate integration boundary.
+
+---
+
+### 2026-09-05 — Simulation declares its perimeter before an editable assumption shock
+**Problem:** An investor must know which calculations can be tested and distinguish a hypothetical movement from a change to the institutional case.
+
+**Decision:** Simulate shows the server-owned executable perimeter, semantic input context and limitations before a run. A numeric assumption can be edited; the backend recomputes declared formulas with the transition runtime's Decimal evaluator. Absolute/relative amounts, affected-but-held outputs and stopped branches remain explicit. Object Lens distinguishes Current from the hypothetical. Case/model versions are checked, and changing the setup clears old results. Numeric movement is neutral, without a fabricated judgment that a higher value strengthens the case.
+
+**Applies to:** PAN-132 and PAN-136; numeric extension of PAN-133, authenticated simulation transport, the shared inspection card and the isolated fictional-model lab.
+
+**Boundary:** The case, HumanPositions and Decisions remain unchanged. Missing data, semantic scope, formula bindings, solver configuration and baseline consistency prevent unsupported calculation. Supported coverage is a numerical slice, not certification of the whole investment case. Event triggers, inverse/cross-deal questions and production host bootstrap integration remain separate work.
+
+
+---
+
+### 2026-09-05 — Simulation covers events, inverse thresholds and comparable deals
+**Problem:** A single manual input shock cannot answer what a received event means, where a model reaches a threshold, or how two deals differ under the same assumption change.
+
+**Decision:** Simulate provides four explicit modes within the existing room. Admitted events automatically prepare atomic scenarios on load/refresh; source claim and input references are inspectable and scenario evidence/model/results are archived immutably. Inverse questions return a threshold and its forward trace only after a bounded continuous, strictly monotone path and output residual are verified. Comparison applies the same percentage shock to explicitly equivalent inputs in separately authenticated cases, showing both baselines and impacts plus exclusions. Editing the setup, refreshing or switching case clears the displayed result. Production bootstrap now supplies case sessions to this workspace, replacing its empty adapter.
+
+**Applies to:** PAN-135 and PAN-134, completing the five functional PAN-111 V1 tasks. Supersedes the earlier simulation decision's pending event/inverse/comparison/bootstrap boundary.
+
+**Boundary:** Event prose does not become an invented economic model. Each case supplies its own admitted numeric model, explicit event rules and shared comparison definitions. Event preparation is driven by reads/refresh, without a background scheduler. Inverse V1 is one variable and a verified threshold on a declared interval; piecewise, nonmonotone, cyclic and singular paths return limitations. Comparisons do not infer FX conversion, period alignment, deal rankings or an investment recommendation. Scenario archives are separate from the institutional ledger. Current, HumanPositions and Decisions remain unchanged. Other rooms' command transport integrations and product deployment are outside this simulation task.
+
+
+---
+
+### 2026-09-05 — Correct simulation scope: hypothetical graph transition
+**Problem:** The numerical simulation workspace was incorrectly treated as the full simulation V1. The user clarified that the requirement is the effect of introducing a change into the investment-case graph, including qualitative and structural changes.
+
+**Decision:** Simulate must run the existing state-transition engine against an isolated graph with hypothetical changes, and expose the same propagation, survivors, limitations and human-review requirements as the real transition path. Numerical sensitivity, event-to-number rules, inverse numeric thresholds and financial comparisons remain useful subsets. They do not satisfy the general graph requirement by themselves.
+
+**Status:** This corrects the completion claim in the earlier simulation decision and acceptance note. PAN-111, PAN-132, PAN-136 and PAN-135 are reopened. General transition adapter/UI integration and equivalence/nonmutation tests remain required; this note does not claim that implementation has been delivered.
+
+**Boundary:** The hypothetical must not adopt Current, settle Approved, write the institutional ledger or fabricate attributed human judgments. Valid graph changes are bounded by the versioned runtime contract. Missing support for a change or its propagation must be disclosed rather than replaced by guessed numerical or qualitative effects.
+
+---
+
+### 2026-09-05 — General graph simulation uses the real transition engine
+**Problem:** Investors need to test changes in evidence and case reasoning, including changes to connections and support, as well as financial assumptions.
+
+**Decision:** Simulate defaults to Case changes: a server-declared editor batches current-object changes, evidence-path membership/logic, withdrawals and temporary supporting or contrary evidence. The actual transition engine runs on a copy of the complete Current runtime state with its existing execution and governance policies. The graph displays only real relationships, including independent support outside the affected set. Before/after inspection distinguishes changed support from unchanged recorded decisions. Changed, held and unresolved outcomes, stops and human review remain explicit. Admitted events prepare scenarios on load/refresh; both manual and event scenarios retain immutable inputs and results. Financial sensitivities remains a separate workspace for numeric thresholds and comparable-case analysis.
+
+**Applies to:** PAN-111, PAN-132, PAN-136 and PAN-135, extending PAN-133's impact inspection. This completes the general adapter/UI and equivalence/nonmutation work reopened by the preceding scope correction. Acceptance evidence and executable boundaries are in `docs/PAN-111_GRAPH_SIMULATION_ACCEPTANCE.md`.
+
+**Boundary:** There is no separate simulation ontology or consequence evaluator. New hypothetical Claims and changes to existing route members are supported by the runtime; unsupported arbitrary object creation or route retargeting is not offered. Prose does not invent semantic consequences. Missing execution coverage remains a limit. The complete graph/state/policy/engine basis is version pinned, and production reads fail closed when it differs from the displayed case. Only the separate scenario archive is persisted: Current, Approved, institutional ledger and human attribution remain unchanged. Two shared-engine corrections make withdrawn routes unusable and propagate recomputed conclusion support downstream without rewriting decisions; existing conformance schema and all runtime regressions remain valid.
+
+---
+
+### 2026-09-05 — Write a scenario before editing graph details
+**Problem:** The investor should be able to describe a hypothetical directly, without first navigating object types and fields.
+
+**Decision:** Describe a change is the default Simulate entry. Text becomes a reviewable proposal of concrete Current-to-hypothetical changes, with object inspection, original wording, proposed interpretation and explicit clarification where needed. The investor starts the simulation from this preview. Exact-name insertion and case-derived examples support input without exposing technical IDs. Explicit Italian/English commands run through a local grounded interpreter. An optional configured model handles open-ended phrasing, using a bounded current-object catalog and validated typed actions. It never computes consequences: reviewed mutations run through the existing graph transition path.
+
+**Boundary:** Guided input and model interpretation are labelled separately. No model credentials were present during acceptance, so the live guided flow and controlled model-response tests are verified; live-model quality remains unverified. Ambiguous, unsupported, incomplete or conflicting proposals cannot be run from the preview. The text is preserved with the executed scenario; proposals themselves do not modify Current, Approved, attributed views or the ledger. Reset/edit/case changes discard stale proposals and late responses. See `docs/SIMULATION_TEXT_INPUT_ACCEPTANCE.md`.

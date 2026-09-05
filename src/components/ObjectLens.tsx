@@ -67,10 +67,13 @@ function ActorLensContents({ actor, onClose }: { actor: Actor; onClose: () => vo
 }
 
 function LensContents({ compact, onClose }: { compact: boolean; onClose: () => void }) {
-  const { snapshot, inspection, inspecting, setActiveObject, openSource } = usePanta();
+  const { snapshot, inspection, inspecting, setActiveObject, openSource, simulationResult } = usePanta();
   if (!snapshot || !inspection) return null;
   const vm = composeLens(snapshot, inspection);
   const sourceLocators = inspectionSourceLocators(snapshot, inspection.objectId, inspection.sourceLocators);
+  const currentSimulation = simulationResult?.scopeVersion === snapshot.simulationScope?.version && simulationResult?.caseVersion === snapshot.caseVersion ? simulationResult : undefined;
+  const simulatedEffect = currentSimulation?.effects.find(effect => effect.objectId === inspection.objectId);
+  const simulationLimit = currentSimulation?.limits?.find(limit => limit.objectId === inspection.objectId) ?? snapshot.simulationScope?.limits.find(limit => limit.objectId === inspection.objectId);
   const inspect = (id: string) => { if (!inspecting) void setActiveObject(id); };
 
   return <>
@@ -80,6 +83,7 @@ function LensContents({ compact, onClose }: { compact: boolean; onClose: () => v
     </div>
 
     <InformationSummary objectId={inspection.objectId} />
+    {simulatedEffect && <LensSection title="This simulation"><p>Current: {simulatedEffect.before}</p><p>Hypothetical: {simulatedEffect.after}</p><p>The recorded case value is unchanged.</p></LensSection>}
     {(inspection.supportObjectIds.length > 0 || inspection.dependentObjectIds.length > 0 || vm.actions.includes('TRACE')) && <ObjectCausalTrace
       key={inspection.objectId}
       objectId={inspection.objectId}
@@ -90,7 +94,8 @@ function LensContents({ compact, onClose }: { compact: boolean; onClose: () => v
     />}
 
     <LensSection title="Still missing">
-      {vm.unknowns.length ? vm.unknowns.slice(0, 3).map(item => <button key={item.id} disabled={inspecting} className="p-related-link" onClick={() => inspect(item.id)}>{item.label}</button>) : <p>Nothing material is currently mapped as missing.</p>}
+      {simulationLimit && <p>{simulationLimit.reason}</p>}
+      {vm.unknowns.length ? vm.unknowns.slice(0, 3).map(item => <button key={item.id} disabled={inspecting} className="p-related-link" onClick={() => inspect(item.id)}>{item.label}</button>) : !simulationLimit && <p>Nothing material is currently mapped as missing.</p>}
     </LensSection>
 
     <LensSection title="What changed">

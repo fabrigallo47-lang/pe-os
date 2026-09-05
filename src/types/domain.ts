@@ -526,7 +526,7 @@ export interface ReviewItem {
 }
 
 /** UI impact language; not kernel state. */
-export type ImpactState = 'STRENGTHENS' | 'WEAKENS' | 'HOLDS' | 'NARROWS' | 'RISK_WORSENS' | 'BECOMES_STALE';
+export type ImpactState = 'STRENGTHENS' | 'WEAKENS' | 'HOLDS' | 'NARROWS' | 'RISK_WORSENS' | 'BECOMES_STALE' | 'CHANGES';
 
 export interface ImpactChange {
   objectId: Id;
@@ -535,6 +535,8 @@ export interface ImpactChange {
   before?: string;
   after?: string;
   reasonRelationIds: Id[];
+  magnitude?: { before: string; after: string; delta: string; percent: string | null; unit: string };
+  explanation?: string;
 }
 
 /** Affected does not mean changed. Every touched object is counted exactly once. */
@@ -551,19 +553,111 @@ export interface SimulationOption {
   label: string;
   assumption: string;
   enabled: boolean;
+  disabledReason?: string;
+  input?: { value: string | null; unit?: string; period?: string; scope?: string };
+  scope?: { coveredObjectIds: Id[]; limitedObjectIds: Id[] };
+}
+
+export interface SimulationLimit { objectId: Id; label: string; reason: string }
+
+/** A disposable projection of the server-owned execution perimeter, not a kernel object. */
+export interface SimulationScope {
+  schemaVersion: 'simulation/1.0';
+  version: string;
+  caseId: Id;
+  caseVersion: string;
+  modelNodeCount: number;
+  computableCount: number;
+  limits: SimulationLimit[];
+  notes?: string[];
+  options: SimulationOption[];
 }
 
 export interface SimulationRequest {
+  mode?: 'manual' | 'event' | 'inverse' | 'compare' | 'graph' | 'graph_event';
+  graphVersion?: string;
+  mutations?: GraphMutation[];
+  eventId?: Id;
+  eventHash?: string;
+  scenarioId?: Id;
+  inverse?: { outputId: Id; target: string; lower: string; upper: string };
+  percent?: string;
+  peerCaseId?: Id;
+  peerCaseVersion?: string;
+  peerScopeVersion?: string;
   optionId: Id;
   originObjectId: Id;
   assumption: string;
+  value?: string;
+  scopeVersion?: string;
+  caseVersion?: string;
+}
+
+export interface SimulationProposalRequest { text: string; caseVersion: string; graphVersion: string }
+/** Reviewable interpretation of user text; it is not an admitted event. */
+export interface SimulationProposal extends SimulationProposalRequest {
+  id: Id; schemaVersion: 'simulation-proposal/1.0'; caseId: Id;
+  interpreter: 'GUIDED' | 'ASSISTED'; status: 'READY' | 'NEEDS_CLARIFICATION';
+  items: { id: Id; objectId: Id; label: string; changeLabel: string; before: unknown; after: unknown;
+    sourceText: string; rationale: string; mutations: GraphMutation[] }[];
+  questions: { question: string; objectIds: Id[] }[];
+  limits: string[];
 }
 
 export interface SimulationResult {
+  graph?: GraphSimulationReport;
+  event?: { eventId: Id; eventHash: string; label: string; knownAt: string; effectiveAt?: string; recordedAt?: string; sourceIds: Id[]; changes: { ruleId: Id; claimId: Id; inputId: Id; value: string; sourceId: Id }[]; basis: 'CURRENT_CASE' };
+  inverse?: { status: 'FOUND' | 'UNREACHABLE' | 'UNSUPPORTED' | 'NON_CONVERGENT'; outputId: Id; target: string; lower: string; upper: string; inputValue?: string; actual?: string; residual?: string; tolerance?: string; iterations: number; direction?: string; reason?: string };
+  comparison?: {
+    peerCaseId: Id; peerName: string; peerCaseVersion: string; peerScopeVersion: string; percent: string;
+    rows: { label: string; objectId: Id; peerObjectId: Id; identity: Record<string, string>; current: NonNullable<ImpactChange['magnitude']>; peer: NonNullable<ImpactChange['magnitude']> }[];
+    exclusions: { caseId: Id; objectId: Id; label: string; reason: string }[];
+    peerResult: SimulationResult;
+  };
   id: Id;
   request: SimulationRequest;
   effects: ImpactChange[];
   coverage: Coverage;
+  schemaVersion?: 'simulation/1.0';
+  caseId?: Id;
+  caseVersion?: string;
+  scopeVersion?: string;
+  liveCaseUnchanged?: boolean;
+  limits?: SimulationLimit[];
+}
+
+/** Disposable UI projections of the existing transition runtime, never kernel objects. */
+export interface GraphMutation {
+  operation: 'CORRECT' | 'OBSERVE' | 'SUPERSEDE' | 'RETRACT' | 'ADD';
+  object_type: string; object_id: Id;
+  field?: string; from?: unknown; to?: unknown;
+  statement?: string; relation_type?: 'SUPPORTS' | 'CONTRADICTS'; target_position_id?: Id;
+}
+export interface GraphSimulationObject {
+  id: Id; label: string; kind: string; kindLabel: string; canRetract: boolean; limitation?: string;
+  current: Record<string, unknown>; currentFlags: Record<string, unknown>;
+  fields: { id: string; label: string; value: unknown; control: 'references' | 'boolean' | 'choice' | 'text'; choices?: string[]; referenceKind?: string }[];
+}
+export interface GraphSimulationScope {
+  schemaVersion: 'graph-simulation/1.0'; version: string; engineVersion: string;
+  caseId: Id; caseVersion: string; asOf: string; objects: GraphSimulationObject[];
+  notes: string[]; coverageLimits: Record<string, unknown>[];
+}
+export interface GraphSimulationReport {
+  schemaVersion: 'graph-simulation/1.0'; version: string; engineVersion: string;
+  event: { event_id: Id; event: string; label?: string; effective_date: string; known_at: string; source_ids: Id[]; mutations: GraphMutation[] };
+  rows: { id: Id; label: string; kind: string; kindLabel: string; status: 'CHANGED' | 'HELD' | 'UNAVAILABLE';
+    before: Record<string, unknown> | null; after: Record<string, unknown> | null; unresolved: boolean;
+    changes: { field: string; before: unknown; after: unknown }[];
+    beforeSupport?: string; afterSupport?: string; isOrigin: boolean; reachedVia: string[]; reasons: string[] }[];
+  edges: { id: Id; source: Id; target: Id; relation: string; label: string; version: 'CURRENT' | 'HYPOTHETICAL' }[];
+  labels: Record<string, string>;
+  issues: { category: string; objectIds: Id[]; reason: string; raw: Record<string, unknown> }[];
+  counts: { examined: number; changed: number; held: number; unavailable: number };
+  currentGraph: Record<string, unknown>; currentFlags: Record<string, unknown>;
+  baselineSupport: Record<Id, string>;
+  engineResult: { candidate_state: Record<string, unknown>; transition_output: Record<string, unknown>; normalized_event_batch: unknown; history_append: unknown };
+  materiality: Record<string, unknown>; governance: Record<string, unknown>;
 }
 
 /** Exact kernel event vocabulary from panta.universal_investment_kernel@0.1.0. */
@@ -834,6 +928,14 @@ export interface PantaCaseSnapshot {
   events: CaseEvent[];
   pendingReviews: ReviewItem[];
   simulationOptions: SimulationOption[];
+  simulationScope?: SimulationScope;
+  simulationScenarios?: SimulationResult[];
+  simulationEventLimits?: { eventId: Id; label: string; reason: string }[];
+  graphSimulationScope?: GraphSimulationScope;
+  graphSimulationScenarios?: SimulationResult[];
+  graphSimulationEventLimits?: { eventId: Id; label: string; reason: string }[];
+  graphSimulationUnavailable?: string;
+  simulationTextInput?: { mode: 'GUIDED' | 'ASSISTED'; message: string; examples: { label: string; text: string }[] };
   conditions: Condition[];
   decisionPaths: DecisionPath[];
   decisions: DecisionRecord[];

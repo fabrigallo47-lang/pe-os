@@ -11,6 +11,8 @@ import type {
   SourceLocator,
   SimulationRequest,
   SimulationResult,
+  SimulationProposal,
+  SimulationProposalRequest,
 } from '../types/domain';
 import type { SourceDocument } from './sourceDocuments';
 
@@ -41,6 +43,7 @@ export interface JournalQuery {
 }
 
 export interface PantaBackendAdapter {
+  proposeSimulation?(caseId: Id, request: SimulationProposalRequest): Promise<SimulationProposal>;
   exportArtifact?(caseId: Id, artifactId: Id, revision: string, format: 'html' | 'json' | 'csv'): Promise<{ filename: string; blob: Blob }>;
   /** Read the original bytes at the cited version; the app supplies a same-origin HTTP default. */
   loadSourceDocument?(caseId: Id, target: SourceLocator): Promise<SourceDocument>;

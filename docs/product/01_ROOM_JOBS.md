@@ -16,7 +16,7 @@ Deep evidence inspection: source/basis, reading, limitations, and where it matte
 
 ## Simulate
 **Question:** What happens to the case if this changes?
-Counterfactual sandbox. Same case, changed assumption, truthful bounded propagation. Live case unchanged.
+Counterfactual sandbox over the investment-case graph. Introduce a hypothetical valid graph change, qualitative or quantitative, and observe the same bounded propagation as the real state-transition engine: changed objects, held objects, contradictions, invalidated support, blocked paths and required human review. Numerical sensitivity is one subset of this room. Live case unchanged.
 
 ## Review changes
 **Question:** Should this material or judgment-bearing proposal change the institutional case?

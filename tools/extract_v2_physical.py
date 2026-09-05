@@ -65,6 +65,7 @@ from tools.llm_provider import (  # noqa: E402
     configured_model,
     missing_key_message,
     openrouter_extra_body,
+    thinking_parameter,
 )
 from tools.archetype_pack import (  # noqa: E402
     DEFAULT_ARCHETYPE, evidence_state_vocabulary, extraction_vocabulary,
@@ -3187,6 +3188,11 @@ def annotate_chunk(
         if provider_extra:
             extra_body.update(provider_extra)
         request["extra_body"] = extra_body
+        # A reasoning model will otherwise spend the entire output budget
+        # thinking and never emit the tool call -- see thinking_parameter().
+        thinking = thinking_parameter()
+        if thinking:
+            request["thinking"] = thinking
         resp = client.messages.create(**request)
         time.sleep(rate_limit_delay)
     except Exception as e:

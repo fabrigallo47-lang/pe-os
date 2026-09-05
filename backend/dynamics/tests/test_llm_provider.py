@@ -88,6 +88,34 @@ class LLMProviderTests(unittest.TestCase):
                 "google/gemini-3.5-flash",
             )
 
+    def test_extraction_disables_extended_thinking_on_openrouter(self):
+        """GLM 5.2 spends the whole output budget thinking and never emits the
+        tool call. Measured on a 202-word chunk: default -> stop=max_tokens,
+        8192 output tokens, blocks=['thinking'], ZERO claims; with thinking
+        disabled -> stop=tool_use, 3255 tokens, 17 claims. Three of eleven
+        benchmark cases were abstaining for this reason alone (51.6% -> 65.0%).
+
+        It must be the Anthropic-native `thinking` field: through the
+        /v1/messages skin, reasoning={"effort":"low"} and {"enabled":False}
+        were both ignored, and forcing tool_choice did not help either.
+        """
+        with patch.dict(os.environ, {"PEOS_LLM_PROVIDER": "openrouter"}, clear=True):
+            self.assertEqual(llm_provider.thinking_parameter(), {"type": "disabled"})
+
+    def test_anthropic_is_not_sent_a_thinking_field(self):
+        """Its default is already no extended thinking; sending the field would
+        only add a way to be wrong."""
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertIsNone(llm_provider.thinking_parameter())
+
+    def test_thinking_can_be_re_enabled_deliberately(self):
+        with patch.dict(
+            os.environ,
+            {"PEOS_LLM_PROVIDER": "openrouter", "PEOS_OPENROUTER_THINKING": "true"},
+            clear=True,
+        ):
+            self.assertIsNone(llm_provider.thinking_parameter())
+
     def test_v2_allows_complete_excel_tool_output(self):
         captured = {}
 
@@ -145,6 +173,7 @@ class LLMProviderTests(unittest.TestCase):
             captured["extra_body"]["provider"]["data_collection"],
             "deny",
         )
+        self.assertEqual(captured["thinking"], {"type": "disabled"})
 
 
 if __name__ == "__main__":

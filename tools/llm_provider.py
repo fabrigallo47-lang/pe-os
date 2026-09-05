@@ -87,6 +87,35 @@ def openrouter_extra_body() -> dict[str, Any] | None:
     return {"provider": openrouter_provider_preferences()}
 
 
+def thinking_parameter() -> dict[str, Any] | None:
+    """Turn extended thinking OFF for extraction on OpenRouter.
+
+    GLM 5.2 is a reasoning model, and on a tool-use call it spends the WHOLE
+    output budget thinking and never emits the tool block. Measured on
+    panta-semantic.keystone.identity-and-derivation-001, a 202-word chunk:
+
+        default             stop=max_tokens  out=8192  blocks=['thinking']         0 claims
+        thinking disabled   stop=tool_use    out=3255  blocks=['text','tool_use'] 17 claims
+
+    Three of eleven benchmark cases abstained for exactly this reason, scoring
+    zero on documents the model never got to answer.
+
+    It has to be the Anthropic-native `thinking` parameter, not OpenRouter's
+    `reasoning` field: through the /v1/messages compatibility skin,
+    reasoning={"effort":"low"} and reasoning={"enabled":False} were both
+    ignored, still burning all 8192 tokens. Forcing tool_choice does not help
+    either -- the model thinks first regardless.
+
+    Returns None on Anthropic, where the default is already no extended
+    thinking and sending the field would only add a way to be wrong.
+    """
+    if not is_openrouter():
+        return None
+    if os.environ.get("PEOS_OPENROUTER_THINKING", "").strip().lower() in {"1", "true", "on"}:
+        return None
+    return {"type": "disabled"}
+
+
 def anthropic_client_kwargs(api_key: str) -> dict[str, Any]:
     kwargs: dict[str, Any] = {"api_key": api_key}
     if is_openrouter():

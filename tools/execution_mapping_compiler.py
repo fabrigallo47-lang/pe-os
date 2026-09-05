@@ -31,6 +31,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from tools.formula_compiler import compile_formulas, normalize_locator
+from tools.formula_contract import contract_violations
 from tools.relation_rules import annotate_edge, audit_relation_outputs
 
 
@@ -335,6 +336,20 @@ def _validate_population(
             raise ExecutionMappingCompileError(
                 f"Formula {formula_id} references undeclared model nodes: {', '.join(missing)}"
             )
+
+    # G1: input_ids being declared nodes is not the same as the formula being
+    # executable. A formula can name every endpoint correctly and still use an
+    # operand that variable_binding never binds, or bind a name to a workbook
+    # cell instead of a model node -- and it would still ship labelled
+    # ARITHMETIC. In a formula this compiler generated that is a compiler
+    # defect, so it is raised here rather than reported downstream; a mapping
+    # written by hand is reclassified instead, by formula_contract.enforce_contract.
+    violations = contract_violations(mapping, generated_formula_ids)
+    if violations:
+        raise ExecutionMappingCompileError(
+            "Generated ARITHMETIC formulas do not satisfy the expression↔binding "
+            "contract:\n  " + "\n  ".join(violations)
+        )
 
     expected_edges = {
         (str(input_id), str(formula["output_id"]), formula_id)

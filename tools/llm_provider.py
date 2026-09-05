@@ -5,9 +5,13 @@ import os
 from typing import Any
 
 
+DEFAULT_OPENROUTER_EXTRACTION_MODEL = "z-ai/glm-5.2"
+
 _OPENROUTER_MODEL_ALIASES = {
     "claude-haiku-4-5-20251001": "anthropic/claude-haiku-4.5",
     "claude-sonnet-5": "anthropic/claude-sonnet-5",
+    "glm-5.2": DEFAULT_OPENROUTER_EXTRACTION_MODEL,
+    "glm-5.2-free": f"{DEFAULT_OPENROUTER_EXTRACTION_MODEL}:free",
 }
 
 
@@ -32,12 +36,11 @@ def missing_key_message() -> str:
 def configured_model(default_anthropic_model: str) -> str:
     explicit = os.environ.get("PEOS_MODEL", "").strip()
     if explicit:
+        if is_openrouter():
+            return _OPENROUTER_MODEL_ALIASES.get(explicit.lower(), explicit)
         return explicit
     if is_openrouter():
-        return _OPENROUTER_MODEL_ALIASES.get(
-            default_anthropic_model,
-            f"anthropic/{default_anthropic_model}",
-        )
+        return DEFAULT_OPENROUTER_EXTRACTION_MODEL
     return default_anthropic_model
 
 
@@ -69,17 +72,19 @@ def request_headers(api_key: str) -> dict[str, str]:
     }
 
 
+def openrouter_provider_preferences() -> dict[str, Any]:
+    zdr = os.environ.get("PEOS_OPENROUTER_ZDR", "true").strip().lower()
+    return {
+        "zdr": zdr not in {"0", "false", "no", "off"},
+        "data_collection": "deny",
+        "require_parameters": True,
+    }
+
+
 def openrouter_extra_body() -> dict[str, Any] | None:
     if not is_openrouter():
         return None
-    zdr = os.environ.get("PEOS_OPENROUTER_ZDR", "true").strip().lower()
-    return {
-        "provider": {
-            "zdr": zdr not in {"0", "false", "no", "off"},
-            "data_collection": "deny",
-            "require_parameters": True,
-        }
-    }
+    return {"provider": openrouter_provider_preferences()}
 
 
 def anthropic_client_kwargs(api_key: str) -> dict[str, Any]:

@@ -19,7 +19,8 @@ Manifest modes prevent temporal leakage between knowledge snapshots:
 Usage:
   python3 tools/extract_v2_physical.py --manifest K-IC --deal keystone --dry-run
 
-  export ANTHROPIC_API_KEY=sk-...  # or OPENROUTER_API_KEY with PEOS_LLM_PROVIDER=openrouter
+  export OPENROUTER_API_KEY=sk-or-...
+  export PEOS_LLM_PROVIDER=openrouter  # defaults to z-ai/glm-5.2
   python3 tools/extract_v2_physical.py --manifest K-PRE --deal keystone \\
       --output pipeline_out/e3/k_pre
 
@@ -77,6 +78,11 @@ from tools.source_capabilities import (  # noqa: E402
     CAPABILITY_SCHEMA,
     capability_failure,
     resolve_source_capability,
+)
+from tools.source_catalog import (  # noqa: E402
+    load_source_catalog,
+    source_record_from_catalog,
+    unmapped_source_types,
 )
 
 VAULT_INBOX = ROOT / "vault" / "inbox"
@@ -262,11 +268,13 @@ MANIFEST_SOURCES: dict[str, list[str]] = {
     "ALL": list(SOURCE_REGISTRY.keys()),
 }
 
-def _source_record(path: Path) -> dict:
-    """Return the source registry record for this file, or a synthetic fallback."""
+def _source_record(path: Path, catalog: dict[str, dict] | None = None) -> dict:
+    """Return registry metadata first, then deal-catalog metadata or fallback."""
     stem = path.stem
     # Try exact match first, then strip suffixes like _part1, _extract
     record = SOURCE_REGISTRY.get(stem)
+    if not record and catalog is not None:
+        record = source_record_from_catalog(path, catalog)
     if not record:
         for key in SOURCE_REGISTRY:
             if stem.startswith(key) or key.startswith(stem):
@@ -3861,6 +3869,10 @@ def main() -> int:
         "--source-envelope", type=Path,
         help="Path to a panta.source-envelope/1.0 JSON record for a --source intake.",
     )
+    ap.add_argument(
+        "--source-catalog", type=Path,
+        help="Per-deal source catalog in CSV or JSON-list format.",
+    )
     ap.add_argument("--output", default="pipeline_out/e3",
                     help="Output directory (default: pipeline_out/e3)")
     ap.add_argument("--dry-run", action="store_true",
@@ -3892,6 +3904,15 @@ def main() -> int:
                     help="Model alias for --via-cli (default: haiku)")
     args = ap.parse_args()
 
+    source_catalog = load_source_catalog(args.source_catalog) if args.source_catalog else None
+    if args.source_catalog and not source_catalog:
+        print(f"WARNING: source catalog is empty or unreadable: {args.source_catalog}",
+              file=sys.stderr)
+    if source_catalog:
+        gaps = sorted(unmapped_source_types(source_catalog))
+        if gaps:
+            print(f"WARNING: unmapped source_type values: {', '.join(gaps)}", file=sys.stderr)
+
     # ── Collect source paths ──────────────────────────────────────────────
     if args.manifest:
         source_dir = args.input_dir or VAULT_INBOX
@@ -3906,7 +3927,7 @@ def main() -> int:
             return 1
         print(f"\n[Manifest {args.manifest}] {len(source_paths)} sources:")
         for p in source_paths:
-            rec = _source_record(p)
+            rec = _source_record(p, source_catalog)
             print(f"  {rec['source_id']:<16} {p.name}  (known_at: {rec['known_at']})")
     else:
         source_path = Path(args.source)
@@ -3919,6 +3940,11 @@ def main() -> int:
         manifest_label = "SINGLE"
 
     source_records: dict[Path, dict] = {}
+    if source_catalog:
+        for source_path in source_paths:
+            record = _source_record(source_path, source_catalog)
+            if source_record_from_catalog(source_path, source_catalog) is not None:
+                source_records[source_path] = record
     if args.source_envelope:
         if args.manifest:
             print("ERROR: --source-envelope can only be used with --source", file=sys.stderr)

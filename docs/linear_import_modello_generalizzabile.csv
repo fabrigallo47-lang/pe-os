@@ -14,7 +14,7 @@ Il validatore indipendente ha un check chiamato `FORMULAS_EXECUTABLE` che passa 
 Imporre il contratto al momento della compilazione (`execution_mapping_compiler` / `workbook_model_compiler`), non a runtime: ogni nome libero nell'espressione deve esistere in `variable_binding`, e ogni `variable_binding` deve puntare a un `model_node_id` esistente. Se non si può soddisfare, la formula NON è `ARITHMETIC` — diventa un limite di copertura dichiarato, come già fa il compiler per tutto il resto.
 
 **Fatto quando**
-Un test rifiuta un mapping con nomi non legati; il valutatore generico calcola tutte le formule dichiarate `ARITHMETIC` sul bundle Keystone, oppure la loro riclassificazione è esplicita.",Todo,1,"model,extraction,debt",3
+Un test rifiuta un mapping con nomi non legati; il valutatore generico calcola tutte le formule dichiarate `ARITHMETIC` sul bundle Keystone, oppure la loro riclassificazione è esplicita.",Done,1,"model,extraction,debt",3
 [G2] Alimentare i nodi di input dai claim ammessi (binder → valutatore),"**Perché**
 Sul mapping reale di Keystone, 28 nodi `DIRECT_INPUT` su 45 non hanno `initial_value` numerico. Sono la fessura da cui devono entrare i claim: un `DIRECT_INPUT` è per definizione un valore che arriva da fuori (una fonte, una cella), non calcolato.
 
@@ -24,7 +24,7 @@ Oggi quei 28 restano vuoti e affamano 10 formule a valle, che il valutatore dich
 Collegare il binder esistente (`tools/position_model_binder.py`, claim → nodo) all'ingresso `overrides` di `evaluate_mapping()`. Il claim porta il valore, il nodo lo riceve, il grafo si ricalcola. Nessuna invenzione: un nodo senza claim resta un limite dichiarato, non un valore di comodo.
 
 **Fatto quando**
-Girando la pipeline su Keystone, la copertura dei nodi calcolati sale in modo misurabile e ogni nodo ancora vuoto ha un motivo scritto.",Todo,1,"model,extraction",3
+Girando la pipeline su Keystone, la copertura dei nodi calcolati sale in modo misurabile e ogni nodo ancora vuoto ha un motivo scritto.",Done,1,"model,extraction",3
 [G3] Il default del runtime diventa il valutatore generico (non un modulo per deal),"**Perché**
 `bridge_v7` scriveva `lbo_runtime_module: ""tools/keystone_model.py""` come stringa fissa: ogni deal, Silexara compreso, riceveva il modello di Keystone — 1198 righe che il suo stesso docstring definisce ""Keystone-specific"", trascrizione a mano di `keystone_lbo_model_working.xlsx`. Per un deal che non è quello, non è un modello mancante: è quello sbagliato.
 
@@ -73,7 +73,7 @@ Costruire il binder cella→concetto. Due strade possibili, da valutare:
 Indovinare il binding senza revisione umana. Legare male una cella a un concetto istituzionale produce un numero sbagliato con l'aspetto di uno vero — esattamente il rischio che l'intero impianto epistemico esiste per evitare.
 
 **Fatto quando**
-`populate_execution_mapping()` gira sul workbook reale di Keystone con un binding reale e produce formule che passano il contratto (`formula_contract.py`) in percentuale comparabile o migliore delle 2/22 attuali di `compiler_v7.py` — poi, solo allora, G3 può essere applicato a Keystone.",Todo,1,"model,architecture,ontology",8
+`populate_execution_mapping()` gira sul workbook reale di Keystone con un binding reale e produce formule che passano il contratto (`formula_contract.py`) in percentuale comparabile o migliore delle 2/22 attuali di `compiler_v7.py` — poi, solo allora, G3 può essere applicato a Keystone.",Done,1,"model,architecture,ontology",8
 "[G5] Dizionario metriche per tipo di deal (sostituire il menù, non allungarlo)","**Perché**
 `METRIC_ENUM` è modellato sul buyout. PAN-117 ha aggiunto la valvola `Other` + `metric_label`, e sul QoE reale di Keystone ha catturato onestamente 10 voci senza nome (accrued interest, finance-lease obligations, deferred consideration, transaction bonuses, pre-closing taxes...) che prima venivano schiacciate su Net Debt/Gross Debt e fuse con i claim di debito veri.
 
@@ -90,7 +90,7 @@ Costruire lo schema del tool **per deal**, dal dizionario del tipo di deal, inve
 - Profilo assente = nessuna restrizione, comportamento di oggi. Nessun deal esistente si rompe.
 
 **Fatto quando**
-Su Silexara i 3 force-fit spariscono, e Keystone resta invariato.",Todo,1,"extraction,ontology",5
+Su Silexara i 3 force-fit spariscono, e Keystone resta invariato.",Done,1,"extraction,ontology",5
 "[G6] Lente di stato del deal (osserva e racconta, non decide)","**Perché**
 Serve poter chiedere ""a che punto è questo deal"" e avere una risposta in parole, senza che nulla nel grafo si muova.
 
@@ -100,8 +100,8 @@ Metà del lavoro c'è già: `vault/roles/` ha tre desk (analyst, diligence-coord
 Una lente che legge lo stato già derivato (eventi, esposizione, blocchi, claim non legati, contraddizioni aperte, nodi del modello ancora limite dichiarato) e lo racconta su richiesta. Nessuna autorità: non ammette, non settla, non scrive nel grafo.
 
 **Fatto quando**
-Su un deal qualsiasi restituisce un quadro leggibile, e un test verifica che non scriva nulla.",Todo,3,"agents,ux",3
-"[G8] Registrazione sorgenti per deal nuovi (SOURCE_REGISTRY / source-envelope)","**Perché**
+Su un deal qualsiasi restituisce un quadro leggibile, e un test verifica che non scriva nulla.",Done,3,"agents,ux",3
+[G8] Registrazione sorgenti per deal nuovi (SOURCE_REGISTRY / source-envelope),"**Perché**
 Testando Silexara sulla pipeline vera si è trovato un buco a monte di tutto il resto. `tools/extract_v2_physical.py::_source_record()` cerca il file in `SOURCE_REGISTRY` (mappa hardcoded per Keystone); quando non trova corrispondenza usa un fallback sintetico: `source_id=""SRC-<nome file>""`, `doc_type=""Other""`, `party=""unknown""`, date vuote.
 
 Conseguenze reali misurate oggi:
@@ -114,4 +114,4 @@ Conseguenze reali misurate oggi:
 Un piccolo generatore che legge un catalogo fonti (formato tipo `SOURCE_CATALOG.csv`, o un CSV/JSON equivalente da compilare a mano per deal senza catalogo) e produce i `source-envelope` che `--source-envelope` già accetta in CLI — nessuna modifica al parser, solo alimentarlo correttamente.
 
 **Fatto quando**
-Silexara rigirato con gli envelope generati: `doc_type` reale per ogni fonte, SRC-06/SRC-02/SRC-03/SRC-05/SRC-08/SRC-12/SRC-15 (le call) instradate a `parse_transcript`, non a `parse_plain_text`.",Todo,1,"extraction,ontology",3
+Silexara rigirato con gli envelope generati: `doc_type` reale per ogni fonte, SRC-06/SRC-02/SRC-03/SRC-05/SRC-08/SRC-12/SRC-15 (le call) instradate a `parse_transcript`, non a `parse_plain_text`.",Done,1,"extraction,ontology",3

@@ -1,0 +1,288 @@
+Title,Description,Status,Priority,Labels,Estimate
+[R1] Modulo unico per normalizzazione e ID dei claim,"**Perché**
+Esistevano 6+ tabelle di normalizzazione sparse (`identity_resolver.py`, `claim_graph.py`, `model_parser.py`, `extract_v2.py`, `panta_transition_engine.py`, `test_extraction_poc.py`) che non si parlavano. Lo stesso fatto poteva ottenere due ID diversi.
+
+**File**
+`tools/object_identity.py` (nuovo)
+
+**Cosa**
+Due tuple distinte:
+- **metrica**: entity | metric | period | scope | basis | measurement | **scenario**
+- **claim**: + source | **version** | locator | epistemic | value
+
+Regola `normalizza-poi-hasha`; mai prosa LLM grezza nell'hash. Vocabolario metriche derivato da `METRIC_ENUM`. `decompose_perimeter()` come ponte per i claim legacy.
+
+**Nota**
+Scenario e versione stanno in tuple diverse: base case e downside sono due metriche; CIM v1 e v2 sono due claim sulla stessa metrica.
+
+**Stato** — completato e testato.",Done,2,identity,3
+[R2] Dimensioni d'identità strutturate nell'estrattore,"**Perché**
+Il prompt chiedeva prosa esplicitamente: `perimeter` diceva *""write the full descriptive string""*, `period` diceva *""use the richest description available""*. Nessuna tabella di alias può normalizzare linguaggio illimitato.
+
+**File**
+`tools/extract_v2.py` — `CLAIM_TOOL`, `RawClaim`, `CanonicalClaim`, `validate()`, sidecar
+
+**Cosa**
+Cinque campi nuovi: `entity`, `period_canonical` (pattern vincolato), `scope`, `basis`, `scenario` (enum). Vanno nella sezione *compiler metadata* già esistente → **schema CAP-003 congelato non toccato**. La prosa resta per il lettore umano.
+
+**Risultato misurato**
+14-17% → **82,9%** risolvibili. `entity` mancante 60% → 0%. 156 test verdi.",Done,2,identity,3
+[R3] Validare l'identità sul manifest completo K-IC + K-PRE,"**Perché**
+L'82,9% è misurato su 35 claim di un solo documento. Va confermato su ~550.
+
+**Esecuzione**
+`tools/extract_v2.py --manifest K-IC` e `--manifest K-PRE`
+
+**Cosa**
+Rilanciare i due manifest con output fresco — il checkpoint `raw_claims_cache.json` contiene claim senza i campi nuovi, va scartato. Rimisurare con `python3 tools/object_identity.py`. Misurare anche il **costo in token**: 5 campi in più per claim.
+
+**Accettazione**
+- ≥75% claim risolvibili
+- ogni non-risolvibile classificato come coverage limit legittimo (claim qualitativo, o periodo assente nella fonte) e non come errore di estrazione
+
+**Dipende da** R2",Todo,2,identity,3
+[R4] Ri-estrazione vault + migrazione ID,"**Perché**
+Il vault ha 227 claim con la *data di estrazione* nel campo `period`, e perimetri in prosa che impacchettano 4 dimensioni. `_claim_graph.py` hasha `subject[:32]` — testo LLM grezzo — senza passare dalla tabella alias.
+
+**File**
+- `vercel/api/_claim_graph.py` — calcolo `stable_id`
+- `tools/extract.py`
+- gli 884 claim in `vault/deals/*/claims/`
+
+**Cosa**
+Sostituire il calcolo ID locale con `object_identity.claim_id()`. Ri-estrarre il vault con l'estrattore v2.
+
+**Rischio**
+**Cambia tutti gli ID esistenti.** Da fare in un unico passaggio con la ri-estrazione, non separatamente. Se un demo o un benchmark gira sugli ID attuali, si rompe.
+
+**Già verificato sicuro**: identità da campi strutturati e da prosa legacy producono la stessa tupla — il corpus non si spacca.
+
+**Dipende da** R3",Todo,2,identity,5
+[R5] L2 — proposta semantica cella → concetto economico,"**Perché**
+Oggi il significato di una cella Excel viene da `xlsx_parser.py`, che ha funzioni scritte a mano per *questo* workbook: `_parse_qoe_ebitda()`, `_parse_scenario_drivers()`, lista `SCENARIO_SHEETS`, `CANONICAL_ID_MAP`. **Funziona solo su Keystone.** È il pezzo che rende PANTA capace di leggere un modello che non sia il nostro fixture.
+
+**File**
+`tools/model_semantics.py` (nuovo)
+
+**Cosa**
+Dal grafo L1 (`source_graph.py`), per ogni cella numerica o formula proporre un concetto economico usando i quattro segnali **già catturati**:
+- etichetta adiacente (stessa riga, colonne a sinistra) — 10.042 celle di testo disponibili
+- nome del foglio
+- `number_format` — % vs valuta vs multiplo
+- topologia — nessun precedente = input; nessun dipendente = output
+
+Output: **proposte con confidenza**, mai binding stabiliti.
+
+**Accettazione**
+Su Keystone, riprodurre almeno i 59 concetti che `xlsx_parser.py` ottiene con regole hardcoded — **senza nomi di foglio hardcoded**.
+
+**Dipende da** — (L1 esiste già)",Todo,2,excel,5
+[R6] L3 — resolver globale dei binding,"**Perché**
+Il significato di una cella dipende da quello delle altre. Se `C5` è Revenue, allora `C10 = C5*0.4` è un costo o un margine, non un altro revenue. Un LLM che indovina cella per cella produce assegnazioni incoerenti: due ""Firm EBITDA FY2025"" diversi, unità che non tornano lungo una formula.
+
+**File**
+`tools/model_resolver.py` (nuovo) · riusa `tools/position_model_binder.py`
+
+**Cosa**
+Prendere le proposte di R5 e risolverle come **sistema di vincoli sull'intero deal**:
+- unicità — un solo model node per identità
+- coerenza di unità lungo le formule
+- coerenza con i claim già estratti dal workbook
+
+Ciò che resta ambiguo diventa `coverage_limit` esplicito, non un'assegnazione arbitraria.
+
+**Accettazione**
+- deterministico a parità di input
+- ogni binding porta la ragione per cui è stato scelto
+- nessun binding silenzioso su ambiguità
+
+**Dipende da** R5",Todo,2,excel,5
+[R7] Traduttore grammatica Excel → motore,"**Perché**
+Il motore valuta espressioni con nomi di variabile; l'Excel usa riferimenti di cella e funzioni. Lo slot esiste già (`execution_mapping.formulas[]` + `_safe_decimal_expression()`), manca il traduttore.
+
+**File**
+`tools/formula_compiler.py` (nuovo)
+
+**Cosa**
+Tradurre ogni formula in `expression_or_function_ref`:
+- riferimenti → `input_ids` (via i binding di R6)
+- `SUM(range)` → somma espansa di operandi
+- `IF` → `rule_switches` (meccanismo già presente nel motore)
+- `MAX` / `MIN` → function ref (il campo si chiama già `expression_**or_function_ref**`)
+- cicli → `cyclic_component_solver_configs`, risolti da `extract_v3.py`
+
+**Dimensione reale del problema**: nel modello Keystone ci sono **solo 4 funzioni** e **zero non supportate** — MAX 2.125, SUM 1.430, MIN 940, IF 425.
+
+**Accettazione**
+Ricalcolando col motore le formule tradotte, i valori coincidono con `evaluated_value` di L1 su tutte le 10.700 formule. Ogni formula non traducibile diventa coverage limit, mai un risultato indovinato.
+
+**Dipende da** R6",Todo,2,excel,3
+[R8] Popolare execution_mapping con formule e archi DRIVES,"**Perché**
+`gold_mapping_adapter.py:503` restituisce `position_dependencies: []` fisso. Il buco quantificato:
+
+| Catturato da L1 | Arriva al motore |
+|---|---|
+| 10.700 formule | **1** (scritta a mano, `fixture_only: true`) |
+| 24.651 archi di precedenza | **0** |
+| 29.476 celle | **2** model node |
+
+**File**
+`backend/dynamics/runtime/gold_mapping_adapter.py` — `compile_gold_to_runtime_inputs()`, riga 503
+
+**Cosa**
+Consumare l'output di R7: riempire `formulas[]`, `directed_model_edges[]` e `position_dependencies[]` con archi tipizzati DRIVES.
+
+**Accettazione**
+- `compute_affected_set()` propaga su archi reali; `reached_via` spiega il percorso
+- si chiudono le due `coverage_limits` attuali: `MISSING_MODEL_DEPENDENCY`, `MISSING_EXECUTABLE_DIRECTION`
+
+**Dipende da** R7",Todo,2,excel,3
+[R9] Orchestratore delle regole di relazione,"**Perché**
+Le cinque relazioni hanno precondizioni diverse e oggi nascono in posti scollegati. Un solo meccanismo di similarità non può produrle tutte — è l'errore che questo piano evita.
+
+Produttori attuali:
+| Relazione | Produttore | Stato |
+|---|---|---|
+| CONTRADICTS | `_claim_graph.py` pass 2a | ok |
+| SUPPORTS | `_claim_graph.py` 2c-d + `bind_questions_e3.py` | ok |
+| DERIVES_FROM | solo dal *testo* della derivazione | parziale |
+| DRIVES | — | nessuno |
+| CONDITIONS | solo `REQUIRES_EVIDENCE` ad hoc | nessuno |
+
+**File**
+`tools/relation_rules.py` (nuovo)
+
+**Cosa**
+Applicare le regole deterministiche dove possibile (identità+valore → CONTRADICTS; precedenti formula → DERIVES_FROM/DRIVES) e lasciare all'LLM **solo il residuo ambiguo**, come proposta. Rispetta l'invariante: gli agenti non adjudicano.
+
+**Accettazione**
+Ogni arco prodotto porta la regola che l'ha generato. Percentuale di archi deterministici misurata e riportata.
+
+**Dipende da** R4, R8",Todo,3,relations,5
+[R10] Produttore di archi CONDITIONS,"**Perché**
+Oggi i gap di copertura diventano archi `REQUIRES_EVIDENCE` ad hoc, fuori dal vocabolario canonico, quindi non propagano.
+
+**File**
+`app/v20_router.py` — `_semantic_rooms()`, riga 1093
+
+**Cosa**
+Riclassificarli come CONDITIONS tipizzati dentro `position_dependencies`, così passano dal meccanismo di propagazione esistente.
+
+**⚠️ Da verificare PRIMA di collegare produttori**
+`_build_execution_adjacency()` oggi cammina su tutte le relazioni allo stesso modo. *""X non è valido finché Y non è risolto""* **non è** la stessa propagazione di *""il claim sostiene la posizione""*. Se la semantica di CONDITIONS nel BFS non è corretta, collegarci un produttore costruisce sopra un comportamento sbagliato.
+
+**Dipende da** R9",Todo,3,relations,3
+[R11] Ledger append-only,"**Perché**
+Oggi non esiste storia: `settle_candidate_state()` sovrascrive lo stato corrente. ""Cosa sapevamo il 1° aprile?"" non è rispondibile se non scavando nei diff git.
+
+**File**
+`backend/dynamics/runtime/ledger_store.py` (nuovo)
+
+**Cosa**
+`append_event()` · `read_ledger(as_of)` · `replay(as_of)`. Fisicamente `pipeline_out/cases/{case_id}/ledger.jsonl`, una riga per evento, usando lo schema `state_transition_event.schema.json` che è **già bitemporale** (`effective_date` + `known_at`).
+
+**Idempotenza**
+A livello evento: `event_id = sha256(source_version | extractor_version | manifest_hash)`. Ri-processare la stessa fonte è un no-op.
+
+La deduplicazione **cross-documento non va fatta**: due fonti che dicono la stessa cosa sono due evidenze indipendenti, non una ridondanza (regola di Alex: i claim non si fondono mai).
+
+**Accettazione**
+- `replay(as_of=X)` ricostruisce lo stato a quella data
+- ri-processare due volte la stessa fonte non aggiunge righe",Todo,3,ledger,5
+"[R12] Settlement: appendi al ledger, poi ricostruisci","**File**
+`backend/dynamics/service.py` — `settle_candidate_state()`, riga 171
+
+**Cosa**
+Oggi sovrascrive `current_graph.json` e `runtime_state.json` sul posto, e cancella i file candidate. Diventa: appendi l'evento al ledger, poi rigenera `current_graph.json` per replay.
+
+Il file JSON diventa una **cache** del ledger, non la verità.
+
+**Dipende da** R11",Todo,3,ledger,3
+[R13] L'ammissione diventa una scrittura nel ledger,"**Perché**
+Il manifest di ammissione ha già i campi giusti (`case_id`, `as_of_known_at`, `admitted_claim_ids`) ma vive solo nel ciclo richiesta/risposta. Non esiste una riga interrogabile su chi ha ammesso cosa, quando, da quale fonte.
+
+**File**
+`backend/dynamics/runtime/extraction_adapter.py` — `_validate_manifest()`, riga 239
+
+**Cosa**
+Dopo la validazione, appendere il manifest al ledger invece di limitarsi a consumarlo in-request.
+
+**Dipende da** R11",Todo,3,ledger,2
+[R14] Supersession calcolata e spiegabile,"**Perché**
+`SUPERSEDE` è dichiarato in `MUTATION_OPERATIONS` (riga 48) e **non ha alcuna logica dietro** in tutto il file. Senza, ""vince l'ultimo numero"" diventa il default invisibile appena due fonti divergono — esattamente la sovrascrittura silenziosa che il modello deve impedire.
+
+**File**
+`backend/dynamics/runtime/panta_transition_engine.py` — nuovo `compute_operative_claims()`
+
+**Cosa**
+Dati claim che condividono un'identità, restituire `{operative_claim_id, superseded_ids, rule_applied, explanation}` con regola ispezionabile (es. livello epistemico, poi `known_at`). Il claim perdente resta nel ledger, visibile e marcato.
+
+**Accettazione**
+- nessun claim viene mai cancellato
+- ogni scelta di operatività è spiegabile in una riga leggibile da un umano
+
+**Dipende da** R11",Todo,3,ledger,5
+[R15] Oggetto position (vista attribuita a una persona),"**Perché**
+Nello schema congelato `$defs.position` ha **zero campi di attribuzione**: solo `epistemic_status_at_ic` e `decision_status_at_ic`. La vista dichiarata da una persona non esiste come oggetto.
+
+**File**
+- `backend/dynamics/schemas/canonical_investment_case.schema.json` — nuovo `$defs`
+- `panta_transition_engine.py` — nuovo ramo di mutazione POSITION
+
+**Cosa**
+Nuovo oggetto con `stated_by`, `source_id`, `locator`, `statement`, `direction`, `effective_date`, `known_at`, come voce immutabile del ledger.
+
+**🚫 BLOCCATO — serve decisione**
+Collisione di nome: nel contratto congelato ""position"" indica la cosa **calcolata** — l'opposto del vocabolario di prodotto, dove `position` è la vista di una persona e `reading` è la sintesi del sistema.
+
+Due strade:
+- **(a)** il motore tiene i nomi attuali, ""reading"" resta parola di prodotto/UI, si aggiunge solo l'oggetto nuovo — **nessuna modifica al contratto congelato**
+- **(b)** si versiona lo schema e si rinomina anche nel motore — più pulito, richiede l'ok su un contratto congelato",Backlog,3,objects,5
+"[R16] Reading calcolato, non sintetizzato per default","**Perché**
+Oggi ogni domanda coperta ottiene automaticamente un `case_position` con `decision_status: ""PENDING""` e lo `statement` uguale al titolo della domanda. **Il giorno zero mente**: sembra ci sia una posizione dove nessuno ha ancora parlato.
+
+**File**
+`app/v20_router.py` — `_semantic_rooms()`, righe 964-991
+
+**Cosa**
+Smettere di sintetizzare. Calcolare il reading dalle position ammesse + evidenza che si riferisce a quella domanda. Una domanda senza position ammesse deve mostrare *""nessuno si è ancora espresso""*.
+
+**Dipende da** R15",Backlog,3,objects,5
+[R17] decision_status scrivibile solo da decisione umana registrata,"**Perché**
+`/ic-record` registra una decisione ma **non scrive mai** `decision_status` sul case_position: sono due isole scollegate. E nulla impedisce a codice di sintesi di impostarlo.
+
+**File**
+- `panta_transition_engine.py` — nuovo guard `DECISION_STATUS_HUMAN_ONLY`
+- `app/v20_router.py` — handler `/ic-record`, riga 2971
+
+**Cosa**
+Guard accanto a `SELF_ADOPTION_FORBIDDEN`: rifiutare ogni mutazione di `decision_status_at_ic` il cui evento di origine non sia una decisione umana registrata. Contestualmente `/ic-record` aggiorna il campo come parte della stessa scrittura — unico percorso autorizzato.
+
+**Accettazione**
+Un test prova che una transizione automatica non può cambiare `decision_status`.",Todo,3,objects,3
+[R18] RAG che propone riempimenti per lacune dichiarate,"**Cosa**
+Indicizza i documenti ingested; all'arrivo di una nuova fonte propone claim candidati che potrebbe aggiornare.
+
+**Il vincolo che lo rende accettabile**: il RAG **non colora le lacune in silenzio**. Propone un riempimento per una lacuna *dichiarata*, e la lacuna resta visibile finché un umano non ammette. `is_resolvable()` in `object_identity.py` implementa già questo comportamento — un claim senza period non viene indovinato né accoppiato.
+
+**File**
+`tools/rag_index.py` (nuovo)
+
+**Vincolo tecnico**
+CLAUDE.md impone stdlib + PyYAML. Una cosine-similarity in puro Python resta conforme su questa scala; altrimenti serve una deroga esplicita alla regola.",Backlog,4,live,5
+[R19] Criticità e prossimo lavoro migliore,"**Perché**
+**È il buco più grave per il ""live"".** La promessa distintiva è *""ti fa notare le cose che ti sarebbero sfuggite""*. Senza, il caso è mantenuto ma **muto**: non dice mai cosa guardare per primo. Un caso mantenuto e muto è un archivio ordinato, non un sistema vivo.
+
+**Riferimento**
+CAP-018 nel SoT, marcato `MISSING`.
+
+**Cosa**
+Ranking deterministico e decomponibile:
+- raggiungibilità alla decisione radice
+- sensibilità economica dal mapping
+- numero di rotte di supporto indipendenti
+- vincoli al margine
+
+Output con i fattori esposti, mai un punteggio opaco. Il prodotto non deve chiamarlo ""verità"" né ""ottimale"".
+
+**Dipende da** R8, R9",Backlog,3,live,8

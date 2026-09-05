@@ -319,33 +319,53 @@ def value_bearing_concepts(archetype_id: str) -> list[dict[str, Any]]:
     ]
 
 
+ESCAPE_HATCH_METRIC = "Other"
+
+
 def extraction_vocabulary(archetype_id: str, baseline: list[str]) -> list[str]:
     """The metric labels extraction may use for this archetype.
 
-    `baseline` (METRIC_ENUM) is always kept: it is the buyout vocabulary and
-    the frozen contract the benchmark scores against, so widening must never
-    remove or rename anything already in it.
+    G5: build the tool schema per deal type "dal dizionario del tipo di deal",
+    so the enum sent to the API does not contain the inapplicable entries and
+    the force-fit becomes IMPOSSIBLE rather than discouraged. Replacing the
+    menu is the point; lengthening it leaves every wrong option on the table.
 
-    For buyout the baseline is returned UNCHANGED. The buyout pack's own
-    labels ("Reported revenue", "Reported EBITDA") are deliberately not merged:
-    METRIC_ENUM already covers that archetype, and adding near-synonyms would
-    fragment one identity across two spellings -- the same failure mode the
-    dictionary's 4.1 warns about from the other direction.
+    Measured on a frozen venture run while this function still appended:
+    22 claims on a venture deal came back with a buyout-only metric, including
+    `Sponsor Equity` x2 (a founder financing the company through Seed) and
+    `Enterprise Value` x1 -- the exact two force-fits G5 names, and the two the
+    SYSTEM_PROMPT already names as errors not to make. A sentence in a prompt
+    does not survive chunk density; removing the option does.
 
-    For venture and growth the baseline carries no vocabulary at all, which is
-    why a venture corpus extracts almost entirely as "Other". There, the
-    pack's value-bearing concept labels are appended.
+    buyout returns `baseline` UNCHANGED. METRIC_ENUM *is* the buyout
+    vocabulary, and it is the contract the benchmark scores against, so the
+    default path stays byte-identical.
+
+    venture and growth get their own pack's value-bearing labels plus the
+    escape hatch, and nothing else. That is a real narrowing with a real
+    consequence: the venture pack deliberately declares no "Revenue" concept
+    (it treats "Paid validation" as the load-bearing signal for a company that
+    may have none), so a venture revenue statement now lands on
+    "Other"/metric_label rather than on a buyout Revenue entry. That is the
+    pack authors' ontology decision, not ours to quietly overrule, and an
+    honest labelled gap is what PAN-117 built the escape hatch for.
     """
     if archetype_id == DEFAULT_ARCHETYPE:
         return list(baseline)
-    seen = {label.casefold() for label in baseline}
-    widened = list(baseline)
+    vocabulary: list[str] = []
+    seen: set[str] = set()
     for concept in value_bearing_concepts(archetype_id):
         label = str(concept.get("label") or "").strip()
         if label and label.casefold() not in seen:
             seen.add(label.casefold())
-            widened.append(label)
-    return widened
+            vocabulary.append(label)
+    if not vocabulary:
+        # An archetype that declares no value-bearing concept would otherwise
+        # be handed an enum of one entry. Fall back rather than cripple it.
+        return list(baseline)
+    if ESCAPE_HATCH_METRIC.casefold() not in seen:
+        vocabulary.append(ESCAPE_HATCH_METRIC)
+    return vocabulary
 
 
 # ── Evidence state (dictionary section 9) ────────────────────────────────────

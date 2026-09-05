@@ -119,3 +119,17 @@ bundle exposes an unavailable reason. Deployment is outside this implementation.
 Synthetic fixture: `tests/graph_simulation_fixture.py`. Local acceptance server:
 `.venv/bin/python tools/simulation_lab.py` on 8177; lab UI on 5180. The lab has no
 live case content and does not modify production case records.
+
+## Publication verification — 5 September 2026
+
+The simulation commit was first verified independently of unrelated local IC
+memo editorial-profile work: 174 Python tests and `npm run check:all` passed.
+After integrating the latest `origin/dev`, the simulation/compiler/integration
+and runtime suites plus live-evidence/bootstrap regressions passed **179 tests**;
+`npm run check:all` passed on that integrated checkout as well. The existing
+runtime semantic-target mapping update and both simulation support fixes are
+retained together. Browser acceptance confirmed an English mixed description,
+reviewed changes and the Current/hypothetical graph comparison. Live-model
+interpretation remains dependent on configuration as stated in the text-input
+acceptance note; this verification does not claim an unrestricted language model
+evaluation or product deployment.

@@ -236,6 +236,61 @@ class RuntimeCoreTests(unittest.TestCase):
             {item["reason_code"] for item in output["unchanged_objects"]},
         )
 
+    def test_add_claim_uses_mapping_target_semantics_without_rewriting_source_identity(self):
+        graph = synthetic_graph(
+            [],
+            positions=[
+                {
+                    "position_id": "CP-EV",
+                    "definition_id": "DEF-CP-EV",
+                    "period": "2026-03-10",
+                    "perimeter": "Target standalone",
+                    "unit": "$mm",
+                }
+            ],
+        )
+        event = {
+            "event_id": "E-MAPPED-CLAIM",
+            "event": "Admit mapped source claim",
+            "effective_date": "2026-03-10",
+            "known_at": "2026-03-10T12:00:00Z",
+            "source_ids": ["SRC-1"],
+            "trigger_claim_ids": ["C-EV"],
+            "mutations": [
+                {
+                    "operation": "ADD",
+                    "object_type": "CLAIM",
+                    "object_id": "C-EV",
+                    "statement": "Acquisition enterprise value is $108m.",
+                    "locator": "source.md#entry-value",
+                    "epistemic_class": "attested",
+                    "period": "as of signing",
+                    "perimeter": "Acquisition enterprise value",
+                    "unit": "$m",
+                    "value": "108",
+                    "relation_type": "SUPPORTS",
+                    "target_position_id": "CP-EV",
+                    "mapping_target_semantics": {
+                        "definition_id": "DEF-CP-EV",
+                        "period": "2026-03-10",
+                        "perimeter": "Target standalone",
+                        "unit": "$mm",
+                    },
+                }
+            ],
+        }
+
+        result = run(graph, [event])
+        affected_ids = {
+            item["object_id"]
+            for item in result["transition_output"]["affected_set"]
+        }
+        claim = result["candidate_state"]["current_graph"]["claims"][0]
+
+        self.assertEqual(affected_ids, {"C-EV", "CP-EV"})
+        self.assertEqual(claim["period"], "as of signing")
+        self.assertEqual(claim["perimeter"], "Acquisition enterprise value")
+
     def test_affected_set_terminates_on_cycle(self):
         graph = synthetic_graph(
             [],

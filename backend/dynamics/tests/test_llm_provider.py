@@ -27,7 +27,7 @@ class LLMProviderTests(unittest.TestCase):
             )
             self.assertIsNone(llm_provider.openrouter_extra_body())
 
-    def test_openrouter_uses_anthropic_skin_with_zdr(self):
+    def test_openrouter_defaults_to_glm_5_2_over_anthropic_skin_with_zdr(self):
         environment = {
             "PEOS_LLM_PROVIDER": "openrouter",
             "OPENROUTER_API_KEY": "test-key",
@@ -39,7 +39,7 @@ class LLMProviderTests(unittest.TestCase):
             )
             self.assertEqual(
                 llm_provider.configured_model("claude-haiku-4-5-20251001"),
-                "anthropic/claude-haiku-4.5",
+                "z-ai/glm-5.2",
             )
             self.assertEqual(llm_provider.configured_api_key(), "test-key")
             self.assertEqual(
@@ -55,6 +55,37 @@ class LLMProviderTests(unittest.TestCase):
                         "require_parameters": True,
                     }
                 },
+            )
+
+    def test_openrouter_accepts_glm_short_names_and_explicit_model_slugs(self):
+        with patch.dict(
+            os.environ,
+            {"PEOS_LLM_PROVIDER": "openrouter", "PEOS_MODEL": "glm-5.2"},
+            clear=True,
+        ):
+            self.assertEqual(
+                llm_provider.configured_model("claude-haiku-4-5-20251001"),
+                "z-ai/glm-5.2",
+            )
+
+        with patch.dict(
+            os.environ,
+            {"PEOS_LLM_PROVIDER": "openrouter", "PEOS_MODEL": "glm-5.2-free"},
+            clear=True,
+        ):
+            self.assertEqual(
+                llm_provider.configured_model("claude-haiku-4-5-20251001"),
+                "z-ai/glm-5.2:free",
+            )
+
+        with patch.dict(
+            os.environ,
+            {"PEOS_LLM_PROVIDER": "openrouter", "PEOS_MODEL": "google/gemini-3.5-flash"},
+            clear=True,
+        ):
+            self.assertEqual(
+                llm_provider.configured_model("claude-haiku-4-5-20251001"),
+                "google/gemini-3.5-flash",
             )
 
     def test_v2_allows_complete_excel_tool_output(self):
@@ -94,7 +125,14 @@ class LLMProviderTests(unittest.TestCase):
             )
 
         self.assertEqual(claims, [])
-        self.assertEqual(captured["max_tokens"], 4096)
+        # 8192, not 4096. At 4096 a full Excel tool output hit the ceiling and
+        # the call returned stop_reason=max_tokens with ZERO claims and no
+        # exception -- reproduced 3/3 on real chunks, so the truncation was
+        # silent and looked like an empty document. Assert against the module's
+        # own constant so this pins the wiring, not a number that has to be
+        # edited every time the budget changes.
+        self.assertEqual(captured["max_tokens"], extract_v2.MAX_TOKENS)
+        self.assertGreaterEqual(extract_v2.MAX_TOKENS, 8192)
         self.assertIn(
             "EFFECTIVE DATE: 2026-03-05",
             captured["messages"][0]["content"],

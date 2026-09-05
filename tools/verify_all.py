@@ -206,6 +206,11 @@ def stage_dynamics_runtime() -> Stage:
     script = f'''
 import json, sys
 sys.path.insert(0, {str(ROOT)!r})
+# panta_transition_engine imports its siblings as a top-level `runtime` package
+# (`from runtime.consequence_reasoning import ...`), which only resolves with
+# backend/dynamics itself on the path. The suite gets this for free by running
+# with cwd=backend/dynamics; this stage runs from ROOT, so it must say so.
+sys.path.insert(0, {str(ROOT / "backend" / "dynamics")!r})
 from backend.dynamics.runtime import apply_state_transition
 B = {str(bundle)!r}
 L = lambda n: json.load(open(B + "/" + n))

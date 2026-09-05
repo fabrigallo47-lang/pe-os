@@ -152,6 +152,72 @@ def audit_mapping(mapping: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+UNEXECUTABLE_TYPE = "UNEXECUTABLE"
+
+
+def enforce_contract(mapping: dict[str, Any]) -> list[dict[str, Any]]:
+    """Downgrade every formula that claims ARITHMETIC but cannot execute.
+
+    audit_mapping() only reports. This is the enforcing half (G1): a formula
+    whose free names are not bound, or whose bindings are not model nodes, stops
+    calling itself ARITHMETIC and becomes a declared coverage limit -- the same
+    thing the compiler already does for everything it cannot express.
+
+    Why reclassify rather than delete: the formula is still the best available
+    description of how that node is meant to be computed. Dropping it would lose
+    that; leaving it ARITHMETIC would keep the artifact claiming a computation
+    the evaluator will not perform. Measured on the K-PRE bundle, 10 of 12
+    ARITHMETIC formulas were making exactly that claim.
+
+    The evaluator needs no change: EXECUTABLE_TYPES is {"ARITHMETIC"}, so a
+    downgraded formula already lands in its `limits` with a written reason.
+
+    Mutates ``mapping`` in place and returns one record per downgrade.
+    """
+    node_ids = {n.get("model_node_id") for n in mapping.get("model_nodes", [])}
+    formulas = mapping.get("formulas", [])
+    formula_ids = {f.get("formula_id") for f in formulas}
+
+    downgraded: list[dict[str, Any]] = []
+    for formula in formulas:
+        if formula.get("evaluation_type") != "ARITHMETIC":
+            continue
+        verdict = audit_formula(formula, node_ids, formula_ids)
+        if verdict["executable"]:
+            continue
+        formula["evaluation_type"] = UNEXECUTABLE_TYPE
+        formula["coverage_limit"] = verdict["reasons"]
+        downgraded.append({
+            "formula_id": verdict["formula_id"],
+            "output_id": verdict["output_id"],
+            "was": "ARITHMETIC",
+            "reasons": verdict["reasons"],
+        })
+    return downgraded
+
+
+def contract_violations(mapping: dict[str, Any],
+                        formula_ids: set[str] | None = None) -> list[str]:
+    """Contract failures among formulas declared ARITHMETIC, as readable lines.
+
+    Restrict to ``formula_ids`` to check only what a compiler just generated --
+    there, an unbound name is a compiler defect and belongs in an exception, not
+    in a coverage report.
+    """
+    node_ids = {n.get("model_node_id") for n in mapping.get("model_nodes", [])}
+    all_ids = {f.get("formula_id") for f in mapping.get("formulas", [])}
+    out: list[str] = []
+    for formula in mapping.get("formulas", []):
+        if formula.get("evaluation_type") != "ARITHMETIC":
+            continue
+        if formula_ids is not None and formula.get("formula_id") not in formula_ids:
+            continue
+        verdict = audit_formula(formula, node_ids, all_ids)
+        if not verdict["executable"]:
+            out.append(f"{verdict['formula_id']}: " + "; ".join(verdict["reasons"]))
+    return out
+
+
 def main(argv: list[str]) -> int:
     default = Path("pipeline_out/e3/K-PRE/adapter_alpha/execution_mapping.json")
     path = Path(argv[1]) if len(argv) > 1 else default

@@ -32,6 +32,29 @@ make document-eval  # multimodal gold suite: PDF/Word/PowerPoint/Excel/email/ima
 
 Open `vault/` in Obsidian anytime — same truth, different projection.
 
+### OpenRouter semantic extraction with GLM 5.2
+
+The production extraction entry points use GLM 5.2 by default whenever the
+OpenRouter provider is selected. The model can still be overridden with the
+full OpenRouter slug in `PEOS_MODEL`.
+
+```bash
+export OPENROUTER_API_KEY=sk-or-...
+export PEOS_LLM_PROVIDER=openrouter
+.venv/bin/python tools/extract_v2_physical.py --source path/to/source.pdf \
+  --deal my-deal --output /tmp/panta-extraction
+```
+
+Run the versioned semantic claim benchmark through the same provider with:
+
+```bash
+OPENROUTER_API_KEY=sk-or-... make semantic-claim-eval-glm
+```
+
+The default slug is `z-ai/glm-5.2`. `PEOS_MODEL=glm-5.2-free` selects
+`z-ai/glm-5.2:free`; the free route is optional and may have different
+availability or data-retention support.
+
 ### V20 + extractor: quickest local run
 
 ```bash

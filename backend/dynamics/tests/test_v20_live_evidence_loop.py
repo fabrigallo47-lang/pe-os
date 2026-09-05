@@ -57,12 +57,17 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
         )
 
         self.previous_bundle = router.PIPELINE_OUT
+        # _pipeline_out_for_case() only honours PIPELINE_OUT for keystone;
+        # every other case resolves under CASE_PIPELINE_ROOT, so without this
+        # the test reads whatever the developer has in pipeline_out/cases/.
+        self.previous_case_root = router.CASE_PIPELINE_ROOT
         self.previous_vault = router.VAULT
         self.previous_jobs_log = router.INGEST_JOBS_LOG
         self.previous_runs_log = router.RUNS_LOG
         self.previous_jobs = dict(router._jobs)
         self.previous_runs = dict(router._runs)
         router.PIPELINE_OUT = self.bundle
+        router.CASE_PIPELINE_ROOT = self.root / "pipeline_out" / "cases"
         router.VAULT = self.root / "vault"
         router.INGEST_JOBS_LOG = self.root / "logs" / "ingest_jobs.json"
         router.RUNS_LOG = self.root / "logs" / "runs.json"
@@ -74,6 +79,7 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
     def tearDown(self):
         self.index_patch.stop()
         router.PIPELINE_OUT = self.previous_bundle
+        router.CASE_PIPELINE_ROOT = self.previous_case_root
         router.VAULT = self.previous_vault
         router.INGEST_JOBS_LOG = self.previous_jobs_log
         router.RUNS_LOG = self.previous_runs_log
@@ -103,6 +109,28 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
                 "headers": [(b"content-type", b"application/json")],
             },
             receive,
+        )
+
+    def test_runtime_mapping_compares_compiled_and_baseline_position_identity(self):
+        compiled = {
+            "definition_id": "DEF-CP-EV",
+            "period_iso": "as of 2026-03-10",
+            "perimeter": "Alderstone standalone",
+            "unit": "$m",
+        }
+        baseline = {
+            "definition_id": "DEF-CP-EV",
+            "period_iso": "as of 2026-03-10",
+            "perimeter": "Alderstone standalone",
+            "unit": "$mm",
+        }
+
+        self.assertTrue(router._position_mapping_is_applicable(compiled, baseline))
+        self.assertFalse(
+            router._position_mapping_is_applicable(
+                {**compiled, "perimeter": "Alderstone consolidated"},
+                baseline,
+            )
         )
 
     def test_real_extracted_claim_reaches_candidate_settlement_and_reload(self):
@@ -189,6 +217,12 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
             self.claim["claim_id"],
             {item["claim_id"] for item in candidate["candidate_graph"]["claims"]},
         )
+        candidate_claim = next(
+            item
+            for item in candidate["candidate_graph"]["claims"]
+            if item["claim_id"] == self.claim["claim_id"]
+        )
+        self.assertEqual(candidate_claim["perimeter"], self.claim["perimeter"])
         self.assertTrue((self.bundle / "candidate_state.json").exists())
         versions_before_settlement = router.list_graph_versions("keystone")["versions"]
         self.assertEqual(

@@ -38,11 +38,24 @@ class ArchetypeVocabularyTests(unittest.TestCase):
         is byte-identical to before archetype selection existed."""
         self.assertIs(claim_tool_for(DEFAULT_ARCHETYPE), CLAIM_TOOL)
 
-    def test_venture_widens_without_removing(self) -> None:
+    def test_non_buyout_replaces_the_menu_rather_than_lengthening_it(self) -> None:
+        """G5: the enum must not contain the inapplicable entries, so the
+        force-fit is impossible rather than discouraged."""
         venture = metric_vocabulary("venture")
-        self.assertGreater(len(venture), len(METRIC_ENUM))
-        for label in METRIC_ENUM:
-            self.assertIn(label, venture, "widening must never drop a baseline label")
+        self.assertLess(len(venture), len(METRIC_ENUM), "venture must be a replacement, not a superset")
+        self.assertIn("Other", venture, "the escape hatch must always survive (PAN-117)")
+
+    def test_buyout_structural_metrics_cannot_be_offered_on_a_venture_deal(self) -> None:
+        """The two force-fits G5 names, plus their nearest LBO neighbours.
+
+        Measured before this change on a frozen venture run: Sponsor Equity x2
+        (a founder financing the company through Seed) and Enterprise Value x1,
+        with the prompt already naming both as errors not to make.
+        """
+        venture = set(metric_vocabulary("venture"))
+        for structural in ("Sponsor Equity", "Enterprise Value", "Covenant EBITDA",
+                           "First-Lien Debt", "Exit Multiple", "Seller Rollover"):
+            self.assertNotIn(structural, venture)
 
     def test_only_value_bearing_concepts_enter_the_metric_slot(self) -> None:
         """A `case_reading` or `qualitative_topic` is not a metric. Putting one

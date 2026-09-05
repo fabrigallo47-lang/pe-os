@@ -21,6 +21,13 @@ class PAN58CleanCaseBootstrapTests(unittest.TestCase):
         self.previous = {
             "VAULT": router.VAULT,
             "PIPELINE_OUT": router.PIPELINE_OUT,
+            # Repointing PIPELINE_OUT alone does not isolate this test.
+            # _pipeline_out_for_case() returns PIPELINE_OUT only for keystone and
+            # CASE_PIPELINE_ROOT / case_id for every other case, so a "clean" case
+            # kept reading the developer's real pipeline_out/cases/clean/ —
+            # producing 20 condition:coverage-Q-* nodes in a case asserted to be
+            # empty, on any machine that had ever run that case locally.
+            "CASE_PIPELINE_ROOT": router.CASE_PIPELINE_ROOT,
             "INGEST_JOBS_LOG": router.INGEST_JOBS_LOG,
             "INGEST_BATCHES_LOG": router.INGEST_BATCHES_LOG,
             "RUNS_LOG": router.RUNS_LOG,
@@ -30,6 +37,7 @@ class PAN58CleanCaseBootstrapTests(unittest.TestCase):
         }
         router.VAULT = self.root / "vault"
         router.PIPELINE_OUT = self.root / "pipeline_out"
+        router.CASE_PIPELINE_ROOT = self.root / "pipeline_out" / "cases"
         router.INGEST_JOBS_LOG = self.root / "logs" / "ingest_jobs.json"
         router.INGEST_BATCHES_LOG = self.root / "logs" / "ingest_batches.json"
         router.RUNS_LOG = self.root / "logs" / "runs.json"
@@ -49,6 +57,7 @@ class PAN58CleanCaseBootstrapTests(unittest.TestCase):
     def tearDown(self) -> None:
         router.VAULT = self.previous["VAULT"]
         router.PIPELINE_OUT = self.previous["PIPELINE_OUT"]
+        router.CASE_PIPELINE_ROOT = self.previous["CASE_PIPELINE_ROOT"]
         router.INGEST_JOBS_LOG = self.previous["INGEST_JOBS_LOG"]
         router.INGEST_BATCHES_LOG = self.previous["INGEST_BATCHES_LOG"]
         router.RUNS_LOG = self.previous["RUNS_LOG"]

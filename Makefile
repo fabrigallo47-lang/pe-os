@@ -1,4 +1,4 @@
-.PHONY: setup index report check state watch dev verify dynamics-test baseline stage2-score stage2-score-test document-eval document-information-eval document-eval-validate semantic-claim-eval semantic-claim-eval-oracle semantic-claim-eval-sol semantic-claim-eval-test semantic-claim-eval-validate
+.PHONY: setup index report check state watch dev verify dynamics-test baseline stage2-score stage2-score-test document-eval document-information-eval document-eval-validate semantic-claim-eval semantic-claim-eval-oracle semantic-claim-eval-sol semantic-claim-eval-glm semantic-claim-eval-test semantic-claim-eval-validate
 
 PY := .venv/bin/python3
 
@@ -99,3 +99,6 @@ endif
 
 semantic-claim-eval-sol: ## Run the optional GPT-5.6 Sol baseline (uses API; PASSES defaults to 1)
 	PANTA_SEMANTIC_SOL_PASSES=$(or $(PASSES),1) $(PY) -m evaluation.cli run --cases evaluation/fixtures/semantic_cases --system-command "$(PY) -m evaluation.semantic_teacher"
+
+semantic-claim-eval-glm: ## Run GLM 5.2 semantic extraction through OpenRouter (uses API)
+	PANTA_SEMANTIC_OPENROUTER_PASSES=$(or $(PASSES),1) $(PY) -m evaluation.cli run --cases evaluation/fixtures/semantic_cases --system-command "$(PY) -m evaluation.semantic_openrouter"

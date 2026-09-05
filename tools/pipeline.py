@@ -26,8 +26,10 @@ Environment
     PEOS_LLM_PROVIDER   anthropic (default) or openrouter
     ANTHROPIC_API_KEY   required when provider=anthropic
     OPENROUTER_API_KEY  required when provider=openrouter
-    PEOS_MODEL          provider model name
-    PEOS_EXTRACT_V2_MAX_TOKENS  V2 tool-output budget (default: 4096)
+    PEOS_MODEL          provider model name (OpenRouter default: z-ai/glm-5.2)
+    PEOS_EXTRACT_V2_MAX_TOKENS  V2 tool-output budget (default: 8192; at 4096 a
+                                full tool output hit the ceiling and returned
+                                stop_reason=max_tokens with zero claims silently)
 """
 from __future__ import annotations
 

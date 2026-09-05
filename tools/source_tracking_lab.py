@@ -16,12 +16,14 @@ from fastapi.middleware.gzip import GZipMiddleware
 import uvicorn
 import app.v20_router as router
 from source_document_fixtures import build_fixture_case
+from typed_statement_fixture import build_typed_fixture
 
 
 def main():
     with tempfile.TemporaryDirectory(prefix="panta-source-lab-") as temporary:
         root = Path(temporary)
         fixture = build_fixture_case(root)
+        typed = build_typed_fixture(root)
         router.VAULT = root / "vault"
         router.CASE_PIPELINE_ROOT = root / "cases"
         router.PIPELINE_OUT = root / "legacy"
@@ -35,7 +37,7 @@ def main():
 
         @app.get("/api/source-tracking-lab")
         def lab_fixture():
-            return {"caseId": fixture["caseId"], "citations": fixture["citations"]}
+            return {"caseId": fixture["caseId"], "citations": fixture["citations"], "typedClaims": typed["projected"]}
 
         def reference_case(simulate=False):
             if simulate not in references:

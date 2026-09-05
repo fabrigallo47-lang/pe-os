@@ -15,6 +15,7 @@ export function ObjectCausalTrace({ objectId, supportIds, dependentIds, independ
 }) {
   const { snapshot, inspecting, setActiveObject } = usePanta();
   const [direction, setDirection] = useState<LensDirection>(supportIds.length ? 'why' : 'matters');
+  const [expanded, setExpanded] = useState(false);
   if (!snapshot) return null;
 
   const refs = (direction === 'why' ? supportIds : dependentIds).map(id => objectRef(snapshot, id));
@@ -34,7 +35,7 @@ export function ObjectCausalTrace({ objectId, supportIds, dependentIds, independ
         <strong>{direction === 'why' ? 'What supports this' : 'What moves with this'}</strong>
         <span>{refs.length}</span>
       </div>
-      {refs.length ? refs.slice(0, compact ? 3 : 5).map(item => {
+      {refs.length ? (expanded ? refs : refs.slice(0, compact ? 3 : 5)).map(item => {
         const sourceId = direction === 'why' ? item.id : objectId;
         const targetId = direction === 'why' ? objectId : item.id;
         const narrative = relationshipNarrative(snapshot, sourceId, targetId);
@@ -47,6 +48,7 @@ export function ObjectCausalTrace({ objectId, supportIds, dependentIds, independ
         </div>;
       }) : <p className="p-causal-empty">{direction === 'why' ? 'No mapped support.' : 'No mapped downstream consequence.'}</p>}
     </div>
+    {refs.length > (compact ? 3 : 5) && <button type="button" className="p-related-link" onClick={() => setExpanded(value => !value)}>{expanded ? 'Show fewer connections' : `Show all ${refs.length} connections`}</button>}
     {!!refs.length && <p className="p-causal-hint">Open an item to continue the trace from there.</p>}
   </section>;
 }

@@ -190,6 +190,7 @@ export function objectLabel(snapshot: PantaCaseSnapshot, id: Id): string {
     ?? snapshot.modelNodes.find(x => x.id === id)?.label
     ?? snapshot.outcomes.find(x => x.id === id)?.displayLabel
     ?? snapshot.sources.find(x => x.id === id)?.title
+    ?? (() => { const version = snapshot.sourceVersions.find(x => x.id === id); return version ? `${snapshot.sources.find(x => x.id === version.sourceId)?.title ?? 'Document'} · ${version.knownAt}` : undefined; })()
     ?? snapshot.findings.find(x => x.id === id)?.title
     ?? snapshot.humanPositions.find(x => x.id === id)?.text
     ?? snapshot.workItems.find(x => x.id === id)?.name

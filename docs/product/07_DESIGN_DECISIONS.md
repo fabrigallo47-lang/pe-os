@@ -210,3 +210,14 @@ Append only material decisions that should survive individual tasks.
 **Applies to:** V1 source-navigation acceptance, test-reference mappings, multi-range text reader, repository test adapter and application preview. All 75 canonical test references resolve in the simulated case, including the 30 previously unresolved ones.
 
 **Boundary:** This is explicit test normalization, not an automatic extraction score, real ingestion history, or institutional adoption. The original corpus and raw audit are preserved. The simulation's question and system reading exist only to exercise the room. It creates no attributed HumanPosition or investment Decision and does not close unrelated macro-task requirements.
+
+---
+
+### 2026-09-05 — Typed statements retain context through the complete recorded trace
+**Decision:** Statement cards expose the existing extractor's kind, typed value, original value, precision, definition, period, scope, basis, unit and currency. Missing dimensions and validation notes remain visible. Durable notes retain this context and the actual derivation. Recorded connections let an investor navigate explicit source/version, input, reading, attributed view, decision-basis and output-section references in both directions; longer branches can be expanded.
+
+**Why:** A precise source address is insufficient if a number loses its units in transport or if the investor cannot continue from a calculation to its recorded use. The same card should preserve the content and the chain without claiming that navigation computes investment consequences.
+
+**Applies to:** V1 tracking acceptance, shared Object Lens, source versions, extraction metadata, durable indexing, and the isolated source-tracking application lab.
+
+**Boundary:** Canonical CAP-003 fields and stored identities remain unchanged. The projection uses existing normalization and declared references; it creates no graph edges, causal conclusions, adoption or human judgment. The identity drift gate also restores three existing extractor metric names missing from the normalizer (Customer Churn, Total Net Leverage Ratio, Minimum Liquidity); new extractions use their proper metric identity, with no automatic migration of stored unresolved claims. Candidate and other-case relations do not become Current links. A decision's older basis is unavailable in a newer case projection instead of silently opening newer content. An existing visible object may have a basic inspection without backend analysis; only its existing source reference enables source reading. A separate, visibly simulated lab fixture supplies fictional analyst and decision records to test this complete chain. Model responses are simulated; this acceptance does not score live extraction on unseen documents.

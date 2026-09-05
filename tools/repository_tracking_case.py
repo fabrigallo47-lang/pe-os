@@ -14,6 +14,7 @@ from pathlib import Path
 from fastapi import HTTPException
 from openpyxl import load_workbook
 from app.source_documents import SourceDocument, locate_document, workbook_positions, workbook_dimensions
+from app.statement_tracking import statement_context
 from tools.source_envelope import build_source_envelope
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -189,7 +190,8 @@ def build_repository_case(temporary: Path, workspace: Path | None = None, *, sim
                              'locator': c['locator'], 'label': c['statement'], 'normalizedStatement': c['statement'],
                              'verbatimOrLosslessSpan': c.get('verbatim_or_lossless_span'), 'limitation': c.get('limitation'),
                              'contribution': 'Original test reference: ' + c['original_locator'] if c.get('original_locator') else None,
-                             'type': 'Repository fixture statement'} for c in claims])
+                             'type': 'Repository fixture statement', 'claimKind': c.get('claim_kind'),
+                             'tracking': statement_context(c)} for c in claims])
     for source in sources:
         refs[source['id']] = [source_ref(source['id'], '')]
         downstream[source['id']] = [c['claim_id'] for c in claims if c['source_id'] == source['id']]

@@ -13,6 +13,7 @@ import type {
 } from '../types/domain';
 import type { InspectOptions, PantaBackendAdapter, SearchResult } from '../providers/PantaBackendAdapter';
 import { PANTA_NAVIGATION_EVENT, parseRouteLocation, updateRouteContext } from './routes';
+import { projectionInspection } from './trackingLinks';
 
 interface CaseOption { id: Id; name: string }
 
@@ -238,7 +239,7 @@ export function PantaProvider({ adapter, initialCaseId, children }: { adapter: P
     inspectionInFlight.current = requestSignature;
     try {
       const nextInspection = await adapter.inspectObject(snapshot.caseRef.id, id, options);
-      if (requestId === inspectionRequestId.current) setInspection(nextInspection);
+      if (requestId === inspectionRequestId.current) setInspection(nextInspection ?? projectionInspection(snapshot, id));
     } catch (caught) {
       if (requestId === inspectionRequestId.current) {
         setInspection(null);

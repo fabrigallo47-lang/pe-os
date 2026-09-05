@@ -277,7 +277,28 @@ export interface Claim {
   knownAt?: string;
   type: string; // investor-facing evidence/source class
   label: string;
-  claimKind?: 'QUALITATIVE' | 'QUANTITATIVE' | 'DEFINITION' | 'FORECAST' | 'ESTIMATE' | 'COMMITMENT' | 'CONDITION' | 'DECISION_OBSERVATION' | 'OTHER';
+  claimKind?: 'QUALITATIVE' | 'QUANTITATIVE' | 'DEFINITION' | 'FORECAST' | 'ESTIMATE' | 'COMMITMENT' | 'CONDITION' | 'ATTRIBUTION' | 'NEGATIVE' | 'DECISION_OBSERVATION' | 'OTHER';
+  /** Read-only extraction metadata, alongside the frozen canonical claim. */
+  tracking?: {
+    claimKind?: string | null;
+    metric?: string | null;
+    definition?: string | null;
+    entity?: string;
+    period?: string;
+    scope?: string;
+    basis?: string;
+    measurement?: string;
+    scenario?: string;
+    unit?: string;
+    currency?: string;
+    value?: number | string | boolean | null;
+    rawValue?: number | string | boolean | null;
+    valueType: 'NUMBER' | 'TEXT' | 'BOOLEAN' | 'MISSING';
+    bound?: string | null;
+    derivation?: string | null;
+    missingFields: string[];
+    validationNotes: string[];
+  };
   normalizedStatement: string;
   semanticIdentity?: string;
   verbatimOrLosslessSpan?: string;

@@ -59,6 +59,7 @@ from backend.dynamics import (
 from backend.dynamics.runtime import ledger_store
 from backend.dynamics.runtime.case_journal import build_case_journal
 from tools.source_envelope import build_source_envelope
+from app.statement_tracking import statement_context
 from tools.relation_rules import annotate_edge, audit_relation_outputs, relation_rule
 from tools.decision_criticality import next_position_work, rank_decision_criticality
 from tools.archetype_pack import (
@@ -1684,12 +1685,14 @@ def _persist_claims_to_vault(case_id: str, claims: list[dict], source_filename: 
                 "author": claim.get("author"),
                 "date": claim.get("period"),
             },
-            "derivation": None,
-            "rests-on": [],
-            "extracted-by": "extract_v1",
+            "derivation": claim.get("derivation"),
+            "rests-on": claim.get("rests_on", claim.get("rests-on", [])),
+            "extracted-by": claim.get("extractor", "unspecified"),
             "extracted": _today(),
             "period": claim.get("period"),
             "perimeter": claim.get("perimeter"),
+            **{key: claim.get(key) for key in ("unit", "currency", "definition_id", "metric", "metric_label", "entity", "scope", "basis", "measurement", "scenario", "period_canonical", "claim_kind", "bound", "value_raw")},
+            "statement-context": statement_context(claim),
             "source-id": claim.get("source_id"),
             "source-version-id": claim.get("source_version_id"),
             "known-at": claim.get("known_at"),
@@ -4858,6 +4861,7 @@ def _enrich_claims(raw: list[dict], bears_on_map: dict) -> list[dict]:
             **c,
             "claim_id": cid,
             "id": cid,
+            "tracking": statement_context(c),
             "bears_on": bears_on_map.get(cid, c.get("bears_on", [])),
             "locator": c.get("locator", ""),
             "epistemic_type": c.get("epistemic", c.get("epistemic_type", "asserted")),

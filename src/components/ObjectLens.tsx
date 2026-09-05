@@ -80,13 +80,14 @@ function LensContents({ compact, onClose }: { compact: boolean; onClose: () => v
     </div>
 
     <InformationSummary objectId={inspection.objectId} />
-    <ObjectCausalTrace
+    {(inspection.supportObjectIds.length > 0 || inspection.dependentObjectIds.length > 0 || vm.actions.includes('TRACE')) && <ObjectCausalTrace
+      key={inspection.objectId}
       objectId={inspection.objectId}
       supportIds={inspection.supportObjectIds}
       independentSupportIds={inspection.independentSupportObjectIds}
       dependentIds={inspection.dependentObjectIds}
       compact={compact}
-    />
+    />}
 
     <LensSection title="Still missing">
       {vm.unknowns.length ? vm.unknowns.slice(0, 3).map(item => <button key={item.id} disabled={inspecting} className="p-related-link" onClick={() => inspect(item.id)}>{item.label}</button>) : <p>Nothing material is currently mapped as missing.</p>}

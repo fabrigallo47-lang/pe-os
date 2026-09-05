@@ -116,6 +116,16 @@ class LLMProviderTests(unittest.TestCase):
         ):
             self.assertIsNone(llm_provider.thinking_parameter())
 
+    def test_anthropic_still_pins_the_tool_openrouter_does_not(self):
+        """Forcing the tool is right on Anthropic and wrong on GLM: pinned it
+        generates a tool call that never terminates (8192 tokens, 0 claims);
+        left alone it emits text then a complete call (857 tokens, 3 claims).
+        That was the last case abstaining after the thinking fix."""
+        with patch.dict(os.environ, {}, clear=True):
+            self.assertTrue(llm_provider.forces_tool_choice())
+        with patch.dict(os.environ, {"PEOS_LLM_PROVIDER": "openrouter"}, clear=True):
+            self.assertFalse(llm_provider.forces_tool_choice())
+
     def test_v2_allows_complete_excel_tool_output(self):
         captured = {}
 
@@ -174,6 +184,7 @@ class LLMProviderTests(unittest.TestCase):
             "deny",
         )
         self.assertEqual(captured["thinking"], {"type": "disabled"})
+        self.assertNotIn("tool_choice", captured)
 
 
 if __name__ == "__main__":

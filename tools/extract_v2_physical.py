@@ -65,6 +65,7 @@ from tools.llm_provider import (  # noqa: E402
     configured_api_key,
     configured_model,
     missing_key_message,
+    forces_tool_choice,
     openrouter_extra_body,
     thinking_parameter,
 )
@@ -3167,7 +3168,6 @@ def annotate_chunk(
             "max_tokens": MAX_TOKENS,
             "system": SYSTEM_PROMPT,
             "tools": [claim_tool_for(archetype)],
-            "tool_choice": {"type": "tool", "name": "emit_claims"},
             "messages": [{"role": "user", "content": prompt}],
         }
         # Sampling temperature. SDK 1.0.0 dropped `temperature` from the typed
@@ -3194,6 +3194,10 @@ def annotate_chunk(
         thinking = thinking_parameter()
         if thinking:
             request["thinking"] = thinking
+        # Pinning the tool makes GLM generate a tool call that never
+        # terminates -- see forces_tool_choice().
+        if forces_tool_choice():
+            request["tool_choice"] = {"type": "tool", "name": "emit_claims"}
         resp = client.messages.create(**request)
         time.sleep(rate_limit_delay)
     except Exception as e:

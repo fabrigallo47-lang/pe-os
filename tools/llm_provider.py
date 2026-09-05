@@ -87,6 +87,26 @@ def openrouter_extra_body() -> dict[str, Any] | None:
     return {"provider": openrouter_provider_preferences()}
 
 
+def forces_tool_choice() -> bool:
+    """Whether to pin the model to the tool, or leave the choice to it.
+
+    Anthropic: yes. Forcing removes the failure where the model answers in
+    prose instead of calling emit_claims.
+
+    OpenRouter/GLM: NO, and this one is counter-intuitive. Forcing the tool
+    makes GLM generate a degenerate tool call that never terminates. Same
+    chunk, same prompt, thinking already disabled:
+
+        tool_choice forced   stop=max_tokens  out=8192  0 claims
+        tool_choice auto     stop=tool_use    out= 857  3 claims
+
+    Left to itself the model emits a short text block and then a complete tool
+    call. Pinned, it fills the entire budget and returns nothing. This was the
+    last benchmark case abstaining after the thinking fix.
+    """
+    return not is_openrouter()
+
+
 def thinking_parameter() -> dict[str, Any] | None:
     """Turn extended thinking OFF for extraction on OpenRouter.
 

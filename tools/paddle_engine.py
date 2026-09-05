@@ -39,6 +39,9 @@ CHART_RECOGNITION = os.environ.get("PE_OS_PADDLE_CHARTS", "") == "1"
 # A second OCR pass over the page, used only to find text the layout model
 # never proposed a block for. Off with PE_OS_RECOVER_UNDETECTED=0.
 RECOVER_UNDETECTED = os.environ.get("PE_OS_RECOVER_UNDETECTED", "1") != "0"
+# Read text that is drawn as vector outlines rather than text objects -- the
+# curved labels on a donut chart. Off with PE_OS_GRAPHIC_TEXT=0.
+GRAPHIC_TEXT = os.environ.get("PE_OS_GRAPHIC_TEXT", "1") != "0"
 
 
 class _TableParser(HTMLParser):
@@ -183,6 +186,99 @@ def _reading_order(lines, band: int = 20):
     return sorted(lines, key=lambda item: (item[1][1] // band, item[1][0]))
 
 
+def _unread_segments(loose_lines, covered, emitted_compact: str,
+                     max_regions: int = 4) -> list[list[int]]:
+    """Text regions OCR segmented that nothing has read.
+
+    Segmentation first, recognition second. A donut chart's curved label is
+    DETECTED by the line detector once its thresholds are loosened -- the box
+    is right -- and then misrecognised, because a rectangular crop through
+    text bending around an arc is not what the recogniser was trained on:
+    "Global Banking & Markets" comes back as "Gibal Banking&  Markets".
+
+    So the loose pass is used for its boxes and its ordering, never for its
+    text, and the caller re-reads each box with the VLM. That is why an
+    earlier ink-blob version of this failed: on a deck that is a black panel
+    on a white page the modal background is white, every pixel of the slide
+    counts as ink, and the "region" it found was the whole page.
+
+    Boxes already covered by a layout block, or whose text the page has
+    already emitted, are dropped -- what is left is what nobody read.
+    """
+    out: list[tuple[float, list[int]]] = []
+    for text, box in loose_lines:
+        cx, cy = (box[0] + box[2]) / 2, (box[1] + box[3]) / 2
+        if any(b and b[0] - 8 <= cx <= b[2] + 8 and b[1] - 8 <= cy <= b[3] + 8
+               for b in covered):
+            continue
+        # The loose pass mangles curved text, so an exact match cannot be
+        # required here; a prefix of the mangled reading is enough to tell
+        # that this region is already accounted for.
+        compact = _norm_compact(text)
+        if compact and compact[:6] and compact[:6] in emitted_compact:
+            continue
+        area = (box[2] - box[0]) * (box[3] - box[1])
+        out.append((area, box))
+    out.sort(key=lambda item: -item[0])
+    return [box for _, box in out[:max_regions]]
+
+
+def _loose_ocr_lines(pdf: Path) -> dict[int, list[tuple[str, list[int]]]]:
+    """A second OCR pass with the detector opened up, for boxes not text.
+
+    Default thresholds miss curved and low-contrast text entirely. Loosening
+    them finds those regions at the cost of recognition quality, which is an
+    acceptable trade only because the text this returns is thrown away -- the
+    VLM re-reads each box afterwards.
+    """
+    from paddleocr import PaddleOCR
+
+    ocr = PaddleOCR(use_doc_orientation_classify=False, use_doc_unwarping=False,
+                    use_textline_orientation=True, text_det_thresh=0.15,
+                    text_det_box_thresh=0.3, text_det_unclip_ratio=2.0)
+    pages: dict[int, list[tuple[str, list[int]]]] = {}
+    for index, res in enumerate(ocr.predict(str(pdf)), start=1):
+        lines: list[tuple[str, list[int]]] = []
+        polys = res.get("rec_polys")
+        if polys is None:
+            polys = res.get("dt_polys") or []
+        for text, poly in zip(res.get("rec_texts") or [], polys):
+            xs = [int(pt[0]) for pt in poly]
+            ys = [int(pt[1]) for pt in poly]
+            lines.append(((text or "").strip(), [min(xs), min(ys), max(xs), max(ys)]))
+        pages[index] = lines
+    return pages
+
+
+def _read_region(pipeline, pdf: Path, page_index: int, box, scale: int = 6) -> list[str]:
+    """Read one region by cropping it at high resolution and running the VLM.
+
+    Curved text needs both: the crop, because a whole-page pass never proposes
+    the region, and the resolution, because glyphs bending around an arc lose
+    their shape at page scale. Measured on page 28, scale 2 yields "Global
+    Banking &" and scale 6 recovers "Asset" and "Wealth Management" as well.
+    """
+    import tempfile
+    import pypdfium2 as pdfium
+
+    document = pdfium.PdfDocument(str(pdf))
+    image = document[page_index - 1].render(scale=scale).to_pil()
+    factor = scale / 2.0                       # boxes are in the scale-2 space
+    crop = image.crop((int(box[0] * factor), int(box[1] * factor),
+                       int(box[2] * factor), int(box[3] * factor)))
+    if crop.width < 24 or crop.height < 24:
+        return []
+    with tempfile.NamedTemporaryFile(suffix=".png", delete=False) as handle:
+        crop.save(handle.name)
+        out: list[str] = []
+        for result in pipeline.predict(handle.name):
+            for block in result.get("parsing_res_list", []) or []:
+                text = str(_block_field(block, "block_content", "content") or "").strip()
+                if text:
+                    out.extend(line.strip() for line in text.splitlines() if line.strip())
+    return out
+
+
 def _verify_pairs_geometrically(box, content: str, lines):
     """Check the chart model's label->value pairs against where the text sits.
 
@@ -299,6 +395,13 @@ def convert(pdf: Path) -> dict:
 
     pipeline = PaddleOCRVL(use_chart_recognition=True) if CHART_RECOGNITION else PaddleOCRVL()
 
+    loose_pages: dict[int, list[tuple[str, list[int]]]] = {}
+    if GRAPHIC_TEXT:
+        try:
+            loose_pages = _loose_ocr_lines(pdf)
+        except Exception as exc:
+            print(f"loose OCR pass unavailable: {exc}", file=sys.stderr)
+
     ocr_pages: dict[int, list[tuple[str, list[int]]]] = {}
     if RECOVER_UNDETECTED:
         try:
@@ -381,6 +484,31 @@ def convert(pdf: Path) -> dict:
                 f"{len(ordered)} line(s), in reading order: "
                 + " | ".join(t for t, _ in ordered)
             )
+
+        if GRAPHIC_TEXT:
+            try:
+                covered = [b for b in boxes if b] + [b for _, b in ocr_pages.get(page_index, [])]
+                emitted = _norm_compact("\n".join(parts))
+                pad = 6
+                for region in _unread_segments(loose_pages.get(page_index, []),
+                                               covered, emitted):
+                    padded = [max(0, region[0] - pad), max(0, region[1] - pad),
+                              region[2] + pad, region[3] + pad]
+                    found = [t for t in _read_region(pipeline, pdf, page_index, padded)
+                             if _norm_compact(t) and _norm_compact(t) not in emitted]
+                    if not found:
+                        continue
+                    parts.append(
+                        f"[recovered] GRAPHIC_TEXT bbox={region}: OCR segmented text here "
+                        f"that no block covered and nothing had read. Re-read from a "
+                        f"high-resolution crop: " + " | ".join(found) +
+                        ". Text drawn as vector outlines -- a label curved along a chart "
+                        "arc -- is absent from the PDF text layer, so the coverage check "
+                        "cannot see it missing. Read text; fragments stay fragments."
+                    )
+                    emitted += _norm_compact(" ".join(found))
+            except Exception as exc:                  # never lose the parse
+                print(f"graphic-text recovery skipped: {exc}", file=sys.stderr)
 
         pages[str(page_index)] = {
             "markdown": "\n\n".join(parts),

@@ -3,6 +3,10 @@
 
 .venv/
 .venv
+node_modules/
+dist/
+dist-lab/
+*.tsbuildinfo
 __pycache__/
 *.pyc
 .DS_Store
@@ -48,6 +52,7 @@ pipeline_out/e3/K-IC/adapter_alpha/
 # Per-case V20 runtime bundles (non-keystone cases): same category as above.
 pipeline_out/cases/
 logs/
+product-notes/screenshots/*.tmp
 
 # Downloaded benchmark corpora and derived evaluation runs.
 .panta-eval/

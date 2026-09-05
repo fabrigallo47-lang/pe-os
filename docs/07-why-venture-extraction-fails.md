@@ -6,24 +6,72 @@
 domain declares, and the benchmark cannot see this because gold was written
 against the same field set.
 
-## The symptom
+## The symptom, measured
 
-Two documents, same pipeline, buyout vocabulary:
+103 claims extracted across five Silexara documents (founder call, technical
+deployment call, IC notes, customer reference, competitor analysis), **with the
+venture archetype already selected**:
 
-| document | raw claims | admitted | resolvable (not `Other`) |
-|---|---|---|---|
-| SRC-02 founder call | 27 | 9 | ~1 |
-| SRC-09 IC notes | 7 | 1 | ~0 |
+| | count | share |
+|---|---|---|
+| extracted | 103 | |
+| admitted | 61 | 59% |
+| **lost** | **42** | **41%** — every one to the same filter |
+| admitted **and** resolvable (not `Other`) | **8** | **8%** |
 
-Selecting the venture archetype (commit `Select the extraction vocabulary by
-archetype`) roughly doubles admission — 9→12 and 1→6, with resolvable claims
-going ~1→~8. Real, but it treats a third of the problem.
+So roughly **eight percent of venture evidence survives as a usable, resolvable
+claim**, and archetype vocabulary selection did not fix it.
+
+`claim_kind` across all 103:
+
+| kind | n |
+|---|---|
+| CHARACTERISATION | 42 |
+| NEGATIVE | 20 |
+| QUANTITATIVE | **19** |
+| ATTRIBUTION | 11 |
+| CONDITION | 7 |
+| DEFINITION | 4 |
+
+**Only 18% of venture evidence is quantitative.** 36% of admitted claims carry a
+value at all; 5% of the lost ones do.
 
 ## The wrong diagnosis: "the vocabulary is buyout-shaped"
 
 True, and insufficient. Widening `METRIC_ENUM` per archetype recovers the claims
-that *were* metrics all along. It does nothing for the majority of venture
-evidence, which was never going to be a metric.
+that *were* metrics all along. With venture vocabulary active, 87% of admitted
+claims are still `Other`, because 82% of the evidence was never going to be a
+metric. Vocabulary cannot fix a missing object type.
+
+## The immediate cause: CHARACTERISATION is the residual bucket, and we delete it
+
+All 42 losses came through one filter. The model has six `claim_kind` values, and
+for a sentence like *"the current deployment state is installed and streaming with
+no customer notifications, validation pending"* none of them fit — so it falls
+back to CHARACTERISATION. That is the one kind `validate()` rejects.
+
+Sampling the rejects, they are not the seller's adjectives:
+
+- *"…a separate prototype that drove autonomously on a test field but has no
+  deployment"* — a position on the technical ladder (`bench/prototype result` →
+  `relevant-environment demonstration`)
+- *"Customer views the loss problem as real but not urgent; already has guards and
+  cameras; will not redesign"* — buyer urgency, the most consequential finding a
+  reference call can produce, and `V_BUYER_URGENCY` is a canonical venture concept
+- *"Proof-of-concept requirements in the next three months include range by target
+  class, false alarms per day"* — milestone conditions
+- *"Silexara's current Identify capability is rated as Partly, with strong
+  performance on heavy vehicles"* — a capability assessment
+
+Every one is confirmable or refutable. They are being deleted because they have
+nowhere to go, not because they are noise.
+
+**The fix is to add the missing kinds, not to loosen the filter.** Making
+CHARACTERISATION non-blocking would admit genuine puffery and break the
+abstention behaviour the buyout benchmark checks. Give proof states and
+capability assessments a kind that fits — §3.2's `qualitative`, plus an evidence
+state — and CHARACTERISATION returns to meaning only "un-checkable adjectives",
+where deleting it is correct again.
 
 ## The real diagnosis: one identity axis where the domain has many
 

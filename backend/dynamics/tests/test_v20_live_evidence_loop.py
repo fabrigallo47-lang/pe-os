@@ -111,6 +111,28 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
             receive,
         )
 
+    def test_runtime_mapping_compares_compiled_and_baseline_position_identity(self):
+        compiled = {
+            "definition_id": "DEF-CP-EV",
+            "period_iso": "as of 2026-03-10",
+            "perimeter": "Alderstone standalone",
+            "unit": "$m",
+        }
+        baseline = {
+            "definition_id": "DEF-CP-EV",
+            "period_iso": "as of 2026-03-10",
+            "perimeter": "Alderstone standalone",
+            "unit": "$mm",
+        }
+
+        self.assertTrue(router._position_mapping_is_applicable(compiled, baseline))
+        self.assertFalse(
+            router._position_mapping_is_applicable(
+                {**compiled, "perimeter": "Alderstone consolidated"},
+                baseline,
+            )
+        )
+
     def test_real_extracted_claim_reaches_candidate_settlement_and_reload(self):
         request = self._json_request(
             {
@@ -195,6 +217,12 @@ class V20LiveEvidenceLoopTests(unittest.TestCase):
             self.claim["claim_id"],
             {item["claim_id"] for item in candidate["candidate_graph"]["claims"]},
         )
+        candidate_claim = next(
+            item
+            for item in candidate["candidate_graph"]["claims"]
+            if item["claim_id"] == self.claim["claim_id"]
+        )
+        self.assertEqual(candidate_claim["perimeter"], self.claim["perimeter"])
         self.assertTrue((self.bundle / "candidate_state.json").exists())
         versions_before_settlement = router.list_graph_versions("keystone")["versions"]
         self.assertEqual(

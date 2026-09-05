@@ -4250,12 +4250,30 @@ def _normalise_runtime_unit(value: Any) -> Any:
     return aliases.get(value.strip().lower(), value.strip())
 
 
-def _claim_mapping_is_applicable(claim: dict, position: dict) -> bool:
+def _position_mapping_is_applicable(compiled_position: dict, baseline_position: dict) -> bool:
+    """Keep a compiled claim edge only when its target still has the same identity.
+
+    The bridge has already applied the governed claim-to-position binding rule.
+    Rechecking the raw claim against the profiled position is both redundant and
+    incorrect: extractor perimeter text may be more descriptive than the
+    canonical position perimeter.  What matters at event construction time is
+    that a previously settled target has not changed semantic identity since the
+    bundle was compiled.
+    """
     pairs = (
-        (claim.get("definition_id"), position.get("definition_id", position.get("definition"))),
-        (claim.get("period_iso") or claim.get("period"), position.get("period")),
-        (claim.get("perimeter"), position.get("perimeter")),
-        (_normalise_runtime_unit(claim.get("unit")), _normalise_runtime_unit(position.get("unit"))),
+        (
+            compiled_position.get("definition_id", compiled_position.get("definition")),
+            baseline_position.get("definition_id", baseline_position.get("definition")),
+        ),
+        (
+            compiled_position.get("period_iso") or compiled_position.get("period"),
+            baseline_position.get("period_iso") or baseline_position.get("period"),
+        ),
+        (compiled_position.get("perimeter"), baseline_position.get("perimeter")),
+        (
+            _normalise_runtime_unit(compiled_position.get("unit")),
+            _normalise_runtime_unit(baseline_position.get("unit")),
+        ),
     )
     return all(left is None or right is None or left == right for left, right in pairs)
 
@@ -4285,6 +4303,10 @@ def _build_admitted_runtime_event(
     baseline_positions = {
         str(position.get("position_id")): position
         for position in baseline_graph.get("case_positions", [])
+    }
+    compiled_positions = {
+        str(position.get("position_id")): position
+        for position in compiled_graph.get("case_positions", [])
     }
     edges_by_claim: dict[str, list[dict]] = {}
     for edge in compiled_graph.get("claim_position_edges", []):
@@ -4316,10 +4338,24 @@ def _build_admitted_runtime_event(
             key=lambda item: (str(item.get("position_id")), str(item.get("relation_type"))),
         ):
             position_id = str(edge.get("position_id") or "")
-            position = baseline_positions.get(position_id)
-            if position and _claim_mapping_is_applicable(claim, position):
+            baseline_position = baseline_positions.get(position_id)
+            compiled_position = compiled_positions.get(position_id)
+            if (
+                baseline_position
+                and compiled_position
+                and _position_mapping_is_applicable(compiled_position, baseline_position)
+            ):
                 mutation["relation_type"] = edge.get("relation_type", "SUPPORTS")
                 mutation["target_position_id"] = position_id
+                mutation["mapping_target_semantics"] = {
+                    "definition_id": compiled_position.get(
+                        "definition_id", compiled_position.get("definition")
+                    ),
+                    "period": compiled_position.get("period_iso")
+                    or compiled_position.get("period"),
+                    "perimeter": compiled_position.get("perimeter"),
+                    "unit": compiled_position.get("unit"),
+                }
                 mapped_claim_ids.append(claim_id)
                 break
         mutations.append(mutation)

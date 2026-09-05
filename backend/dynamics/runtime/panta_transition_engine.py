@@ -606,6 +606,13 @@ def normalize_event_batch(event_batch: Sequence[Mapping[str, Any]]) -> list[dict
                 )
             if mutation["object_type"] == "STATED_POSITION":
                 _validate_stated_position_mutation(event, mutation)
+            mapping_target_semantics = mutation.get("mapping_target_semantics")
+            if mapping_target_semantics is not None and not isinstance(
+                mapping_target_semantics, Mapping
+            ):
+                raise EventInputError(
+                    f"event {event_id}: mutation mapping_target_semantics must be an object"
+                )
             if "unit" in mutation:
                 mutation["unit"] = _normalize_unit(mutation["unit"])
             normalized_mutations.append(mutation)
@@ -1241,9 +1248,16 @@ def _semantic_reason_codes(
 ) -> list[str]:
     item_semantics = _object_semantics(item)
     reason_codes: list[str] = []
+    mapping_target = mutation.get("mapping_target_semantics")
+    if not isinstance(mapping_target, Mapping):
+        mapping_target = None
 
     candidate_target_definition = mutation.get("candidate_target_definition_id")
-    mutation_definition = mutation.get("definition_id")
+    mutation_definition = (
+        mapping_target.get("definition_id", mapping_target.get("definition"))
+        if mapping_target is not None
+        else mutation.get("definition_id")
+    )
     if (
         candidate_target_definition is not None
         and mutation_definition is not None
@@ -1261,12 +1275,20 @@ def _semantic_reason_codes(
         ("period", "NON_APPLICABLE_PERIOD"),
         ("perimeter", "NON_APPLICABLE_PERIMETER"),
     ):
-        proposed = mutation.get(field)
+        proposed = (
+            mapping_target.get(field)
+            if mapping_target is not None and field in mapping_target
+            else mutation.get(field)
+        )
         current = item_semantics[field]
         if proposed is not None and current is not None and proposed != current:
             reason_codes.append(reason_code)
 
-    proposed_unit = _normalize_unit(mutation.get("unit"))
+    proposed_unit = _normalize_unit(
+        mapping_target.get("unit")
+        if mapping_target is not None and "unit" in mapping_target
+        else mutation.get("unit")
+    )
     current_unit = item_semantics["unit"]
     if proposed_unit is not None and current_unit is not None and proposed_unit != current_unit:
         reason_codes.append("NON_APPLICABLE_UNIT")

@@ -125,6 +125,37 @@
             "null"
           ]
         },
+        "mapping_target_semantics": {
+          "description": "Canonical semantic identity of a governed relation target. This permits applicability checks without rewriting the source claim's own semantics.",
+          "type": "object",
+          "properties": {
+            "definition_id": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "period": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "perimeter": {
+              "type": [
+                "string",
+                "null"
+              ]
+            },
+            "unit": {
+              "type": [
+                "string",
+                "null"
+              ]
+            }
+          },
+          "additionalProperties": false
+        },
         "supersedes_object_version": {
           "type": [
             "string",

@@ -2,6 +2,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import { usePanta } from '../app/PantaContext';
 import { useDialogFocus } from './useDialogFocus';
 import { formatCount } from '../app/selectors';
+import { SourceEvidence } from './SourceEvidence';
 
 export function FindInCaseModal({ onClose }: { onClose: () => void }) {
   const { search, searching, searchResults, setActiveObject } = usePanta();
@@ -30,7 +31,7 @@ export function FindInCaseModal({ onClose }: { onClose: () => void }) {
 }
 
 export function SourceDrawer() {
-  const { snapshot, sourcesOpen, selectedSourceId, closeSources, openSource, setActiveObject, inspecting } = usePanta();
+  const { snapshot, sourcesOpen, selectedSourceId, selectedSourceLocator, closeSources, openSource, setActiveObject, inspecting } = usePanta();
   const dialogRef = useDialogFocus<HTMLElement>(sourcesOpen, closeSources);
   const sourceBackRef = useRef<HTMLButtonElement>(null);
   const firstSourceRef = useRef<HTMLButtonElement>(null);
@@ -54,12 +55,12 @@ export function SourceDrawer() {
 
   return <div className="p-drawer-backdrop" onMouseDown={(event: React.MouseEvent<HTMLDivElement>) => { if (event.target === event.currentTarget) closeSources(); }}><aside ref={dialogRef} tabIndex={-1} className="p-source-drawer" role="dialog" aria-modal="true" aria-labelledby="source-drawer-title">
     <div className="p-modal-head"><div><strong id="source-drawer-title">{source?.title ?? 'Sources'}</strong><div className="p-meta">{source ? source.type : `${formatCount(snapshot.sources.length,'source')} mapped`}</div></div><button className="p-btn p-btn-quiet" onClick={closeSources}>Close</button></div>
-    {source ? <div className="p-source-detail">
+    {selectedSourceId ? <div className="p-source-detail">
       <button ref={sourceBackRef} className="p-shell-link p-source-back" onClick={() => openSource(undefined)}>← Back to all sources</button>
-      {source.occurredAt && <p className="p-meta">Dated {source.occurredAt}</p>}
-      {source.excerpt ? <blockquote>“{source.excerpt}”</blockquote> : <p className="p-muted">No excerpt is available in this projection.</p>}
-      {source.limitation && <div className="p-source-limit"><span>What this doesn't prove</span><p>{source.limitation}</p></div>}
-      <button className="p-btn p-btn-primary" disabled={inspecting} onClick={inspectSource}>{inspecting ? 'Opening inspection…' : 'Inspect in case'}</button>
+      {source?.occurredAt && <p className="p-meta">Dated {source.occurredAt}</p>}
+      <SourceEvidence target={selectedSourceLocator ?? { sourceId: selectedSourceId }} />
+      {!selectedSourceLocator && source?.limitation && <div className="p-source-limit"><span>What this doesn't prove</span><p>{source.limitation}</p></div>}
+      {source && <button className="p-btn p-btn-primary" disabled={inspecting} onClick={inspectSource}>{inspecting ? 'Opening inspection…' : 'Inspect in case'}</button>}
     </div> : <div className="p-source-list">{snapshot.sources.map((item,index) => <button ref={index===0?firstSourceRef:undefined} key={item.id} className="p-source-item" onClick={() => openSource(item.id)}><span className="p-meta">{item.type}</span><strong>{item.title}</strong>{item.excerpt && <p>“{item.excerpt}”</p>}{item.limitation && <small>Doesn't prove: {item.limitation}</small>}<span className="p-source-open-cue">Open source →</span></button>)}</div>}
   </aside></div>;
 }

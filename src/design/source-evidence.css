@@ -1,0 +1,16 @@
+.p-source-evidence { display: grid; gap: 18px; min-width: 0; }
+.p-source-statement p { margin: 8px 0 0; line-height: 1.5; }
+.p-source-citation { display: grid; gap: 12px; margin: 0; padding: 16px 0; border-block: 1px solid var(--p-line); }
+.p-source-citation div { display: grid; grid-template-columns: 110px minmax(0, 1fr); gap: 14px; }
+.p-source-citation dt { color: var(--p-muted); font-size: 12px; }
+.p-source-citation dd { margin: 0; font-size: 13px; overflow-wrap: anywhere; }
+.p-source-citation small { display: block; color: var(--p-muted); margin-top: 5px; }
+.p-source-evidence blockquote { margin: 0; white-space: pre-wrap; overflow-wrap: anywhere; }
+.p-source-evidence-issue { line-height: 1.6; }
+.p-source-statements h3 { margin: 0 0 8px; font-size: 13px; font-weight: 500; }
+.p-source-statements button { display: grid; width: 100%; gap: 6px; padding: 12px 0; border: 0; border-top: 1px solid var(--p-line); background: transparent; color: inherit; text-align: left; cursor: pointer; }
+.p-source-statements button[aria-pressed="true"] { color: var(--p-accent); }
+.p-source-statements button span { color: var(--p-muted); font-size: 12px; overflow-wrap: anywhere; }
+.p-source-statement-links { display: grid; gap: 8px; }
+.p-source-statement-links button { display: grid; gap: 4px; text-align: left; }
+.p-source-statement-links small { color: var(--p-muted); overflow-wrap: anywhere; }

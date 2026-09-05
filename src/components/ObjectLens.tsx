@@ -5,6 +5,8 @@ import { goTo } from '../app/routes';
 import type { Actor } from '../types/domain';
 import { ObjectCausalTrace } from './CausalTrace';
 import { useDialogFocus, useMediaQuery } from './useDialogFocus';
+import { inspectionSourceLocators } from '../app/sourceEvidence';
+import '../design/source-evidence.css';
 
 export function ObjectLens({ compact = false }: { compact?: boolean }) {
   const { snapshot, inspection, activeObjectId, inspecting, setActiveObject } = usePanta();
@@ -67,6 +69,7 @@ function LensContents({ compact, onClose }: { compact: boolean; onClose: () => v
   const { snapshot, inspection, inspecting, setActiveObject, openSource } = usePanta();
   if (!snapshot || !inspection) return null;
   const vm = composeLens(snapshot, inspection);
+  const sourceLocators = inspectionSourceLocators(snapshot, inspection.objectId, inspection.sourceLocators);
   const inspect = (id: string) => { if (!inspecting) void setActiveObject(id); };
 
   return <>
@@ -96,11 +99,15 @@ function LensContents({ compact, onClose }: { compact: boolean; onClose: () => v
       {vm.related.slice(0, 5).map(item => <button key={item.id} disabled={inspecting} className="p-related-link" onClick={() => inspect(item.id)}>{item.label}</button>)}
     </LensSection>}
 
+    {vm.actions.includes('OPEN_SOURCE') && sourceLocators.length > 0 && <LensSection title="Source passages">
+      <div className="p-source-statement-links">{sourceLocators.map((ref, index) => <button key={index} className="p-related-link" onClick={() => openSource(ref)}><span>{snapshot.sources.find(source => source.id === ref.sourceId)?.title ?? 'Source unavailable'}</span><small>{ref.locator || snapshot.claims.find(claim => claim.id === ref.claimId)?.locator || 'Exact location not supplied'}</small></button>)}</div>
+    </LensSection>}
+
     <div className="p-lens-actions">
       {vm.actions.includes('TRACE') && <button className="p-btn" onClick={() => goTo('trace')}>Trace</button>}
       {vm.actions.includes('SIMULATE') && <button className="p-btn" onClick={() => goTo('simulate')}>Simulate</button>}
       {vm.actions.includes('RESOLVE') && <button className="p-btn" onClick={() => goTo('resolve')}>Resolve</button>}
-      {vm.actions.includes('OPEN_SOURCE') && vm.sourceRefs[0] && <button className="p-btn" onClick={() => openSource(vm.sourceRefs[0].id)}>Open source</button>}
+      {vm.actions.includes('OPEN_SOURCE') && sourceLocators[0] && <button className="p-btn" onClick={() => openSource(sourceLocators[0])}>Open source</button>}
       {vm.actions.includes('VIEW_IN_CASE') && <button className="p-btn p-btn-quiet" onClick={() => goTo('deal')}>View in case</button>}
     </div>
   </>;

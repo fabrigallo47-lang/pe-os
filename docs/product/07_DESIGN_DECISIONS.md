@@ -165,3 +165,15 @@ Append only material decisions that should survive individual tasks.
 **Applies to:** Case changes navigation, Journal filters, immutable state selectors, event timeline, state-difference summary, post-close movement, adapter codec, empty and synthetic Product Lab adapters, and fail-closed error states.
 
 **Do not infer:** The frontend computes differences, decides whether movement is positive, treats disappearance as resolution, collapses temporal axes, invents actor attribution, mutates the live case, or labels ordinary Current movement as post-close drift.
+
+
+---
+
+### 2026-09-05 — Statement inspection preserves the cited source version and passage
+**Decision:** Trace and Object Lens carry the full existing SourceLocator into the source drawer. The drawer separates the statement in the case from its original passage, displays the exact address and cited version, and exposes other statements from that version. Conflicting or unresolvable source lineage shows an explicit unavailable state. General source browsing keeps its document overview.
+
+**Why:** An investor opening a statement needs its actual evidence, including an earlier cited version, without losing the address or seeing newer document content substituted for the original passage.
+
+**Applies to:** Trace, Object Lens source references, source drawer, internal source navigation, synthetic fixtures and source-evidence regressions.
+
+**Boundary:** Source addresses and quoted spans come from the existing backend projection. This change introduces no ontology, extraction logic, inferred provenance, document URL, native file viewer, or canonical mutation.

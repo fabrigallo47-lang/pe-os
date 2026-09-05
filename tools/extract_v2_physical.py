@@ -1143,6 +1143,18 @@ class Chunk:
     # resolved against, so a claim points at ITS section rather than at the
     # whole merged span. See _claim_locator().
     section_headings: list[str] = field(default_factory=list)
+    # Context padding: the tail of the previous chunk and the head of the next,
+    # shown to the model but NEVER extracted from. Chunk boundaries currently
+    # cut references in half -- derive_relations' own docstring admits that a
+    # derivation whose operands live in another chunk produces no edge, and
+    # relation_recall measured 20% on the benchmark. Overlapping extraction
+    # windows would fix that at the cost of duplicate claims and ambiguous
+    # locators (the same fact found in two windows). Reading wider than you
+    # write costs neither: the model can resolve "it", "the same period" or a
+    # derivation's operands against the neighbourhood, while every claim still
+    # belongs to exactly one chunk and keeps one locator.
+    context_before: str = ""
+    context_after: str = ""
 
 
 class UnsupportedSourceError(ValueError):
@@ -1246,6 +1258,43 @@ def _decorate_chunks(
             "content_period_policy": "preserve source label; never infer at L1",
         })
         chunk.period_context = specific
+    return _pad_with_context(chunks)
+
+
+# Words of neighbouring text shown around each fragment. Small on purpose: this
+# is meant to carry a sentence that finishes across a boundary, or the row a
+# total is computed from, not a second document. Padding is read, never
+# extracted from, so a larger value costs input tokens and dilutes attention
+# without ever adding a claim.
+CONTEXT_PAD_WORDS = 80
+
+
+def _pad_with_context(chunks: list[Chunk], pad_words: int = CONTEXT_PAD_WORDS) -> list[Chunk]:
+    """Let each fragment SEE its neighbours without extracting from them.
+
+    Chunk boundaries cut references in half. derive_relations already says so:
+    "a derivation or scenario link whose counterpart lives in a different chunk
+    produces no edge here", and relation_recall measured 20% on the benchmark.
+
+    Overlapping extraction windows would fix that and create two new problems:
+    the same fact extracted twice, and an ambiguous locator for it. Reading
+    wider than you write has neither. The model resolves "it", "the same
+    period", or a derivation's operands against the neighbourhood, and every
+    claim still belongs to exactly one chunk with exactly one locator.
+
+    Padding does NOT cross a source boundary -- a chunk never sees another
+    document's text, which would let one source's numbers be attributed to
+    another.
+    """
+    if pad_words <= 0:
+        return chunks
+    for index, chunk in enumerate(chunks):
+        if index > 0 and chunks[index - 1].source_path == chunk.source_path:
+            tail = (chunks[index - 1].body or "").split()
+            chunk.context_before = " ".join(tail[-pad_words:])
+        if index + 1 < len(chunks) and chunks[index + 1].source_path == chunk.source_path:
+            head = (chunks[index + 1].body or "").split()
+            chunk.context_after = " ".join(head[:pad_words])
     return chunks
 
 
@@ -3139,6 +3188,36 @@ def _provider_retry_delay(exc: Exception, attempt: int) -> float | None:
     return max(1.0, min(delay, 30.0))
 
 
+def _fragment_with_context(chunk: Chunk) -> str:
+    """The fragment, wrapped in neighbouring text marked as NOT extractable.
+
+    The boundary has to be unmistakable in the prompt itself. A model shown two
+    passages with no stated difference will treat both as evidence, and a claim
+    sourced from the padding would carry this chunk's locator while its text
+    lives in the neighbour -- a wrong provenance, which is worse than the
+    missing relation the padding exists to fix.
+    """
+    if not (chunk.context_before or chunk.context_after):
+        return chunk.body
+    parts: list[str] = []
+    if chunk.context_before:
+        parts.append("----- CONTEXT BEFORE (read only; do NOT extract claims from this) -----\n"
+                     f"{chunk.context_before}")
+    parts.append("----- FRAGMENT (extract ONLY from this) -----\n"
+                 f"{chunk.body}\n"
+                 "----- END FRAGMENT -----")
+    if chunk.context_after:
+        parts.append("----- CONTEXT AFTER (read only; do NOT extract claims from this) -----\n"
+                     f"{chunk.context_after}")
+    parts.append(
+        "The CONTEXT blocks exist so you can resolve what the FRAGMENT refers to "
+        "-- what a pronoun points at, which period a bare number belongs to, "
+        "which claims a derivation was computed from. Every claim you emit must "
+        "be stated in the FRAGMENT itself."
+    )
+    return "\n\n".join(parts)
+
+
 def annotate_chunk(
     chunk: Chunk,
     client,
@@ -3158,7 +3237,7 @@ def annotate_chunk(
         f"FRAGMENT LOCATOR: {chunk.locator}\n\n"
         f"SECTION HEADING: {chunk.section_heading or 'not available'}\n"
         f"PAGE OR SLIDE: {chunk.page_or_slide_number or 'not available'}\n\n"
-        f"{chunk.body}"
+        f"{_fragment_with_context(chunk)}"
     )
     try:
         request = {

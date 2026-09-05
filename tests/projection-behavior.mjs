@@ -19,6 +19,7 @@ import {
   simulationImpactCounts,
 } from '../src/app/selectors.ts';
 import { buildRouteHash, parseRouteLocation } from '../src/app/routes.ts';
+import { journalRequestPath, projectCaseJournal, projectJournalStates } from '../src/providers/journalProjection.ts';
 
 // The Product Lab No-case mode is the production adapter's literal null-case projection.
 const emptySession = await emptyAdapter.getSession();
@@ -26,6 +27,8 @@ assert.deepEqual(emptySession.actors, []);
 assert.deepEqual(await emptyAdapter.listCases(), []);
 assert.equal(await emptyAdapter.loadCase(), null);
 assert.deepEqual(await emptyAdapter.listCaseMoments('CASE-NONE'), []);
+assert.equal(await emptyAdapter.loadJournal('CASE-NONE'), null);
+assert.deepEqual(await emptyAdapter.listJournalStates('CASE-NONE'), []);
 assert.equal(await emptyAdapter.inspectObject('CASE-NONE', 'OBJECT-NONE'), null);
 assert.deepEqual(await emptyAdapter.searchCase('CASE-NONE', 'anything'), []);
 assert.equal(await emptyAdapter.runSimulation('CASE-NONE', {
@@ -91,6 +94,23 @@ assert.equal(formatRemaining(2, 'support'), '2 supports remain');
 const deepLink = buildRouteHash('trace', { caseId: 'CASE-1', workstreamId: 'WS-1', questionId: 'Q-1', asOf: '2026-01-11T10:00:00Z' });
 assert.equal(deepLink, '#/trace?caseId=CASE-1&workstreamId=WS-1&questionId=Q-1&asOf=2026-01-11T10%3A00%3A00Z');
 assert.deepEqual(parseRouteLocation(deepLink), { route: 'trace', context: { caseId: 'CASE-1', workstreamId: 'WS-1', questionId: 'Q-1', asOf: '2026-01-11T10:00:00Z' } });
+assert.equal(buildRouteHash('journal',{caseId:'CASE-1'}),'#/journal?caseId=CASE-1');
+assert.equal(parseRouteLocation('#/journal?caseId=CASE-1').route,'journal');
+assert.equal(journalRequestPath('CASE 1',{since:'2026-01-01',asOf:'2026-01-11',workstream:'WS-1',closeStateId:'STATE-1'}),'/api/v20/cases/CASE%201/journal?since=2026-01-01&as_of_date=2026-01-11&workstream=WS-1&close_state_id=STATE-1');
+const projectedJournal=projectCaseJournal({
+  schema_version:'case-journal/1.0',case_id:'CASE-1',generated_at:'2026-01-11T10:01:00Z',
+  temporal:{effective_axis:'effective_date',knowledge_axis:'known_at',recording_axis:'recorded_at',since:null,until:null,as_of:null},
+  baseline:{state_id:'STATE-1',version_id:'STATE-1',known_at:'2026-01-10T10:00:00Z',effective_date:'2026-01-10',graph_hash:'sha256:one'},
+  current:{state_id:'STATE-2',version_id:'STATE-2',known_at:'2026-01-11T10:00:00Z',effective_date:'2026-01-11',graph_hash:'sha256:two'},
+  event_count:1,event_kinds:{EVIDENCE:1},events:[{schema_version:'case-journal-event/1.0',journal_id:'sha256:event',event_id:'EV-1',case_id:'CASE-1',event_type:'EVIDENCE_ADMITTED',kind:'EVIDENCE',phase:'DILIGENCE',label:'Evidence admitted',actor_id:'ACT-1',actor_label:'Mara Bellini',actor_source:'DECLARED',effective_date:'2026-01-10',known_at:'2026-01-10T14:00:00Z',recorded_at:'2026-01-10T14:00:03Z',object_ids:['CL-1'],workstream_ids:['WS-1'],correlation_ids:[],source:'RUNTIME_LEDGER',integrity:{}}],
+  summary:{rules_version:'journal-change-rules/1.1',change_count:0,advanced:0,regressed:0,changed:0,opened:0,closed:0,workstreams:[],changes:[]},
+  drift:{status:'UNAVAILABLE',reason:'No closing state selected.'},
+  integrity:{sources:['RUNTIME_LEDGER'],runtime_ledger_is_primary_for_admissions_and_settlements:true,inferred_system_actor_count:0,warnings:[]},
+});
+assert.equal(projectedJournal.events[0].knownAt,'2026-01-10T14:00:00Z');
+assert.equal(projectedJournal.baseline.stateId,'STATE-1');
+assert.deepEqual(projectJournalStates({versions:[{kind:'CANDIDATE',state_id:'C',version_id:'C'},{kind:'CURRENT',state_id:'STATE-1',version_id:'STATE-1',known_at:'2026-01-10T10:00:00Z'}]}).map(state=>state.stateId),['STATE-1']);
+assert.throws(()=>projectCaseJournal({...projectedJournal,schema_version:'case-journal/2.0'}),/Unsupported Case Journal schema/);
 
 const inspection = await adapter.inspectObject('CASE-1', reading.id);
 assert.ok(inspection);

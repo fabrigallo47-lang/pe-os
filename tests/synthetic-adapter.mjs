@@ -105,7 +105,31 @@ const base={
   ]
 };
 
+const journalStates=[
+  {stateId:'STATE-1',versionId:'STATE-1',knownAt:'2026-01-10T10:00:00Z',effectiveDate:'2026-01-10',graphHash:'sha256:synthetic-state-1'},
+  {stateId:'STATE-2',versionId:'STATE-2',knownAt:later,effectiveDate:'2026-01-11',graphHash:'sha256:synthetic-state-2'},
+];
+const journalEvents=[
+  {id:'sha256:synthetic-journal-1',eventId:'EV-0',caseId:'CASE-1',eventType:'CASE_CREATED',kind:'ORIGIN',phase:'ORIGINATION',label:'Case created',detail:'The investment case entered the institutional record.',actorId:'ACT-1',actorLabel:'Mara Bellini',actorSource:'DECLARED',effectiveDate:'2026-01-09',knownAt:'2026-01-09T09:00:00Z',recordedAt:'2026-01-09T09:00:01Z',objectIds:['CASE-1'],workstreamIds:[],correlationIds:[],source:'RUNTIME_LEDGER'},
+  {id:'sha256:synthetic-journal-2',eventId:'EV-2',caseId:'CASE-1',eventType:'EVIDENCE_ADMITTED',kind:'EVIDENCE',phase:'DILIGENCE',label:'Customer reference admitted',detail:'Independent customer material was admitted to the product-performance case area.',actorId:'ACT-2',actorLabel:'Jonas Reed',actorSource:'DECLARED',effectiveDate:'2026-01-10',knownAt:customerAdmittedAt,recordedAt:'2026-01-10T14:00:03Z',objectIds:['SRC-1','CL-1'],workstreamIds:['WS-1'],correlationIds:['EV-1'],source:'RUNTIME_LEDGER'},
+  {id:'sha256:synthetic-journal-3',eventId:'EV-3',caseId:'CASE-1',eventType:'CASE_READING_RECOMPUTED',kind:'CASE_READING_RECOMPUTED',phase:'CASE_EVOLUTION',label:'Technical reading changed',detail:'The case now recognizes the independent deployment evidence while preserving the unresolved performance gap.',actorId:'PANTA_SYSTEM',actorLabel:'PANTA system',actorSource:'INFERRED_SYSTEM',effectiveDate:'2026-01-11',knownAt:later,recordedAt:'2026-01-11T10:00:04Z',objectIds:['CR-1','U-1'],workstreamIds:['WS-1'],correlationIds:['EV-2','STATE-2'],source:'RUNTIME_LEDGER'},
+];
+const journalChanges=[
+  {id:'sha256:synthetic-change-1',objectId:'CR-1',objectType:'CASE_POSITION',collection:'case_positions',label:'Product performance reading',workstreamId:'WS-1',beforeWorkstreamId:'WS-1',afterWorkstreamId:'WS-1',changeType:'UPDATED',trend:'ADVANCED',reason:'Evidence status improved after independent deployment support entered the case.',beforeStatus:'INSUFFICIENT',afterStatus:'SUPPORTED',changedFields:['epistemic_status','supporting_claim_ids']},
+  {id:'sha256:synthetic-change-2',objectId:'U-1',objectType:'UNKNOWN',collection:'unknowns',label:'Independent production benchmark',workstreamId:'WS-1',afterWorkstreamId:'WS-1',changeType:'ADDED',trend:'REGRESSED',movement:'OPENED',reason:'A new unresolved item entered the case.',afterStatus:'OPEN',changedFields:[]},
+];
+
 function clone(x){return JSON.parse(JSON.stringify(x));}
+function journalCutoff(value,endOfDay=false){if(!value)return undefined;return value.length===10?`${value}T${endOfDay?'23:59:59.999':'00:00:00'}Z`:value;}
+function journalSummary(changes){
+  const advanced=changes.filter(change=>change.trend==='ADVANCED').length;
+  const regressed=changes.filter(change=>change.trend==='REGRESSED').length;
+  const changed=changes.filter(change=>change.trend==='CHANGED').length;
+  const byWorkstream=new Map();
+  for(const change of changes){const values=byWorkstream.get(change.workstreamId)??[];values.push(change);byWorkstream.set(change.workstreamId,values);}
+  return {rulesVersion:'journal-change-rules/1.1',changeCount:changes.length,advanced,regressed,changed,opened:changes.filter(change=>change.movement==='OPENED').length,closed:changes.filter(change=>change.movement==='CLOSED').length,workstreams:[...byWorkstream].map(([workstreamId,items])=>{const itemAdvanced=items.filter(item=>item.trend==='ADVANCED').length;const itemRegressed=items.filter(item=>item.trend==='REGRESSED').length;return {workstreamId,changeCount:items.length,advanced:itemAdvanced,regressed:itemRegressed,changed:items.filter(item=>item.trend==='CHANGED').length,netDirection:itemAdvanced>itemRegressed?'ADVANCED':itemRegressed>itemAdvanced?'REGRESSED':'MIXED_OR_NEUTRAL',changeIds:items.map(item=>item.id)};}),changes:clone(changes)};
+}
+function journalConflict(message){const error=new Error(message);error.status=409;return error;}
 
 export class SyntheticAdapter {
   constructor({actorId=actor.id}={}){
@@ -124,6 +148,28 @@ export class SyntheticAdapter {
   }
   async listCases(){return [{id:'CASE-1',name:'Synthetic Case'}];}
   async listCaseMoments(){return [{id:'M-0',asOf:'2026-01-09T09:00:00Z',label:'Case created',eventId:'EV-0'},{id:'M-1',asOf:customerAdmittedAt,label:'Customer reference admitted',eventId:'EV-2'},{id:'M-2',asOf:later,label:'Technical reading changed',eventId:'EV-3'},...this.current.events.filter(event=>event.eventType==='DECISION_RECORDED').map((event,index)=>({id:`M-D${index+1}`,asOf:event.knownAt,label:'IC decision recorded',eventId:event.id}))];}
+  async listJournalStates(caseId){return caseId==='CASE-1'?clone(journalStates):[];}
+  async loadJournal(caseId,query={}){
+    if(caseId!=='CASE-1')return null;
+    const currentState=query.currentStateId?journalStates.find(state=>state.stateId===query.currentStateId):journalStates.at(-1);
+    if(!currentState)throw new Error(`Current state not found: ${query.currentStateId}`);
+    let baselineState=query.baselineStateId?journalStates.find(state=>state.stateId===query.baselineStateId):journalStates.find(state=>state.stateId!==currentState.stateId);
+    if(query.baselineStateId&&!baselineState)throw new Error(`Baseline state not found: ${query.baselineStateId}`);
+    if(baselineState&&baselineState.knownAt>currentState.knownAt)throw journalConflict('The baseline state cannot be known after the selected current state.');
+    const closeState=query.closeStateId?journalStates.find(state=>state.stateId===query.closeStateId):undefined;
+    if(query.closeStateId&&!closeState)throw new Error(`Closing state not found: ${query.closeStateId}`);
+    if(closeState&&closeState.knownAt>currentState.knownAt)throw journalConflict('The closing state cannot be known after the selected current state.');
+    const since=journalCutoff(query.since);
+    const until=journalCutoff(query.until,true);
+    const asOf=journalCutoff(query.asOf,true);
+    const events=journalEvents.filter(event=>(!since||event.knownAt>=since)&&(!until||event.knownAt<=until)&&(!asOf||event.knownAt<=asOf)&&(!query.workstream||event.workstreamIds.includes(query.workstream))&&(!query.kind||event.kind===query.kind||event.eventType===query.kind));
+    const sameState=baselineState?.stateId===currentState.stateId;
+    const changes=(sameState?[]:journalChanges).filter(change=>!query.workstream||[change.workstreamId,change.beforeWorkstreamId,change.afterWorkstreamId].includes(query.workstream));
+    const summary=journalSummary(changes);
+    const eventKinds=events.reduce((counts,event)=>({...counts,[event.kind]:(counts[event.kind]??0)+1}),{});
+    const drift=closeState?{status:'AVAILABLE',baselineStateId:closeState.stateId,currentStateId:currentState.stateId,...journalSummary(closeState.stateId===currentState.stateId?[]:journalChanges)}:{status:'UNAVAILABLE',reason:'An explicit closing state is required before later movement can be measured.'};
+    return {schemaVersion:'case-journal/1.0',caseId,generatedAt:'2026-01-11T10:01:00Z',temporal:{since:query.since,until:query.until,asOf:query.asOf},baseline:baselineState?clone(baselineState):undefined,current:clone(currentState),eventCount:events.length,events:clone(events),eventKinds,summary,drift,integrity:{sources:['RUNTIME_LEDGER','VAULT_EVENT','AUTHORITY_LEDGER','GRAPH_VERSION_ARCHIVE'],runtimeLedgerIsPrimaryForAdmissionsAndSettlements:true,inferredSystemActorCount:events.filter(event=>event.actorSource==='INFERRED_SYSTEM').length,warnings:events.some(event=>event.actorSource==='INFERRED_SYSTEM')?['One historical event predates explicit actor capture and is attributed to PANTA system.']:[]}};
+  }
   async loadCase(_caseId,opts){
     if(opts?.asOf && opts.asOf < later){
       const s=clone(base);s.asOf=opts.asOf;s.events=s.events.filter(event=>event.knownAt<=opts.asOf);s.decisions=s.decisions.filter(decision=>decision.recordedAt<=opts.asOf);

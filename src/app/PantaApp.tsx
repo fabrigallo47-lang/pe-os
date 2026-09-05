@@ -11,6 +11,7 @@ import { ReviewAdmit } from '../screens/ReviewAdmit';
 import { Resolve } from '../screens/Resolve';
 import { Formation } from '../screens/Formation';
 import { ReplayDecision } from '../screens/ReplayDecision';
+import { Journal } from '../screens/Journal';
 import { Outputs } from '../screens/Outputs';
 
 export interface PantaAppProps {
@@ -34,6 +35,6 @@ export function PantaApp({ adapter, initialCaseId, onStartNewCase, onOpenExistin
       window.removeEventListener(PANTA_NAVIGATION_EVENT,syncRoute);
     };
   },[]);
-  const screen = route==='deal'?<DealHome/>:route==='workstream'?<WorkstreamFocus/>:route==='trace'?<Trace/>:route==='simulate'?<Simulate/>:route==='review'?<ReviewAdmit/>:route==='resolve'?<Resolve/>:route==='formation'?<Formation/>:route==='replay'?<ReplayDecision/>:<Outputs/>;
+  const screen = route==='deal'?<DealHome/>:route==='workstream'?<WorkstreamFocus/>:route==='trace'?<Trace/>:route==='simulate'?<Simulate/>:route==='review'?<ReviewAdmit/>:route==='resolve'?<Resolve/>:route==='formation'?<Formation/>:route==='replay'?<ReplayDecision/>:route==='journal'?<Journal/>:<Outputs/>;
   return <PantaProvider adapter={adapter} initialCaseId={initialCaseId}><div className="p-app"><GlobalShell route={route} onStartNewCase={onStartNewCase} onOpenExistingCase={onOpenExistingCase}>{screen}</GlobalShell></div></PantaProvider>;
 }

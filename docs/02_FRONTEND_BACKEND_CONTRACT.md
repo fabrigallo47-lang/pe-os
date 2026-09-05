@@ -14,6 +14,8 @@ The adapter boundary is `src/providers/PantaBackendAdapter.ts`.
 - `listCases()`
 - `loadCase(caseId, { asOf? })` — materialized case projection at that cutoff
 - `listCaseMoments(caseId)` — sparse temporal navigation only
+- `loadJournal(caseId, { since?, until?, asOf?, workstream?, kind?, baselineStateId?, currentStateId?, closeStateId? })` — validated `case-journal/1.0` read projection from `GET /api/v20/cases/{caseId}/journal`
+- `listJournalStates(caseId)` — immutable `CURRENT` state choices from `GET /api/v20/cases/{caseId}/graph-versions`
 - `inspectObject(caseId, objectId, { excludeObjectIds? })`
 - `searchCase(caseId, query)` — returns objects, never chatbot prose
 - `runSimulation(caseId, request)`
@@ -47,6 +49,10 @@ The backend must not return those sections as explanatory prose.
 ## Replay
 
 `loadCase(caseId, { asOf })` is the replay interface. Same ledger + same contract/configuration versions + same cutoff must reproduce the same case projection/hash. `listCaseMoments` is only a navigation aid.
+
+## Case Journal
+
+The adapter validates `case-journal/1.0` and `journal-change-rules/1.1` before rendering. Events preserve effective, knowledge, and server recording time plus declared or visibly inferred actor attribution. State selectors pass stable ids back to the backend; the frontend never compares case objects or infers direction locally. HTTP 409 integrity conflicts fail closed and render no partial history.
 
 ## Actor / authority
 

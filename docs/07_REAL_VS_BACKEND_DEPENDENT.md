@@ -15,6 +15,7 @@
 - Resolve work-item adoption/edit/dismiss/assignment controls
 - Formation review/edit/adopt controls
 - Replay calls case-as-of state
+- Case changes filters the validated Journal timeline, selects immutable comparison states, and renders backend-computed movement
 - actor/entitlement-aware decision controls
 - Outputs read/edit/sync/diff surfaces
 
@@ -30,6 +31,7 @@
 - reviewer/entitlement service
 - artifact projection/synchronization engine
 - durable version history
+- authoritative Case Journal assembly, integrity verification, and state-difference rules
 
 ## Critical rule
 The frontend must never fabricate these missing mechanics to make a screen look complete.

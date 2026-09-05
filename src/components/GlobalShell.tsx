@@ -47,7 +47,7 @@ export function GlobalShell({ route, children, onStartNewCase, onOpenExistingCas
   const can = (entitlement: Entitlement) => actor?.entitlements.includes(entitlement) ?? false;
   const lifecycle = snapshot && !unformedCase ? caseLifecycleEntries(snapshot, actor) : [];
   const pendingOutputChanges = snapshot?.artifacts.reduce((total, artifact) => total + artifact.pendingCaseChangeCount, 0) ?? 0;
-  const globalLensRoute = shellRoute === 'trace' || shellRoute === 'simulate' || shellRoute === 'resolve' || shellRoute === 'formation' || shellRoute === 'replay';
+  const globalLensRoute = shellRoute === 'trace' || shellRoute === 'simulate' || shellRoute === 'resolve' || shellRoute === 'formation' || shellRoute === 'replay' || shellRoute === 'journal';
   const backTarget: PantaRoute = shellRoute === 'workstream' ? 'deal' : shellRoute === 'trace' || shellRoute === 'simulate' || shellRoute === 'resolve' ? 'workstream' : 'deal';
   const backLabel = backTarget === 'workstream' ? 'Back to Workstream Focus' : 'Back to Deal Home';
 
@@ -158,6 +158,9 @@ export function GlobalShell({ route, children, onStartNewCase, onOpenExistingCas
               <button className="p-shell-menu-item p-shell-mobile-item" disabled={!can('ADD_MATERIAL') || Boolean(pendingAction)} onClick={() => openFromCaseFlow(() => setAddOpen(true))}>
                 <span><strong>Add material</strong><small>{can('ADD_MATERIAL') ? 'Add governed case material' : 'Requires Add material authority'}</small></span>
               </button>
+              <button className="p-shell-menu-item" aria-current={route === 'journal' ? 'page' : undefined} onClick={() => navigate('journal')}>
+                <span><strong>Case changes</strong><small>Recorded timeline and differences between case states</small></span><em>{route === 'journal' ? 'Current' : 'Open'}</em>
+              </button>
               {lifecycle.map(entry => <button key={entry.route} className="p-shell-menu-item" aria-current={route === entry.route ? 'page' : undefined} onClick={() => navigate(entry.route)}>
                 <span><strong>{entry.label}</strong><small>{entry.precondition}</small></span><em>{entry.state}</em>
               </button>)}
@@ -199,6 +202,7 @@ function getCrumbs(route: PantaRoute, workstream?: string, question?: string): s
   if (route === 'review') return ['Review changes'];
   if (route === 'formation') return ['Formation'];
   if (route === 'replay') return ['Replay & Decision'];
+  if (route === 'journal') return ['Case changes'];
   if (route === 'outputs') return ['Outputs'];
   return [];
 }

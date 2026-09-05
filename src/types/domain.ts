@@ -587,6 +587,110 @@ export interface CaseMoment {
   eventId?: Id;
 }
 
+/** Immutable Current-state reference exposed by the Case Journal read model. */
+export interface JournalStateRef {
+  stateId?: Id;
+  versionId?: Id;
+  knownAt?: string;
+  effectiveDate?: string;
+  graphHash?: string;
+}
+
+export type JournalTrend = 'ADVANCED' | 'REGRESSED' | 'CHANGED';
+export type JournalMovement = 'OPENED' | 'CLOSED';
+
+/** One normalized institutional event. This remains a read projection over canonical ledgers. */
+export interface JournalEvent {
+  id: Id;
+  eventId: Id;
+  caseId: Id;
+  eventType: string;
+  kind: string;
+  phase: string;
+  label: string;
+  detail?: string;
+  actorId: Id;
+  actorLabel?: string;
+  actorSource: 'DECLARED' | 'INFERRED_SYSTEM';
+  effectiveDate: string;
+  knownAt: string;
+  recordedAt: string;
+  objectIds: Id[];
+  workstreamIds: Id[];
+  correlationIds: Id[];
+  source: 'RUNTIME_LEDGER' | 'VAULT_EVENT' | 'AUTHORITY_LEDGER';
+}
+
+/** Deterministic semantic difference between two immutable Current states. */
+export interface JournalChange {
+  id: Id;
+  objectId: Id;
+  objectType: string;
+  collection: string;
+  label: string;
+  workstreamId: Id;
+  beforeWorkstreamId?: Id;
+  afterWorkstreamId?: Id;
+  changeType: 'ADDED' | 'REMOVED' | 'UPDATED';
+  trend: JournalTrend;
+  movement?: JournalMovement;
+  reason: string;
+  beforeStatus?: string;
+  afterStatus?: string;
+  changedFields: string[];
+}
+
+export interface JournalWorkstreamSummary {
+  workstreamId: Id;
+  changeCount: number;
+  advanced: number;
+  regressed: number;
+  changed: number;
+  netDirection: JournalTrend | 'MIXED_OR_NEUTRAL';
+  changeIds: Id[];
+}
+
+export interface JournalChangeSummary {
+  rulesVersion: 'journal-change-rules/1.1';
+  changeCount: number;
+  advanced: number;
+  regressed: number;
+  changed: number;
+  opened: number;
+  closed: number;
+  workstreams: JournalWorkstreamSummary[];
+  changes: JournalChange[];
+}
+
+export type JournalDrift =
+  | { status: 'UNAVAILABLE'; reason: string }
+  | ({ status: 'AVAILABLE'; baselineStateId?: Id; currentStateId?: Id } & JournalChangeSummary);
+
+/** UI read projection of case-journal/1.0. It never becomes case source truth. */
+export interface CaseJournal {
+  schemaVersion: 'case-journal/1.0';
+  caseId: Id;
+  generatedAt: string;
+  temporal: {
+    since?: string;
+    until?: string;
+    asOf?: string;
+  };
+  baseline?: JournalStateRef;
+  current?: JournalStateRef;
+  eventCount: number;
+  events: JournalEvent[];
+  eventKinds: Record<string, number>;
+  summary: JournalChangeSummary;
+  drift: JournalDrift;
+  integrity: {
+    sources: string[];
+    runtimeLedgerIsPrimaryForAdmissionsAndSettlements: true;
+    inferredSystemActorCount: number;
+    warnings: string[];
+  };
+}
+
 /** UI projection of kernel Condition. */
 export interface Condition {
   id: Id;

@@ -6,6 +6,7 @@ const adapter=read('src/providers/PantaBackendAdapter.ts');
 const ctx=read('src/app/PantaContext.tsx');
 const outputs=read('src/screens/Outputs.tsx');
 const replay=read('src/screens/ReplayDecision.tsx');
+const journal=read('src/screens/Journal.tsx');
 const sim=read('src/screens/Simulate.tsx');
 const review=read('src/screens/ReviewAdmit.tsx');
 const trace=read('src/screens/Trace.tsx');
@@ -29,6 +30,8 @@ const req=(name,text,needle)=>{if(!text.includes(needle))failures.push(`${name}:
 
 req('adapter',adapter,'loadCase(caseId?: Id, options?: LoadCaseOptions)');
 req('adapter',adapter,'listCaseMoments(caseId: Id)');
+req('adapter',adapter,'loadJournal(caseId: Id, query?: JournalQuery)');
+req('adapter',adapter,'listJournalStates(caseId: Id)');
 req('domain',domain,'export interface CaseEvent');
 req('context',ctx,'asOf');
 req('replay',replay,'setAsOf');
@@ -84,8 +87,14 @@ if(formation.includes('Keep as draft'))failures.push('formation: draft needs no 
 if(formation.includes('Correct structure'))failures.push('formation: user-facing action is Edit structure');
 if(formation.includes('What PANTA could not establish'))failures.push('formation: gaps must use the Still open concept');
 req('replay',replay,"type:'RECORD_DECISION'");
+req('journal',journal,'adapter.loadJournal(caseId, query)');
+req('journal',journal,'adapter.listJournalStates(caseId)');
+req('journal',journal,'journal.summary');
+req('journal',journal,'journal.events');
+req('journal',journal,"status === 409");
 req('sim',sim,'runSimulation');
 req('shell',shell,"navigate('replay')");
+req('shell',shell,"navigate('journal')");
 req('shell',shell,'<CaseLoading');
 req('shell',shell,'<CaseLoadError');
 req('shell',shell,'<NoCaseSelected');
@@ -104,6 +113,7 @@ if(!(loadStart>=0&&snapshotClear>loadStart&&snapshotClear<adapterLoad))failures.
 req('lifecycle',lifecycle,"route: 'formation'");
 req('lifecycle',lifecycle,"route: 'review'");
 req('lifecycle',lifecycle,"route: 'replay'");
+req('routes',routes,"key: 'journal'");
 req('sim',sim,'normalizeSimulationEffects');
 if(replay.includes('decisions[0]'))failures.push('replay: must resolve recordedDecisionId instead of array position');
 if(outputs.includes('decisions[0]'))failures.push('outputs: must resolve recordedDecisionId instead of array position');

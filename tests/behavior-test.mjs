@@ -15,6 +15,10 @@ const emptyCaseWithMaterial=await emptyCaseAdapter.execute(EMPTY_CASE_ID,{actorI
 assert.equal(emptyCaseWithMaterial.sources[0].title,'First material.pdf');
 assert.equal(emptyCaseWithMaterial.events.filter(item=>item.eventType==='SOURCE_REGISTERED').length,1);
 assert.equal(emptyCaseWithMaterial.events.filter(item=>item.eventType==='SOURCE_VERSION_RECORDED').length,1);
+const emptyCaseJournal=await emptyCaseAdapter.loadJournal(EMPTY_CASE_ID);
+assert.equal(emptyCaseJournal.schemaVersion,'case-journal/1.0');
+assert.equal(emptyCaseJournal.eventCount,3);
+assert.equal(emptyCaseJournal.summary.changeCount,0);
 await assert.rejects(
   emptyCaseAdapter.execute(EMPTY_CASE_ID,{actorId:'ACT-NOT-AUTHORIZED',submittedAt:'2026-01-12T10:30:00Z',action:{type:'ADD_MATERIAL',files:[{name:'Unauthorized.pdf'}]}}),
   /authorized case actor/
@@ -37,6 +41,20 @@ assert.equal(current.workstreams.find(item=>item.id==='WS-1').latestChangeEventI
 assert.equal(current.caseReadings.find(item=>item.id==='CR-1').lastChangeEventId,'EV-3');
 assert.equal(current.events.find(item=>item.id==='EV-3').eventType,'CASE_READING_RECOMPUTED');
 assert.equal(current.events.find(item=>item.id==='EV-3').objectId,'CR-1');
+
+// Case changes are a deterministic read model over recorded events and immutable states.
+const journalStates=await a.listJournalStates('CASE-1');
+assert.equal(journalStates.length,2);
+const journal=await a.loadJournal('CASE-1');
+assert.equal(journal.schemaVersion,'case-journal/1.0');
+assert.equal(journal.summary.rulesVersion,'journal-change-rules/1.1');
+assert.deepEqual(journal.events.map(event=>event.eventId),['EV-0','EV-2','EV-3']);
+assert.ok(journal.events.every(event=>event.effectiveDate&&event.knownAt&&event.recordedAt&&event.actorId));
+assert.deepEqual((await a.loadJournal('CASE-1',{kind:'EVIDENCE'})).events.map(event=>event.eventId),['EV-2']);
+assert.equal((await a.loadJournal('CASE-1',{workstream:'WS-NOT-PRESENT'})).summary.changeCount,0);
+assert.equal((await a.loadJournal('CASE-1',{baselineStateId:'STATE-2',currentStateId:'STATE-2'})).summary.changeCount,0);
+assert.equal((await a.loadJournal('CASE-1',{closeStateId:'STATE-1'})).drift.status,'AVAILABLE');
+await assert.rejects(a.loadJournal('CASE-1',{baselineStateId:'STATE-2',currentStateId:'STATE-1'}),error=>error.status===409);
 
 // The lab exercises governed lifecycle states and adapter-fed detail instead of hiding them.
 assert.ok(session.actor.entitlements.includes('ADD_MATERIAL'));

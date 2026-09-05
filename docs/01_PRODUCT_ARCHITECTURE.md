@@ -13,6 +13,7 @@ Every room is a different operation over one authoritative investment case:
 - Formation — how raw material becomes a proposed case
 - Replay — what the case actually looked like at a prior cutoff
 - Decision — attributed human judgment against a frozen case state
+- Case changes — what moved between two recorded states and which institutional events accompanied it
 - Outputs — live writable projections of the same case
 
 ## Source of truth
@@ -38,6 +39,10 @@ Historical state is loaded via:
 `loadCase(caseId, { asOf })`
 
 The frontend never asks the backend to fabricate historical snapshots.
+
+## Case changes
+
+`loadJournal(caseId, query)` reads the validated canonical timeline and backend-computed state difference. The frontend never compares case states, assigns direction, or infers a closing state.
 
 ## Artifacts
 

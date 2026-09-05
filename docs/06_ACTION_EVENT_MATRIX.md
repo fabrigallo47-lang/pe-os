@@ -22,3 +22,5 @@
 | Accept suggestion | ACCEPT_ARTIFACT_SUGGESTION | accepted edit with provenance |
 | Dismiss suggestion | DISMISS_ARTIFACT_SUGGESTION | suggestion disposition |
 | Open source | frontend source drawer | no mutation; resolved source object |
+| Filter Case changes | loadJournal | read-only filtered journal; no ledger mutation |
+| Select comparison or closing state | loadJournal | read-only backend comparison of immutable Current states; no ledger mutation |

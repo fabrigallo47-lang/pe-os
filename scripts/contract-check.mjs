@@ -4,7 +4,8 @@ const domain = fs.readFileSync('src/types/domain.ts','utf8');
 const adapter = fs.readFileSync('src/providers/PantaBackendAdapter.ts','utf8');
 const selectors = fs.readFileSync('src/app/selectors.ts','utf8');
 const deal = fs.readFileSync('src/screens/DealHome.tsx','utf8');
-const screens = [deal,...['WorkstreamFocus','Trace','Simulate','ReviewAdmit','Resolve','Formation','ReplayDecision','Outputs'].map(x=>fs.readFileSync(`src/screens/${x}.tsx`,'utf8'))].join('\n');
+const journal = fs.readFileSync('src/screens/Journal.tsx','utf8');
+const screens = [deal,journal,...['WorkstreamFocus','Trace','Simulate','ReviewAdmit','Resolve','Formation','ReplayDecision','Outputs'].map(x=>fs.readFileSync(`src/screens/${x}.tsx`,'utf8'))].join('\n');
 const failures=[];
 function requireText(name,text,needle){if(!text.includes(needle))failures.push(`${name}: missing ${needle}`)}
 function forbid(name,text,rx){if(rx.test(text))failures.push(`${name}: forbidden ${rx}`)}
@@ -14,6 +15,11 @@ requireText('domain',domain,'export interface CaseEvent');
 for (const f of ['effectiveAt?: string','knownAt: string','recordedAt: string']) requireText('domain',domain,f);
 requireText('adapter',adapter,'loadCase(caseId?: Id, options?: LoadCaseOptions)');
 requireText('adapter',adapter,'inspectObject(caseId: Id, objectId: Id, options?: InspectOptions)');
+requireText('adapter',adapter,'loadJournal(caseId: Id, query?: JournalQuery)');
+requireText('adapter',adapter,'listJournalStates(caseId: Id)');
+requireText('Journal',journal,'What changed, when did we know it, and who acted?');
+for (const axis of ['Effective','Known','Recorded','Actor']) requireText('Journal',journal,axis);
+requireText('Journal',journal,'No partial or unverified history is shown.');
 
 // Actor + authority.
 requireText('domain',domain,'authorActorId: Id');

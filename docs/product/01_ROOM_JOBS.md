@@ -37,6 +37,10 @@ Meaningful ledger events rewind the same case in place through `loadCase(caseId,
 **Decision:** What still needs judgment before we can make the institutional decision?
 The backend-selected decision-critical Questions expose their current reading, unresolved Unknowns, decision relevance, qualitative load-bearingness, severity, fragility, criticality, and any Condition. Only after reviewing them does the authorized human record decision + rationale + conditions against a frozen case state. No machine recommendation or composite score.
 
+## Case changes
+**Question:** What changed between two recorded states, when did we know it, and who acted?
+The Case Journal joins the institutional timeline with a deterministic comparison of immutable Current states. Effective, knowledge, and recording time remain separate. A closing state is always explicit before later movement can be described as post-close drift.
+
 ## Outputs
 **Question:** How is the live case rendered into the work product I actually use?
 IC Memo = live document/authoring surface.

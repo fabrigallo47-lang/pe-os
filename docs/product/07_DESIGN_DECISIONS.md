@@ -154,3 +154,14 @@ Append only material decisions that should survive individual tasks.
 **Applies to:** Object Lens, Review changes, Simulate, synthetic behavior coverage, and shared impact-trace presentation.
 
 **Do not infer:** Visual order creates a new causal relation; affected means changed; an accepted human position is current evidence; the frontend may infer missing edges, merge state axes, rewrite HumanPosition, or mutate the live case during simulation.
+
+---
+
+### 2026-09-05 — Case changes separates historical movement from temporal replay
+**Decision:** Case changes is a dedicated read-only room. It combines the canonical institutional event timeline with backend-computed differences between two immutable Current states. Effective, knowledge, and recording time are shown separately with actor attribution. Baseline, Current, and closing states are explicit adapter inputs; post-close movement appears only when a closing state is selected. Contract or integrity failures show no partial history.
+
+**Why:** Replay answers what the case looked like at one prior cutoff; Case changes answers what moved between two states and which institutional events accompanied that movement. Keeping those jobs separate makes the audit trail legible without asking the frontend to compare case objects or infer direction.
+
+**Applies to:** Case changes navigation, Journal filters, immutable state selectors, event timeline, state-difference summary, post-close movement, adapter codec, empty and synthetic Product Lab adapters, and fail-closed error states.
+
+**Do not infer:** The frontend computes differences, decides whether movement is positive, treats disappearance as resolution, collapses temporal axes, invents actor attribution, mutates the live case, or labels ordinary Current movement as post-close drift.

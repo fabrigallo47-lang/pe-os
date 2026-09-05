@@ -24,6 +24,8 @@ A handoff is releasable only if all gates below pass.
 
 ## Closed-loop frontend wiring
 - [ ] Replay invokes `loadCase(...,{asOf})`
+- [ ] Case changes invokes `loadJournal`, preserves all three time axes, and fails closed on integrity conflicts
+- [ ] baseline, Current, and closing state selectors pass explicit ids to the backend comparison
 - [ ] Test without this uses temporary inspection only
 - [ ] Open source opens Sources drawer
 - [ ] simulation returns numeric coverage + explicit survivors

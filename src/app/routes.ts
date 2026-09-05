@@ -9,6 +9,7 @@ export type PantaRoute =
   | 'resolve'
   | 'formation'
   | 'replay'
+  | 'journal'
   | 'outputs';
 
 export interface PantaRouteContext {
@@ -29,6 +30,7 @@ export const routeOrder: Array<{ key: PantaRoute; label: string; path: string }>
   { key: 'resolve', label: 'Resolve', path: '#/resolve' },
   { key: 'formation', label: 'Formation', path: '#/formation' },
   { key: 'replay', label: 'Replay & Decision', path: '#/replay' },
+  { key: 'journal', label: 'Case changes', path: '#/journal' },
   { key: 'outputs', label: 'Outputs', path: '#/outputs' },
 ];
 

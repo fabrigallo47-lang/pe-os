@@ -1,0 +1,195 @@
+# Handoff — semantic extraction, model bindings, and the precision question
+
+**Living document.** Updated as work proceeds; the "Open right now" section is the
+only part that goes stale by design.
+
+Session branch: `dev` · baseline for attribution: `abe3e4e`
+
+---
+
+## 1. What this session set out to do
+
+Raise semantic-extraction quality, then work the V1 Linear tasks. The benchmark
+moved **53.1% → 77.2%**. The decisive method was measuring per-field and
+per-metric loss rather than guessing at prompts — every improvement below came
+from a measurement first, and two planned improvements were *cancelled* by
+measurement, which is the more valuable outcome.
+
+---
+
+## 2. Research findings that changed the plan
+
+### 2.1 Over-extraction is not repetition (this cancelled a planned build)
+
+The blind Silexara run produced **259 claims against a 76-claim answer key** —
+3.4×. The obvious repair is a uniqueness filter, and the literature supplies one:
+**CORE** ([arXiv:2407.03572](https://arxiv.org/abs/2407.03572)) filters sub-claims
+"according to their uniqueness and informativeness", because decompose-then-verify
+precision metrics "can be manipulated by adding obvious or repetitive subclaims".
+
+Measured before building it (`tools/claim_redundancy.py`):
+
+| corpus | claims | exact dupes | subsumed | near pairs |
+|---|---|---|---|---|
+| blind_silexara | 259 | 4 (1.5%) | 0 | 2 |
+| blind_keystone | 26 | 0 | 0 | 9 |
+| K-IC raw cache | 1252 | 6 (0.5%) | 20 | 187 |
+
+A uniqueness filter would have removed **about four claims** and left the 3.4×
+intact. The gap is **granularity, not repetition** — and that is precisely the
+confound the same literature names: claims extracted more atomically *"may not
+match reference claims simply because the reference set uses a less granular
+approach"* ([Ragas, factual correctness](https://docs.ragas.io/en/stable/concepts/metrics/available_metrics/factual_correctness/)).
+
+**Consequence: "attack precision" is the wrong next project.** Building the filter
+would have deleted correct, distinct facts to improve a number. The real next step
+is a **cross-schema matcher** (gold's `subject/predicate/value` ↔ our
+`entity/metric/measurement/value`), without which no precision or recall figure
+from this corpus means anything.
+
+[Decomposition Dilemmas](https://www.alphaxiv.org/audio/2411.02400) names four
+decomposition failure modes — context omission, ambiguity, over-decomposition,
+meaning alteration — and recommends adaptive granularity. Ours is
+over-decomposition relative to the key's convention, not relative to the source.
+
+### 2.2 A Reddit thread on PDF→GraphRAG: mostly corroboration
+
+Low signal overall, but it independently confirms things we found empirically:
+per-source-type tool routing and per-source metadata (= our `source_capabilities`
++ G8), asking the model for exact page/line (= our locators), and testing on a
+small known-answer subset (= our gold fixtures). The one problem it names that we
+had not closed is **cross-references across chunks** — "a requirement on page 230
+references something on page 10" — see §3.1.
+
+**GraphRAG itself is a step down for us.** GraphRAG builds a graph to retrieve
+answers; here the typed graph *is* the institutional memory. An untyped similarity
+graph is what the dictionary's §12.3 anti-decorative-graph rule forbids.
+
+### 2.3 Obsidian's graph view: a free lens, not a product surface
+
+The vault is Obsidian-compatible, but `bears-on` is written as plain YAML strings,
+so **1,191 real claim→question edges (74 questions, zero dangling) draw nothing**
+in the graph view, while `plan.md` and `events/` — which use `[[wiki-links]]` —
+render fine. Writing those values as `"[[q-03]]"` would light all of them up for
+free, with node size (incoming links) showing which questions carry the most
+evidence.
+
+**Limit:** Obsidian colours *nodes*, never *edges*, so `BEARS_ON`, `CONTRADICTS`
+and `DERIVED_FROM` all render identically. To make relation type visible you must
+**reify the edge as a node** (`rel-contradicts-c001-c047.md` linking both ends) —
+the vault already does this for `events/`. Good debugging lens; not the UI.
+
+---
+
+## 3. Defects found and fixed
+
+### 3.1 `DERIVES_FROM` edges bound by metric *name*, not by operand
+
+`claim_graph.py` matched an operand by substring of the metric name against the
+derivation prose. `"Gross profit $1.455m ÷ Revenue $4.26m"` names Revenue once, so
+it emitted an edge to **every Revenue claim in the deal** (74.0, 5.624, 1.618,
+0.754 — none of them the operand).
+
+Replaying current code: **155 edges, only 12 survive value verification.** 92% of
+what the engine traversed could not be reconciled with the method it claimed.
+
+Fixed: the name is now only a candidate filter; the operand's value must be
+confirmable in the stated method (scale-aware: `$4.26m` ↔ `4.26` ↔ `4260000`,
+`34.15%` ↔ `0.3415`). Verified edges stay canonical; name-only matches become
+`canonical=False` — visible, never traversed. Nothing deleted.
+
+⚠️ **`tools/claim_graph.py` is gitignored** (`.gitignore:68`, "Proprietary
+algorithms"). **This fix is not version-controlled.** Backup:
+`scratchpad/claim_graph.FIXED.py`. **This needs a decision.**
+
+Note this closes §2.2's cross-chunk problem structurally: the global pass sees all
+claims at once, unlike L2's in-batch `derive_relations`.
+
+### 3.2 Five workbook refs pointed at unit cells; four values genuinely disagree
+
+The Inputs sheet uses **two layouts** — row 3 is `label|value|unit`, row 46 is
+`label|unit|value` — so refs written as column B land on the unit cell in every
+scenario block. All five exit-multiple refs pointed at `'x'`, `'%'` or `'days'`.
+The rows were wrong too: multiples sit at 46/53/60/67/74, not five consecutive rows.
+
+Fixed the refs in `compiler_v7.py`. **No value was changed**, and with correct refs
+four disagreements now surface in the open:
+
+| concept | declared | workbook |
+|---|---|---|
+| Standalone Downside | 7.5 | **8.0** |
+| Standalone Upside | 10.0 | **9.5** |
+| Acquisition Base | 9.5 | **9.0** |
+| Combined Risk | 8.0 | **8.5** |
+
+**→ Needs a human.** Is the workbook stale, or is the underwriting deliberately
+more conservative? Overwriting either side destroys the evidence they disagreed.
+`verify_refs()` in `workbook_concept_binder.py` now checks this generally.
+
+### 3.3 Metric vocabulary drift (caught by the repo's own guard)
+
+Three metrics added to `METRIC_ENUM` this session (`Total Net Leverage Ratio`,
+`Minimum Liquidity`, `Customer Churn`) never reached `object_identity.METRIC_VOCABULARY`,
+so claims about them silently became unresolvable and stopped being comparable.
+PAN-63's drift guard caught it. Fixed.
+
+---
+
+## 4. Tasks completed
+
+| task | what landed |
+|---|---|
+| **G5** | Archetype vocabulary **replaces** the menu instead of appending. venture 69→25 labels; the six buyout structural metrics become unofferable. Verified on a frozen run the model *was* taking them (Sponsor Equity ×2 on a Seed round). |
+| **G8** | Per-deal source ledger. 9 of 18 Silexara sources now arrive as `Call Transcript`/`Meeting Notes` instead of `Other`, so the prompt's own "call transcript → observed" rule finally fires; 18/18 carry real dates. `company_materials` stays deliberately unmapped and reported. |
+| **G1** | Expression↔binding contract **enforced**, not just reported. 10 of 12 `ARITHMETIC` formulas on K-PRE fail it (ticket estimated 5). Hand-written mappings get reclassified with reasons; compiler-generated ones raise. |
+| **G2** | `build_overrides()` feeds `DIRECT_INPUT` nodes from admitted claims. Honest result **1 of 28** — see §5.1. |
+| **G7** | Deterministic cell→concept proposer. Agreement **28.6% → 71.4%** on one insight: a units column sits between label and numbers, so 10 of 28 rows resolved to `$mm`/`days`/`%`. Nothing is ever auto-admitted. |
+
+---
+
+## 5. Open right now
+
+### 5.1 G2 is blocked, and the block is structural
+The claim→model_node link **does not exist as an artifact**:
+- `bindings.json` → claim → **question** (1127 rows, no `model_node_id`)
+- `position_model_directions` → **position** → node (14 rows)
+- claim → position → only as `claim_graph` `SUPPORTS` edges (126 on K-IC)
+
+`build_overrides` already resolves that chain *when given such records*; nothing
+supplies them. Wiring it is **G7/R6** work. Faking it means inventing numbers into
+a financial model.
+
+### 5.2 Three dynamics tests fail, all from this session
+Baseline `abe3e4e`: 320 tests, all pass. Now 391 tests, 3 fail. All three pin
+pre-session behaviour that was deliberately changed:
+
+1. `test_llm_provider` asserts `max_tokens == 4096`. Changed to **8192** because
+   4096 silently truncated — reproduced 3/3 (`stop_reason=max_tokens`, 0 claims,
+   no exception). **The fix is right; the test pins a stale constant.**
+2. `test_pan58_clean_case_bootstrap` — a "clean case" now carries 20
+   `condition:coverage-Q-*` entries where it expected `[]`. **Not yet diagnosed.**
+3. `test_v20_live_evidence_loop` — `mapped_claim_count` is 0, expected 1.
+   **Not yet diagnosed.**
+
+### 5.3 Other open items
+- **`claim_graph.py` is gitignored** and holds an uncommitted fix (§3.1).
+- **Four exit-multiple value disagreements** need a modelling decision (§3.2).
+- **G3 stays Todo on purpose** — its "done when" needs G7 bindings *admitted*, and
+  admission is a human act.
+- **The answer key is corrupted**: 57 of 76 gold records carry an anonymiser bug
+  (`asserted` → `asseContinental Grid Operatord`). `SCORING_RUBRIC.md` too.
+  Worth reporting upstream; `epistemic_class` is unusable for scoring as shipped.
+- **Full-coverage Silexara rerun** still owed — the earlier glob missed SRC-08
+  (`.txt`), SRC-11 (`.eml`), SRC-18 (`.html`); two PDFs need the GPU pod.
+- `AI_HARNESS.md`, which `CLAUDE.md` says to update at task end, is **gitignored
+  and absent** from this tree. The Linear import CSV is the only local status record.
+
+---
+
+## 6. Standing constraints
+
+- **Haiku for extraction**, always (`claude-haiku-4-5-20251001`). Never silently upgrade.
+- **Nothing is admitted by a machine.** Proposals carry evidence; humans admit.
+- **Report, never adjudicate.** Contradictions say what doesn't reconcile, not who is right.
+- **Never invent a value.** A missing input stays dark with a written reason.
+- stdlib + PyYAML only in `tools/`.

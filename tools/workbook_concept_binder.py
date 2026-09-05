@@ -227,6 +227,59 @@ def score_proposals(proposals: Iterable[Mapping[str, Any]]) -> dict[str, Any]:
     }
 
 
+def verify_refs(graph: Mapping[str, Any],
+                concepts: Sequence[Mapping[str, Any]]) -> list[dict[str, Any]]:
+    """Check each concept's declared value against the cell its ref names.
+
+    A workbook_ref is only worth anything if the cell it points at holds the
+    number the concept claims. Nothing verified this, and on the real Keystone
+    workbook it does not hold: the Inputs sheet uses TWO layouts -- row 3 is
+    label|value|unit while row 46 is label|unit|value -- so refs written as
+    column B land on the unit cell in every scenario block.
+
+    Reports; changes nothing. A value disagreement is a modelling question for a
+    human (is the workbook stale, or is the underwriting deliberately different?)
+    and answering it by overwriting either side would destroy the evidence that
+    the two ever disagreed.
+    """
+    cells = graph.get("cells") or {}
+    by_sheet = _cells_by_sheet(cells)
+    findings: list[dict[str, Any]] = []
+    for concept in concepts:
+        ref = concept.get("workbook_ref")
+        declared = concept.get("initial_value")
+        parsed = parse_ref(str(ref or ""))
+        if parsed is None or not isinstance(declared, (int, float)) or isinstance(declared, bool):
+            continue
+        sheet, row, col, _ = parsed
+        sheet_cells = by_sheet.get(sheet.casefold())
+        if sheet_cells is None:
+            continue
+        cell = sheet_cells.get((row, col))
+        found = cell.get("value") if cell else None
+        numeric = found if isinstance(found, (int, float)) and not isinstance(found, bool) else None
+        if numeric is not None and abs(float(numeric) - float(declared)) <= 1e-9:
+            continue
+        # Where else on this row does the declared value actually sit?
+        elsewhere = [c for (r, _c), c in sheet_cells.items()
+                     if r == row and isinstance(c.get("value"), (int, float))
+                     and not isinstance(c.get("value"), bool)
+                     and abs(float(c["value"]) - float(declared)) <= 1e-9]
+        findings.append({
+            "model_node_id": concept.get("model_node_id"),
+            "workbook_ref": ref,
+            "declared_value": declared,
+            "cell_value": found,
+            "cell_is_unit": isinstance(found, str) and is_unit_only(found),
+            "value_found_at": sorted(c["locator"] for c in elsewhere) or None,
+            "verdict": ("ref points at a unit cell" if isinstance(found, str)
+                        and is_unit_only(found) else
+                        "cell is empty" if found is None else
+                        "cell holds a different number"),
+        })
+    return findings
+
+
 def binding_resolution(proposals: Iterable[Mapping[str, Any]]) -> list[dict[str, str]]:
     """Turn ADMITTED proposals into execution_mapping_compiler's input shape.
 

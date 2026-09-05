@@ -17,7 +17,7 @@ sys.path.insert(0, str(ROOT))
 
 from tools.workbook_concept_binder import (  # noqa: E402
     binding_resolution, is_unit_only, parse_ref, propose, row_label,
-    score_proposals,
+    score_proposals, verify_refs,
 )
 
 GRAPHS = ROOT / "pipeline_out/e3/K-IC/adapter_alpha/workbook_formula_graphs.json"
@@ -94,6 +94,49 @@ class AdmissionTests(unittest.TestCase):
         for field in ("cell_label", "concept_label", "workbook_ref", "reason", "score"):
             self.assertIn(field, p)
         self.assertEqual(p["cell_label"], "Enterprise value")
+
+
+class RefVerificationTests(unittest.TestCase):
+    """A ref is worthless unless the cell holds the number the concept claims."""
+
+    def _graph(self, b_value, c_value):
+        return {"cells": {
+            "Inputs!A46": {"sheet": "Inputs", "row": 46, "col": 1, "kind": "text",
+                           "value": "Standalone Base - Exit multiple", "locator": "Inputs!A46"},
+            "Inputs!B46": {"sheet": "Inputs", "row": 46, "col": 2, "kind": "text",
+                           "value": b_value, "locator": "Inputs!B46"},
+            "Inputs!C46": {"sheet": "Inputs", "row": 46, "col": 3, "kind": "number",
+                           "value": c_value, "locator": "Inputs!C46"},
+        }}
+
+    def test_a_ref_landing_on_the_unit_cell_is_caught(self) -> None:
+        """The real defect: Inputs row 3 is label|value|unit but row 46 is
+        label|unit|value, so every scenario ref written as column B hit 'x'."""
+        concepts = [{"model_node_id": "MN-BASE-EXIT-MULT", "workbook_ref": "Inputs!B46",
+                     "initial_value": 9.0, "label": "Standalone Base Exit Multiple"}]
+        found = verify_refs(self._graph("x", 9.0), concepts)
+        self.assertEqual(len(found), 1)
+        self.assertTrue(found[0]["cell_is_unit"])
+        self.assertIn("Inputs!C46", found[0]["value_found_at"],
+                      "the report must say where the value actually sits")
+
+    def test_a_correct_ref_reports_nothing(self) -> None:
+        concepts = [{"model_node_id": "MN-BASE-EXIT-MULT", "workbook_ref": "Inputs!C46",
+                     "initial_value": 9.0, "label": "Standalone Base Exit Multiple"}]
+        self.assertEqual(verify_refs(self._graph("x", 9.0), concepts), [])
+
+    def test_a_real_value_disagreement_is_reported_not_reconciled(self) -> None:
+        """Once the ref is right, four Keystone multiples genuinely disagree with
+        the workbook (7.5 vs 8.0, 10.0 vs 9.5, 9.5 vs 9.0, 8.0 vs 8.5). Whether
+        the workbook is stale or the underwriting is deliberately different is a
+        human question; overwriting either side would erase the evidence."""
+        concepts = [{"model_node_id": "MN-X", "workbook_ref": "Inputs!C46",
+                     "initial_value": 7.5, "label": "Exit Multiple"}]
+        found = verify_refs(self._graph("x", 8.0), concepts)
+        self.assertEqual(len(found), 1)
+        self.assertEqual(found[0]["verdict"], "cell holds a different number")
+        self.assertEqual(found[0]["declared_value"], 7.5)
+        self.assertEqual(found[0]["cell_value"], 8.0)
 
 
 class RealWorkbookTests(unittest.TestCase):

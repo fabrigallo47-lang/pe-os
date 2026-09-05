@@ -18,6 +18,9 @@ from fastapi import HTTPException
 
 SCHEMA = "source-document/1.0"
 MEDIA = {
+    ".pptx": "application/vnd.openxmlformats-officedocument.presentationml.presentation",
+    ".eml": "message/rfc822",
+    ".png": "image/png", ".jpg": "image/jpeg", ".jpeg": "image/jpeg", ".webp": "image/webp",
     ".pdf": "application/pdf",
     ".xlsx": "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     ".xlsm": "application/vnd.ms-excel.sheet.macroEnabled.12",
@@ -110,33 +113,89 @@ def _timecode(locator: str) -> tuple[float, float | None] | None:
     return parsed[0], parsed[1] if len(parsed) > 1 else None
 
 
-def _workbook_position(document: SourceDocument, locator: str) -> dict:
-    from openpyxl import load_workbook
+def workbook_positions(locator: str, sheets: dict[str, tuple[int, int]]) -> dict:
+    """Resolve one or several explicit addresses against dimensions read from the file."""
     from openpyxl.utils.cell import range_boundaries
     address = locator.split("::", 1)[-1]
-    match = re.match(r"(.+?)!(\$?[A-Za-z]{1,3}\$?[1-9]\d*(?::\$?[A-Za-z]{1,3}\$?[1-9]\d*)?|[1-9]\d*:[1-9]\d*)(?=:|$)", address)
-    if not match:
-        return {"kind": "workbook", "status": "UNRESOLVED", "label": "Exact sheet and range not supplied"}
-    sheet = match[1]
-    if sheet.startswith("'") and sheet.endswith("'"):
-        sheet = sheet[1:-1].replace("''", "'")
-    with io.BytesIO(document.data) as buffer:
-        book = load_workbook(buffer, read_only=True, data_only=False, keep_links=False)
-        try:
-            if sheet not in book.sheetnames:
-                raise HTTPException(422, "The cited sheet does not exist in this source version.")
-            ws = book[sheet]
-            c1, r1, c2, r2 = range_boundaries(match[2].replace("$", "").upper())
-            c1, c2 = c1 or 1, c2 or max(1, ws.max_column or 1)
-            if r1 > r2 or c1 > c2 or r2 > (ws.max_row or 0) or c2 > (ws.max_column or 0):
-                raise HTTPException(422, "The cited range is outside this source version.")
-            if (r2 - r1 + 1) * (c2 - c1 + 1) > 5000:
-                raise HTTPException(422, "This cited range is too large for the focused reader. Download the original workbook.")
-            return {"kind": "workbook", "status": "LOCATED", "label": f"{sheet}!{match[2]}",
-                    "sheet": sheet, "bounds": [c1, r1, c2, r2],
-                    "max_row": ws.max_row, "max_column": ws.max_column}
-        finally:
-            book.close()
+    # Split conjunctions only outside quoted sheet names.
+    parts, beginning, quoted, index = [], 0, False, 0
+    while index < len(address):
+        if address[index] == "'":
+            if quoted and index + 1 < len(address) and address[index + 1] == "'":
+                index += 2
+                continue
+            quoted = not quoted
+        separator = re.match(r"(?: and |;\s*)", address[index:]) if not quoted else None
+        if separator:
+            parts.append(address[beginning:index].strip())
+            index += len(separator[0])
+            beginning = index
+        else:
+            index += 1
+    parts.append(address[beginning:].strip())
+    selections = []
+    for part in parts:
+        match = re.fullmatch(r"(.+?)!(\$?[A-Za-z]{1,3}\$?[1-9]\d*(?::\$?[A-Za-z]{1,3}\$?[1-9]\d*)?|[1-9]\d*:[1-9]\d*)", part)
+        if not match:
+            return {"kind": "workbook", "status": "UNRESOLVED", "label": "Exact sheet and range could not be resolved"}
+        sheet = match[1]
+        if sheet.startswith("'") and sheet.endswith("'"):
+            sheet = sheet[1:-1].replace("''", "'")
+        if sheet not in sheets:
+            raise HTTPException(422, "The cited sheet does not exist in this source version.")
+        max_row, max_column = sheets[sheet]
+        c1, r1, c2, r2 = range_boundaries(match[2].replace("$", "").upper())
+        c1, c2 = c1 or 1, c2 or max(1, max_column)
+        if r1 > r2 or c1 > c2 or r2 > max_row or c2 > max_column:
+            raise HTTPException(422, "The cited range is outside this source version.")
+        selections.append({"kind": "workbook", "status": "LOCATED", "label": f"{sheet}!{match[2]}",
+                           "sheet": sheet, "bounds": [c1, r1, c2, r2],
+                           "max_row": max_row, "max_column": max_column})
+    if sum((p["bounds"][3] - p["bounds"][1] + 1) * (p["bounds"][2] - p["bounds"][0] + 1) for p in selections) > 5000:
+        raise HTTPException(422, "This cited range is too large for the focused reader. Download the original workbook.")
+    result = dict(selections[0])
+    if len(selections) > 1:
+        result.update(selections=selections, label="; ".join(p["label"] for p in selections))
+    return result
+
+
+def workbook_dimensions(book) -> dict:
+    dimensions = {}
+    for sheet in book:
+        if sheet.max_row is None or sheet.max_column is None:
+            sheet.calculate_dimension(force=True)
+        dimensions[sheet.title] = (sheet.max_row or 0, sheet.max_column or 0)
+    return dimensions
+
+
+def _workbook_position(document: SourceDocument, locator: str) -> dict:
+    from openpyxl import load_workbook
+    book = load_workbook(io.BytesIO(document.data), read_only=True, keep_links=False)
+    try:
+        return workbook_positions(locator, workbook_dimensions(book))
+    finally:
+        book.close()
+
+
+def _heading_spans(lines: list[str], locator: str) -> list[list[int]]:
+    address = locator.split("::", 1)[-1].strip()
+    headings = [(i + 1, len(m[1]), m[2].strip()) for i, line in enumerate(lines)
+                if (m := re.match(r"^(#{1,6})\s+(.+?)\s*#*\s*$", line))]
+    def match_name(name):
+        name = re.sub(r"^#{1,6}\s+", "", name).strip()
+        found = [(i, level) for i, level, title in headings if title == name]
+        if len(found) != 1:
+            return None
+        start, level = found[0]
+        end = next((i - 1 for i, next_level, _ in headings if i > start and next_level <= level), len(lines))
+        return [start, end]
+    if span := match_name(address):
+        return [span]
+    # Multiple explicitly named headings, never fuzzy topic matching.
+    parts = re.split(r" / | and ", address)
+    if len(parts) > 1 and all(spans := [match_name(part) for part in parts]):
+        return spans
+    return []
 
 
 def _document_lines(document: SourceDocument) -> list[str]:
@@ -151,16 +210,21 @@ def _document_lines(document: SourceDocument) -> list[str]:
 
 
 def locate_document(document: SourceDocument, locator: str) -> dict:
+    if document.suffix in {".pptx", ".eml", ".png", ".jpg", ".jpeg", ".webp"} or (document.suffix == ".docx" and locator.split("::", 1)[-1].startswith("section:")):
+        from app.source_document_formats import extra_position
+        return extra_position(document, locator)
     if document.suffix == ".pdf":
         import pdfplumber
         match = re.search(r"(?:^|::)p([1-9]\d*)(?=:|$)", locator)
         with pdfplumber.open(io.BytesIO(document.data)) as pdf:
             count = len(pdf.pages)
-        page = int(match[1]) if match else 1
+            page = int(match[1]) if match else 1
+            from app.source_document_formats import rectangle
+            box = rectangle(locator, pdf.pages[page - 1].width, pdf.pages[page - 1].height) if page <= count else None
         if page > count:
             raise HTTPException(422, "The cited page does not exist in this source version.")
         return {"kind": "pdf", "status": "LOCATED" if match else "UNRESOLVED",
-                "page": page, "page_count": count,
+                "page": page, "page_count": count, "box": box,
                 "label": f"Page {page}" if match else "Exact page not supplied"}
     if document.suffix in {".xlsx", ".xlsm"}:
         return _workbook_position(document, locator)
@@ -188,18 +252,21 @@ def locate_document(document: SourceDocument, locator: str) -> dict:
             end = start
             while end < len(lines) and lines[end].strip():
                 end += 1
-    if document.suffix == ".md" and "::#" in locator:
-        heading = locator.split("::", 1)[1]
-        candidates = [i for i, line in enumerate(lines) if line.strip() == heading]
-        if len(candidates) == 1:
-            start, end = candidates[0] + 1, candidates[0] + 1
-            while end < len(lines) and not lines[end].startswith("#"):
-                end += 1
+    spans = []
+    if document.suffix == ".md":
+        # Legacy graph references can record literal line ranges or section names.
+        numbered = re.search(r"(?:^|, )lines ([1-9]\d*)-([1-9]\d*)$", locator)
+        if numbered:
+            start, end = int(numbered[1]), int(numbered[2])
+        elif not start:
+            spans = _heading_spans(lines, locator)
+            if spans:
+                start, end = spans[0]
     if start is not None and (end < start or end > len(lines)):
         raise HTTPException(422, "The cited passage is outside this source version.")
     return {"kind": "text", "status": "LOCATED" if start else "UNRESOLVED",
             "label": locator if start else "Exact passage could not be located",
-            "start": start, "end": end, "line_count": len(lines)}
+            "start": start, "end": end, "spans": spans or ([[start, end]] if start else []), "line_count": len(lines)}
 
 
 def _pdf_body(document: SourceDocument, position: dict, quote: str) -> str:
@@ -225,10 +292,15 @@ def _pdf_body(document: SourceDocument, position: dict, quote: str) -> str:
                                       fill=(255, 210, 70, 90))
                 highlighted = True
                 selection_top = (min(word['top'] for word in tokens[matches[0]:matches[0] + len(needle)]) - page.bbox[1]) / page.height * 100
+        if position.get("box"):
+            left, top, right, bottom = position["box"]
+            sx, sy = image.width / page.width, image.height / page.height
+            ImageDraw.Draw(image).rectangle([left*sx, top*sy, right*sx, bottom*sy], outline=(190, 145, 0), width=3)
+            selection_top = top / page.height * 100
         buffer = io.BytesIO()
         image.save(buffer, format="PNG")
     encoded = base64.b64encode(buffer.getvalue()).decode("ascii")
-    note = "Cited passage highlighted." if highlighted else "Original page. No exact passage highlight is available."
+    note = "Cited region outlined." if position.get("box") else "Cited passage highlighted." if highlighted else "Original page. No exact passage highlight is available."
     anchor = f'<span id="selection" style="position:absolute;top:{selection_top:.3f}%;scroll-margin-top:20px"></span>' if selection_top is not None else ""
     return f'<p>{note}</p><div style="position:relative">{anchor}<img class="pdf" alt="Original page {position["page"]}" src="data:image/png;base64,{encoded}"></div>'
 
@@ -236,6 +308,9 @@ def _pdf_body(document: SourceDocument, position: dict, quote: str) -> str:
 def _workbook_body(document: SourceDocument, position: dict) -> str:
     if position["status"] != "LOCATED":
         return ""
+    if position.get("selections"):
+        return "".join(f'<h2>{html.escape(p["label"])}</h2>' + _workbook_body(document, p).replace('id="selection"', f'id="selection{index or ""}"')
+                       for index, p in enumerate(position["selections"]))
     from openpyxl import load_workbook
     from openpyxl.utils import get_column_letter
     formulas = load_workbook(io.BytesIO(document.data), read_only=True, data_only=False, keep_links=False)
@@ -270,7 +345,10 @@ def _workbook_body(document: SourceDocument, position: dict) -> str:
 
 def render_document(document: SourceDocument, locator: str, position: dict, quote: str = "") -> str:
     file_url = document_url(document, "file")
-    if position["kind"] == "pdf":
+    if position.get("native"):
+        from app.source_document_formats import extra_body
+        body = extra_body(document, position)
+    elif position["kind"] == "pdf":
         body = _pdf_body(document, position, quote)
         page, count = position["page"], position["page_count"]
         navigation = []
@@ -288,7 +366,7 @@ def render_document(document: SourceDocument, locator: str, position: dict, quot
     elif position["kind"] == "text":
         lines = _document_lines(document)
         body = '<div class="lines">' + "".join(
-            f'<div class="text-line{" selected" if position["start"] and position["start"] <= i <= position["end"] else ""}"'
+            f'<div class="text-line{" selected" if any(start <= i <= end for start, end in position.get("spans", [])) else ""}"'
             + (' id="selection"' if i == position["start"] else "")
             + f'><span>{i}</span><pre>{html.escape(line)}</pre></div>' for i, line in enumerate(lines, 1)) + "</div>"
     else:

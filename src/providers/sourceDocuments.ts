@@ -5,7 +5,7 @@ export interface SourceDocument {
   filename: string;
   viewUrl: string;
   downloadUrl: string;
-  position: { kind: 'pdf' | 'workbook' | 'media' | 'text' | 'download'; status: 'LOCATED' | 'UNRESOLVED'; label: string };
+  position: { kind: 'pdf' | 'workbook' | 'media' | 'text' | 'download' | 'image'; status: 'LOCATED' | 'UNRESOLVED'; label: string };
 }
 
 export interface SourceDocumentHttpOptions {
@@ -34,7 +34,7 @@ export async function fetchSourceDocument(caseId: string, target: SourceLocator,
     throw new Error('The returned document does not match the cited source and version.');
   }
   const position = data.position;
-  if (!position || !['pdf', 'workbook', 'media', 'text', 'download'].includes(position.kind) || !['LOCATED', 'UNRESOLVED'].includes(position.status) || typeof position.label !== 'string') {
+  if (!position || !['pdf', 'workbook', 'media', 'text', 'download', 'image'].includes(position.kind) || !['LOCATED', 'UNRESOLVED'].includes(position.status) || typeof position.label !== 'string') {
     throw new Error('The document location could not be verified.');
   }
   function verifiedUrl(value: unknown, action: 'view' | 'file') {

@@ -1,0 +1,12 @@
+.p-reference-header { padding: 32px; border-bottom: 1px solid var(--p-line); }
+.p-reference-header h1 { font-size: 27px; font-weight: 500; margin: 10px 0; }
+.p-reference-header p { max-width: 800px; color: var(--p-muted); font-size: 14px; line-height: 1.6; }
+.p-reference-counts { display:flex; flex-wrap:wrap; gap:10px 30px; font-size:13px; margin-top:20px; }
+.p-reference-layout { padding:24px 32px; }
+.p-reference-layout.has-selection { display:grid; grid-template-columns:minmax(0,1fr) 370px; gap:28px; align-items:start; }
+.p-reference-filters { display:flex; flex-wrap:wrap; gap:8px; margin-bottom:22px; }
+.p-reference-filters [aria-pressed=true] { border-color:var(--p-accent); color:var(--p-accent); }
+.p-reference-row { display:grid; gap:8px; background:none; color:inherit; width:100%; text-align:left; border:0; border-top:1px solid var(--p-line); padding:18px 0; cursor:pointer; }
+.p-reference-row strong { font-size:14px; font-weight:500; line-height:1.5; }
+.p-reference-row span,.p-reference-row small { font-size:12px; color:var(--p-muted); overflow-wrap:anywhere; }
+@media(max-width:760px) { .p-reference-header,.p-reference-layout { padding:20px; } .p-reference-layout.has-selection { display:block; } .p-reference-header h1 { font-size:23px; } }

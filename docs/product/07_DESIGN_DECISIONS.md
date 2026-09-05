@@ -188,3 +188,14 @@ Append only material decisions that should survive individual tasks.
 **Applies to:** Shared information summary, Trace supports, source drawer, same-origin source reader, durable claim provenance, isolated native-document lab and regression tests.
 
 **Boundary:** This extends the earlier citation-only UI with original-file access. It adds no ontology, inferred calculation input, quoted text synthesized from a statement, canonical mutation, or full production case adapter. PDF highlighting requires a unique exact source quote. Legacy missing references and unsupported locations remain visible gaps, not successful precise opens.
+
+---
+
+### 2026-09-05 — Tracking can be verified on supplied test graphs and native originals
+**Decision:** A read-only repository lab connects the existing Keystone execution graph and canonical statements to their actual test documents through the shared information card and source reader. It preserves declared input edges and exposes unresolved text addresses in a dedicated filter. Multiple explicit cells or headings can open together; Word sections, PowerPoint slide content, email parts and image/PDF regions retain their actual source precision.
+
+**Why:** Testing the complete click-to-source journey should use the documents and graphs already available. Missing real cases do not prevent validation, while generic references must remain distinguishable from precise source locations.
+
+**Applies to:** Isolated repository tracking lab, original-document readers, source-address audit report and native-document regression coverage. The supplied corpus contains 19 originals, 14,318 model nodes and 30,996 declared links; 30 of 75 canonical textual references still lack a resolved passage.
+
+**Boundary:** Test-import hashes identify copied original bytes, not retroactive ingestion history. The lab does not adopt Current, fabricate HumanPositions, infer missing graph edges, rewrite original gold data, or claim extraction accuracy from gold reference addresses. PowerPoint and Word content readers do not promise native page layout. Address resolution verifies where to look, not whether a claim is true.

@@ -15,5 +15,4 @@ cryptography>=43.0
 # add-on -- see requirements-pdf-ml.txt. Not required: parse_pdf falls
 # back to plain text extraction when it's absent.
 python-docx
-# Test-only: parse_docx itself uses docx2python (above); python-docx is
-# needed solely to build realistic .docx fixtures in test_pan103_docx_tables.py.
+# Word section reader and native DOCX test fixtures; extraction uses docx2python.

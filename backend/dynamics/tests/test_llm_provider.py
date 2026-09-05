@@ -109,12 +109,18 @@ class LLMProviderTests(unittest.TestCase):
             self.assertIsNone(llm_provider.thinking_parameter())
 
     def test_thinking_can_be_re_enabled_deliberately(self):
+        """The flag now ENABLES reasoning with a budget, rather than merely
+        omitting the field and letting the provider default decide -- which was
+        the behaviour that burned 8192 tokens and returned nothing."""
         with patch.dict(
             os.environ,
             {"PEOS_LLM_PROVIDER": "openrouter", "PEOS_OPENROUTER_THINKING": "true"},
             clear=True,
         ):
-            self.assertIsNone(llm_provider.thinking_parameter())
+            self.assertEqual(
+                llm_provider.thinking_parameter(),
+                {"type": "enabled", "budget_tokens": 16000},
+            )
 
     def test_anthropic_still_pins_the_tool_openrouter_does_not(self):
         """Forcing the tool is right on Anthropic and wrong on GLM: pinned it
@@ -125,6 +131,35 @@ class LLMProviderTests(unittest.TestCase):
             self.assertTrue(llm_provider.forces_tool_choice())
         with patch.dict(os.environ, {"PEOS_LLM_PROVIDER": "openrouter"}, clear=True):
             self.assertFalse(llm_provider.forces_tool_choice())
+
+    def test_thinking_when_requested_comes_with_room_to_answer(self):
+        """Enabling reasoning without widening the ceiling reproduces the
+        original bug wearing a different number: budget consumed, no tool call.
+        So the budget must stay strictly below max_tokens, and the call must
+        stream -- the SDK refuses a non-streaming request that may exceed ten
+        minutes (measured at max_tokens=32000)."""
+        env = {"PEOS_LLM_PROVIDER": "openrouter", "PEOS_OPENROUTER_THINKING": "true"}
+        with patch.dict(os.environ, env, clear=True):
+            thinking = llm_provider.thinking_parameter()
+            self.assertEqual(thinking["type"], "enabled")
+            self.assertLess(thinking["budget_tokens"], llm_provider.max_tokens_for(8192))
+            self.assertTrue(llm_provider.requires_streaming())
+
+    def test_default_keeps_thinking_off_and_the_normal_ceiling(self):
+        """Measured on the 11-case benchmark: thinking ON scored 77.6% against
+        78.0% OFF, at 28s per case instead of 9s. It buys relation precision
+        (22.2% -> 100%) and loses exact_match (48.5% -> 43.8%), so it is a
+        trade to opt into, not a default."""
+        with patch.dict(os.environ, {"PEOS_LLM_PROVIDER": "openrouter"}, clear=True):
+            self.assertEqual(llm_provider.thinking_parameter(), {"type": "disabled"})
+            self.assertEqual(llm_provider.max_tokens_for(8192), 8192)
+            self.assertFalse(llm_provider.requires_streaming())
+
+    def test_anthropic_never_streams_or_widens_for_thinking(self):
+        with patch.dict(os.environ, {"PEOS_OPENROUTER_THINKING": "true"}, clear=True):
+            self.assertIsNone(llm_provider.thinking_parameter())
+            self.assertEqual(llm_provider.max_tokens_for(8192), 8192)
+            self.assertFalse(llm_provider.requires_streaming())
 
     def test_v2_allows_complete_excel_tool_output(self):
         captured = {}

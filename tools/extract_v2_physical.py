@@ -66,7 +66,9 @@ from tools.llm_provider import (  # noqa: E402
     configured_model,
     missing_key_message,
     forces_tool_choice,
+    max_tokens_for,
     openrouter_extra_body,
+    requires_streaming,
     thinking_parameter,
 )
 from tools.archetype_pack import (  # noqa: E402
@@ -3244,7 +3246,7 @@ def annotate_chunk(
             "model": MODEL,
             # Match the larger schema capacity: Excel chunks commonly contain
             # more than four claim-bearing rows and need room for tool JSON.
-            "max_tokens": MAX_TOKENS,
+            "max_tokens": max_tokens_for(MAX_TOKENS),
             "system": SYSTEM_PROMPT,
             "tools": [claim_tool_for(archetype)],
             "messages": [{"role": "user", "content": prompt}],
@@ -3277,7 +3279,14 @@ def annotate_chunk(
         # terminates -- see forces_tool_choice().
         if forces_tool_choice():
             request["tool_choice"] = {"type": "tool", "name": "emit_claims"}
-        resp = client.messages.create(**request)
+        if requires_streaming():
+            # The SDK refuses a non-streaming call that may exceed ten minutes,
+            # which a large thinking budget will. Same request, streamed, and
+            # the final message is assembled before anything else touches it.
+            with client.messages.stream(**request) as stream:
+                resp = stream.get_final_message()
+        else:
+            resp = client.messages.create(**request)
         time.sleep(rate_limit_delay)
     except Exception as e:
         if raise_errors:

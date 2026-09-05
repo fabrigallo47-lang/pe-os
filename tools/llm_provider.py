@@ -131,9 +131,44 @@ def thinking_parameter() -> dict[str, Any] | None:
     """
     if not is_openrouter():
         return None
-    if os.environ.get("PEOS_OPENROUTER_THINKING", "").strip().lower() in {"1", "true", "on"}:
-        return None
+    if _thinking_requested():
+        # Enabled DELIBERATELY, and only with room to answer afterwards. The
+        # budget must stay below max_tokens or the tool call has nowhere to go,
+        # which is the original failure wearing a different number.
+        return {"type": "enabled", "budget_tokens": _thinking_budget()}
     return {"type": "disabled"}
+
+
+def _thinking_requested() -> bool:
+    return os.environ.get("PEOS_OPENROUTER_THINKING", "").strip().lower() in {"1", "true", "on"}
+
+
+def _thinking_budget() -> int:
+    try:
+        return max(1024, int(os.environ.get("PEOS_OPENROUTER_THINKING_BUDGET", "16000")))
+    except ValueError:
+        return 16000
+
+
+def max_tokens_for(default_max_tokens: int) -> int:
+    """Output ceiling, widened when the model is also thinking.
+
+    Reasoning has to be paid for out of the same output budget as the answer,
+    so leaving the ceiling at its non-thinking value reproduces exactly the bug
+    thinking was enabled to explore: budget consumed, no tool call.
+    """
+    if not (is_openrouter() and _thinking_requested()):
+        return default_max_tokens
+    return max(default_max_tokens, _thinking_budget() * 2)
+
+
+def requires_streaming() -> bool:
+    """The SDK refuses a non-streaming call that may run over ten minutes.
+
+    Measured: max_tokens=32000 raises 'Streaming is required for operations that
+    may take longer than 10 minutes' before any request is sent.
+    """
+    return is_openrouter() and _thinking_requested()
 
 
 def anthropic_client_kwargs(api_key: str) -> dict[str, Any]:
